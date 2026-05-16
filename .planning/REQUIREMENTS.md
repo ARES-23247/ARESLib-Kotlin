@@ -1,0 +1,67 @@
+# Requirements: ARESLib-Kotlin
+
+**Defined:** 2026-05-15
+**Core Value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
+
+## v1 Requirements
+
+### Core Scaffold
+- [ ] **CORE-01**: Implement Redux-style state store with `RobotState`, `DriveState`, `SuperstructureState`, and `VisionState` data classes
+- [ ] **CORE-02**: Implement `RobotAction` sealed class for hardware input and human intent
+- [ ] **CORE-03**: Implement pure `rootReducer` handling state transitions
+- [ ] **CORE-04**: Define `HardwareIO` and `OutputCommand` base interfaces
+
+### FRC Bridge
+- [ ] **FRC-01**: Implement `SwerveModuleIOPhoenix6` using `waitForUpdate` CANivore synchronization
+- [ ] **FRC-02**: Implement WPILib Struct API serialization for native AdvantageScope logging
+
+### FTC Bridge
+- [ ] **FTC-01**: Implement `LinearOpMode` hollow wrapper that initializes dispatcher
+- [ ] **FTC-02**: Implement `SwerveModuleIO` translating REV Hub hardware maps to immutable state
+
+### Kinematics
+- [ ] **KIN-01**: Implement Swerve Drive kinematics engine pure functions
+- [ ] **KIN-02**: Implement Mecanum Drive kinematics engine pure functions
+- [ ] **KIN-03**: Implement Differential Drive kinematics engine pure functions
+
+### Autonomy
+- [ ] **AUTO-01**: Implement PathPlanner JSON file parser into immutable `Trajectory` data class
+- [ ] **AUTO-02**: Implement `calculateTrajectoryOutput` pure function to calculate target `ChassisSpeeds`
+
+## v2 Requirements
+(None)
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Mutable subsystem state | Breaks offline testability and functional paradigm. |
+| AdvantageKit @AutoLog | Increases build times and breaks Android cross-compatibility. |
+| com.qualcomm/edu.wpi imports in core | Couples core logic to specific platforms, breaking portability. |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CORE-01 | | Pending |
+| CORE-02 | | Pending |
+| CORE-03 | | Pending |
+| CORE-04 | | Pending |
+| FRC-01 | | Pending |
+| FRC-02 | | Pending |
+| FTC-01 | | Pending |
+| FTC-02 | | Pending |
+| KIN-01 | | Pending |
+| KIN-02 | | Pending |
+| KIN-03 | | Pending |
+| AUTO-01 | | Pending |
+| AUTO-02 | | Pending |
+
+**Coverage:**
+- v1 requirements: 13 total
+- Mapped to phases: 0
+- Unmapped: 13 ⚠️
+
+---
+*Requirements defined: 2026-05-15*
+*Last updated: 2026-05-15 after initial definition*
