@@ -4,9 +4,9 @@
 
 | ID | Phase | Status |
 |---|---|---|
-| AUTO-01 | | |
-| AUTO-02 | | |
-| AUTO-03 | | |
+| AUTO-01 | 13 | Not Started |
+| AUTO-02 | 14 | Not Started |
+| AUTO-03 | 15 | Not Started |
 
 ---
 
