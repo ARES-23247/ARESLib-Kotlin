@@ -48,5 +48,20 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 timestampMs = action.timestampMs
             )
         }
+        is RobotAction.PathEventTriggered -> {
+            if (action.eventName == "IntakeOn") {
+                state.copy(
+                    superstructure = state.superstructure.copy(intakeActive = true),
+                    timestampMs = action.timestampMs
+                )
+            } else if (action.eventName == "IntakeOff") {
+                state.copy(
+                    superstructure = state.superstructure.copy(intakeActive = false),
+                    timestampMs = action.timestampMs
+                )
+            } else {
+                state
+            }
+        }
     }
 }

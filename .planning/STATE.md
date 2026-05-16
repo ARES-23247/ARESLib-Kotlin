@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Advanced Path Generation
-status: planning
-last_updated: "2026-05-16T11:26:00.000Z"
+status: review
+last_updated: "2026-05-16T11:33:00.000Z"
 last_activity: 2026-05-16
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 3
-  completed_plans: 2
-  percent: 66
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -24,14 +24,14 @@ See: .planning/PROJECT.md (updated 2026-05-16)
 
 ## Session Memory
 
-We have completed Phase 19 (Motion Profiling), successfully implementing Trapezoidal Motion Profiles via a two-pass sweep across generated path points.
-The next step is to integrate PathPlanner Event Markers into the functional `RobotAction` state machine.
+We have completed Phase 20 (Event Marker State Machine Integration). PathPlanner event markers are now successfully parsed from JSON, evaluated by distance during loop execution, and trigger `RobotAction.PathEventTriggered` updates in the `RootReducer`.
+The v1.6 Advanced Path Generation milestone is now 100% complete!
 
-Pending next steps: Run `/gsd-plan-phase 20` to begin the Event Marker State Machine Integration.
+Pending next steps: Run `/gsd-complete-milestone` to audit and close out v1.6, then initialize v1.7.
 
 ## Current Position
 
-Phase: 20. Event Marker State Machine Integration
+Phase: Milestone Complete
 Plan: —
-Status: Planning
-Last activity: 2026-05-16 — Executed Phase 19
+Status: Review
+Last activity: 2026-05-16 — Executed Phase 20

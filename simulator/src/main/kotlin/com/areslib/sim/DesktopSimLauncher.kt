@@ -47,6 +47,16 @@ object DesktopSimLauncher {
                   "anchor": {"x": 4.0, "y": 0.0},
                   "prevControl": {"x": 3.0, "y": 0.0}
                 }
+              ],
+              "eventMarkers": [
+                {
+                  "name": "IntakeOn",
+                  "waypointRelativePos": 1.5,
+                  "command": {
+                    "type": "named",
+                    "name": "IntakeOn"
+                  }
+                }
               ]
             }
         """.trimIndent()
@@ -77,14 +87,27 @@ object DesktopSimLauncher {
         // 4. Simulation Loop
         var state = RobotState()
         var currentDistance = 0.0
-        val targetVelocityMps = 0.8
+        var lastDistance = 0.0
         
         while (true) {
             val startTime = System.currentTimeMillis()
 
             // Calculate Target State
-            currentDistance += targetVelocityMps * TIMESTEP_SEC
+            val tempState = path.sampleAtDistance(currentDistance)
+            val currentVelocity = tempState.velocityMps
+            
+            lastDistance = currentDistance
+            currentDistance += currentVelocity * TIMESTEP_SEC
             val targetState = path.sampleAtDistance(currentDistance)
+            
+            // Check for triggered events
+            path.events.forEach { event ->
+                if (lastDistance < event.triggerDistanceMeters && currentDistance >= event.triggerDistanceMeters) {
+                    println(">>> EVENT TRIGGERED: ${event.eventName} at distance ${event.triggerDistanceMeters}")
+                    // In a real loop, you would dispatch to state machine:
+                    // state = state.reduce(RobotAction.PathEventTriggered(event.eventName, System.currentTimeMillis()))
+                }
+            }
 
             // Current Simulated Pose
             val simTransform = robotBody.transform
@@ -98,7 +121,7 @@ object DesktopSimLauncher {
             val chassisSpeeds = driveController.calculate(
                 currentPose,
                 targetState.pose,
-                targetVelocityMps,
+                currentVelocity,
                 targetState.pose.heading,
                 TIMESTEP_SEC
             )

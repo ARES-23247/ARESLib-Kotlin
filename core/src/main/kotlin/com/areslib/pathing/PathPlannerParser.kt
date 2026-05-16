@@ -107,7 +107,35 @@ object PathPlannerParser {
             pathPoints[i] = curr.copy(velocityMps = newVel)
         }
 
-        return Path(pathPoints)
+        val pathEvents = mutableListOf<PathEvent>()
+        if (root.has("eventMarkers") && !root.get("eventMarkers").isJsonNull) {
+            val markersArray = root.getAsJsonArray("eventMarkers")
+            val numSamples = 20
+            
+            for (i in 0 until markersArray.size()) {
+                val marker = markersArray.get(i).asJsonObject
+                if (!marker.has("waypointRelativePos") || marker.get("waypointRelativePos").isJsonNull) continue
+                
+                val pos = marker.get("waypointRelativePos").asDouble
+                
+                var commandName = "Unknown"
+                if (marker.has("command") && !marker.get("command").isJsonNull) {
+                    val cmd = marker.getAsJsonObject("command")
+                    if (cmd.has("name") && !cmd.get("name").isJsonNull) {
+                        commandName = cmd.get("name").asString
+                    }
+                }
+                
+                var targetIndex = (pos * numSamples).toInt()
+                if (targetIndex >= pathPoints.size) targetIndex = pathPoints.size - 1
+                if (targetIndex < 0) targetIndex = 0
+                
+                val triggerDist = pathPoints[targetIndex].distanceMeters
+                pathEvents.add(PathEvent(commandName, triggerDist))
+            }
+        }
+
+        return Path(pathPoints, pathEvents)
     }
 
     private data class WaypointData(

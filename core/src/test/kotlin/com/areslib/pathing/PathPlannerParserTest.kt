@@ -13,6 +13,16 @@ class PathPlannerParserTest {
               "waypoints": [
                 {"anchor": {"x": 0.0, "y": 0.0}},
                 {"anchor": {"x": 3.0, "y": 4.0}}
+              ],
+              "eventMarkers": [
+                {
+                  "name": "IntakeOn",
+                  "waypointRelativePos": 0.5,
+                  "command": {
+                    "type": "named",
+                    "name": "IntakeOn"
+                  }
+                }
               ]
             }
         """.trimIndent()
@@ -37,5 +47,11 @@ class PathPlannerParserTest {
         assertEquals(4.0, pLast.pose.y, 0.001)
         assertEquals(5.0, pLast.distanceMeters, 0.05) // allow small numerical error from discretization
         assertEquals(0.0, pLast.velocityMps) // Should end at 0
+        
+        assertEquals(1, path.events.size)
+        val event = path.events[0]
+        assertEquals("IntakeOn", event.eventName)
+        // distance at index 10 should be roughly 2.5
+        assertEquals(2.5, event.triggerDistanceMeters, 0.5)
     }
 }

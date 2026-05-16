@@ -35,4 +35,10 @@ sealed class RobotAction {
         val targetYVelocity: Double,
         val targetAngularVelocity: Double
     ) : RobotAction()
+
+    // Autonomous Events
+    data class PathEventTriggered(
+        val eventName: String,
+        val timestampMs: Long
+    ) : RobotAction()
 }

@@ -17,7 +17,8 @@ data class PathPoint(
  * An immutable data structure representing a parsed trajectory.
  */
 data class Path(
-    val points: List<PathPoint>
+    val points: List<PathPoint>,
+    val events: List<PathEvent> = emptyList()
 ) {
     /**
      * Interpolates to find the target PathPoint at a given distance along the path.
