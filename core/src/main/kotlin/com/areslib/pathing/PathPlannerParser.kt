@@ -11,9 +11,9 @@ object PathPlannerParser {
 
     /**
      * Parses a PathPlanner .path JSON string into an immutable Path.
-     * Generates a dense array of interpolations using Cubic Bezier math.
+     * Generates a dense array of interpolations using Cubic Bezier math and applies Trapezoidal Motion Profiling.
      */
-    fun parsePath(jsonString: String): Path {
+    fun parsePath(jsonString: String, maxVelocityMps: Double = 2.0, maxAccelerationMps2: Double = 1.5): Path {
         val root = gson.fromJson(jsonString, JsonObject::class.java)
         
         val waypointsArray = root.getAsJsonArray("waypoints")
@@ -51,7 +51,7 @@ object PathPlannerParser {
         pathPoints.add(
             PathPoint(
                 pose = Pose2d(parsedWaypoints[0].anchor.x, parsedWaypoints[0].anchor.y, initialHeading),
-                velocityMps = 1.0,
+                velocityMps = maxVelocityMps,
                 distanceMeters = 0.0
             )
         )
@@ -78,11 +78,33 @@ object PathPlannerParser {
                 pathPoints.add(
                     PathPoint(
                         pose = Pose2d(point.x, point.y, heading),
-                        velocityMps = 1.0, // Constant for now, profiling is Phase 19
+                        velocityMps = maxVelocityMps,
                         distanceMeters = accumulatedDistance
                     )
                 )
             }
+        }
+
+        // Pass 1: Forward Sweep (Acceleration limit)
+        pathPoints[0] = pathPoints[0].copy(velocityMps = 0.0)
+        for (i in 1 until pathPoints.size) {
+            val prev = pathPoints[i - 1]
+            val curr = pathPoints[i]
+            val dx = curr.distanceMeters - prev.distanceMeters
+            val maxReachable = com.areslib.math.KinematicsMath.finalVelocity(prev.velocityMps, maxAccelerationMps2, dx)
+            val newVel = minOf(maxVelocityMps, maxReachable)
+            pathPoints[i] = curr.copy(velocityMps = newVel)
+        }
+
+        // Pass 2: Backward Sweep (Deceleration limit)
+        pathPoints[pathPoints.size - 1] = pathPoints[pathPoints.size - 1].copy(velocityMps = 0.0)
+        for (i in pathPoints.size - 2 downTo 0) {
+            val next = pathPoints[i + 1]
+            val curr = pathPoints[i]
+            val dx = next.distanceMeters - curr.distanceMeters
+            val maxReachable = com.areslib.math.KinematicsMath.finalVelocity(next.velocityMps, maxAccelerationMps2, dx)
+            val newVel = minOf(curr.velocityMps, maxReachable)
+            pathPoints[i] = curr.copy(velocityMps = newVel)
         }
 
         return Path(pathPoints)

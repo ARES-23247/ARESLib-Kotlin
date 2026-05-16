@@ -26,10 +26,16 @@ class PathPlannerParserTest {
         assertEquals(0.0, p1.pose.x)
         assertEquals(0.0, p1.pose.y)
         assertEquals(0.0, p1.distanceMeters)
+        assertEquals(0.0, p1.velocityMps) // Should start at 0
         
+        val pMid = path.points[10]
+        // In the middle of the 5.0m S-curve, with max accel 1.5, it should easily reach max velocity 2.0
+        assertEquals(2.0, pMid.velocityMps, 0.001)
+
         val pLast = path.points.last()
         assertEquals(3.0, pLast.pose.x, 0.001)
         assertEquals(4.0, pLast.pose.y, 0.001)
         assertEquals(5.0, pLast.distanceMeters, 0.05) // allow small numerical error from discretization
+        assertEquals(0.0, pLast.velocityMps) // Should end at 0
     }
 }
