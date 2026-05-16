@@ -4,14 +4,18 @@
 
 | ID | Phase | Status |
 |---|---|---|
-| (None) | | |
+| AUTO-01 | | |
+| AUTO-02 | | |
+| AUTO-03 | | |
 
 ---
 
-## Milestone v[Next] Requirements
+## Milestone v1.3 Requirements
 
-### Next Milestone Features
-- [ ] Define requirements for next milestone here.
+### Autonomy Engine
+- [ ] **AUTO-01**: User can parse a PathPlanner trajectory JSON file into an immutable `Path` data structure without relying on hardware SDKs.
+- [ ] **AUTO-02**: System provides a pure `HolonomicDriveController` that accepts a `Path` and current `Pose2d` to output target `ChassisSpeeds`.
+- [ ] **AUTO-03**: User can execute an autonomous routine on FTC hardware via a `LinearOpMode` that routes the `HolonomicDriveController` outputs to the `MecanumHardwareIO`.
 
 ---
 
@@ -20,7 +24,6 @@
 - [ ] Path generation (dynamic pathing)
 - [ ] Superstructure mechanism control (Elevator/Intake)
 - [ ] Vision-based pose disambiguation (AprilTags)
-- [ ] Autonomous sequence scheduler
 
 ## Out of Scope
 - [ ] Mutable subsystem classes (Breaks purely functional paradigm)
