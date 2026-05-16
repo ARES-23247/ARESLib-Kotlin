@@ -22,6 +22,13 @@ sealed class RobotAction {
         val timestampMs: Long
     ) : RobotAction()
 
+    data class PoseUpdate(
+        val xMeters: Double,
+        val yMeters: Double,
+        val headingRadians: Double,
+        val timestampMs: Long
+    ) : RobotAction()
+
     // Human Intent
     data class JoystickDriveIntent(
         val targetXVelocity: Double,

@@ -21,6 +21,14 @@ open class Gamepad {
     var right_stick_y: Float = 0f
 }
 
+open class GoBildaPinpointDriver {
+    var posX: Double = 0.0
+    var posY: Double = 0.0
+    var heading: Double = 0.0
+    
+    fun update() {}
+}
+
 abstract class LinearOpMode {
     abstract fun runOpMode()
     val hardwareMap: HardwareMap = object : HardwareMap {
