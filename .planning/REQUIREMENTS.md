@@ -5,7 +5,7 @@
 | ID | Phase | Status |
 |---|---|---|
 | MEC-01 | Phase 10 | Complete |
-| MEC-02 | Phase 11 | Pending |
+| MEC-02 | Phase 11 | Complete |
 | TELE-01 | Phase 12 | Pending |
 
 ---
