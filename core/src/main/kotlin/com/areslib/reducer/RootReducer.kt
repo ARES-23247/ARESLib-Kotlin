@@ -63,5 +63,17 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 state
             }
         }
+        is RobotAction.SetIntakeActive -> {
+            state.copy(
+                superstructure = state.superstructure.copy(intakeActive = action.active),
+                timestampMs = action.timestampMs
+            )
+        }
+        is RobotAction.SetInventoryCount -> {
+            state.copy(
+                superstructure = state.superstructure.copy(inventoryCount = action.count),
+                timestampMs = action.timestampMs
+            )
+        }
     }
 }

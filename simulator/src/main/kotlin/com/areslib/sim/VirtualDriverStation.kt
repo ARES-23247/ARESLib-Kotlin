@@ -37,6 +37,12 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     var isRedAlliance = false
         private set
 
+    val isIntaking: Boolean
+        get() = pressedKeys.contains(KeyEvent.VK_SHIFT)
+
+    val isShooting: Boolean
+        get() = pressedKeys.contains(KeyEvent.VK_ENTER)
+
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
         preferredSize = Dimension(400, 300)
@@ -76,6 +82,10 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 
                 drawKey(g2d, "Q", KeyEvent.VK_Q, 40, 110)
                 drawKey(g2d, "E", KeyEvent.VK_E, 160, 110)
+
+                // FSM Keys
+                drawKey(g2d, "SHIFT (Intake)", KeyEvent.VK_SHIFT, 40, 230, 140)
+                drawKey(g2d, "ENTER (Shoot)", KeyEvent.VK_ENTER, 190, 230, 140)
             }
         }
         
@@ -98,21 +108,21 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         })
     }
 
-    private fun drawKey(g2d: Graphics2D, label: String, keyCode: Int, x: Int, y: Int) {
+    private fun drawKey(g2d: Graphics2D, label: String, keyCode: Int, x: Int, y: Int, w: Int = 50) {
         val size = 50
         val isPressed = pressedKeys.contains(keyCode)
         
         g2d.color = if (isPressed) Color(100, 200, 255) else Color(60, 60, 60)
-        g2d.fillRoundRect(x, y, size, size, 10, 10)
+        g2d.fillRoundRect(x, y, w, size, 10, 10)
         
         g2d.color = if (isPressed) Color.BLACK else Color.WHITE
-        g2d.font = Font("Arial", Font.BOLD, 20)
+        g2d.font = Font("Arial", Font.BOLD, if (w > 50) 14 else 20)
         
         val fm = g2d.fontMetrics
         val textWidth = fm.stringWidth(label)
         val textHeight = fm.ascent
         
-        g2d.drawString(label, x + (size - textWidth) / 2, y + (size + textHeight) / 2 - 2)
+        g2d.drawString(label, x + (w - textWidth) / 2, y + (size + textHeight) / 2 - 2)
     }
 
     override fun keyTyped(e: KeyEvent?) {}

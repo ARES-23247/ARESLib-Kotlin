@@ -21,7 +21,8 @@ data class DriveState(
 
 data class SuperstructureState(
     val elevatorHeightMeters: Double = 0.0,
-    val intakeActive: Boolean = false
+    val intakeActive: Boolean = false,
+    val inventoryCount: Int = 0
 )
 
 data class VisionState(

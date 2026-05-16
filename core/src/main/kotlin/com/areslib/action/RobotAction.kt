@@ -41,4 +41,15 @@ sealed class RobotAction {
         val eventName: String,
         val timestampMs: Long
     ) : RobotAction()
+
+    // FSM Interactions
+    data class SetIntakeActive(
+        val active: Boolean,
+        val timestampMs: Long
+    ) : RobotAction()
+
+    data class SetInventoryCount(
+        val count: Int,
+        val timestampMs: Long
+    ) : RobotAction()
 }

@@ -79,9 +79,27 @@ object DesktopSimLauncher {
         // Standard FTC robot footprint (18x18 inches ~ 0.45x0.45 meters)
         robotBody.addFixture(Geometry.createRectangle(0.45, 0.45))
         robotBody.setMass(MassType.NORMAL)
+        // Add carpet friction damping
+        robotBody.linearDamping = 8.0
+        robotBody.angularDamping = 8.0
         // Spawn robot in the exact center of the field (0, 0)
         robotBody.translate(0.0, 0.0)
         world.addBody(robotBody)
+
+        // Add Game Pieces (Decode balls: 5in diameter -> 0.0635m radius, 0.165lbs -> 0.075kg)
+        val balls = mutableListOf<Body>()
+        for (i in 0..2) {
+            val ball = Body()
+            val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+            fixture.friction = 0.6
+            fixture.restitution = 0.4 // Moderate bounce
+            ball.setMass(MassType.NORMAL)
+            ball.mass.mass = 0.075
+            // Spawn balls somewhat randomly in front of the robot
+            ball.translate(1.0, -1.0 + i * 1.0)
+            world.addBody(ball)
+            balls.add(ball)
+        }
 
         // Add walls (static bodies)
         createWalls(world)
@@ -92,6 +110,7 @@ object DesktopSimLauncher {
         var state = RobotState()
         var currentDistance = 0.0
         var lastDistance = 0.0
+        var lastShootTime = 0L
         
         while (true) {
             val startTime = System.currentTimeMillis()
@@ -165,12 +184,80 @@ object DesktopSimLauncher {
                 worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
             }
 
-            // Wake up the physics body (in case it went to sleep at the end of the path)
+            // Wake up the physics body
             robotBody.isAtRest = false
 
-            // Apply velocities
-            robotBody.linearVelocity = org.dyn4j.geometry.Vector2(worldVx, worldVy)
-            robotBody.angularVelocity = chassisSpeeds.omegaRadiansPerSecond
+            // Apply forces to simulate traction/momentum (instead of setting velocity directly)
+            val kpLinear = 50.0
+            val kpAngular = 20.0
+            val forceX = (worldVx - robotBody.linearVelocity.x) * kpLinear
+            val forceY = (worldVy - robotBody.linearVelocity.y) * kpLinear
+            val torque = (chassisSpeeds.omegaRadiansPerSecond - robotBody.angularVelocity) * kpAngular
+
+            robotBody.applyForce(org.dyn4j.geometry.Vector2(forceX, forceY))
+            robotBody.applyTorque(torque)
+
+            // FSM state updates
+            if (driverStation.isTeleopMode) {
+                state = com.areslib.reducer.rootReducer(
+                    state, 
+                    com.areslib.action.RobotAction.SetIntakeActive(driverStation.isIntaking, System.currentTimeMillis())
+                )
+                
+                // Intake Logic (Distance-based sensor approximation)
+                if (state.superstructure.intakeActive && state.superstructure.inventoryCount < 3) {
+                    val iterator = balls.iterator()
+                    while (iterator.hasNext()) {
+                        val ball = iterator.next()
+                        val dist = kotlin.math.hypot(
+                            ball.transform.translationX - robotBody.transform.translationX,
+                            ball.transform.translationY - robotBody.transform.translationY
+                        )
+                        // If within 30cm (intake range)
+                        if (dist < 0.3) {
+                            world.removeBody(ball)
+                            iterator.remove()
+                            state = com.areslib.reducer.rootReducer(
+                                state, 
+                                com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount + 1, System.currentTimeMillis())
+                            )
+                            println("INTAKED BALL! Inventory: ${state.superstructure.inventoryCount}")
+                        }
+                    }
+                }
+
+                // Shoot Logic
+                if (driverStation.isShooting && state.superstructure.inventoryCount > 0 && System.currentTimeMillis() - lastShootTime > 500) {
+                    lastShootTime = System.currentTimeMillis()
+                    state = com.areslib.reducer.rootReducer(
+                        state, 
+                        com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount - 1, System.currentTimeMillis())
+                    )
+                    
+                    val ball = Body()
+                    val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+                    fixture.friction = 0.6
+                    fixture.restitution = 0.4
+                    ball.setMass(MassType.NORMAL)
+                    ball.mass.mass = 0.075
+                    
+                    // Spawn slightly in front of robot
+                    val spawnDist = 0.35
+                    val spawnX = currentPose.x + cos(currentPose.heading.radians) * spawnDist
+                    val spawnY = currentPose.y + sin(currentPose.heading.radians) * spawnDist
+                    ball.translate(spawnX, spawnY)
+                    
+                    // Apply strong impulse forward
+                    val shootVelocity = 15.0 // m/s
+                    val impulseX = cos(currentPose.heading.radians) * shootVelocity * ball.mass.mass
+                    val impulseY = sin(currentPose.heading.radians) * shootVelocity * ball.mass.mass
+                    ball.applyImpulse(org.dyn4j.geometry.Vector2(impulseX, impulseY))
+                    
+                    world.addBody(ball)
+                    balls.add(ball)
+                    println("SHOT BALL! Inventory: ${state.superstructure.inventoryCount}")
+                }
+            }
 
             // Step physics engine
             world.step(1, TIMESTEP_SEC)
@@ -210,6 +297,15 @@ object DesktopSimLauncher {
 
             // Publish to AdvantageScope
             TelemetryPublisher.publish(state)
+            
+            // Publish Game Pieces
+            val gamePieceData = DoubleArray(balls.size * 3)
+            for (i in balls.indices) {
+                gamePieceData[i * 3] = balls[i].transform.translationX
+                gamePieceData[i * 3 + 1] = balls[i].transform.translationY
+                gamePieceData[i * 3 + 2] = 0.0635 // Z height (radius)
+            }
+            TelemetryPublisher.publishGamePieces(gamePieceData)
 
             // Loop timing
             val elapsed = System.currentTimeMillis() - startTime
