@@ -29,6 +29,22 @@ open class GoBildaPinpointDriver {
     fun update() {}
 }
 
+open class Canvas {
+    fun drawCircle(x: Double, y: Double, radius: Double) {}
+    fun drawLine(x1: Double, y1: Double, x2: Double, y2: Double) {}
+    fun setStroke(color: String) {}
+}
+
+open class TelemetryPacket {
+    val fieldOverlay = Canvas()
+    fun put(key: String, value: Any) {}
+}
+
+object FtcDashboard {
+    fun getInstance(): FtcDashboard = this
+    fun sendTelemetryPacket(packet: TelemetryPacket) {}
+}
+
 abstract class LinearOpMode {
     abstract fun runOpMode()
     val hardwareMap: HardwareMap = object : HardwareMap {
