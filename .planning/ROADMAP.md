@@ -9,11 +9,11 @@
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
-| 1 | Functional Core Scaffold | Establish Redux-style store and pure state boundaries | 4 | 3 |
-| 2 | FRC Hardware Bridge & Logging | CTRE CANivore integration and native AdvantageScope serialization | 2 | 2 |
-| 3 | FTC Hardware Bridge | Hollow wrapper LinearOpMode and hardware map integration | 2 | 2 |
-| 4 | Kinematics Engines | Implement pure control logic for Holonomic & Differential drives | 3 | 3 |
-| 5 | Functional Autonomy | PathPlanner JSON parsing and pure trajectory following | 2 | 2 |
+| ✓ | Functional Core Scaffold | Establish Redux-style store and pure state boundaries | 4 | 3 |
+| ✓ | FRC Hardware Bridge & Logging | CTRE CANivore integration and native AdvantageScope serialization | 2 | 2 |
+| ✓ | FTC Hardware Bridge | Hollow wrapper LinearOpMode and hardware map integration | 2 | 2 |
+| ✓ | Kinematics Engines | Implement pure control logic for Holonomic & Differential drives | 3 | 3 |
+| ✓ | Functional Autonomy | PathPlanner JSON parsing and pure trajectory following | 2 | 2 |
 
 ## Phase Details
 
