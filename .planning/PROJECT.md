@@ -26,7 +26,14 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Deployable TeleOp LinearOpMode — v1.2
 
 ### Active
-## Current Milestone: v[Next]
+## Current Milestone: v1.3 Deployable Autonomy Base
+
+**Goal:** Enable the robot to autonomously follow pre-planned PathPlanner trajectories using the purely functional state store.
+
+**Target features:**
+- PathPlanner trajectory parser integration.
+- Pure Holonomic Drive Controller for trajectory following.
+- Autonomous OpMode for deploying paths on FTC hardware.
 
 
 ### Out of Scope
