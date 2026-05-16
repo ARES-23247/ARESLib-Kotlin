@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.areslib.ftc.MecanumHardwareIOTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-16T03:37:33" hostname="DAVESLAPTOP" time="0.005">
+<testsuite name="com.areslib.ftc.MecanumHardwareIOTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-16T11:20:33" hostname="DAVESLAPTOP" time="0.003">
   <properties/>
-  <testcase name="apply sets power correctly on all four motors()" classname="com.areslib.ftc.MecanumHardwareIOTest" time="0.005"/>
+  <testcase name="apply sets power correctly on all four motors()" classname="com.areslib.ftc.MecanumHardwareIOTest" time="0.003"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

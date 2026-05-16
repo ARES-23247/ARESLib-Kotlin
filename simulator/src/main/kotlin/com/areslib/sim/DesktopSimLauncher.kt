@@ -34,13 +34,19 @@ object DesktopSimLauncher {
         val mockJson = """
             {
               "waypoints": [
-                {"anchor": {"x": 0.0, "y": 0.0}},
-                {"anchor": {"x": 1.0, "y": 0.0}},
-                {"anchor": {"x": 1.0, "y": 1.0}}
-              ],
-              "rotationTargets": [
-                {"waypointRelativePos": 0, "rotationDegrees": 0.0},
-                {"waypointRelativePos": 1, "rotationDegrees": 90.0}
+                {
+                  "anchor": {"x": 0.0, "y": 0.0},
+                  "nextControl": {"x": 1.0, "y": 0.0}
+                },
+                {
+                  "anchor": {"x": 2.0, "y": 1.5},
+                  "prevControl": {"x": 1.0, "y": 1.5},
+                  "nextControl": {"x": 3.0, "y": 1.5}
+                },
+                {
+                  "anchor": {"x": 4.0, "y": 0.0},
+                  "prevControl": {"x": 3.0, "y": 0.0}
+                }
               ]
             }
         """.trimIndent()

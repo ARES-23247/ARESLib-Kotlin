@@ -20,16 +20,16 @@ class PathPlannerParserTest {
         val path = PathPlannerParser.parsePath(mockJson)
         
         assertNotNull(path)
-        assertEquals(2, path.points.size)
+        assertEquals(21, path.points.size)
         
-        val p1 = path.points[0]
+        val p1 = path.points.first()
         assertEquals(0.0, p1.pose.x)
         assertEquals(0.0, p1.pose.y)
         assertEquals(0.0, p1.distanceMeters)
         
-        val p2 = path.points[1]
-        assertEquals(3.0, p2.pose.x)
-        assertEquals(4.0, p2.pose.y)
-        assertEquals(5.0, p2.distanceMeters, 0.001) // hypot(3, 4) = 5
+        val pLast = path.points.last()
+        assertEquals(3.0, pLast.pose.x, 0.001)
+        assertEquals(4.0, pLast.pose.y, 0.001)
+        assertEquals(5.0, pLast.distanceMeters, 0.05) // allow small numerical error from discretization
     }
 }
