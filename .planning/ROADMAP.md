@@ -34,7 +34,7 @@
 | 3. FTC Bridge | v1.0      | 1/1            | Complete    | 2026-05-16 |
 | 4. Kinematics | v1.0      | 1/1            | Complete    | 2026-05-16 |
 | 5. Autonomy | v1.0      | 1/1            | Complete    | 2026-05-16 |
-| 6. Gamepad Input | v1.1 | 0/1 | Not started | - |
-| 7. Hardware Odom | v1.1 | 0/1 | Not started | - |
-| 8. Field-Centric Drive | v1.1 | 0/1 | Not started | - |
-| 9. Dashboard | v1.1 | 0/1 | Not started | - |
+| 6. Gamepad Input | v1.1 | 1/1 | Complete | 2026-05-16 |
+| 7. Hardware Odom | v1.1 | 1/1 | Complete | 2026-05-16 |
+| 8. Field-Centric Drive | v1.1 | 1/1 | Complete | 2026-05-16 |
+| 9. Dashboard | v1.1 | 1/1 | Complete | 2026-05-16 |
