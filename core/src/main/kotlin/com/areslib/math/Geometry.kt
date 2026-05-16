@@ -16,3 +16,11 @@ data class Rotation2d(val radians: Double = 0.0) {
         fun fromDegrees(degrees: Double): Rotation2d = Rotation2d(Math.toRadians(degrees))
     }
 }
+
+data class Pose2d(
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val heading: Rotation2d = Rotation2d()
+) {
+    val translation: Translation2d get() = Translation2d(x, y)
+}

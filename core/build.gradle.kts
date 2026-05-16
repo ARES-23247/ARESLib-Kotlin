@@ -12,6 +12,7 @@ repositories {
 }
 
 dependencies {
+    implementation("com.google.code.gson:gson:2.10.1")
     testImplementation(kotlin("test"))
     compileOnly("edu.wpi.first.wpilibj:wpilibj-java:2024.3.2")
     compileOnly("edu.wpi.first.hal:hal-java:2024.3.2")

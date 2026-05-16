@@ -1,5 +1,7 @@
 package com.qualcomm.robotcore.hardware
 
+annotation class Autonomous(val name: String = "", val group: String = "")
+
 interface HardwareMap {
     fun <T> get(classOrType: Class<out T>, deviceName: String): T
 }
@@ -50,6 +52,11 @@ object FtcDashboard {
     fun sendTelemetryPacket(packet: TelemetryPacket) {}
 }
 
+open class Telemetry {
+    fun addData(key: String, value: Any) {}
+    fun update() {}
+}
+
 abstract class LinearOpMode {
     abstract fun runOpMode()
     val hardwareMap: HardwareMap = object : HardwareMap {
@@ -58,5 +65,13 @@ abstract class LinearOpMode {
         }
     }
     val gamepad1 = Gamepad()
+    val telemetry = Telemetry()
     fun opModeIsActive(): Boolean = true
+    fun waitForStart() {}
+}
+
+open class ElapsedTime {
+    private var startTime: Long = System.nanoTime()
+    fun reset() { startTime = System.nanoTime() }
+    fun seconds(): Double = (System.nanoTime() - startTime) / 1e9
 }

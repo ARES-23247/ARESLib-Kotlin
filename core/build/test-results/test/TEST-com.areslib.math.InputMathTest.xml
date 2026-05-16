@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.areslib.math.InputMathTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-16T03:37:33" hostname="DAVESLAPTOP" time="0.005">
+  <properties/>
+  <testcase name="deadband rescales values outside deadband()" classname="com.areslib.math.InputMathTest" time="0.002"/>
+  <testcase name="deadband correctly strips noise()" classname="com.areslib.math.InputMathTest" time="0.0"/>
+  <testcase name="curve applies exponent while preserving sign()" classname="com.areslib.math.InputMathTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -11,10 +11,10 @@ class MockDcMotorEx : DcMotorEx {
     override val currentPosition: Int = 0
     override val velocity: Double = 0.0
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
-    var power: Double = 0.0
+    var currentPower: Double = 0.0
     
     override fun setPower(power: Double) {
-        this.power = power
+        this.currentPower = power
     }
 }
 
@@ -48,9 +48,9 @@ class MecanumHardwareIOTest {
         val speeds = MecanumWheelSpeeds(1.0, 0.5, -0.5, -1.0)
         io.apply(speeds)
         
-        assertEquals(1.0, fl.power, 0.001)
-        assertEquals(0.5, fr.power, 0.001)
-        assertEquals(-0.5, bl.power, 0.001)
-        assertEquals(-1.0, br.power, 0.001)
+        assertEquals(1.0, fl.currentPower, 0.001)
+        assertEquals(0.5, fr.currentPower, 0.001)
+        assertEquals(-0.5, bl.currentPower, 0.001)
+        assertEquals(-1.0, br.currentPower, 0.001)
     }
 }
