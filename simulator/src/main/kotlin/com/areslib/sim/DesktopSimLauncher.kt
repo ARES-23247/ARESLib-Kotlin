@@ -1,10 +1,17 @@
 package com.areslib.sim
 
+import com.areslib.control.HolonomicDriveController
+import com.areslib.control.PIDController
+import com.areslib.pathing.PathPlannerParser
+import com.areslib.math.Pose2d
+import com.areslib.math.Rotation2d
 import com.areslib.state.RobotState
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
 import org.dyn4j.geometry.Geometry
 import org.dyn4j.geometry.MassType
+import kotlin.math.cos
+import kotlin.math.sin
 
 object DesktopSimLauncher {
     private const val TIMESTEP_MS = 20L
@@ -23,7 +30,27 @@ object DesktopSimLauncher {
         // Trigger init block
         TelemetryPublisher.javaClass
 
-        // 2. Setup Dyn4j World
+        // 2. Setup Controllers & Trajectory
+        val mockJson = """
+            {
+              "waypoints": [
+                {"anchor": {"x": 0.0, "y": 0.0}},
+                {"anchor": {"x": 1.0, "y": 0.0}},
+                {"anchor": {"x": 1.0, "y": 1.0}}
+              ],
+              "rotationTargets": [
+                {"waypointRelativePos": 0, "rotationDegrees": 0.0},
+                {"waypointRelativePos": 1, "rotationDegrees": 90.0}
+              ]
+            }
+        """.trimIndent()
+        val path = PathPlannerParser.parsePath(mockJson)
+        val xController = PIDController(p = 2.0, i = 0.0, d = 0.1)
+        val yController = PIDController(p = 2.0, i = 0.0, d = 0.1)
+        val thetaController = PIDController(p = 3.0, i = 0.0, d = 0.2)
+        val driveController = HolonomicDriveController(xController, yController, thetaController)
+
+        // 3. Setup Dyn4j World
         val world = World<Body>()
         world.setGravity(org.dyn4j.geometry.Vector2(0.0, 0.0)) // Top-down 2D view, no gravity
 
@@ -41,33 +68,66 @@ object DesktopSimLauncher {
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
-        // 3. Simulation Loop
+        // 4. Simulation Loop
         var state = RobotState()
+        var currentDistance = 0.0
+        val targetVelocityMps = 0.8
         
         while (true) {
             val startTime = System.currentTimeMillis()
 
+            // Calculate Target State
+            currentDistance += targetVelocityMps * TIMESTEP_SEC
+            val targetState = path.sampleAtDistance(currentDistance)
+
+            // Current Simulated Pose
+            val simTransform = robotBody.transform
+            val currentPose = Pose2d(
+                x = simTransform.translationX,
+                y = simTransform.translationY,
+                heading = Rotation2d(simTransform.rotationAngle)
+            )
+
+            // Run Controller
+            val chassisSpeeds = driveController.calculate(
+                currentPose,
+                targetState.pose,
+                targetVelocityMps,
+                targetState.pose.heading,
+                TIMESTEP_SEC
+            )
+
+            // Convert Robot-Relative ChassisSpeeds to World-Relative Velocities for Dyn4j
+            val heading = currentPose.heading.radians
+            val worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
+            val worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
+
+            // Apply velocities
+            robotBody.linearVelocity = org.dyn4j.geometry.Vector2(worldVx, worldVy)
+            robotBody.angularVelocity = chassisSpeeds.omegaRadiansPerSecond
+
             // Step physics engine
             world.step(1, TIMESTEP_SEC)
 
-            // Extract simulated position
-            val simTransform = robotBody.transform
-            val simX = simTransform.translationX
-            val simY = simTransform.translationY
-            val simHeading = simTransform.rotationAngle
+            // Extract new simulated position after step
+            val newTransform = robotBody.transform
+            val newX = newTransform.translationX
+            val newY = newTransform.translationY
+            val newHeading = newTransform.rotationAngle
 
             // Update Robot State
             state = state.copy(
                 timestampMs = System.currentTimeMillis(),
                 drive = state.drive.copy(
-                    odometryX = simX,
-                    odometryY = simY,
-                    odometryHeading = simHeading
+                    odometryX = newX,
+                    odometryY = newY,
+                    odometryHeading = newHeading
                 )
             )
 
             // Publish to AdvantageScope
             TelemetryPublisher.publish(state)
+            TelemetryPublisher.publishTargetPose(targetState.pose)
 
             // Loop timing
             val elapsed = System.currentTimeMillis() - startTime

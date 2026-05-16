@@ -7,8 +7,16 @@
 - ✅ **v1.2 Deployable Mecanum Base** — Phases 10-12 (shipped 2026-05-16)
 
 - ✅ **v1.3 Deployable Autonomy Base** — Phases 13-15 (shipped 2026-05-16)
+- ✅ **v1.4 Desktop Simulation & Visualization** — Phase 16 (shipped 2026-05-16)
 
 ## Phases
+
+<details>
+<summary>✅ v1.4 Desktop Simulation & Visualization (Phase 16) — SHIPPED 2026-05-16</summary>
+
+- [x] Phase 16: Dyn4j Physics & AdvantageScope Telemetry (1 plan)
+
+</details>
 
 <details>
 <summary>✅ v1.3 Deployable Autonomy Base (Phases 13-15) — SHIPPED 2026-05-16</summary>
@@ -57,3 +65,4 @@
 | 13. Path Parsing | v1.3 | 1/1 | Complete | 2026-05-16 |
 | 14. Drive Controller | v1.3 | 1/1 | Complete | 2026-05-16 |
 | 15. Auto OpMode | v1.3 | 1/1 | Complete | 2026-05-16 |
+| 16. Desktop Simulation | v1.4 | 1/1 | Complete | 2026-05-16 |

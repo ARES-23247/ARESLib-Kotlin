@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Deployable Autonomy Base
+milestone: v1.4
+milestone_name: Desktop Simulation & Visualization
 status: complete
-last_updated: "2026-05-16T04:02:00.000Z"
+last_updated: "2026-05-16T04:23:00.000Z"
 last_activity: 2026-05-16
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
   percent: 100
 ---
 
@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-05-16)
 
 ## Session Memory
 
-v1.3 Deployable Autonomy Base milestone has been successfully completed and archived. We finalized PathPlanner JSON parsing, HolonomicDriveController math, and FTC ARESMecanumAuto integration without WPILib dependencies.
+v1.4 Desktop Simulation & Visualization milestone has been successfully completed and archived. We built a pure Java/Kotlin desktop simulation using Dyn4j and AdvantageScope via WPILib NetworkTables and DataLog bindings to run `core` without FTC SDK constraints.
 
 Pending next steps: start the next milestone.
 
 ## Current Position
 
-Phase: Milestone v1.3 complete — archived
+Phase: Milestone v1.4 complete — archived
 Plan: —
 Status: Ready for next milestone
-Last activity: 2026-05-16 — Milestone v1.3 closed
+Last activity: 2026-05-16 — Milestone v1.4 closed
