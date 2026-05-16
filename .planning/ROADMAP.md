@@ -8,8 +8,27 @@
 
 - ✅ **v1.3 Deployable Autonomy Base** — Phases 13-15 (shipped 2026-05-16)
 - ✅ **v1.4 Desktop Simulation & Visualization** — Phase 16 (shipped 2026-05-16)
+- ✅ **v1.5 Trajectory Following in Simulation** — Phase 17 (shipped 2026-05-16)
+
+- ⏳ **v1.6 Advanced Path Generation** — Phases 18-20 (Active)
 
 ## Phases
+
+<details>
+<summary>⏳ v1.6 Advanced Path Generation (Phases 18-20) — ACTIVE</summary>
+
+- [ ] Phase 18: Spline Mathematics & Interpolation (0/1 plan)
+- [ ] Phase 19: Motion Profiling (0/1 plan)
+- [ ] Phase 20: Event Marker State Machine Integration (0/1 plan)
+
+</details>
+
+<details>
+<summary>✅ v1.5 Trajectory Following in Simulation (Phase 17) — SHIPPED 2026-05-16</summary>
+
+- [x] Phase 17: Holonomic Controller & Path Following Physics Loop (1 plan)
+
+</details>
 
 <details>
 <summary>✅ v1.4 Desktop Simulation & Visualization (Phase 16) — SHIPPED 2026-05-16</summary>
@@ -66,3 +85,4 @@
 | 14. Drive Controller | v1.3 | 1/1 | Complete | 2026-05-16 |
 | 15. Auto OpMode | v1.3 | 1/1 | Complete | 2026-05-16 |
 | 16. Desktop Simulation | v1.4 | 1/1 | Complete | 2026-05-16 |
+| 17. Trajectory Following in Sim | v1.5 | 1/1 | Complete | 2026-05-16 |

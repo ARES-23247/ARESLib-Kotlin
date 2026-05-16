@@ -29,15 +29,19 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Pure Holonomic Drive Controller for trajectory following — v1.3
 - ✓ Autonomous OpMode for deploying paths on FTC hardware — v1.3
 
-### Active
-## Current Milestone: v1.4 [Next Steps]
+- ✓ Dyn4j Desktop Simulation & Visualization (AdvantageScope telemetry streaming) — v1.4
+- ✓ Trajectory Following in Simulation (HolonomicDriveController + path sampling) — v1.5
 
-**Goal:** TBD
+### Active
+## Current Milestone: v1.6 [Advanced Path Generation]
+
+**Goal:** Expand `ARESLib` to support dynamic trajectory generation and functional event marker execution, allowing for complex time-parameterized curves rather than just linear waypoints.
 
 **Target features:**
-- TBD
-
-
+- Quintic Hermite Spline calculation from waypoints.
+- Motion Profiling (Trapezoidal velocity profiles).
+- Integration of PathPlanner Event Markers as `RobotAction` triggers in the state machine.
+- Validation of smooth curved path following in the desktop simulator.
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
 - AdvantageKit `@AutoLog` or KAPT usage — drastically increases build times and breaks cross-platform compatibility on Android.
