@@ -1,12 +1,12 @@
 # Project State
 
 ## Project Reference
-See: .planning/PROJECT.md (updated 2026-05-15)
+See: .planning/PROJECT.md (updated 2026-05-16)
 
 **Core value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
-**Current focus:** Pending milestone completion
+**Current focus:** Planning next milestone
 
 ## Session Memory
-Phase 12 (Deployable TeleOp Integration) is complete. `ARESMecanumTeleOp` correctly wires `GamepadIO`, `PinpointIO`, `RootReducer`, `MecanumKinematics`, and `MecanumHardwareIO` into a standard pure Redux event loop that applies hardware voltages safely and sends field telemetry.
+v1.2 Deployable Mecanum Base milestone has been successfully completed and archived. We also resolved IDE errors relating to missing FRC WPILib/CTRE dependencies in the core module by adding them as compileOnly to `core/build.gradle.kts`.
 
-All v1.2 phases are complete. Proceeding to milestone completion.
+Pending next steps: start the next milestone.

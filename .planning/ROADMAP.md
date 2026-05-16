@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 MVP** — Phases 1-5 (shipped 2026-05-16)
 - ✅ **v1.1 Driveable Base** — Phases 6-9 (shipped 2026-05-16)
-- 🚧 **v1.2 Deployable Mecanum Base** — Phases 10-12 (in progress)
+- ✅ **v1.2 Deployable Mecanum Base** — Phases 10-12 (shipped 2026-05-16)
 
 ## Phases
 
@@ -18,11 +18,14 @@
 
 </details>
 
-### 🚧 v1.2 Deployable Mecanum Base (In Progress)
+<details>
+<summary>✅ v1.2 Deployable Mecanum Base (Phases 10-12) — SHIPPED 2026-05-16</summary>
 
 - [x] Phase 10: Mecanum Kinematics Engine (1 plan)
 - [x] Phase 11: Mecanum Hardware IO (1 plan)
 - [x] Phase 12: Deployable TeleOp Integration (1 plan)
+
+</details>
 
 ## Progress
 

@@ -4,20 +4,14 @@
 
 | ID | Phase | Status |
 |---|---|---|
-| MEC-01 | Phase 10 | Complete |
-| MEC-02 | Phase 11 | Complete |
-| TELE-01 | Phase 12 | Complete |
+| (None) | | |
 
 ---
 
-## Milestone v1.2 Requirements
+## Milestone v[Next] Requirements
 
-### Mecanum Drivetrain
-- [ ] **MEC-01**: A `MecanumKinematics` class that converts `ChassisSpeeds` into individual wheel speeds (Front Left, Front Right, Back Left, Back Right) using pure math.
-- [ ] **MEC-02**: A `MecanumHardwareIO` class that interfaces with the FTC SDK's `HardwareMap` to apply voltages to four `DcMotorEx` instances based on calculated wheel speeds.
-
-### Deployable TeleOp
-- [ ] **TELE-01**: A complete, functional `LinearOpMode` named `ARESMecanumTeleOp` that glues together `GamepadIO`, `PinpointIO`, the root Redux store, and `MecanumHardwareIO` into a real, deployable control loop.
+### Next Milestone Features
+- [ ] Define requirements for next milestone here.
 
 ---
 

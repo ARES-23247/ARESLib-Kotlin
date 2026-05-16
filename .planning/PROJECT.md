@@ -21,18 +21,12 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Hardware Odometry IO (goBILDA Pinpoint / OTOS wrapper) — v1.1
 - ✓ Field-Centric Driving (Inverse rotation math) — v1.1
 - ✓ FTC Dashboard Integration (Live telemetry and field rendering) — v1.1
+- ✓ Mecanum Kinematics Math — v1.2
+- ✓ Mecanum Hardware IO (DcMotorEx bridge) — v1.2
+- ✓ Deployable TeleOp LinearOpMode — v1.2
 
 ### Active
-## Current Milestone: v1.2 Deployable Mecanum Base
-
-**Goal:** Provide a complete, deployable Mecanum drivetrain that can be driven on a real FTC field using the Driver Station and a goBILDA Pinpoint.
-
-**Target features:**
-**Target features:**
-- Mecanum Kinematics Math
-- Mecanum Hardware IO (DcMotorEx bridge)
-- Deployable TeleOp LinearOpMode
-
+## Current Milestone: v[Next]
 
 
 ### Out of Scope
@@ -78,4 +72,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-15 after v1.2 init*
+*Last updated: 2026-05-16 after v1.2 milestone completion*
