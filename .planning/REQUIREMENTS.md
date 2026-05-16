@@ -54,8 +54,8 @@
 | KIN-01 | Phase 4 | Complete |
 | KIN-02 | Phase 4 | Complete |
 | KIN-03 | Phase 4 | Complete |
-| AUTO-01 | Phase 5 | Pending |
-| AUTO-02 | Phase 5 | Pending |
+| AUTO-01 | Phase 5 | Complete |
+| AUTO-02 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 13 total
