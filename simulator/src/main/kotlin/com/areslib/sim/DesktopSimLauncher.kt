@@ -79,6 +79,8 @@ object DesktopSimLauncher {
         // Standard FTC robot footprint (18x18 inches ~ 0.45x0.45 meters)
         robotBody.addFixture(Geometry.createRectangle(0.45, 0.45))
         robotBody.setMass(MassType.NORMAL)
+        // 35 lbs ~ 15.875 kg
+        robotBody.mass.mass = 15.875
         // Add carpet friction damping
         robotBody.linearDamping = 8.0
         robotBody.angularDamping = 8.0
