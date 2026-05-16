@@ -14,6 +14,13 @@ interface AnalogInput {
     val voltage: Double
 }
 
+open class Gamepad {
+    var left_stick_x: Float = 0f
+    var left_stick_y: Float = 0f
+    var right_stick_x: Float = 0f
+    var right_stick_y: Float = 0f
+}
+
 abstract class LinearOpMode {
     abstract fun runOpMode()
     val hardwareMap: HardwareMap = object : HardwareMap {
