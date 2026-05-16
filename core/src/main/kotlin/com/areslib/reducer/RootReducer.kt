@@ -38,5 +38,15 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             // simply acknowledge we can reduce intent.
             state
         }
+        is RobotAction.PoseUpdate -> {
+            state.copy(
+                drive = state.drive.copy(
+                    odometryX = action.xMeters,
+                    odometryY = action.yMeters,
+                    odometryHeading = action.headingRadians
+                ),
+                timestampMs = action.timestampMs
+            )
+        }
     }
 }

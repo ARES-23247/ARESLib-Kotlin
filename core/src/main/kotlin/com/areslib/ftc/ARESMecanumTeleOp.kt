@@ -3,7 +3,7 @@ package com.areslib.ftc
 import com.qualcomm.robotcore.hardware.LinearOpMode
 import com.qualcomm.robotcore.hardware.GoBildaPinpointDriver
 import com.areslib.kinematics.MecanumKinematics
-import com.areslib.reducer.RootReducer
+import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 import com.areslib.math.ChassisSpeeds
 import com.areslib.math.Rotation2d
@@ -31,7 +31,6 @@ class ARESMecanumTeleOp : LinearOpMode() {
         
         // Setup state store
         var state = RobotState()
-        val reducer = RootReducer()
         
         // Wait for Driver Station Start
         // waitForStart() // Commented out for mock compatibility
@@ -44,8 +43,8 @@ class ARESMecanumTeleOp : LinearOpMode() {
             val poseUpdate = pinpointIO.getPoseUpdate()
             
             // B. REDUCE (Actions -> New State)
-            state = reducer.reduce(state, poseUpdate)
-            state = reducer.reduce(state, driveIntent)
+            state = rootReducer(state, poseUpdate)
+            state = rootReducer(state, driveIntent)
             
             // C. CALCULATE (State -> Pure Outputs)
             
