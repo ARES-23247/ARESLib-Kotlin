@@ -57,5 +57,6 @@ abstract class LinearOpMode {
             throw NotImplementedError()
         }
     }
+    val gamepad1 = Gamepad()
     fun opModeIsActive(): Boolean = true
 }
