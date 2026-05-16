@@ -4,8 +4,8 @@
 
 | ID | Phase | Status |
 |---|---|---|
-| INPUT-01 | Phase 6 | Pending |
-| INPUT-02 | Phase 6 | Pending |
+| INPUT-01 | Phase 6 | Complete |
+| INPUT-02 | Phase 6 | Complete |
 | ODOM-01 | Phase 7 | Pending |
 | ODOM-02 | Phase 7 | Pending |
 | DRIVE-01 | Phase 8 | Pending |
