@@ -17,7 +17,7 @@
 
 ## Phase Details
 
-### Phase 1: Functional Core Scaffold
+### ~~Phase 1: Functional Core Scaffold~~
 **Goal:** Establish Redux-style store and pure state boundaries
 **Requirements:** CORE-01, CORE-02, CORE-03, CORE-04
 **Success Criteria:**
@@ -25,21 +25,21 @@
 2. `rootReducer` correctly returns a copy of the state when processing a generic `RobotAction`.
 3. Zero mutable variables exist within the core state models.
 
-### Phase 2: FRC Hardware Bridge & Logging
+### ~~Phase 2: FRC Hardware Bridge & Logging~~
 **Goal:** CTRE CANivore integration and native AdvantageScope serialization
 **Requirements:** FRC-01, FRC-02
 **Success Criteria:**
 1. `SwerveModuleIOPhoenix6` correctly implements `waitForUpdate` to block and return synchronized primitive data.
 2. `RobotState` serializes to a raw byte array via WPILib Struct without throwing exceptions.
 
-### Phase 3: FTC Hardware Bridge
+### ~~Phase 3: FTC Hardware Bridge~~
 **Goal:** Hollow wrapper LinearOpMode and hardware map integration
 **Requirements:** FTC-01, FTC-02
 **Success Criteria:**
 1. Sample FTC opmode correctly passes a `HardwareMap` to the IO layer.
 2. Output commands correctly reflect in motor telemetry within an `opModeIsActive` loop.
 
-### Phase 4: Kinematics Engines
+### ~~Phase 4: Kinematics Engines~~
 **Goal:** Implement pure control logic for Holonomic & Differential drives
 **Requirements:** KIN-01, KIN-02, KIN-03
 **Success Criteria:**
@@ -47,7 +47,7 @@
 2. Kinematics classes contain zero `com.qualcomm` or `edu.wpi` imports.
 3. Module state correctly responds to translational/rotational input intent.
 
-### Phase 5: Functional Autonomy
+### ~~Phase 5: Functional Autonomy~~
 **Goal:** PathPlanner JSON parsing and pure trajectory following
 **Requirements:** AUTO-01, AUTO-02
 **Success Criteria:**
