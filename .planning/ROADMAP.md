@@ -6,33 +6,18 @@
 - ✅ **v1.1 Driveable Base** — Phases 6-9 (shipped 2026-05-16)
 - ✅ **v1.2 Deployable Mecanum Base** — Phases 10-12 (shipped 2026-05-16)
 
-- 🔄 **v1.3 Deployable Autonomy Base** — Phases 13-15 (active)
+- ✅ **v1.3 Deployable Autonomy Base** — Phases 13-15 (shipped 2026-05-16)
 
 ## Phases
 
-### Phase 13: PathPlanner JSON Parsing (v1.3)
-**Goal:** Parse `.path` JSON files from PathPlanner into immutable `Path` and `PathPoint` data structures.
-**Requirements:** AUTO-01
-**Success criteria:**
-1. A JSON parser can read PathPlanner format and extract waypoints.
-2. The `Path` struct provides interpolation between points.
-3. Does not use `edu.wpi` or FRC SDK classes.
+<details>
+<summary>✅ v1.3 Deployable Autonomy Base (Phases 13-15) — SHIPPED 2026-05-16</summary>
 
-### Phase 14: Pure Holonomic Drive Controller (v1.3)
-**Goal:** Implement a pure mathematical controller that compares current pose to path target and outputs velocities.
-**Requirements:** AUTO-02
-**Success criteria:**
-1. Accepts current `Pose2d`, target `Pose2d`, and target speeds.
-2. Employs PID or feedforward math to output `ChassisSpeeds`.
-3. Output is fully stateless.
+- [x] Phase 13: PathPlanner JSON Parsing (1 plan)
+- [x] Phase 14: Pure Holonomic Drive Controller (1 plan)
+- [x] Phase 15: FTC Autonomous OpMode Integration (1 plan)
 
-### Phase 15: FTC Autonomous OpMode Integration (v1.3)
-**Goal:** Deploy the path follower to FTC hardware via a LinearOpMode.
-**Requirements:** AUTO-03
-**Success criteria:**
-1. `ARESMecanumAuto` LinearOpMode is created.
-2. It runs the Redux loop, feeding odometry into the HolonomicDriveController.
-3. The resulting chassis speeds are routed through kinematics to hardware.
+</details>
 
 <details>
 <summary>✅ v1.1 Driveable Base (Phases 6-9) — SHIPPED 2026-05-16</summary>
@@ -69,6 +54,6 @@
 | 10. Mecanum Math | v1.2 | 1/1 | Complete | 2026-05-16 |
 | 11. Mecanum IO | v1.2 | 1/1 | Complete | 2026-05-16 |
 | 12. TeleOp OpMode | v1.2 | 1/1 | Complete | 2026-05-16 |
-| 13. Path Parsing | v1.3 | 0/1 | Not started | — |
-| 14. Drive Controller | v1.3 | 0/1 | Not started | — |
-| 15. Auto OpMode | v1.3 | 0/1 | Not started | — |
+| 13. Path Parsing | v1.3 | 1/1 | Complete | 2026-05-16 |
+| 14. Drive Controller | v1.3 | 1/1 | Complete | 2026-05-16 |
+| 15. Auto OpMode | v1.3 | 1/1 | Complete | 2026-05-16 |
