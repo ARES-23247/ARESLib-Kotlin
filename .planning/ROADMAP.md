@@ -3,6 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-5 (shipped 2026-05-16)
+- 🚧 **v1.1 Driveable Base** — Phases 6-9 (in progress)
 
 ## Phases
 
@@ -17,6 +18,13 @@
 
 </details>
 
+### 🚧 v1.1 Driveable Base (In Progress)
+
+- [ ] Phase 6: Gamepad Input Mapping (1 plan)
+- [ ] Phase 7: Hardware Odometry Bridge (1 plan)
+- [ ] Phase 8: Field-Centric Drivetrain (1 plan)
+- [ ] Phase 9: FTC Dashboard & Telemetry (1 plan)
+
 ## Progress
 
 | Phase             | Milestone | Plans Complete | Status      | Completed  |
@@ -26,3 +34,7 @@
 | 3. FTC Bridge | v1.0      | 1/1            | Complete    | 2026-05-16 |
 | 4. Kinematics | v1.0      | 1/1            | Complete    | 2026-05-16 |
 | 5. Autonomy | v1.0      | 1/1            | Complete    | 2026-05-16 |
+| 6. Gamepad Input | v1.1 | 0/1 | Not started | - |
+| 7. Hardware Odom | v1.1 | 0/1 | Not started | - |
+| 8. Field-Centric Drive | v1.1 | 0/1 | Not started | - |
+| 9. Dashboard | v1.1 | 0/1 | Not started | - |
