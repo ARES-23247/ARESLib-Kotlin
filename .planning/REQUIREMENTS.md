@@ -47,8 +47,8 @@
 | CORE-02 | Phase 1 | Complete |
 | CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 1 | Complete |
-| FRC-01 | Phase 2 | Pending |
-| FRC-02 | Phase 2 | Pending |
+| FRC-01 | Phase 2 | Complete |
+| FRC-02 | Phase 2 | Complete |
 | FTC-01 | Phase 3 | Pending |
 | FTC-02 | Phase 3 | Pending |
 | KIN-01 | Phase 4 | Pending |
