@@ -1,29 +1,19 @@
 # Project Retrospective
 
-## Milestone: v1.0 — MVP
+## Milestone: v1.1 — Driveable Base, Hardware Odometry & Telemetry
 
 **Shipped:** 2026-05-16
-**Phases:** 5 | **Plans:** 5
+**Phases:** 4 | **Plans:** 4
 
 ### What Was Built
-1. Functional Core Scaffold (Pure reducer state boundaries)
-2. FRC Bridge (CTRE CANivore integration, AdvantageScope logging)
-3. FTC Bridge (Hollow LinearOpMode wrapper)
-4. Kinematics Engines (Pure Holonomic/Differential logic)
-5. Functional Autonomy (PathPlanner JSON parsing & HolonomicDriveController)
+1. Gamepad Input Mapping (Deadbands and curves via `InputMath`)
+2. Hardware Odometry Bridge (`PinpointIO`, `OdometryMath`, `PoseUpdate`)
+3. Field-Centric Drivetrain (`ChassisSpeeds.fromFieldRelativeSpeeds`)
+4. FTC Dashboard & Telemetry (`FtcDashboardAdapter` and `TelemetryPacket` formatting)
 
 ### What Worked
-- Complete decoupling from WPILib/FTC SDK resulted in incredibly fast tests.
-- Value classes and primitive unrolling kept allocations near zero, satisfying Android ART limitations.
-
-### What Was Inefficient
-- Initial hesitation on JSON parsing abstraction without `Jackson` added friction.
-- Odometry timestamp synchronization for FRC required some complex `waitForAll` blocking.
-
-### Patterns Established
-- "Airlock Pattern": Hardware layers run on their own threads and drop primitive representations into a concurrent queue.
-- Pure Reducer Architecture: The entire robot control loop is just `rootReducer(currentState, action)`.
+- Extending the purely functional IO pattern to cover the Gamepad and the goBILDA Pinpoint driver proved exceptionally easy.
+- Keeping math entirely pure and isolated allowed tests to confirm field-centric and odometry operations immediately without hardware.
 
 ### Key Lessons
-- Immutability does not imply performance penalty if data structures are flattened.
-- Cross-platform control logic is highly viable when hardware interaction is abstracted to an pure IO interface.
+- Providing standalone primitive-driven components (like `FtcDashboardAdapter` consuming `RobotState`) keeps the core library extremely portable. Android ART compatibility is maintained because there are zero allocations in the control loop.
