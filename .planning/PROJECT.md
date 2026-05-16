@@ -9,17 +9,27 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 ## Requirements
 
 ### Validated
-(None yet — ship to validate)
+- ✓ Core Functional Scaffold: Redux-style state store (RobotState, DriveState, SuperstructureState, VisionState) and immutable actions/reducers. — v1.0
+- ✓ Base Interfaces: HardwareIO, RobotState, OutputCommand. — v1.0
+- ✓ FTC SDK Bridge: "Hollow Wrapper" LinearOpMode that initializes the dispatcher and runs pure functions. — v1.0
+- ✓ FTC IO Layer: SwerveModuleIO implementation translating REV Hub hardware maps into immutable state. — v1.0
+- ✓ FRC CTRE CANivore "Airlock": Thin IO layer optimized for Phoenix 6 (`waitForUpdate` synchronization) dispatching to central store. — v1.0
+- ✓ FRC Logging Adapter: Native WPILib Struct API serialization for AdvantageScope logging of data classes. — v1.0
+- ✓ Kinematics Engines: Pure control logic for Swerve, Mecanum, and Differential drivetrains. — v1.0
+- ✓ Functional PathPlanner Interpreter: Pure JSON parser and Trajectory follower (`calculateTrajectoryOutput`) returning Holonomic Drive Controller target speeds. — v1.0
 
 ### Active
-- [ ] Core Functional Scaffold: Redux-style state store (RobotState, DriveState, SuperstructureState, VisionState) and immutable actions/reducers.
-- [ ] Base Interfaces: HardwareIO, RobotState, OutputCommand.
-- [ ] FTC SDK Bridge: "Hollow Wrapper" LinearOpMode that initializes the dispatcher and runs pure functions.
-- [ ] FTC IO Layer: SwerveModuleIO implementation translating REV Hub hardware maps into immutable state.
-- [ ] FRC CTRE CANivore "Airlock": Thin IO layer optimized for Phoenix 6 (`waitForUpdate` synchronization) dispatching to central store.
-- [ ] FRC Logging Adapter: Native WPILib Struct API serialization for AdvantageScope logging of data classes.
-- [ ] Kinematics Engines: Pure control logic for Swerve, Mecanum, and Differential drivetrains.
-- [ ] Functional PathPlanner Interpreter: Pure JSON parser and Trajectory follower (`calculateTrajectoryOutput`) returning Holonomic Drive Controller target speeds.
+## Current Milestone: v1.1 Driveable Base, Hardware Odometry & Telemetry
+
+**Goal:** Establish full field-centric TeleOp driving capabilities, hardware-accelerated localization, and real-time dashboard visibility, achieving basic parity with the FTClib drivetrain architecture.
+
+**Target features:**
+- Gamepad & Input Mapping
+- Hardware Odometry IO (goBILDA Pinpoint / OTOS)
+- Field-Centric Driving
+- FTC Dashboard Integration
+
+
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
@@ -45,4 +55,23 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 | Redux-style State Store | Centralizes all robot state, enabling time-travel debugging and unified logging. | — Pending |
 
 ---
-*Last updated: 2026-05-15 after initialization*
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
+---
+*Last updated: 2026-05-15 after v1.1 init*
