@@ -4,10 +4,15 @@ interface HardwareMap {
     fun <T> get(classOrType: Class<out T>, deviceName: String): T
 }
 
-interface DcMotorEx {
+interface DcMotorSimple {
+    enum class Direction { FORWARD, REVERSE }
+    var direction: Direction
+    fun setPower(power: Double)
+}
+
+interface DcMotorEx : DcMotorSimple {
     val currentPosition: Int
     val velocity: Double
-    fun setPower(power: Double)
 }
 
 interface AnalogInput {
