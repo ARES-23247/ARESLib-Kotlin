@@ -6,7 +6,7 @@
 |---|---|---|
 | MEC-01 | Phase 10 | Complete |
 | MEC-02 | Phase 11 | Complete |
-| TELE-01 | Phase 12 | Pending |
+| TELE-01 | Phase 12 | Complete |
 
 ---
 
