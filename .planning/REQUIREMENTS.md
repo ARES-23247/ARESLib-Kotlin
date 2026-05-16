@@ -9,8 +9,8 @@
 | ODOM-01 | Phase 7 | Complete |
 | ODOM-02 | Phase 7 | Complete |
 | DRIVE-01 | Phase 8 | Complete |
-| DASH-01 | Phase 9 | Pending |
-| DASH-02 | Phase 9 | Pending |
+| DASH-01 | Phase 9 | Complete |
+| DASH-02 | Phase 9 | Complete |
 
 ---
 
