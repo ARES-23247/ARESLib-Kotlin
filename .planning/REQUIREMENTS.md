@@ -51,9 +51,9 @@
 | FRC-02 | Phase 2 | Complete |
 | FTC-01 | Phase 3 | Complete |
 | FTC-02 | Phase 3 | Complete |
-| KIN-01 | Phase 4 | Pending |
-| KIN-02 | Phase 4 | Pending |
-| KIN-03 | Phase 4 | Pending |
+| KIN-01 | Phase 4 | Complete |
+| KIN-02 | Phase 4 | Complete |
+| KIN-03 | Phase 4 | Complete |
 | AUTO-01 | Phase 5 | Pending |
 | AUTO-02 | Phase 5 | Pending |
 
