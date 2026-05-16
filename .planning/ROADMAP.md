@@ -20,9 +20,9 @@
 
 ### 🚧 v1.2 Deployable Mecanum Base (In Progress)
 
-- [ ] Phase 10: Mecanum Kinematics Engine (1 plan)
-- [ ] Phase 11: Mecanum Hardware IO (1 plan)
-- [ ] Phase 12: Deployable TeleOp Integration (1 plan)
+- [x] Phase 10: Mecanum Kinematics Engine (1 plan)
+- [x] Phase 11: Mecanum Hardware IO (1 plan)
+- [x] Phase 12: Deployable TeleOp Integration (1 plan)
 
 ## Progress
 
@@ -37,6 +37,6 @@
 | 7. Hardware Odom | v1.1 | 1/1 | Complete | 2026-05-16 |
 | 8. Field-Centric Drive | v1.1 | 1/1 | Complete | 2026-05-16 |
 | 9. Dashboard | v1.1 | 1/1 | Complete | 2026-05-16 |
-| 10. Mecanum Math | v1.2 | 0/1 | Not started | - |
-| 11. Mecanum IO | v1.2 | 0/1 | Not started | - |
-| 12. TeleOp OpMode | v1.2 | 0/1 | Not started | - |
+| 10. Mecanum Math | v1.2 | 1/1 | Complete | 2026-05-16 |
+| 11. Mecanum IO | v1.2 | 1/1 | Complete | 2026-05-16 |
+| 12. TeleOp OpMode | v1.2 | 1/1 | Complete | 2026-05-16 |
