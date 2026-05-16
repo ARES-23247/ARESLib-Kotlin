@@ -10,16 +10,16 @@
 - ✅ **v1.4 Desktop Simulation & Visualization** — Phase 16 (shipped 2026-05-16)
 - ✅ **v1.5 Trajectory Following in Simulation** — Phase 17 (shipped 2026-05-16)
 
-- ⏳ **v1.6 Advanced Path Generation** — Phases 18-20 (Active)
+- ✅ **v1.6 Advanced Path Generation** — Phases 18-20 (shipped 2026-05-16)
 
 ## Phases
 
 <details>
-<summary>⏳ v1.6 Advanced Path Generation (Phases 18-20) — ACTIVE</summary>
+<summary>✅ v1.6 Advanced Path Generation (Phases 18-20) — SHIPPED 2026-05-16</summary>
 
-- [x] Phase 18: Spline Mathematics & Interpolation (1/1 plan)
-- [x] Phase 19: Motion Profiling (1/1 plan)
-- [x] Phase 20: Event Marker State Machine Integration (1/1 plan)
+- [x] Phase 18: Spline Mathematics & Interpolation (1/1 plan) — completed 2026-05-16
+- [x] Phase 19: Motion Profiling (1/1 plan) — completed 2026-05-16
+- [x] Phase 20: Event Marker State Machine Integration (1/1 plan) — completed 2026-05-16
 
 </details>
 
