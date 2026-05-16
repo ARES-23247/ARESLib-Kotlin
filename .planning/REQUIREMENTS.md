@@ -43,24 +43,24 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | | Pending |
-| CORE-02 | | Pending |
-| CORE-03 | | Pending |
-| CORE-04 | | Pending |
-| FRC-01 | | Pending |
-| FRC-02 | | Pending |
-| FTC-01 | | Pending |
-| FTC-02 | | Pending |
-| KIN-01 | | Pending |
-| KIN-02 | | Pending |
-| KIN-03 | | Pending |
-| AUTO-01 | | Pending |
-| AUTO-02 | | Pending |
+| CORE-01 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
+| CORE-04 | Phase 1 | Pending |
+| FRC-01 | Phase 2 | Pending |
+| FRC-02 | Phase 2 | Pending |
+| FTC-01 | Phase 3 | Pending |
+| FTC-02 | Phase 3 | Pending |
+| KIN-01 | Phase 4 | Pending |
+| KIN-02 | Phase 4 | Pending |
+| KIN-03 | Phase 4 | Pending |
+| AUTO-01 | Phase 5 | Pending |
+| AUTO-02 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 ⚠️
+- Mapped to phases: 13
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-15*
