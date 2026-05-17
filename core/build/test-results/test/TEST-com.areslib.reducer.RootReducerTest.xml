@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.areslib.reducer.RootReducerTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-17T11:23:56" hostname="DAVESLAPTOP" time="0.004">
+  <properties/>
+  <testcase name="test drive hardware update modifies odometry purely()" classname="com.areslib.reducer.RootReducerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
