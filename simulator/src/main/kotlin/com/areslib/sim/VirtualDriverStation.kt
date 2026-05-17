@@ -1,51 +1,55 @@
 package com.areslib.sim
 
 import com.areslib.math.ChassisSpeeds
-import java.awt.Color
-import java.awt.Dimension
-import java.awt.Font
-import java.awt.Graphics
-import java.awt.Graphics2D
-import java.awt.RenderingHints
+import java.awt.*
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import javax.swing.JFrame
 import javax.swing.JPanel
+import org.lwjgl.glfw.GLFW.*
 
 /**
- * A Swing-based virtual driver station that provides keyboard input for teleop driving
- * and visualizes the active key presses.
+ * A Swing-based virtual driver station that provides keyboard and physical gamepad input
+ * for teleop driving and visualizes the active inputs on a gamepad overlay.
  */
 class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener {
 
     private val pressedKeys = mutableSetOf<Int>()
 
     // Teleop maximum speeds
-    private val MAX_LINEAR_SPEED = 2.0 // m/s
-    private val MAX_ANGULAR_SPEED = 2.0 // rad/s
+    private val MAX_LINEAR_SPEED = 4.0 // m/s
+    private val MAX_ANGULAR_SPEED = 4.0 // rad/s
 
-    // Mode toggle
-    @Volatile
-    var isTeleopMode = false
+    // Mode toggles
+    @Volatile var isTeleopMode = false
         private set
 
-    @Volatile
-    var isFieldCentric = false
+    @Volatile var isFieldCentric = false
         private set
 
-    @Volatile
-    var isRedAlliance = false
+    @Volatile var isRedAlliance = false
         private set
 
-    val isIntaking: Boolean
-        get() = pressedKeys.contains(KeyEvent.VK_SHIFT)
+    // FSM Toggles
+    @Volatile var isIntaking = false
+        private set
+    
+    @Volatile var isShooting = false
+        private set
 
-    val isShooting: Boolean
-        get() = pressedKeys.contains(KeyEvent.VK_ENTER)
+    // Gamepad axes
+    @Volatile private var gamepadLx = 0f
+    @Volatile private var gamepadLy = 0f
+    @Volatile private var gamepadRx = 0f
+    @Volatile private var gamepadRy = 0f
+
+    @Volatile private var lastGamepadShift = false
+    @Volatile private var isGamepadConnected = false
+    @Volatile private var gamepadName = "No Gamepad Detected"
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
-        preferredSize = Dimension(400, 300)
+        preferredSize = Dimension(500, 350)
         isResizable = false
         
         val panel = object : JPanel() {
@@ -54,38 +58,86 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 val g2d = g as Graphics2D
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
                 
-                g2d.color = Color(30, 30, 30)
+                // Background
+                g2d.color = Color(25, 25, 25)
                 g2d.fillRect(0, 0, width, height)
 
-                g2d.font = Font("Arial", Font.BOLD, 18)
-                
-                // Draw mode indicator
+                // Top Status Text
+                g2d.font = Font("Segoe UI", Font.BOLD, 14)
                 g2d.color = if (isTeleopMode) Color(50, 200, 50) else Color(200, 50, 50)
-                g2d.drawString("MODE: ${if (isTeleopMode) "TELEOP" else "AUTO (Path)"}", 20, 30)
-                g2d.color = Color.WHITE
-                g2d.font = Font("Arial", Font.PLAIN, 12)
-                g2d.drawString("Press SPACE to toggle", 20, 50)
-
-                // Control State Toggles
-                g2d.font = Font("Arial", Font.BOLD, 12)
+                g2d.drawString("MODE: ${if (isTeleopMode) "TELEOP" else "AUTO (Path)"}", 20, 25)
+                
                 g2d.color = if (isFieldCentric) Color(100, 200, 255) else Color(255, 200, 100)
-                g2d.drawString("DRIVE: ${if (isFieldCentric) "FIELD-CENTRIC" else "ROBOT-CENTRIC"} (Press C)", 20, 70)
+                g2d.drawString("DRIVE: ${if (isFieldCentric) "FIELD-CENTRIC" else "ROBOT-CENTRIC"}", 200, 25)
 
                 g2d.color = if (isRedAlliance) Color(255, 100, 100) else Color(100, 150, 255)
-                g2d.drawString("ALLIANCE: ${if (isRedAlliance) "RED" else "BLUE"} (Press R)", 20, 85)
+                g2d.drawString("ALLIANCE: ${if (isRedAlliance) "RED" else "BLUE"}", 380, 25)
 
-                // Define keys to draw
-                drawKey(g2d, "W", KeyEvent.VK_W, 100, 110)
-                drawKey(g2d, "A", KeyEvent.VK_A, 40, 170)
-                drawKey(g2d, "S", KeyEvent.VK_S, 100, 170)
-                drawKey(g2d, "D", KeyEvent.VK_D, 160, 170)
+                g2d.color = Color(150, 150, 150)
+                g2d.font = Font("Segoe UI", Font.PLAIN, 11)
+                g2d.drawString("Toggles: [SPACE]=Mode, [C]=Drive, [R]=Alliance", 20, 45)
                 
-                drawKey(g2d, "Q", KeyEvent.VK_Q, 40, 110)
-                drawKey(g2d, "E", KeyEvent.VK_E, 160, 110)
+                g2d.color = if (isGamepadConnected) Color(50, 200, 50) else Color(150, 150, 150)
+                g2d.drawString("Gamepad: $gamepadName", 20, 60)
 
-                // FSM Keys
-                drawKey(g2d, "SHIFT (Intake)", KeyEvent.VK_SHIFT, 40, 230, 140)
-                drawKey(g2d, "ENTER (Shoot)", KeyEvent.VK_ENTER, 190, 230, 140)
+                // Draw Gamepad Overlay
+                drawGamepadOverlay(g2d)
+            }
+            
+            private fun drawGamepadOverlay(g2d: Graphics2D) {
+                val cx = width / 2
+                val cy = height / 2 + 30
+                
+                // Gamepad Body
+                g2d.color = Color(50, 50, 55)
+                g2d.fillRoundRect(cx - 160, cy - 80, 320, 160, 80, 80)
+                g2d.fillRoundRect(cx - 180, cy - 20, 100, 120, 50, 50) // Left handle
+                g2d.fillRoundRect(cx + 80, cy - 20, 100, 120, 50, 50)  // Right handle
+
+                // Left Bumper (Intake)
+                val isLbActive = isIntaking
+                g2d.color = if (isLbActive) Color(100, 200, 255) else Color(30, 30, 35)
+                g2d.fillRoundRect(cx - 140, cy - 100, 80, 30, 15, 15)
+                g2d.color = if (isLbActive) Color.BLACK else Color.WHITE
+                g2d.font = Font("Segoe UI", Font.BOLD, 12)
+                g2d.drawString("LB / SHIFT", cx - 130, cy - 80)
+                g2d.drawString("INTAKE", cx - 120, cy - 110)
+
+                // Right Trigger (Shoot)
+                val isRtActive = isShooting
+                g2d.color = if (isRtActive) Color(255, 100, 100) else Color(30, 30, 35)
+                g2d.fillRoundRect(cx + 60, cy - 110, 80, 40, 15, 15)
+                g2d.color = if (isRtActive) Color.BLACK else Color.WHITE
+                g2d.drawString("RT / ENTER", cx + 65, cy - 85)
+                g2d.drawString("SHOOT", cx + 80, cy - 120)
+
+                // Left Stick (WASD)
+                var lxOffset = (gamepadLx * 20).toInt()
+                var lyOffset = (gamepadLy * 20).toInt()
+                if (pressedKeys.contains(KeyEvent.VK_A)) lxOffset = -20
+                if (pressedKeys.contains(KeyEvent.VK_D)) lxOffset = 20
+                if (pressedKeys.contains(KeyEvent.VK_W)) lyOffset = -20
+                if (pressedKeys.contains(KeyEvent.VK_S)) lyOffset = 20
+
+                g2d.color = Color(30, 30, 35)
+                g2d.fillOval(cx - 120, cy - 40, 70, 70) // Base
+                g2d.color = Color(120, 130, 140)
+                g2d.fillOval(cx - 105 + lxOffset, cy - 25 + lyOffset, 40, 40) // Stick
+                g2d.color = Color.WHITE
+                g2d.drawString("WASD", cx - 102, cy + 50)
+
+                // Right Stick (QE)
+                var rxOffset = (gamepadRx * 20).toInt()
+                var ryOffset = (gamepadRy * 20).toInt()
+                if (pressedKeys.contains(KeyEvent.VK_Q)) rxOffset = -20
+                if (pressedKeys.contains(KeyEvent.VK_E)) rxOffset = 20
+
+                g2d.color = Color(30, 30, 35)
+                g2d.fillOval(cx + 50, cy + 10, 70, 70) // Base
+                g2d.color = Color(140, 120, 120)
+                g2d.fillOval(cx + 65 + rxOffset, cy + 25 + ryOffset, 40, 40) // Stick
+                g2d.color = Color.WHITE
+                g2d.drawString("Q / E", cx + 70, cy + 100)
             }
         }
         
@@ -96,33 +148,104 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         isFocusable = true
         focusableWindowState = true
         addKeyListener(this)
-        
-        // Ensure it stays on top
         isAlwaysOnTop = true
         
-        // Request focus when shown
         addWindowListener(object : java.awt.event.WindowAdapter() {
             override fun windowOpened(e: java.awt.event.WindowEvent?) {
                 requestFocus()
             }
         })
+
+        // Initialize GLFW for Gamepad Support
+        if (glfwInit()) {
+            Thread { pollGamepad() }.apply { isDaemon = true; start() }
+        } else {
+            println("Failed to initialize GLFW. Gamepad support disabled.")
+        }
     }
 
-    private fun drawKey(g2d: Graphics2D, label: String, keyCode: Int, x: Int, y: Int, w: Int = 50) {
-        val size = 50
-        val isPressed = pressedKeys.contains(keyCode)
-        
-        g2d.color = if (isPressed) Color(100, 200, 255) else Color(60, 60, 60)
-        g2d.fillRoundRect(x, y, w, size, 10, 10)
-        
-        g2d.color = if (isPressed) Color.BLACK else Color.WHITE
-        g2d.font = Font("Arial", Font.BOLD, if (w > 50) 14 else 20)
-        
-        val fm = g2d.fontMetrics
-        val textWidth = fm.stringWidth(label)
-        val textHeight = fm.ascent
-        
-        g2d.drawString(label, x + (w - textWidth) / 2, y + (size + textHeight) / 2 - 2)
+    private fun pollGamepad() {
+        while (true) {
+            try {
+                // Find first connected joystick
+                var activeJoy = -1
+                for (i in GLFW_JOYSTICK_1..GLFW_JOYSTICK_16) {
+                    if (glfwJoystickPresent(i)) {
+                        activeJoy = i
+                        break
+                    }
+                }
+
+                if (activeJoy != -1) {
+                    isGamepadConnected = true
+                    gamepadName = glfwGetJoystickName(activeJoy) ?: "Unknown Gamepad"
+                    
+                    val axes = glfwGetJoystickAxes(activeJoy)
+                    val buttons = glfwGetJoystickButtons(activeJoy)
+                    
+                    var shiftPressedThisFrame = false
+                    var enterPressedThisFrame = false
+
+                    if (axes != null && axes.capacity() >= 4) {
+                        gamepadLx = axes[0]
+                        gamepadLy = axes[1]
+                        
+                        // XBox controllers usually map Right Stick X/Y to axes 2 and 3, or 4 and 5 depending on triggers
+                        if (axes.capacity() >= 6) {
+                            // Standard XInput: 0=LX, 1=LY, 2=LT, 3=RX, 4=RY, 5=RT
+                            // Wait, sometimes Right Stick is 2, 3 and Triggers are 4, 5. 
+                            // Usually: 0=LX, 1=LY, 2=RX, 3=RY, 4=LT, 5=RT (Mac/Linux SDL mapping)
+                            // We can use glfwGetGamepadState if there's a mapping, but let's stick to simple axes.
+                            gamepadRx = axes[2]
+                            gamepadRy = axes[3]
+                            
+                            if (axes.capacity() >= 6) {
+                                // Checking triggers on XInput
+                                if (axes[4] > 0.5f || axes[5] > 0.5f) {
+                                    enterPressedThisFrame = true
+                                }
+                            }
+                        } else {
+                            gamepadRx = axes[2]
+                            gamepadRy = axes[3]
+                        }
+                    } else {
+                        gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                    }
+
+                    if (buttons != null && buttons.capacity() >= 6) {
+                        // Button mappings vary, but usually:
+                        // 0=A, 1=B, 2=X, 3=Y, 4=LB, 5=RB
+                        if (buttons[4] == GLFW_PRESS.toByte()) {
+                            shiftPressedThisFrame = true
+                        }
+                        if (buttons[5] == GLFW_PRESS.toByte()) {
+                            enterPressedThisFrame = true
+                        }
+                    }
+
+                    // Intake Toggle Edge Detection (Left Bumper)
+                    if (shiftPressedThisFrame && !lastGamepadShift) {
+                        isIntaking = !isIntaking
+                    }
+                    lastGamepadShift = shiftPressedThisFrame
+
+                    // Shoot Momentary (combined with keyboard)
+                    val isKeyboardShooting = pressedKeys.contains(KeyEvent.VK_ENTER)
+                    isShooting = enterPressedThisFrame || isKeyboardShooting
+
+                    repaint()
+                } else {
+                    isGamepadConnected = false
+                    gamepadName = "No Gamepad Detected"
+                    gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                    repaint()
+                }
+                Thread.sleep(20)
+            } catch (e: Exception) {
+                Thread.sleep(1000)
+            }
+        }
     }
 
     override fun keyTyped(e: KeyEvent?) {}
@@ -130,14 +253,12 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     override fun keyPressed(e: KeyEvent?) {
         e?.let {
             pressedKeys.add(it.keyCode)
-            if (it.keyCode == KeyEvent.VK_SPACE) {
-                isTeleopMode = !isTeleopMode
-            }
-            if (it.keyCode == KeyEvent.VK_C) {
-                isFieldCentric = !isFieldCentric
-            }
-            if (it.keyCode == KeyEvent.VK_R) {
-                isRedAlliance = !isRedAlliance
+            when (it.keyCode) {
+                KeyEvent.VK_SPACE -> isTeleopMode = !isTeleopMode
+                KeyEvent.VK_C -> isFieldCentric = !isFieldCentric
+                KeyEvent.VK_R -> isRedAlliance = !isRedAlliance
+                KeyEvent.VK_SHIFT -> isIntaking = !isIntaking
+                KeyEvent.VK_ENTER -> isShooting = true
             }
             repaint()
         }
@@ -146,26 +267,42 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     override fun keyReleased(e: KeyEvent?) {
         e?.let {
             pressedKeys.remove(it.keyCode)
+            if (it.keyCode == KeyEvent.VK_ENTER && !isShootingGamepad()) {
+                isShooting = false
+            }
             repaint()
         }
     }
 
+    private fun isShootingGamepad(): Boolean {
+        return false // Handled in pollGamepad explicitly via isShooting property
+    }
+
     /**
-     * Calculates requested chassis speeds based on active key presses.
+     * Calculates requested chassis speeds based on active key presses and gamepad axes.
      */
     fun getChassisSpeeds(): ChassisSpeeds {
         var vx = 0.0
         var vy = 0.0
         var omega = 0.0
 
+        // Keyboard
         if (pressedKeys.contains(KeyEvent.VK_W)) vx += MAX_LINEAR_SPEED
         if (pressedKeys.contains(KeyEvent.VK_S)) vx -= MAX_LINEAR_SPEED
-        
         if (pressedKeys.contains(KeyEvent.VK_A)) vy += MAX_LINEAR_SPEED
         if (pressedKeys.contains(KeyEvent.VK_D)) vy -= MAX_LINEAR_SPEED
+        if (pressedKeys.contains(KeyEvent.VK_Q)) omega += MAX_ANGULAR_SPEED
+        if (pressedKeys.contains(KeyEvent.VK_E)) omega -= MAX_ANGULAR_SPEED
 
-        if (pressedKeys.contains(KeyEvent.VK_Q) || pressedKeys.contains(KeyEvent.VK_LEFT)) omega += MAX_ANGULAR_SPEED
-        if (pressedKeys.contains(KeyEvent.VK_E) || pressedKeys.contains(KeyEvent.VK_RIGHT)) omega -= MAX_ANGULAR_SPEED
+        // Gamepad (Deadzone applied)
+        if (kotlin.math.abs(gamepadLy) > 0.1) vx += -gamepadLy * MAX_LINEAR_SPEED
+        if (kotlin.math.abs(gamepadLx) > 0.1) vy += -gamepadLx * MAX_LINEAR_SPEED
+        if (kotlin.math.abs(gamepadRx) > 0.1) omega += -gamepadRx * MAX_ANGULAR_SPEED
+
+        // Clamp to max speeds
+        vx = vx.coerceIn(-MAX_LINEAR_SPEED, MAX_LINEAR_SPEED)
+        vy = vy.coerceIn(-MAX_LINEAR_SPEED, MAX_LINEAR_SPEED)
+        omega = omega.coerceIn(-MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED)
 
         return ChassisSpeeds(vx, vy, omega)
     }

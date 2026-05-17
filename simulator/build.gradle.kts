@@ -40,6 +40,18 @@ dependencies {
     
     // Slf4j for logging (optional, usually good to have)
     implementation("org.slf4j:slf4j-simple:2.0.12")
+    
+    // LWJGL Core
+    implementation("org.lwjgl:lwjgl:3.3.3")
+    runtimeOnly("org.lwjgl:lwjgl:3.3.3:natives-windows")
+    runtimeOnly("org.lwjgl:lwjgl:3.3.3:natives-linux")
+    runtimeOnly("org.lwjgl:lwjgl:3.3.3:natives-macos")
+    
+    // LWJGL GLFW for robust cross-platform Gamepad support (auto-extracts natives)
+    implementation("org.lwjgl:lwjgl-glfw:3.3.3")
+    runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-windows")
+    runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-linux")
+    runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos")
 }
 
 kotlin {

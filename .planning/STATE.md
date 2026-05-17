@@ -35,3 +35,7 @@ Phase: Milestone Complete
 Plan: —
 Status: Review
 Last activity: 2026-05-16 — Executed Phase 20
+
+## Accumulated Context
+### Roadmap Evolution
+- Phase 21 added: Virtual Driver Station UI and Gamepad Overhaul

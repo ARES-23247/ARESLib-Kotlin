@@ -89,3 +89,13 @@
 | 18. Spline Mathematics | v1.6 | 1/1 | Complete | 2026-05-16 |
 | 19. Motion Profiling | v1.6 | 1/1 | Complete | 2026-05-16 |
 | 20. Event Marker State Machine Integration | v1.6 | 1/1 | Complete | 2026-05-16 |
+
+### Phase 21: Virtual Driver Station UI and Gamepad Overhaul
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 20
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 21 to break down)
