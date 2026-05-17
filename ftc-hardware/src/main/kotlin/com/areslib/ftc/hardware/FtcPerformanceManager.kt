@@ -10,13 +10,14 @@ import java.lang.reflect.Method
  */
 object FtcPerformanceManager {
     private var lynxModules: List<Any> = emptyList()
+    private var srsHubs: List<SrsHubDriver> = emptyList()
     private var clearCacheMethod: Method? = null
     var isPhotonEnabled: Boolean = false
         private set
 
     /**
      * Scans the hardware map, configures all REV Hubs (LynxModules) for MANUAL bulk caching,
-     * and attempts to automatically enable Photon parallelization.
+     * detects any SRS Hubs, and automatically enables Photon parallelization.
      */
     fun initialize(hardwareMap: HardwareMap) {
         try {
@@ -40,6 +41,14 @@ object FtcPerformanceManager {
             System.err.println("ARES Performance: Failed to initialize Manual Bulk Caching (might be in a mock/simulation context): ${e.message}")
         }
 
+        // Auto-detect any connected SRS Hubs
+        try {
+            this.srsHubs = hardwareMap.getAll(SrsHubDriver::class.java)
+            println("ARES Performance: Detected ${srsHubs.size} SRS Robotics Expansion Hubs. Automatic bulk register reads configured.")
+        } catch (e: Exception) {
+            // Ignore in standard mock/unit test environments where SrsHubDriver isn't registered
+        }
+
         // Try to detect and enable Photon
         try {
             val photonCoreClass = Class.forName("com.seattlesolvers.solverslib.photon.PhotonCore")
@@ -55,13 +64,24 @@ object FtcPerformanceManager {
     }
 
     /**
-     * Clears the bulk cache for all REV Hubs.
+     * Clears the bulk cache for all REV Hubs and triggers a single integrated 256-byte bulk read
+     * for all connected SRS Hubs.
      * MUST be called exactly once at the beginning of your robot's command/opmode run loop.
      */
     fun clearBulkCaches() {
+        // Clear caches for all standard REV Hubs
         for (module in lynxModules) {
             try {
                 clearCacheMethod?.invoke(module)
+            } catch (e: Exception) {
+                // Ignore failures in mock context
+            }
+        }
+
+        // Poll unified 256-byte bulk register block for all connected SRS Hubs
+        for (srsHub in srsHubs) {
+            try {
+                srsHub.update()
             } catch (e: Exception) {
                 // Ignore failures in mock context
             }

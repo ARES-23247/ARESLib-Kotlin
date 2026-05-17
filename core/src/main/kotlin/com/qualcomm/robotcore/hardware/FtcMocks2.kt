@@ -29,6 +29,11 @@ interface I2cDeviceSynch {
     fun read8(register: Int): Byte
     fun read(register: Int, length: Int): ByteArray
     fun write(register: Int, data: ByteArray)
+    
+    var readWindow: ReadWindow
+    
+    class ReadWindow(val ireg: Int, val creg: Int, val mode: ReadMode)
+    enum class ReadMode { REPEAT, BALANCED, ONLY_ONCE }
 }
 
 abstract class I2cDeviceSynchDevice<T>(val deviceClient: T, val isOwned: Boolean) {
