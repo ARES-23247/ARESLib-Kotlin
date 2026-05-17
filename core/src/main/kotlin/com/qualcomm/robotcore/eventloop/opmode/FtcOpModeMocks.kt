@@ -13,6 +13,9 @@ abstract class LinearOpMode {
         override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
             throw NotImplementedError()
         }
+        override fun <T> getAll(classOrType: Class<out T>): List<T> {
+            return emptyList()
+        }
     }
     val gamepad1 = Gamepad()
     val telemetry = Telemetry()

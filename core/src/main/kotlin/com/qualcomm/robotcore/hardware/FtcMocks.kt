@@ -3,6 +3,7 @@ package com.qualcomm.robotcore.hardware
 
 interface HardwareMap {
     fun <T> get(classOrType: Class<out T>, deviceName: String): T
+    fun <T> getAll(classOrType: Class<out T>): List<T>
 }
 
 interface DcMotorSimple {
