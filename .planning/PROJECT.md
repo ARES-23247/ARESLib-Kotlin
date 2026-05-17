@@ -48,12 +48,24 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 
 ### Active
 
-## Current Milestone: None
+- [ ] Unified Gradle build chain (JVM/Android module compatibility)
+- [ ] Mock class isolation from production code
+- [ ] Registered TeamCode OpMode with @TeleOp annotation
+- [ ] Hardware configuration mapping (motors, pinpoint, IMU)
+- [ ] Resilient telemetry on real hardware
+- [ ] Successful wireless ADB deploy to Control Hub
 
-**Goal:** Ready to define the next milestone cycle.
+## Current Milestone: v2.0 Real Robot Deployment
+
+**Goal:** Fix the build chain, resolve mock conflicts, create a registered OpMode, and deploy ARESLib-Kotlin onto a physical FTC robot.
 
 **Target features:**
-- (Run /gsd-new-milestone to configure)
+- Unified Gradle build chain (resolve JVM vs Android module conflict)
+- Mock class isolation (separate FTC SDK stubs from production code)
+- Registered TeamCode OpMode with @TeleOp annotation
+- Hardware configuration mapping (motors, pinpoint, IMU)
+- Resilient telemetry (graceful NT4/logging failures on real hardware)
+- Successful wireless ADB deploy to Control Hub
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
 - AdvantageKit `@AutoLog` or KAPT usage — drastically increases build times and breaks cross-platform compatibility on Android.
@@ -97,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-16 after v1.6 milestone completion*
+*Last updated: 2026-05-17 after v2.0 milestone start*
