@@ -11,3 +11,4 @@ project(":FtcRobotController").projectDir = file("ftc-app/FtcRobotController")
 include("TeamCode")
 project(":TeamCode").projectDir = file("ftc-app/TeamCode")
 
+include("frc-app")

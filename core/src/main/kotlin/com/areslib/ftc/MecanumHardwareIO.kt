@@ -26,13 +26,17 @@ class MecanumHardwareIO(
     }
 
     /**
-     * Applies the calculated wheel speeds to the physical motors.
-     * @param speeds The normalized wheel speeds (assumed -1.0 to 1.0 range).
+     * Applies the calculated wheel speeds to the physical motors using voltage compensation.
+     * @param speeds The wheel speeds (assumed -1.0 to 1.0 normalized range).
+     * @param batteryVolts The current battery voltage to compensate for sag.
      */
-    fun apply(speeds: MecanumWheelSpeeds) {
-        frontLeft.power = speeds.frontLeftMetersPerSecond
-        frontRight.power = speeds.frontRightMetersPerSecond
-        backLeft.power = speeds.backLeftMetersPerSecond
-        backRight.power = speeds.backRightMetersPerSecond
+    fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0) {
+        val maxVolts = 12.0
+        val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
+        
+        frontLeft.power = (speeds.frontLeftMetersPerSecond * maxVolts) / actualVolts
+        frontRight.power = (speeds.frontRightMetersPerSecond * maxVolts) / actualVolts
+        backLeft.power = (speeds.backLeftMetersPerSecond * maxVolts) / actualVolts
+        backRight.power = (speeds.backRightMetersPerSecond * maxVolts) / actualVolts
     }
 }
