@@ -223,12 +223,12 @@ object DesktopSimLauncher {
             val worldVy: Double
 
             if (driverStation.isTeleopMode && driverStation.isFieldCentric) {
-                // Field-centric: keyboard vx/vy represent directions from the DRIVER's perspective.
-                // Red drivers stand at -X wall facing +X: W=+X, A=+Y
-                // Blue drivers stand at +X wall facing -X: W=-X, A=-Y
+                // Field-centric: drivers stand on the SIDES of the field (Y-axis walls).
+                // Red drivers stand at -Y wall facing +Y: W=+Y, A=-X (left when facing +Y)
+                // Blue drivers stand at +Y wall facing -Y: W=-Y, A=+X
                 val allianceSign = if (driverStation.isRedAlliance) 1.0 else -1.0
-                worldVx = chassisSpeeds.vxMetersPerSecond * allianceSign
-                worldVy = chassisSpeeds.vyMetersPerSecond * allianceSign
+                worldVx = -chassisSpeeds.vyMetersPerSecond * allianceSign
+                worldVy = chassisSpeeds.vxMetersPerSecond * allianceSign
             } else {
                 // Robot-centric teleop or auto: chassisSpeeds is robot-relative, rotate to world
                 worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
