@@ -21,42 +21,42 @@
 
 ### v2.0 Real Robot Deployment (Phases 34-37)
 
-- [ ] **Phase 34: Build Chain Unification & Mock Isolation**
-  - **Goal:** Restructure Gradle modules so `:core` and `:ftc-hardware` are consumable by the Android build pipeline, and isolate mock FTC SDK stubs into a test-only source set.
-  - **Requirements:** BUILD-01, BUILD-02, BUILD-03, MOCK-01, MOCK-02, MOCK-03
-  - **Success criteria:**
-    1. `gradlew.bat :TeamCode:installDebug` compiles without class conflicts
-    2. Mock stubs are excluded from the Android APK classpath
-    3. `gradlew.bat :core:test` and `gradlew.bat :simulator:run` still pass
-    4. No duplicate class errors between `:core` stubs and FTC SDK
+### Phase 34: Build Chain Unification & Mock Isolation
+- **Goal:** Restructure Gradle modules so `:core` and `:ftc-hardware` are consumable by the Android build pipeline, and isolate mock FTC SDK stubs into a test-only source set.
+- **Requirements:** BUILD-01, BUILD-02, BUILD-03, MOCK-01, MOCK-02, MOCK-03
+- **Success criteria:**
+  1. `gradlew.bat :TeamCode:installDebug` compiles without class conflicts
+  2. Mock stubs are excluded from the Android APK classpath
+  3. `gradlew.bat :core:test` and `gradlew.bat :simulator:run` still pass
+  4. No duplicate class errors between `:core` stubs and FTC SDK
 
-- [ ] **Phase 35: Deployable TeleOp OpMode**
-  - **Goal:** Create a properly annotated OpMode in TeamCode that wires the Redux state loop to real hardware drivers.
-  - **Requirements:** OPMODE-01, OPMODE-02, OPMODE-03, HW-01, HW-02, HW-03
-  - **Depends on:** Phase 34
-  - **Success criteria:**
-    1. `@TeleOp(name="ARES Mecanum")` class exists in TeamCode source set
-    2. OpMode calls `waitForStart()` and runs the read→reduce→calculate→write loop
-    3. Hardware device names are documented in a config constant class
-    4. Motor directions match standard mecanum convention
+### Phase 35: Deployable TeleOp OpMode
+- **Goal:** Create a properly annotated OpMode in TeamCode that wires the Redux state loop to real hardware drivers.
+- **Requirements:** OPMODE-01, OPMODE-02, OPMODE-03, HW-01, HW-02, HW-03
+- **Depends on:** Phase 34
+- **Success criteria:**
+  1. `@TeleOp(name="ARES Mecanum")` class exists in TeamCode source set
+  2. OpMode calls `waitForStart()` and runs the read→reduce→calculate→write loop
+  3. Hardware device names are documented in a config constant class
+  4. Motor directions match standard mecanum convention
 
-- [ ] **Phase 36: Telemetry Hardening**
-  - **Goal:** Make NT4 telemetry and data logging resilient to missing clients and Control Hub storage paths.
-  - **Requirements:** TEL-01, TEL-02, TEL-03
-  - **Depends on:** Phase 34
-  - **Success criteria:**
-    1. NT4Telemetry catches WebSocket connection failures without crashing
-    2. ARESDataLogger writes to Control Hub-appropriate storage path
-    3. Telemetry exceptions are swallowed with a log warning, never blocking the control loop
+### Phase 36: Telemetry Hardening
+- **Goal:** Make NT4 telemetry and data logging resilient to missing clients and Control Hub storage paths.
+- **Requirements:** TEL-01, TEL-02, TEL-03
+- **Depends on:** Phase 34
+- **Success criteria:**
+  1. NT4Telemetry catches WebSocket connection failures without crashing
+  2. ARESDataLogger writes to Control Hub-appropriate storage path
+  3. Telemetry exceptions are swallowed with a log warning, never blocking the control loop
 
-- [ ] **Phase 37: Deployment & Smoke Test**
-  - **Goal:** Deploy APK to Control Hub and verify all wheels respond correctly to gamepad input.
-  - **Requirements:** DEPLOY-01, DEPLOY-02, DEPLOY-03
-  - **Depends on:** Phase 35, Phase 36
-  - **Success criteria:**
-    1. `deploy.bat` pushes APK successfully over Wi-Fi ADB
-    2. OpMode appears in Driver Station and initializes without crash
-    3. All 4 mecanum wheels spin in correct direction for forward/strafe/rotate
+### Phase 37: Deployment & Smoke Test
+- **Goal:** Deploy APK to Control Hub and verify all wheels respond correctly to gamepad input.
+- **Requirements:** DEPLOY-01, DEPLOY-02, DEPLOY-03
+- **Depends on:** Phase 35, Phase 36
+- **Success criteria:**
+  1. `deploy.bat` pushes APK successfully over Wi-Fi ADB
+  2. OpMode appears in Driver Station and initializes without crash
+  3. All 4 mecanum wheels spin in correct direction for forward/strafe/rotate
 
 <details>
 <summary>✅ v1.10 Match-Ready Telemetry & Hardware Integration (Phases 30-33) — SHIPPED 2026-05-17</summary>
