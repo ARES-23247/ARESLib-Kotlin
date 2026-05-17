@@ -18,7 +18,7 @@
 - [x] **HW-02**: Implement a centralized `RobotConfig` or `RobotMap` pattern to map physical hardware ports to abstract IO interfaces cleanly.
 
 ### Category: Data Logging
-- [ ] **LOG-01**: Implement an on-device data logger that writes telemetry to the Control Hub's local storage (SD Card) in either CSV or WPILog format for post-match analysis.
+- [x] **LOG-01**: Implement an on-device data logger that writes telemetry to the Control Hub's local storage (SD Card) in either CSV or WPILog format for post-match analysis.
 
 ## Future Requirements (Deferred)
 - Tournament API integrations

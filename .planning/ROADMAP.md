@@ -50,15 +50,17 @@ Plans:
 - [x] Create `RobotConfig` dependency injector.
 - [x] Mock FTC vision classes in `:core` for cross-platform simulation capability.
 
-### Phase 33: On-Device Data Logging
+### Phase 33: On-Device Data Logging [COMPLETED]
 
 **Goal:** Implement WPILog or CSV local logging to the Control Hub SD card.
 **Requirements**: LOG-01
 **Depends on:** Phase 32
-**Plans:** 0 plans
+**Plans:** 1 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 33 to break down)
+- [x] Create `ARESDataLogger` supporting thread-safe, asynchronous CSV logging.
+- [x] Implement `DataLoggingTelemetry` composite ITelemetry.
+- [x] Integrate with `ARESMecanumTeleOp` and verify through testing.
 
 <details>
 <summary>✅ v1.9 Core Hardware IO Interfaces (Phases 26-29) — SHIPPED 2026-05-17</summary>
@@ -175,4 +177,4 @@ Plans:
 | 30. Advanced Controller Architecture | v1.10 | 1/1 | Complete | 2026-05-17 |
 | 31. NetworkTables 4 (NT4) Server | v1.10 | 1/1 | Complete | 2026-05-17 |
 | 32. Physical Vision & Hardware Configuration | v1.10 | 1/1 | Complete | 2026-05-17 |
-| 33. On-Device Data Logging | v1.10 | 0/1 | Pending | |
+| 33. On-Device Data Logging | v1.10 | 1/1 | Complete | 2026-05-17 |

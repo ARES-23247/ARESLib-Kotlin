@@ -32,9 +32,9 @@ class ARESMecanumTeleOp : LinearOpMode() {
         // Setup state store
         var state = RobotState()
         
-        // Setup NT4 Telemetry
-        val nt4 = com.areslib.telemetry.NT4Telemetry()
-        val publisher = com.areslib.telemetry.ARESNetworkStatePublisher(nt4)
+        // Setup NT4 Telemetry and Data Logging composite
+        val telemetry = com.areslib.telemetry.DataLoggingTelemetry(com.areslib.telemetry.NT4Telemetry())
+        val publisher = com.areslib.telemetry.ARESNetworkStatePublisher(telemetry)
         
         // Wait for Driver Station Start
         // waitForStart() // Commented out for mock compatibility
@@ -78,6 +78,6 @@ class ARESMecanumTeleOp : LinearOpMode() {
         }
         
         // Clean up on exit
-        nt4.close()
+        telemetry.close()
     }
 }
