@@ -187,4 +187,15 @@
 | 34. Build Chain Unification & Mock Isolation | v2.0 | 1/1 | Complete | 2026-05-18 |
 | 35. Deployable TeleOp OpMode | v2.0 | 1/1 | Complete | 2026-05-18 |
 | 36. Telemetry Hardening | v2.0 | 1/1 | Complete | 2026-05-18 |
-| 37. Deployment & Smoke Test | v2.0 | 0/1 | Pending | — |
+| 37. Deployment & Smoke Test | v2.0 | 1/1 | Complete | 2026-05-18 |
+
+---
+
+## Milestone v3.0: FRC CTRE Swerve Integration
+*Goal: Expand ARESLib-Kotlin to support an FRC Phoenix 6 Swerve Drive using a hybrid Redux architecture.*
+
+| Phase | Milestone | Weight | Status | Date |
+|---|---|---|---|---|
+| 38. Initialize FRC App & Telemetry | v3.0 | 0/1 | Pending | — |
+| 39. Swerve Hardware IO Bridge | v3.0 | 0/1 | Pending | — |
+| 40. FRC Robot Loop & Simulation | v3.0 | 0/1 | Pending | — |
