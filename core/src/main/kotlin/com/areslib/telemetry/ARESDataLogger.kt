@@ -32,29 +32,30 @@ class ARESDataLogger {
     )
 
     init {
-        val osName = System.getProperty("os.name") ?: ""
-        val javaVendor = System.getProperty("java.vendor") ?: ""
-        val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
-
-        val logDir = if (isAndroid) {
-            File("/sdcard/FIRST/telemetry_logs/")
-        } else {
-            File("./logs/")
-        }
-
-        if (!logDir.exists()) {
-            logDir.mkdirs()
-        }
-
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val logFile = File(logDir, "ares_log_$timestamp.csv")
-
         try {
+            val osName = System.getProperty("os.name") ?: ""
+            val javaVendor = System.getProperty("java.vendor") ?: ""
+            val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
+
+            val logDir = if (isAndroid) {
+                File("/sdcard/FIRST/telemetry_logs/")
+            } else {
+                File("./logs/")
+            }
+
+            if (!logDir.exists()) {
+                logDir.mkdirs()
+            }
+
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val logFile = File(logDir, "ares_log_$timestamp.csv")
+
             writer = BufferedWriter(FileWriter(logFile))
             isRunning = true
             startLoggingLoop()
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             System.err.println("ARESDataLogger: Failed to initialize log file! ${e.message}")
+            isRunning = false
         }
     }
 
