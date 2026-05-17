@@ -102,6 +102,9 @@
 | 23. Vision State & Actions | v1.8 | 1/1 | Complete | 2026-05-17 |
 | 24. Pose Estimator | v1.8 | 1/1 | Complete | 2026-05-17 |
 | 25. IO Layer Integrations | v1.8 | 1/1 | Complete | 2026-05-17 |
+| 26. Core Hardware IO Interfaces | v1.9 | 0/1 | Pending | |
+| 27. FTC REV Hub & Pinpoint Integration | v1.9 | 0/1 | Pending | |
+| 28. I2C Auxiliary Wrappers | v1.9 | 0/1 | Pending | |
 
 ### Phase 22: 3D Geometry and Transformations
 
@@ -142,3 +145,33 @@ Plans:
 
 Plans:
 - [x] TBD (run /gsd-plan-phase 25 to break down)
+
+### Phase 26: Core Hardware IO Interfaces
+
+**Goal:** Define abstract hardware interfaces in `:core` (`MotorIO`, `ServoIO`, `OdometryIO`, `ImuIO`).
+**Requirements**: REQ-HW-01
+**Depends on:** Phase 25
+**Plans:** 1 plans
+
+Plans:
+- [ ] Implement interfaces.
+
+### Phase 27: FTC REV Hub & Pinpoint Integration
+
+**Goal:** Implement FTC SDK wrappers (`FtcRevHubIO`, `PinpointOdometryIO`) in the new `:ftc-hardware` module.
+**Requirements**: REQ-HW-02
+**Depends on:** Phase 26
+**Plans:** 1 plans
+
+Plans:
+- [ ] Create module and wrappers.
+
+### Phase 28: I2C Auxiliary Wrappers
+
+**Goal:** Implement OctoQuad and SRS Hub modular wrappers.
+**Requirements**: REQ-HW-03
+**Depends on:** Phase 27
+**Plans:** 1 plans
+
+Plans:
+- [ ] Implement `OctoquadIO` and `SrsHubIO`.

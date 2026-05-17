@@ -1,6 +1,7 @@
 package com.areslib.ftc
 
 import com.qualcomm.robotcore.hardware.HardwareMap
+import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
@@ -11,11 +12,14 @@ class MockDcMotorEx : DcMotorEx {
     override val currentPosition: Int = 0
     override val velocity: Double = 0.0
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
+    override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
     var currentPower: Double = 0.0
     
-    override fun setPower(power: Double) {
-        this.currentPower = power
-    }
+    override var power: Double
+        get() = currentPower
+        set(value) {
+            currentPower = value
+        }
 }
 
 class MecanumHardwareIOTest {

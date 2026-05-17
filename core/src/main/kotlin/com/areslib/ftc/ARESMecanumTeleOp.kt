@@ -1,6 +1,6 @@
 package com.areslib.ftc
 
-import com.qualcomm.robotcore.hardware.LinearOpMode
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.hardware.GoBildaPinpointDriver
 import com.areslib.kinematics.MecanumKinematics
 import com.areslib.reducer.rootReducer

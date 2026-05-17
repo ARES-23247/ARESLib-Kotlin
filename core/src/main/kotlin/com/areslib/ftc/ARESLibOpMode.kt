@@ -1,6 +1,6 @@
 package com.areslib.ftc
 
-import com.qualcomm.robotcore.hardware.LinearOpMode
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.state.RobotState
@@ -45,7 +45,7 @@ class ARESLibOpMode : LinearOpMode() {
             val outputVoltage = currentState.drive.odometryX * 0.1 // stub logic
             
             // Write to hardware
-            driveMotor.setPower(outputVoltage)
+            driveMotor.power = outputVoltage
         }
     }
 }

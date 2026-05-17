@@ -24,9 +24,9 @@ class MecanumHardwareIO(hardwareMap: HardwareMap) {
      * @param speeds The normalized wheel speeds (assumed -1.0 to 1.0 range).
      */
     fun apply(speeds: MecanumWheelSpeeds) {
-        frontLeft.setPower(speeds.frontLeftMetersPerSecond)
-        frontRight.setPower(speeds.frontRightMetersPerSecond)
-        backLeft.setPower(speeds.backLeftMetersPerSecond)
-        backRight.setPower(speeds.backRightMetersPerSecond)
+        frontLeft.power = speeds.frontLeftMetersPerSecond
+        frontRight.power = speeds.frontRightMetersPerSecond
+        backLeft.power = speeds.backLeftMetersPerSecond
+        backRight.power = speeds.backRightMetersPerSecond
     }
 }

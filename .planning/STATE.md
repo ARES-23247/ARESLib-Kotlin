@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Advanced Path Generation
-status: review
-last_updated: "2026-05-16T11:33:00.000Z"
-last_activity: 2026-05-16
+milestone: v1.9
+milestone_name: Core Hardware IO Interfaces
+status: active
+last_updated: "2026-05-17T10:39:00.000Z"
+last_activity: 2026-05-17
 progress:
   total_phases: 3
-  completed_phases: 3
+  completed_phases: 0
   total_plans: 3
-  completed_plans: 3
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -20,22 +20,19 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-16)
 
 **Core value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
-**Current focus:** v1.6 Advanced Path Generation
+**Current focus:** v1.9 Core Hardware IO Interfaces
 
 ## Session Memory
 
-We have completed Phase 20 (Event Marker State Machine Integration). PathPlanner event markers are now successfully parsed from JSON, evaluated by distance during loop execution, and trigger `RobotAction.PathEventTriggered` updates in the `RootReducer`.
-The v1.6 Advanced Path Generation milestone is now 100% complete!
-
-Pending next steps: Run `/gsd-complete-milestone` to audit and close out v1.6, then initialize v1.7.
+We have completed Milestone v1.8. Now starting v1.9 to implement abstract hardware interfaces and FTC SDK wrappers.
 
 ## Current Position
 
-Phase: Milestone Complete
+Phase: 26 — Core Hardware IO Interfaces
 Plan: —
-Status: Review
-Last activity: 2026-05-16 — Executed Phase 20
+Status: Active
+Last activity: 2026-05-17 — Starting Phase 26
 
 ## Accumulated Context
 ### Roadmap Evolution
-- Phase 21 added: Virtual Driver Station UI and Gamepad Overhaul
+- Phase 26-28 added for FTC Hardware Abstraction Implementation

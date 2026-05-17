@@ -17,3 +17,16 @@
 
 ### IO Layer Integration
 - [x] **REQ-VIS-08**: Provide an abstraction (`VisionIO`) that works uniformly for FTC Limelight 3A NetworkTables and FRC Limelight 4 / PhotonVision data sources.
+
+## Milestone v1.9 FTC Hardware Abstraction Layer
+
+### Core Hardware Interfaces
+- [ ] **REQ-HW-01**: Define `MotorIO`, `ServoIO`, `OdometryIO`, and `ImuIO` interfaces in the `:core` module.
+
+### FTC SDK Implementations
+- [ ] **REQ-HW-02**: Implement `FtcRevHubIO` wrapping `DcMotorEx`, `Servo`, `CRServo`, `AnalogInput` (including goBILDA Floodgate), `DigitalChannel`, and `BNO055IMU`.
+- [ ] **REQ-HW-03**: Implement `PinpointOdometryIO` wrapping the goBILDA Pinpoint driver.
+
+### Auxiliary I2C Wrappers
+- [ ] **REQ-HW-04**: Port `OctoQuadFWv3.java` to a native Kotlin `OctoquadIO` implementation.
+- [ ] **REQ-HW-05**: Implement modular wrappers for the SRS Hub (e.g. `SrsHubAnalogIO`, `SrsHubPwmIO`).

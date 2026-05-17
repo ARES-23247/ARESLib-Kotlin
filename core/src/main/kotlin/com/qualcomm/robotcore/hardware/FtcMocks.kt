@@ -1,6 +1,5 @@
 package com.qualcomm.robotcore.hardware
 
-annotation class Autonomous(val name: String = "", val group: String = "")
 
 interface HardwareMap {
     fun <T> get(classOrType: Class<out T>, deviceName: String): T
@@ -9,10 +8,10 @@ interface HardwareMap {
 interface DcMotorSimple {
     enum class Direction { FORWARD, REVERSE }
     var direction: Direction
-    fun setPower(power: Double)
+    var power: Double
 }
 
-interface DcMotorEx : DcMotorSimple {
+interface DcMotorEx : DcMotor {
     val currentPosition: Int
     val velocity: Double
 }
@@ -56,20 +55,6 @@ open class Telemetry {
     fun addData(key: String, value: Any) {}
     fun update() {}
 }
-
-abstract class LinearOpMode {
-    abstract fun runOpMode()
-    val hardwareMap: HardwareMap = object : HardwareMap {
-        override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
-            throw NotImplementedError()
-        }
-    }
-    val gamepad1 = Gamepad()
-    val telemetry = Telemetry()
-    fun opModeIsActive(): Boolean = true
-    fun waitForStart() {}
-}
-
 open class ElapsedTime {
     private var startTime: Long = System.nanoTime()
     fun reset() { startTime = System.nanoTime() }

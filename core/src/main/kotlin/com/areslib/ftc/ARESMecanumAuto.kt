@@ -1,7 +1,7 @@
 package com.areslib.ftc
 
-import com.qualcomm.robotcore.hardware.Autonomous
-import com.qualcomm.robotcore.hardware.LinearOpMode
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.areslib.control.HolonomicDriveController
 import com.areslib.control.PIDController
 import com.areslib.math.Pose2d

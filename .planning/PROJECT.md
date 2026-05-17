@@ -39,12 +39,15 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Immutable chronological array-backed Kalman Filter. — v1.8
 - ✓ IO Layer abstraction for Limelight. — v1.8
 ### Active
-## Current Milestone: None
+## Current Milestone: v1.9 FTC Hardware Abstraction Layer
 
-**Goal:** N/A
+**Goal:** Implement a robust FTC hardware abstraction layer (IO interfaces) that translates the immutable `RobotState` into physical motor/servo commands, and translates hardware telemetry (REV Hub, Pinpoint, Octoquad, SRS Hub) into Redux `RobotAction`s.
 
 **Target features:**
-- N/A
+- Dedicated `:ftc-hardware` gradle module.
+- `MotorIO`, `ServoIO`, `OdometryIO`, and `ImuIO` interfaces in `:core`.
+- Native FTC SDK wrappers (`FtcRevHubIO`, `PinpointOdometryIO`).
+- I2C module wrappers for OctoQuad (pure Kotlin port) and SRS Hub.
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
 - AdvantageKit `@AutoLog` or KAPT usage — drastically increases build times and breaks cross-platform compatibility on Android.
