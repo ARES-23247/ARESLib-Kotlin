@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.areslib.math.OdometryMathTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-05-17T11:23:56" hostname="DAVESLAPTOP" time="0.003">
-  <properties/>
-  <testcase name="calculateDeltaPose at 90 degrees swaps axes()" classname="com.areslib.math.OdometryMathTest" time="0.002"/>
-  <testcase name="calculateDeltaPose at zero heading maps directly()" classname="com.areslib.math.OdometryMathTest" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

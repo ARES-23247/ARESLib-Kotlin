@@ -1,0 +1,21 @@
+# Build folders
+build/
+bin/
+
+# Gradle
+.gradle/
+gradlew
+gradlew.bat
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Ignore nested build dirs
+*/build/
+*/bin/

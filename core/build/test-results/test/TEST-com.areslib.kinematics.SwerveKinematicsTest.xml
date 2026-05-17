@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.areslib.kinematics.SwerveKinematicsTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-17T11:23:56" hostname="DAVESLAPTOP" time="0.018">
-  <properties/>
-  <testcase name="test forward chassis speeds maps to identical module speeds()" classname="com.areslib.kinematics.SwerveKinematicsTest" time="0.018"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

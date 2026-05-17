@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.areslib.math.ChassisSpeedsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-05-17T11:23:56" hostname="DAVESLAPTOP" time="0.001">
-  <properties/>
-  <testcase name="fromFieldRelativeSpeeds rotates by inverse at 90 degrees()" classname="com.areslib.math.ChassisSpeedsTest" time="0.0"/>
-  <testcase name="fromFieldRelativeSpeeds maps directly at zero heading()" classname="com.areslib.math.ChassisSpeedsTest" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

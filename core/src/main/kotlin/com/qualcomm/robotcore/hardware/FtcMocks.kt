@@ -27,6 +27,29 @@ open class Gamepad {
     var left_stick_y: Float = 0f
     var right_stick_x: Float = 0f
     var right_stick_y: Float = 0f
+
+    var left_trigger: Float = 0f
+    var right_trigger: Float = 0f
+
+    var a: Boolean = false
+    var b: Boolean = false
+    var x: Boolean = false
+    var y: Boolean = false
+
+    var dpad_up: Boolean = false
+    var dpad_down: Boolean = false
+    var dpad_left: Boolean = false
+    var dpad_right: Boolean = false
+
+    var left_bumper: Boolean = false
+    var right_bumper: Boolean = false
+
+    var start: Boolean = false
+    var back: Boolean = false
+    var guide: Boolean = false
+
+    var left_stick_button: Boolean = false
+    var right_stick_button: Boolean = false
 }
 
 open class GoBildaPinpointDriver {

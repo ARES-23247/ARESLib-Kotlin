@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.Gamepad
 import com.areslib.math.InputMath
 import com.areslib.action.RobotAction
 
+@Deprecated("Couples core to FTC Gamepad. Use FtcGamepadAdapter + ARESController instead.")
 class GamepadIO(
     private val gamepad: Gamepad,
     private val deadband: Double = 0.05,
