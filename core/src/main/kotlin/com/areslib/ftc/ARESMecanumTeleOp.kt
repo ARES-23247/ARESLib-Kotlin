@@ -32,6 +32,10 @@ class ARESMecanumTeleOp : LinearOpMode() {
         // Setup state store
         var state = RobotState()
         
+        // Setup NT4 Telemetry
+        val nt4 = com.areslib.telemetry.NT4Telemetry()
+        val publisher = com.areslib.telemetry.ARESNetworkStatePublisher(nt4)
+        
         // Wait for Driver Station Start
         // waitForStart() // Commented out for mock compatibility
         
@@ -70,7 +74,10 @@ class ARESMecanumTeleOp : LinearOpMode() {
             
             // D. WRITE (Pure Outputs -> Hardware)
             mecanumIO.apply(normalizedSpeeds)
-            FtcDashboardAdapter.sendState(state)
+            publisher.publish(state)
         }
+        
+        // Clean up on exit
+        nt4.close()
     }
 }

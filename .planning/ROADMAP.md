@@ -14,25 +14,29 @@
 
 ## Phases
 
-### Phase 30: Advanced Controller Architecture
+### Phase 30: Advanced Controller Architecture [COMPLETED]
 
 **Goal:** Build a cross-platform Controller wrapper with edge detection and state tracking.
 **Requirements**: CTRL-01, CTRL-02, CTRL-03, CTRL-04
 **Depends on:** Phase 29
-**Plans:** 0 plans
+**Plans:** 1 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 30 to break down)
+- [x] Create ControllerState and ARESController
+- [x] Write Unit tests and FtcGamepadAdapter
 
-### Phase 31: NetworkTables 4 (NT4) Server
+### Phase 31: NetworkTables 4 (NT4) Server [COMPLETED]
 
 **Goal:** Build or integrate a lightweight pure Kotlin NT4 server for telemetry and tuning.
 **Requirements**: NT-01, NT-02, NT-03
 **Depends on:** Phase 30
-**Plans:** 0 plans
+**Plans:** 1 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 31 to break down)
+- [x] Integrate `nt-self-impl` into `:core` dependencies.
+- [x] Create `ITelemetry` interface with getters and setters.
+- [x] Create `NT4Telemetry` to wrap `NetworkTablesInstance`.
+- [x] Migrate `ARESMecanumTeleOp` and deprecate FTC Dashboard coupling.
 
 ### Phase 32: Physical Vision & Hardware Configuration
 

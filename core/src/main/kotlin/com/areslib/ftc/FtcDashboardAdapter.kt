@@ -6,6 +6,7 @@ import com.areslib.state.RobotState
 import kotlin.math.cos
 import kotlin.math.sin
 
+@Deprecated("Use ARESNetworkStatePublisher and NT4Telemetry instead for pure cross-platform architecture")
 object FtcDashboardAdapter {
     /**
      * Translates a pure RobotState into an FtcDashboard TelemetryPacket without side effects.
