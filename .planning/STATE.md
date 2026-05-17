@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.10
-milestone_name: TBD
-status: Ready for next milestone
-last_updated: "2026-05-17T11:37:00Z"
-last_activity: 2026-05-17 — Milestone v1.9 archived and tagged
+milestone_name: Match-Ready Telemetry & Hardware Integration
+status: planning
+last_updated: "2026-05-17T11:49:02.561Z"
+last_activity: 2026-05-17
 progress:
   total_phases: 0
   completed_phases: 0
@@ -28,11 +28,13 @@ We have completed Milestone v1.9 (Core Hardware IO Interfaces). Now ready to sta
 
 ## Current Position
 
-Phase: —
+Phase: Not started (defining requirements)
 Plan: —
-Status: Ready for next milestone
-Last activity: 2026-05-17 — Milestone v1.9 archived and tagged
+Status: Defining requirements
+Last activity: 2026-05-17 — Milestone v1.10 started
 
 ## Accumulated Context
+
 ### Roadmap Evolution
+
 - Phases 26-29 for FTC Hardware Abstraction Implementation completed.

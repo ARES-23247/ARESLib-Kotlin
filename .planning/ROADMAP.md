@@ -14,6 +14,46 @@
 
 ## Phases
 
+### Phase 30: Advanced Controller Architecture
+
+**Goal:** Build a cross-platform Controller wrapper with edge detection and state tracking.
+**Requirements**: CTRL-01, CTRL-02, CTRL-03, CTRL-04
+**Depends on:** Phase 29
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 30 to break down)
+
+### Phase 31: NetworkTables 4 (NT4) Server
+
+**Goal:** Build or integrate a lightweight pure Kotlin NT4 server for telemetry and tuning.
+**Requirements**: NT-01, NT-02, NT-03
+**Depends on:** Phase 30
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 31 to break down)
+
+### Phase 32: Physical Vision & Hardware Configuration
+
+**Goal:** Implement Limelight 3A/VisionPortal wrappers and centralized `RobotConfig`.
+**Requirements**: HW-01, HW-02
+**Depends on:** Phase 31
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 32 to break down)
+
+### Phase 33: On-Device Data Logging
+
+**Goal:** Implement WPILog or CSV local logging to the Control Hub SD card.
+**Requirements**: LOG-01
+**Depends on:** Phase 32
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 33 to break down)
+
 <details>
 <summary>✅ v1.9 Core Hardware IO Interfaces (Phases 26-29) — SHIPPED 2026-05-17</summary>
 
@@ -126,3 +166,7 @@
 | 27. FTC REV Hub & Pinpoint Integration | v1.9 | 1/1 | Complete | 2026-05-17 |
 | 28. I2C Auxiliary Wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
 | 29. Add absolute encoder wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
+| 30. Advanced Controller Architecture | v1.10 | 0/1 | Pending | |
+| 31. NetworkTables 4 (NT4) Server | v1.10 | 0/1 | Pending | |
+| 32. Physical Vision & Hardware Configuration | v1.10 | 0/1 | Pending | |
+| 33. On-Device Data Logging | v1.10 | 0/1 | Pending | |

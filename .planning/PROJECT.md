@@ -38,16 +38,20 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ 3D coordinate data structures and matrix mathematics. — v1.8
 - ✓ Immutable chronological array-backed Kalman Filter. — v1.8
 - ✓ IO Layer abstraction for Limelight. — v1.8
+- ✓ FtcRevHubIO, PinpointOdometryIO, I2C Octoquad wrappers — v1.9
+- ✓ Absolute encoder wrapppers for CRServos — v1.9
 ### Active
-## Current Milestone: v1.9 FTC Hardware Abstraction Layer
 
-**Goal:** Implement a robust FTC hardware abstraction layer (IO interfaces) that translates the immutable `RobotState` into physical motor/servo commands, and translates hardware telemetry (REV Hub, Pinpoint, Octoquad, SRS Hub) into Redux `RobotAction`s.
+## Current Milestone: v1.10 Match-Ready Telemetry & Hardware Integration
+
+**Goal:** Implement physical hardware wrappers and advanced tuning/telemetry to prepare the robot for match play.
 
 **Target features:**
-- Dedicated `:ftc-hardware` gradle module.
-- `MotorIO`, `ServoIO`, `OdometryIO`, and `ImuIO` interfaces in `:core`.
-- Native FTC SDK wrappers (`FtcRevHubIO`, `PinpointOdometryIO`).
-- I2C module wrappers for OctoQuad (pure Kotlin port) and SRS Hub.
+- Advanced Gamepad/Controller Architecture with edge detection and custom triggers.
+- Native NetworkTables 4 (NT4) Server for pure FTC/FRC debugging and live-tuning ecosystem unification.
+- Physical Vision Hardware Wrappers (Limelight 3A & VisionPortal).
+- Centralized RobotConfig mapping.
+- On-Device SD Card WPILog/CSV Logging for post-match analysis.
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
 - AdvantageKit `@AutoLog` or KAPT usage — drastically increases build times and breaks cross-platform compatibility on Android.
