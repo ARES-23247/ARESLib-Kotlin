@@ -3,6 +3,7 @@ package com.areslib.ftc.hardware
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchDevice
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch
 import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties
+import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType
 import com.areslib.hardware.MotorIO
 import com.areslib.hardware.ServoIO
@@ -173,10 +174,9 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 }
 
-class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) {
-    fun getVoltage(): Double {
-        return srsHub.getAnalogVoltage(port)
-    }
+class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) : AnalogInput {
+    override val voltage: Double
+        get() = srsHub.getAnalogVoltage(port)
 }
 
 class SrsHubDigitalIO(private val srsHub: SrsHubDriver, private val port: Int) {

@@ -56,7 +56,7 @@ class AresHardwareTestOpMode : LinearOpMode() {
             val revMotorPos = motorIO.position
             val revMotorVel = motorIO.velocity
             val imuHeading = imuIO.heading.radians
-            val srsVoltage = srsAnalog.getVoltage()
+            val srsVoltage = srsAnalog.voltage
             val octoPos = octoEncoder.position
             val octoVel = octoEncoder.velocity
 

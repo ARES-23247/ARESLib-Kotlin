@@ -108,7 +108,28 @@ object DesktopSimLauncher {
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
-        // 4. Simulation Loop
+        // 4. DIGITAL TWIN WIRING (Mock Hardware Layer)
+        val robotDouble = SwerveRobotDouble()
+        val octoquad = com.areslib.ftc.hardware.OctoQuadFWv3(robotDouble.octoQuadI2c).apply { initialize() }
+        val srsHub = com.areslib.ftc.hardware.SrsHubDriver(robotDouble.srsHubI2c).apply { initialize() }
+        
+        val driveEncoders = Array(4) { i -> com.areslib.ftc.hardware.OctoQuadEncoderIO(octoquad, i) }
+        val steerEncoders = Array(4) { i -> com.areslib.ftc.hardware.OctoQuadAbsolutePWMEncoder(octoquad, 4 + i) }
+        
+        val intakeEncoder = com.areslib.ftc.hardware.SrsHubEncoderIO(srsHub, 0)
+        val transferEncoder = com.areslib.ftc.hardware.SrsHubEncoderIO(srsHub, 1)
+        val shooterEncoder = com.areslib.ftc.hardware.SrsHubEncoderIO(srsHub, 2)
+        val floodgateAnalog = com.areslib.ftc.hardware.SrsHubAnalogIO(srsHub, 3)
+        val floodgateCurrentSensor = com.areslib.ftc.hardware.FtcFloodgateCurrentSensor(floodgateAnalog)
+        
+        val kinematics = com.areslib.kinematics.SwerveKinematics(
+            com.areslib.math.Translation2d(0.225, 0.225),
+            com.areslib.math.Translation2d(0.225, -0.225),
+            com.areslib.math.Translation2d(-0.225, 0.225),
+            com.areslib.math.Translation2d(-0.225, -0.225)
+        )
+
+        // 5. Simulation Loop
         var state = RobotState()
         var currentDistance = 0.0
         var lastDistance = 0.0
@@ -131,9 +152,6 @@ object DesktopSimLauncher {
                 TelemetryPublisher.publishTargetPose(currentPose)
                 
                 val speeds = driverStation.getChassisSpeeds()
-                if (speeds.vxMetersPerSecond != 0.0 || speeds.vyMetersPerSecond != 0.0 || speeds.omegaRadiansPerSecond != 0.0) {
-                    println("TELEOP INPUT: vx=${speeds.vxMetersPerSecond}, vy=${speeds.vyMetersPerSecond}, omega=${speeds.omegaRadiansPerSecond}")
-                }
                 speeds
             } else {
                 // Calculate Target State
@@ -163,41 +181,106 @@ object DesktopSimLauncher {
                 )
             }
 
-            // Convert Robot-Relative ChassisSpeeds to World-Relative Velocities for Dyn4j
-            val heading = currentPose.heading.radians
-            var worldVx = 0.0
-            var worldVy = 0.0
+            // --- PHYSICAL ACTUATOR COMMAND CLOSED LOOP ---
+            // --- PHYSICAL ACTUATOR COMMAND CLOSED LOOP ---
+            // Translate requested speeds to wheel modules
+            val targetStates = kinematics.toSwerveModuleStates(chassisSpeeds)
+            for (i in 0 until 4) {
+                robotDouble.drivePowers[i] = targetStates[i].speedMetersPerSecond / 4.0
+                
+                // CR Servo steering closed-loop logic (proportional steer angle correction)
+                val steerError: Double = (targetStates[i].angle.radians - robotDouble.steerAngles[i] + kotlin.math.PI) % (2.0 * kotlin.math.PI) - kotlin.math.PI
+                robotDouble.steerPowers[i] = (steerError * 4.0).coerceIn(-1.0, 1.0)
+            }
+            
+            // Wire superstructure buttons to hardware double
+            robotDouble.intakePower = if (driverStation.isIntaking) 1.0 else 0.0
+            robotDouble.transferPower = if (driverStation.isIntaking) 0.8 else 0.0
+            robotDouble.shooterPower = if (driverStation.isShooting) 1.0 else 0.0
+            robotDouble.hasBallInIntake = driverStation.isIntaking && state.superstructure.inventoryCount < 3
+            robotDouble.hasBallInTransfer = state.superstructure.inventoryCount > 0
+
+            // Step the digital twin physics forward by 20ms
+            robotDouble.update(TIMESTEP_SEC)
+
+            // Read sensors back from virtual registers using production drivers
+            srsHub.update()
+            floodgateCurrentSensor.update()
+
+            // --- FORWARD KINEMATICS FOR DYN4J RIGID BODY DRIVE ---
+            // Calculate actual physical velocities from drive wheel and steer module encoders
+            var vcx: Double = 0.0
+            var vcy: Double = 0.0
+            var omega: Double = 0.0
+            
+            for (i in 0 until 4) {
+                // Ticks/sec to meters/sec
+                val moduleVel: Double = driveEncoders[i].velocity / (2048.0 / (2.0 * kotlin.math.PI * 0.05))
+                val moduleAngle: Double = robotDouble.steerAngles[i] // From the absolute steer feedback
+                
+                val vxMod: Double = moduleVel * kotlin.math.cos(moduleAngle)
+                val vyMod: Double = moduleVel * kotlin.math.sin(moduleAngle)
+                
+                vcx += vxMod
+                vcy += vyMod
+                
+                val rx: Double = robotDouble.moduleX[i]
+                val ry: Double = robotDouble.moduleY[i]
+                
+                omega += (-vxMod * ry + vyMod * rx) / (rx * rx + ry * ry)
+            }
+            
+            vcx /= 4.0
+            vcy /= 4.0
+            omega /= 4.0
+
+            // Convert Robot-Relative Chassis velocities to World-Relative Velocities for Dyn4j
+            val heading: Double = currentPose.heading.radians
+            var worldVx: Double = 0.0
+            var worldVy: Double = 0.0
 
             if (driverStation.isTeleopMode && driverStation.isFieldCentric) {
-                // In FTC, Red alliance is on the -Y side looking +Y. Blue is on +Y side looking -Y.
-                // W (forward = vx), A (left = vy).
                 if (driverStation.isRedAlliance) {
-                    // Red driver looks towards +Y. Left is -X.
                     worldVx = -chassisSpeeds.vyMetersPerSecond
                     worldVy = chassisSpeeds.vxMetersPerSecond
                 } else {
-                    // Blue driver looks towards -Y. Left is +X.
                     worldVx = chassisSpeeds.vyMetersPerSecond
-                    worldVy = -chassisSpeeds.vxMetersPerSecond
+                    worldVy = -chassisSpeeds.vyMetersPerSecond
                 }
             } else {
-                // Robot-centric: Rotate WASD vectors by current robot heading
-                worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
-                worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
+                worldVx = vcx * kotlin.math.cos(heading) - vcy * kotlin.math.sin(heading)
+                worldVy = vcx * kotlin.math.sin(heading) + vcy * kotlin.math.cos(heading)
             }
 
             // Wake up the physics body
             robotBody.isAtRest = false
 
-            // Apply forces to simulate traction/momentum (instead of setting velocity directly)
+            // Apply forces to simulate traction/momentum
             val kpLinear = 50.0
             val kpAngular = 20.0
             val forceX = (worldVx - robotBody.linearVelocity.x) * kpLinear
             val forceY = (worldVy - robotBody.linearVelocity.y) * kpLinear
-            val torque = (chassisSpeeds.omegaRadiansPerSecond - robotBody.angularVelocity) * kpAngular
+            val torque = (omega - robotBody.angularVelocity) * kpAngular
 
             robotBody.applyForce(org.dyn4j.geometry.Vector2(forceX, forceY))
             robotBody.applyTorque(torque)
+
+            // Print highly detailed current and thermal warning metrics periodically
+            if (System.currentTimeMillis() % 1000 < 20) {
+                println(String.format(
+                    "| FLOODGATE LOAD | Current: %.2f A | Temp: %.1f%% | Energy: %.4f Wh | Fuse Alert: %b |",
+                    floodgateCurrentSensor.current,
+                    floodgateCurrentSensor.fuseThermalLoadPercent,
+                    floodgateCurrentSensor.estimatedEnergyWattHours,
+                    floodgateCurrentSensor.isOverloadWarning()
+                ))
+                println(String.format(
+                    "| SUPERSTRUCTURE | Intake: %.0f | Transfer: %.0f | Shooter: %.0f |",
+                    intakeEncoder.position,
+                    transferEncoder.position,
+                    shooterEncoder.position
+                ))
+            }
 
             // FSM state updates
             if (driverStation.isTeleopMode) {
