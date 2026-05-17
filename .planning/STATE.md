@@ -28,15 +28,15 @@ Milestone v2.0 started. All library features (v1.0–v1.10) are complete. The go
 
 ## Current Position
 
-Phase: 36
+Phase: 37
 State: planning
 
 ### Current Focus
-Harden the `NT4Telemetry` and `ARESDataLogger` for physical device storage paths (REV Control Hub) and connection states.
+Run the final deployment step for Milestone v2.0: Physical Hardware Smoke Test & Diagnostics.
 
 ### Next Steps
-1. Run `gsd-plan-phase` for Phase 36.
-2. Implement NT4 connection handling to endure wifi drops.
+1. Perform final APK build validations.
+2. Complete Milestone v2.0 as the deployment logic is completely written and verified.
 
 ## Accumulated Context
 
