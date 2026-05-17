@@ -191,18 +191,18 @@ object DesktopSimLauncher {
             }
 
             // --- PHYSICAL ACTUATOR COMMAND CLOSED LOOP ---
-            // --- PHYSICAL ACTUATOR COMMAND CLOSED LOOP ---
-            // Translate requested speeds to wheel modules
+            // Translate requested speeds to wheel modules (for sensor telemetry)
             val targetStates = kinematics.toSwerveModuleStates(chassisSpeeds)
             for (i in 0 until 4) {
                 robotDouble.drivePowers[i] = targetStates[i].speedMetersPerSecond / 4.0
                 
-                // CR Servo steering closed-loop logic (proportional steer angle correction)
-                val steerErrorRaw = targetStates[i].angle.radians - robotDouble.steerAngles[i]
-                var steerError = (steerErrorRaw + kotlin.math.PI) % (2.0 * kotlin.math.PI)
-                if (steerError < 0.0) steerError += 2.0 * kotlin.math.PI
-                steerError -= kotlin.math.PI
-                robotDouble.steerPowers[i] = (steerError * 4.0).coerceIn(-1.0, 1.0)
+                // CR Servo steering: snap to target angle for simulation fidelity
+                robotDouble.steerAngles[i] = targetStates[i].angle.radians.let { a ->
+                    var normalized = a % (2.0 * kotlin.math.PI)
+                    if (normalized < 0.0) normalized += 2.0 * kotlin.math.PI
+                    normalized
+                }
+                robotDouble.steerPowers[i] = 0.0 // Already at target
             }
             
             // Wire superstructure buttons to hardware double
@@ -219,37 +219,12 @@ object DesktopSimLauncher {
             srsHub.update()
             floodgateCurrentSensor.update()
 
-            // --- FORWARD KINEMATICS FOR DYN4J RIGID BODY DRIVE ---
-            // Calculate actual physical velocities from drive wheel and steer module encoders
-            var vcx: Double = 0.0
-            var vcy: Double = 0.0
-            var omega: Double = 0.0
-            
-            for (i in 0 until 4) {
-                // Ticks/sec to meters/sec
-                val moduleVel: Double = driveEncoders[i].velocity / (2048.0 / (2.0 * kotlin.math.PI * 0.05))
-                val moduleAngle: Double = robotDouble.steerAngles[i] // From the absolute steer feedback
-                
-                val vxMod: Double = moduleVel * kotlin.math.cos(moduleAngle)
-                val vyMod: Double = moduleVel * kotlin.math.sin(moduleAngle)
-                
-                vcx += vxMod
-                vcy += vyMod
-                
-                val rx: Double = robotDouble.moduleX[i]
-                val ry: Double = robotDouble.moduleY[i]
-                
-                omega += (-vxMod * ry + vyMod * rx) / (rx * rx + ry * ry)
-            }
-            
-            vcx /= 4.0
-            vcy /= 4.0
-            omega /= 4.0
-
-            // Convert Robot-Relative Chassis velocities to World-Relative Velocities for Dyn4j
+            // --- DRIVE DYN4J BODY DIRECTLY FROM COMMANDED CHASSIS SPEEDS ---
+            // chassisSpeeds is robot-relative (vx=forward, vy=left, omega=CCW)
+            // Rotate to world frame using current heading
             val heading: Double = currentPose.heading.radians
-            val worldVx = vcx * kotlin.math.cos(heading) - vcy * kotlin.math.sin(heading)
-            val worldVy = vcx * kotlin.math.sin(heading) + vcy * kotlin.math.cos(heading)
+            val worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
+            val worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
 
             // Wake up the physics body
             robotBody.isAtRest = false
@@ -259,7 +234,7 @@ object DesktopSimLauncher {
             val kpAngular = 20.0
             val forceX = (worldVx - robotBody.linearVelocity.x) * kpLinear
             val forceY = (worldVy - robotBody.linearVelocity.y) * kpLinear
-            val torque = (omega - robotBody.angularVelocity) * kpAngular
+            val torque = (chassisSpeeds.omegaRadiansPerSecond - robotBody.angularVelocity) * kpAngular
 
             robotBody.applyForce(org.dyn4j.geometry.Vector2(forceX, forceY))
             robotBody.applyTorque(torque)
