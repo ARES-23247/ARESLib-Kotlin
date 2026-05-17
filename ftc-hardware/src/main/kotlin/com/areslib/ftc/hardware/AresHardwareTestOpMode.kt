@@ -49,10 +49,7 @@ class AresHardwareTestOpMode : LinearOpMode() {
 
         telemetry.addData("Status", "Initialized. Waiting for Start")
         telemetry.update()
-
         waitForStart()
-
-        var currentState = RobotState()
 
         while (opModeIsActive()) {
             // Update pure state from hardware IO
