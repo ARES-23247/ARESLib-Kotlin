@@ -70,29 +70,29 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | TBD | Pending |
-| BUILD-02 | TBD | Pending |
-| BUILD-03 | TBD | Pending |
-| MOCK-01 | TBD | Pending |
-| MOCK-02 | TBD | Pending |
-| MOCK-03 | TBD | Pending |
-| OPMODE-01 | TBD | Pending |
-| OPMODE-02 | TBD | Pending |
-| OPMODE-03 | TBD | Pending |
-| HW-01 | TBD | Pending |
-| HW-02 | TBD | Pending |
-| HW-03 | TBD | Pending |
-| TEL-01 | TBD | Pending |
-| TEL-02 | TBD | Pending |
-| TEL-03 | TBD | Pending |
-| DEPLOY-01 | TBD | Pending |
-| DEPLOY-02 | TBD | Pending |
-| DEPLOY-03 | TBD | Pending |
+| BUILD-01 | Phase 34 | Pending |
+| BUILD-02 | Phase 34 | Pending |
+| BUILD-03 | Phase 34 | Pending |
+| MOCK-01 | Phase 34 | Pending |
+| MOCK-02 | Phase 34 | Pending |
+| MOCK-03 | Phase 34 | Pending |
+| OPMODE-01 | Phase 35 | Pending |
+| OPMODE-02 | Phase 35 | Pending |
+| OPMODE-03 | Phase 35 | Pending |
+| HW-01 | Phase 35 | Pending |
+| HW-02 | Phase 35 | Pending |
+| HW-03 | Phase 35 | Pending |
+| TEL-01 | Phase 36 | Pending |
+| TEL-02 | Phase 36 | Pending |
+| TEL-03 | Phase 36 | Pending |
+| DEPLOY-01 | Phase 37 | Pending |
+| DEPLOY-02 | Phase 37 | Pending |
+| DEPLOY-03 | Phase 37 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-17*
