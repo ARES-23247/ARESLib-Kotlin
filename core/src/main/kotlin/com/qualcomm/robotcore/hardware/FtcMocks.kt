@@ -85,3 +85,26 @@ open class ElapsedTime {
     fun reset() { startTime = System.nanoTime() }
     fun seconds(): Double = (System.nanoTime() - startTime) / 1e9
 }
+
+interface DistanceSensor {
+    fun getDistance(unit: org.firstinspires.ftc.robotcore.external.navigation.Distance): Double
+}
+
+interface ColorSensor {
+    fun red(): Int
+    fun green(): Int
+    fun blue(): Int
+    fun alpha(): Int
+}
+
+class NormalizedRGBA {
+    var red: Float = 0f
+    var green: Float = 0f
+    var blue: Float = 0f
+    var alpha: Float = 0f
+}
+
+interface NormalizedColorSensor {
+    val normalizedColors: NormalizedRGBA
+}
+
