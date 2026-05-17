@@ -26,6 +26,13 @@ interface MotorIO {
     fun setVoltage(volts: Double, batteryVolts: Double) {
         this.power = if (batteryVolts > 0.1) volts / batteryVolts else 0.0
     }
+
+    /**
+     * Estimated or measured current draw of this motor in Amperes (Amps).
+     * Defaults to 0.0 in simulations or when current monitoring is unsupported.
+     */
+    val currentAmps: Double
+        get() = 0.0
     
     /**
      * Current motor velocity in ticks per second

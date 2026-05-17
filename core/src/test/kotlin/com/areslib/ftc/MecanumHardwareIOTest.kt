@@ -20,6 +20,10 @@ class MockDcMotorEx : DcMotorEx {
         set(value) {
             currentPower = value
         }
+
+    override fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double {
+        return 0.0
+    }
 }
 
 class MecanumHardwareIOTest {
@@ -40,6 +44,10 @@ class MecanumHardwareIOTest {
                     "br" -> br as T
                     else -> throw IllegalArgumentException()
                 }
+            }
+
+            override fun <T> getAll(classOrType: Class<out T>): List<T> {
+                return emptyList()
             }
         }
         

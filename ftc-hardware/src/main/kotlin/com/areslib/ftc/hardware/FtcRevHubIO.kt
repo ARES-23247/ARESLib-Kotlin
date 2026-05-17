@@ -42,6 +42,9 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
     override val position: Double
         get() = motor.currentPosition.toDouble()
 
+    override val currentAmps: Double
+        get() = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+
     override fun resetEncoder() {
         val currentMode = motor.mode
         motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
@@ -125,6 +128,9 @@ class CompositeMotorIO(
 
     override val position: Double
         get() = sensor.position
+
+    override val currentAmps: Double
+        get() = actuator.currentAmps
 
     override fun resetEncoder() {
         sensor.resetEncoder()

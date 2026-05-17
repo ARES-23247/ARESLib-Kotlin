@@ -8,3 +8,5 @@ enum class Distance {
 }
 
 class Orientation(val firstAngle: Float = 0f, val secondAngle: Float = 0f, val thirdAngle: Float = 0f)
+
+enum class CurrentUnit { AMPS, MILLIAMPS }
