@@ -152,7 +152,16 @@ object DesktopSimLauncher {
                 TelemetryPublisher.publishTargetPose(currentPose)
                 
                 val speeds = driverStation.getChassisSpeeds()
-                speeds
+                if (driverStation.isFieldCentric) {
+                    com.areslib.math.ChassisSpeeds.fromFieldRelativeSpeeds(
+                        speeds.vxMetersPerSecond,
+                        speeds.vyMetersPerSecond,
+                        speeds.omegaRadiansPerSecond,
+                        currentPose.heading
+                    )
+                } else {
+                    speeds
+                }
             } else {
                 // Calculate Target State
                 val tempState = path.sampleAtDistance(currentDistance)
@@ -236,21 +245,8 @@ object DesktopSimLauncher {
 
             // Convert Robot-Relative Chassis velocities to World-Relative Velocities for Dyn4j
             val heading: Double = currentPose.heading.radians
-            var worldVx: Double = 0.0
-            var worldVy: Double = 0.0
-
-            if (driverStation.isTeleopMode && driverStation.isFieldCentric) {
-                if (driverStation.isRedAlliance) {
-                    worldVx = -chassisSpeeds.vyMetersPerSecond
-                    worldVy = chassisSpeeds.vxMetersPerSecond
-                } else {
-                    worldVx = chassisSpeeds.vyMetersPerSecond
-                    worldVy = -chassisSpeeds.vyMetersPerSecond
-                }
-            } else {
-                worldVx = vcx * kotlin.math.cos(heading) - vcy * kotlin.math.sin(heading)
-                worldVy = vcx * kotlin.math.sin(heading) + vcy * kotlin.math.cos(heading)
-            }
+            val worldVx = vcx * kotlin.math.cos(heading) - vcy * kotlin.math.sin(heading)
+            val worldVy = vcx * kotlin.math.sin(heading) + vcy * kotlin.math.cos(heading)
 
             // Wake up the physics body
             robotBody.isAtRest = false
