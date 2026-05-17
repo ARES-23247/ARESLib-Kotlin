@@ -6,9 +6,26 @@ package com.areslib.hardware
  */
 interface MotorIO {
     /**
-     * Motor power (-1.0 to 1.0)
+     * Motor power percentage (-1.0 to 1.0)
      */
     var power: Double
+
+    /**
+     * Optional scaling factor applied to all motor power writes (0.0 to 1.0).
+     * Defaults to 1.0 (no scaling). Useful for automatic current limiters or speed scaling.
+     */
+    var powerScale: Double
+        get() = 1.0
+        set(value) {}
+
+    /**
+     * Sets the motor output in absolute volts, automatically compensating for battery sag.
+     * @param volts The target voltage (e.g., up to 12.0V).
+     * @param batteryVolts The current measured battery voltage (e.g., from the voltage sensor).
+     */
+    fun setVoltage(volts: Double, batteryVolts: Double) {
+        this.power = if (batteryVolts > 0.1) volts / batteryVolts else 0.0
+    }
     
     /**
      * Current motor velocity in ticks per second

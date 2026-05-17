@@ -21,10 +21,19 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
         motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
     }
 
-    override var power: Double
-        get() = motor.power
+    private var targetPower: Double = 0.0
+
+    override var powerScale: Double = 1.0
         set(value) {
-            motor.power = value
+            field = value.coerceIn(0.0, 1.0)
+            motor.power = targetPower * field
+        }
+
+    override var power: Double
+        get() = targetPower
+        set(value) {
+            targetPower = value
+            motor.power = value * powerScale
         }
 
     override val velocity: Double
@@ -49,10 +58,19 @@ class FtcCRServo(
     private val crServo: CRServo,
     private val externalEncoder: MotorIO? = null
 ) : MotorIO {
-    override var power: Double
-        get() = crServo.power
+    private var targetPower: Double = 0.0
+
+    override var powerScale: Double = 1.0
         set(value) {
-            crServo.power = value
+            field = value.coerceIn(0.0, 1.0)
+            crServo.power = targetPower * field
+        }
+
+    override var power: Double
+        get() = targetPower
+        set(value) {
+            targetPower = value
+            crServo.power = value * powerScale
         }
 
     override val velocity: Double
