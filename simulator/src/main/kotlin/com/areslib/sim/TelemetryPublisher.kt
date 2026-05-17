@@ -1,5 +1,6 @@
 package com.areslib.sim
 
+import com.areslib.math.ChassisSpeeds
 import com.areslib.state.RobotState
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
@@ -11,6 +12,21 @@ object TelemetryPublisher {
     private val statePublisher: StructPublisher<RobotState>
     private val targetPosePublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/TargetPose").publish()
     private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/GamePieces").publish()
+
+    // --- AdvantageKit-level Swerve Module Telemetry ---
+    private val moduleSpeedsTargetPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleSpeedsTarget").publish()
+    private val moduleAnglesTargetPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleAnglesTarget").publish()
+    private val moduleSpeedsActualPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleSpeedsActual").publish()
+    private val moduleAnglesActualPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleAnglesActual").publish()
+    
+    // Chassis Speeds
+    private val chassisVxPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Swerve/ChassisSpeeds/vx").publish()
+    private val chassisVyPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Swerve/ChassisSpeeds/vy").publish()
+    private val chassisOmegaPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Swerve/ChassisSpeeds/omega").publish()
+
+    // Drive mode
+    private val fieldCentricPub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/FieldCentric").publish()
+    private val teleopModePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/TeleopMode").publish()
 
     init {
         // Start DataLogManager for offline .wpilog generation
@@ -28,7 +44,6 @@ object TelemetryPublisher {
      */
     fun publish(state: RobotState) {
         statePublisher.set(state)
-        // You could also log paths here if PathPlanner targets are in the state
     }
 
     /**
@@ -44,6 +59,37 @@ object TelemetryPublisher {
      */
     fun publishGamePieces(gamePieces: DoubleArray) {
         gamePiecesPublisher.set(gamePieces)
+    }
+
+    /**
+     * Publishes per-module swerve telemetry (AdvantageKit-level).
+     * Each array is 4 elements [FL, FR, BL, BR].
+     */
+    fun publishSwerveModules(
+        speedsTarget: DoubleArray, anglesTarget: DoubleArray,
+        speedsActual: DoubleArray, anglesActual: DoubleArray
+    ) {
+        moduleSpeedsTargetPub.set(speedsTarget)
+        moduleAnglesTargetPub.set(anglesTarget)
+        moduleSpeedsActualPub.set(speedsActual)
+        moduleAnglesActualPub.set(anglesActual)
+    }
+
+    /**
+     * Publishes commanded chassis speeds.
+     */
+    fun publishChassisSpeeds(speeds: ChassisSpeeds) {
+        chassisVxPub.set(speeds.vxMetersPerSecond)
+        chassisVyPub.set(speeds.vyMetersPerSecond)
+        chassisOmegaPub.set(speeds.omegaRadiansPerSecond)
+    }
+
+    /**
+     * Publishes drive mode flags.
+     */
+    fun publishDriveMode(fieldCentric: Boolean, teleopMode: Boolean) {
+        fieldCentricPub.set(fieldCentric)
+        teleopModePub.set(teleopMode)
     }
 
     /**

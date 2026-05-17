@@ -153,12 +153,10 @@ object DesktopSimLauncher {
                 
                 val speeds = driverStation.getChassisSpeeds()
                 if (driverStation.isFieldCentric) {
-                    com.areslib.math.ChassisSpeeds.fromFieldRelativeSpeeds(
-                        speeds.vxMetersPerSecond,
-                        speeds.vyMetersPerSecond,
-                        speeds.omegaRadiansPerSecond,
-                        currentPose.heading
-                    )
+                    // In field-centric, keyboard vx/vy represent FIELD directions.
+                    // We skip fromFieldRelativeSpeeds and instead directly use them as world velocities.
+                    // The world-frame rotation below will NOT be applied for field-centric teleop.
+                    speeds
                 } else {
                     speeds
                 }
@@ -219,12 +217,21 @@ object DesktopSimLauncher {
             srsHub.update()
             floodgateCurrentSensor.update()
 
-            // --- DRIVE DYN4J BODY DIRECTLY FROM COMMANDED CHASSIS SPEEDS ---
-            // chassisSpeeds is robot-relative (vx=forward, vy=left, omega=CCW)
-            // Rotate to world frame using current heading
+            // --- DRIVE DYN4J BODY FROM CHASSIS SPEEDS ---
             val heading: Double = currentPose.heading.radians
-            val worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
-            val worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
+            val worldVx: Double
+            val worldVy: Double
+
+            if (driverStation.isTeleopMode && driverStation.isFieldCentric) {
+                // Field-centric: keyboard vx/vy ARE world directions directly
+                // vx = "forward on field" = +X world, vy = "left on field" = +Y world
+                worldVx = chassisSpeeds.vxMetersPerSecond
+                worldVy = chassisSpeeds.vyMetersPerSecond
+            } else {
+                // Robot-centric teleop or auto: chassisSpeeds is robot-relative, rotate to world
+                worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
+                worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
+            }
 
             // Wake up the physics body
             robotBody.isAtRest = false
@@ -238,6 +245,24 @@ object DesktopSimLauncher {
 
             robotBody.applyForce(org.dyn4j.geometry.Vector2(forceX, forceY))
             robotBody.applyTorque(torque)
+
+            // --- ADVANTAGEKIT-LEVEL SWERVE MODULE TELEMETRY ---
+            val moduleSpeedsActual = DoubleArray(4)
+            val moduleAnglesActual = DoubleArray(4)
+            val moduleSpeedsTarget = DoubleArray(4)
+            val moduleAnglesTarget = DoubleArray(4)
+            for (i in 0 until 4) {
+                moduleSpeedsTarget[i] = targetStates[i].speedMetersPerSecond
+                moduleAnglesTarget[i] = targetStates[i].angle.radians
+                moduleSpeedsActual[i] = robotDouble.driveVelocities[i] / (2048.0 / (2.0 * kotlin.math.PI * 0.05))
+                moduleAnglesActual[i] = robotDouble.steerAngles[i]
+            }
+            TelemetryPublisher.publishSwerveModules(
+                moduleSpeedsTarget, moduleAnglesTarget,
+                moduleSpeedsActual, moduleAnglesActual
+            )
+            TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
+            TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode)
 
             // Print highly detailed current and thermal warning metrics periodically
             if (System.currentTimeMillis() % 1000 < 20) {
