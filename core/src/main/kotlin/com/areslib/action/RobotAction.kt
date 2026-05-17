@@ -48,9 +48,24 @@ sealed class RobotAction {
         val timestampMs: Long
     ) : RobotAction()
 
-    // FSM Interactions
+    // Superstructure FSM Actions
     data class SetIntakeActive(
         val active: Boolean,
+        val timestampMs: Long
+    ) : RobotAction()
+
+    data class SetFlywheelActive(
+        val active: Boolean,
+        val timestampMs: Long
+    ) : RobotAction()
+
+    data class SetTransferActive(
+        val active: Boolean,
+        val timestampMs: Long
+    ) : RobotAction()
+
+    data class UpdateFlywheelRPM(
+        val rpm: Double,
         val timestampMs: Long
     ) : RobotAction()
 

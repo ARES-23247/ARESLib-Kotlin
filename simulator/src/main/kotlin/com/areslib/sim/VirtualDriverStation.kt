@@ -11,6 +11,16 @@ import org.lwjgl.glfw.GLFW.*
 /**
  * A Swing-based virtual driver station that provides keyboard and physical gamepad input
  * for teleop driving and visualizes the active inputs on a gamepad overlay.
+ *
+ * Controls:
+ *   WASD       = Drive (translation)
+ *   Q / E      = Rotate (CCW / CW)
+ *   SPACE      = Toggle Teleop / Auto
+ *   C          = Toggle Field-Centric / Robot-Centric
+ *   R          = Toggle Red / Blue Alliance
+ *   SHIFT (LB) = Toggle Intake
+ *   F (RB)     = Toggle Flywheel
+ *   ENTER (RT) = Transfer/Shoot (hold, only fires when flywheel at speed)
  */
 class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener {
 
@@ -34,7 +44,10 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     @Volatile var isIntaking = false
         private set
     
-    @Volatile var isShooting = false
+    @Volatile var isFlywheelOn = false
+        private set
+
+    @Volatile var isTransferring = false
         private set
 
     // Gamepad axes
@@ -44,12 +57,13 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     @Volatile private var gamepadRy = 0f
 
     @Volatile private var lastGamepadShift = false
+    @Volatile private var lastGamepadRb = false
     @Volatile private var isGamepadConnected = false
     @Volatile private var gamepadName = "No Gamepad Detected"
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
-        preferredSize = Dimension(500, 350)
+        preferredSize = Dimension(500, 380)
         isResizable = false
         
         val panel = object : JPanel() {
@@ -94,7 +108,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.fillRoundRect(cx - 180, cy - 20, 100, 120, 50, 50) // Left handle
                 g2d.fillRoundRect(cx + 80, cy - 20, 100, 120, 50, 50)  // Right handle
 
-                // Left Bumper (Intake)
+                // Left Bumper (Intake) - SHIFT / LB
                 val isLbActive = isIntaking
                 g2d.color = if (isLbActive) Color(100, 200, 255) else Color(30, 30, 35)
                 g2d.fillRoundRect(cx - 140, cy - 100, 80, 30, 15, 15)
@@ -103,13 +117,21 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.drawString("LB / SHIFT", cx - 130, cy - 80)
                 g2d.drawString("INTAKE", cx - 120, cy - 110)
 
-                // Right Trigger (Shoot)
-                val isRtActive = isShooting
+                // Right Bumper (Flywheel) - F / RB
+                val isRbActive = isFlywheelOn
+                g2d.color = if (isRbActive) Color(255, 200, 50) else Color(30, 30, 35)
+                g2d.fillRoundRect(cx + 60, cy - 100, 80, 30, 15, 15)
+                g2d.color = if (isRbActive) Color.BLACK else Color.WHITE
+                g2d.drawString("RB / F", cx + 75, cy - 80)
+                g2d.drawString("FLYWHEEL", cx + 70, cy - 110)
+
+                // Right Trigger (Transfer/Shoot) - ENTER / RT
+                val isRtActive = isTransferring
                 g2d.color = if (isRtActive) Color(255, 100, 100) else Color(30, 30, 35)
-                g2d.fillRoundRect(cx + 60, cy - 110, 80, 40, 15, 15)
+                g2d.fillRoundRect(cx + 60, cy - 140, 80, 35, 15, 15)
                 g2d.color = if (isRtActive) Color.BLACK else Color.WHITE
-                g2d.drawString("RT / ENTER", cx + 65, cy - 85)
-                g2d.drawString("SHOOT", cx + 80, cy - 120)
+                g2d.drawString("RT / ENTER", cx + 65, cy - 118)
+                g2d.drawString("SHOOT", cx + 80, cy - 150)
 
                 // Left Stick (WASD)
                 var lxOffset = (gamepadLx * 20).toInt()
@@ -138,6 +160,11 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.fillOval(cx + 65 + rxOffset, cy + 25 + ryOffset, 40, 40) // Stick
                 g2d.color = Color.WHITE
                 g2d.drawString("Q / E", cx + 70, cy + 100)
+
+                // Status bar at bottom
+                g2d.font = Font("Segoe UI", Font.BOLD, 11)
+                g2d.color = Color(80, 80, 80)
+                g2d.drawString("SHIFT=Intake  F=Flywheel  ENTER=Shoot", cx - 130, cy + 120)
             }
         }
         
@@ -183,27 +210,21 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                     val axes = glfwGetJoystickAxes(activeJoy)
                     val buttons = glfwGetJoystickButtons(activeJoy)
                     
-                    var shiftPressedThisFrame = false
-                    var enterPressedThisFrame = false
+                    var lbPressedThisFrame = false
+                    var rbPressedThisFrame = false
+                    var rtPressedThisFrame = false
 
                     if (axes != null && axes.capacity() >= 4) {
                         gamepadLx = axes[0]
                         gamepadLy = axes[1]
                         
-                        // XBox controllers usually map Right Stick X/Y to axes 2 and 3, or 4 and 5 depending on triggers
                         if (axes.capacity() >= 6) {
-                            // Standard XInput: 0=LX, 1=LY, 2=LT, 3=RX, 4=RY, 5=RT
-                            // Wait, sometimes Right Stick is 2, 3 and Triggers are 4, 5. 
-                            // Usually: 0=LX, 1=LY, 2=RX, 3=RY, 4=LT, 5=RT (Mac/Linux SDL mapping)
-                            // We can use glfwGetGamepadState if there's a mapping, but let's stick to simple axes.
                             gamepadRx = axes[2]
                             gamepadRy = axes[3]
                             
-                            if (axes.capacity() >= 6) {
-                                // Checking triggers on XInput
-                                if (axes[4] > 0.5f || axes[5] > 0.5f) {
-                                    enterPressedThisFrame = true
-                                }
+                            // Right trigger on XInput (axis 5 usually)
+                            if (axes.capacity() >= 6 && axes[5] > 0.5f) {
+                                rtPressedThisFrame = true
                             }
                         } else {
                             gamepadRx = axes[2]
@@ -214,27 +235,32 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                     }
 
                     if (buttons != null && buttons.capacity() >= 6) {
-                        // Button mappings vary, but usually:
                         // 0=A, 1=B, 2=X, 3=Y, 4=LB, 5=RB
                         if (buttons[4] == GLFW_PRESS.toByte()) {
-                            shiftPressedThisFrame = true
+                            lbPressedThisFrame = true
                         }
                         if (buttons[5] == GLFW_PRESS.toByte()) {
-                            enterPressedThisFrame = true
+                            rbPressedThisFrame = true
                         }
                     }
 
                     // Intake Toggle Edge Detection (Left Bumper)
-                    if (shiftPressedThisFrame && !lastGamepadShift) {
+                    if (lbPressedThisFrame && !lastGamepadShift) {
                         isIntaking = !isIntaking
                     }
-                    lastGamepadShift = shiftPressedThisFrame
+                    lastGamepadShift = lbPressedThisFrame
 
-                    // Shoot Momentary (combined with keyboard)
-                    val isKeyboardShooting = pressedKeys.contains(KeyEvent.VK_ENTER)
-                    val newIsShooting = enterPressedThisFrame || isKeyboardShooting
-                    if (isShooting != newIsShooting) {
-                        isShooting = newIsShooting
+                    // Flywheel Toggle Edge Detection (Right Bumper)
+                    if (rbPressedThisFrame && !lastGamepadRb) {
+                        isFlywheelOn = !isFlywheelOn
+                    }
+                    lastGamepadRb = rbPressedThisFrame
+
+                    // Transfer/Shoot Momentary (Right Trigger)
+                    val isKeyboardTransferring = pressedKeys.contains(KeyEvent.VK_ENTER)
+                    val newIsTransferring = rtPressedThisFrame || isKeyboardTransferring
+                    if (isTransferring != newIsTransferring) {
+                        isTransferring = newIsTransferring
                     }
 
                     // Only repaint if axes or buttons changed significantly to save CPU
@@ -242,12 +268,13 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                   kotlin.math.abs(gamepadLy - lastLy) > 0.05f ||
                                   kotlin.math.abs(gamepadRx - lastRx) > 0.05f ||
                                   kotlin.math.abs(gamepadRy - lastRy) > 0.05f ||
-                                  shiftPressedThisFrame != lastGamepadShift ||
-                                  enterPressedThisFrame != lastGamepadEnter
+                                  lbPressedThisFrame != lastGamepadShift ||
+                                  rbPressedThisFrame != lastGamepadRb ||
+                                  rtPressedThisFrame != lastGamepadEnter
 
-                    if (changed || isKeyboardShooting) {
+                    if (changed || isKeyboardTransferring) {
                         lastLx = gamepadLx; lastLy = gamepadLy; lastRx = gamepadRx; lastRy = gamepadRy
-                        lastGamepadEnter = enterPressedThisFrame
+                        lastGamepadEnter = rtPressedThisFrame
                         repaint()
                     }
                 } else {
@@ -281,7 +308,8 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 KeyEvent.VK_C -> isFieldCentric = !isFieldCentric
                 KeyEvent.VK_R -> isRedAlliance = !isRedAlliance
                 KeyEvent.VK_SHIFT -> isIntaking = !isIntaking
-                KeyEvent.VK_ENTER -> isShooting = true
+                KeyEvent.VK_F -> isFlywheelOn = !isFlywheelOn
+                KeyEvent.VK_ENTER -> isTransferring = true
             }
             repaint()
         }
@@ -290,15 +318,11 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     override fun keyReleased(e: KeyEvent?) {
         e?.let {
             pressedKeys.remove(it.keyCode)
-            if (it.keyCode == KeyEvent.VK_ENTER && !isShootingGamepad()) {
-                isShooting = false
+            if (it.keyCode == KeyEvent.VK_ENTER) {
+                isTransferring = false
             }
             repaint()
         }
-    }
-
-    private fun isShootingGamepad(): Boolean {
-        return false // Handled in pollGamepad explicitly via isShooting property
     }
 
     /**

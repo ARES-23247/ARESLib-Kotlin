@@ -8,7 +8,7 @@ import kotlin.math.sin
 
 /**
  * High-fidelity Digital Twin (Body Double) physical simulator for the ARES Swerve Robot.
- * Models a 4-module Swerve chassis and Superstructure (Intake, Transfer, Shooter).
+ * Models a 4-module Swerve chassis and Superstructure (Intake, Transfer, Flywheel Shooter).
  * Seamlessly encodes real-time physical states into binary I2C registers for OctoQuad and SRS Hub.
  */
 class SwerveRobotDouble {
@@ -47,17 +47,28 @@ class SwerveRobotDouble {
     private val maxPulseUs = 1024.0
 
     // 2. Superstructure States
+    // --- Intake Motor ---
     var intakePower = 0.0
-    var transferPower = 0.0
-    var shooterPower = 0.0
-
     val intakePosition = DoubleArray(1) // Ticks
-    val transferPosition = DoubleArray(1) // Ticks
-    val shooterPosition = DoubleArray(1) // Ticks
-
     private val maxIntakeTicksPerSec = 1000.0
+
+    // --- Transfer Motor ---
+    var transferPower = 0.0
+    val transferPosition = DoubleArray(1) // Ticks
     private val maxTransferTicksPerSec = 800.0
-    private val maxShooterTicksPerSec = 2500.0
+
+    // --- Flywheel Motor (with angular momentum) ---
+    var flywheelPower = 0.0 // 0.0 to 1.0 commanded power
+    var flywheelRPM = 0.0 // Current angular velocity in RPM
+        private set
+    val flywheelPosition = DoubleArray(1) // Ticks (encoder)
+    
+    // Flywheel physics parameters
+    private val flywheelMOI = 0.008 // Moment of inertia (kg·m²) — typical for a 6" flywheel
+    private val flywheelMotorStallTorque = 0.18 // Nm (goBILDA 5202/3/4 series)
+    private val flywheelMotorFreeSpeedRPM = 6000.0 // Free speed RPM
+    private val flywheelFrictionTorque = 0.005 // Nm drag from bearings
+    private val flywheelEncoderTicksPerRev = 2048.0
 
     // Game piece tracking for Floodgate load spikes
     var hasBallInIntake = false
@@ -101,22 +112,44 @@ class SwerveRobotDouble {
         }
 
         // --- B. SUPERSTRUCTURE AUXILIARY MOTORS PHYSICS ---
-        // 1. Intake
+        
+        // 1. Intake Motor
         val intakeVel = intakePower * maxIntakeTicksPerSec
         intakePosition[0] += intakeVel * dt
         val intakeBytes = ByteBuffer.allocate(4).order(endian).putInt(intakePosition[0].toInt()).array()
         System.arraycopy(intakeBytes, 0, srsHubI2c.registers, 9, 4) // SRS Port 0 (Offset 9)
 
-        // 2. Transfer
+        // 2. Transfer Motor
         val transferVel = transferPower * maxTransferTicksPerSec
         transferPosition[0] += transferVel * dt
         val transferBytes = ByteBuffer.allocate(4).order(endian).putInt(transferPosition[0].toInt()).array()
         System.arraycopy(transferBytes, 0, srsHubI2c.registers, 13, 4) // SRS Port 1 (Offset 13)
 
-        // 3. Shooter
-        val shooterVel = shooterPower * maxShooterTicksPerSec
-        shooterPosition[0] += shooterVel * dt
-        val shooterBytes = ByteBuffer.allocate(4).order(endian).putInt(shooterPosition[0].toInt()).array()
+        // 3. Flywheel Motor — Angular Momentum Physics
+        // Motor torque model: T_motor = stallTorque * power * (1 - RPM/freeSpeed)
+        val currentSpeedFraction = flywheelRPM / flywheelMotorFreeSpeedRPM
+        val motorTorque = flywheelMotorStallTorque * flywheelPower * (1.0 - currentSpeedFraction).coerceAtLeast(0.0)
+        
+        // Net torque = motor torque - friction (always opposes motion)
+        val frictionSign = if (flywheelRPM > 0.1) 1.0 else 0.0
+        val netTorque = motorTorque - flywheelFrictionTorque * frictionSign
+        
+        // Angular acceleration: α = τ / I
+        val angularAccelRadS2 = netTorque / flywheelMOI
+        
+        // Integrate: ω += α * dt (convert to RPM)
+        val deltaRPM = (angularAccelRadS2 * dt) * (60.0 / (2.0 * Math.PI))
+        flywheelRPM = (flywheelRPM + deltaRPM).coerceAtLeast(0.0)
+        
+        // When flywheel is off and below threshold, snap to zero
+        if (flywheelPower == 0.0 && flywheelRPM < 10.0) {
+            flywheelRPM = 0.0
+        }
+        
+        // Update encoder position from RPM
+        val flywheelTicksPerSec = (flywheelRPM / 60.0) * flywheelEncoderTicksPerRev
+        flywheelPosition[0] += flywheelTicksPerSec * dt
+        val shooterBytes = ByteBuffer.allocate(4).order(endian).putInt(flywheelPosition[0].toInt()).array()
         System.arraycopy(shooterBytes, 0, srsHubI2c.registers, 17, 4) // SRS Port 2 (Offset 17)
 
         // --- C. BATTERY LOAD & FLOODGATE V2 SWITCH TELEMETRY ---
@@ -128,9 +161,11 @@ class SwerveRobotDouble {
         }
         val intakeCurrent = abs(intakePower) * 6.0 + (if (hasBallInIntake) 3.5 else 0.0)
         val transferCurrent = abs(transferPower) * 5.0 + (if (hasBallInTransfer) 2.0 else 0.0)
-        val shooterCurrent = abs(shooterPower) * 22.0 // Peak acceleration load
         
-        val totalCurrent = (idleCurrent + driveCurrent + intakeCurrent + transferCurrent + shooterCurrent).coerceIn(0.0, 80.0)
+        // Flywheel draws most current during acceleration (back-EMF model)
+        val flywheelCurrentDraw = abs(flywheelPower) * 22.0 * (1.0 - currentSpeedFraction).coerceAtLeast(0.1)
+        
+        val totalCurrent = (idleCurrent + driveCurrent + intakeCurrent + transferCurrent + flywheelCurrentDraw).coerceIn(0.0, 80.0)
         
         // Convert total current to 0V-3.3V analog output voltage
         val floodgateVoltage = (totalCurrent / 80.0) * 3.3

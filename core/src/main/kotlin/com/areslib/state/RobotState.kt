@@ -23,11 +23,36 @@ data class DriveState(
     val poseEstimator: PoseEstimatorState = PoseEstimatorState()
 )
 
+/**
+ * Superstructure finite state machine states.
+ */
+enum class SuperstructureMode {
+    /** No superstructure motors active */
+    IDLE,
+    /** Intake motor running, picking up balls */
+    INTAKING,
+    /** Flywheel ramping up to target RPM */
+    FLYWHEEL_SPINUP,
+    /** Flywheel at target RPM, ready to shoot */
+    FLYWHEEL_READY,
+    /** Transfer motor feeding ball to flywheel (only allowed when flywheel is ready) */
+    SHOOTING
+}
+
 data class SuperstructureState(
-    val elevatorHeightMeters: Double = 0.0,
+    val mode: SuperstructureMode = SuperstructureMode.IDLE,
     val intakeActive: Boolean = false,
-    val inventoryCount: Int = 0
-)
+    val flywheelActive: Boolean = false,
+    val transferActive: Boolean = false,
+    val flywheelRPM: Double = 0.0,
+    val flywheelTargetRPM: Double = 4000.0,
+    val inventoryCount: Int = 0,
+    val elevatorHeightMeters: Double = 0.0
+) {
+    /** Returns true when the flywheel is within 5% of target RPM */
+    val isFlywheelAtSpeed: Boolean
+        get() = flywheelActive && flywheelRPM >= flywheelTargetRPM * 0.95
+}
 
 data class VisionMeasurement(
     val timestampMs: Long = 0L,

@@ -11,10 +11,10 @@ import java.nio.ByteBuffer
 class RobotStateStruct : Struct<RobotState> {
     override fun getTypeClass(): Class<RobotState> = RobotState::class.java
     override fun getTypeString(): String = "struct:RobotState"
-    override fun getSize(): Int = java.lang.Double.BYTES * 9 + java.lang.Long.BYTES * 2 + java.lang.Integer.BYTES + 2 // 9 doubles, 2 longs, 1 int, 2 bools
+    override fun getSize(): Int = java.lang.Double.BYTES * 10 + java.lang.Long.BYTES * 2 + java.lang.Integer.BYTES * 2 + 4 // 10 doubles, 2 longs, 2 ints, 4 bools
 
     override fun getSchema(): String {
-        return "double drive_xVel; double drive_yVel; double drive_omega; double odometry_x; double odometry_y; double odometry_heading; double elev_height; bool intake_active; int32 inventory_count; int64 vision_time; double vision_x; double vision_y; bool vision_hasTarget; int64 timestamp;"
+        return "double drive_xVel; double drive_yVel; double drive_omega; double odometry_x; double odometry_y; double odometry_heading; double elev_height; double flywheel_rpm; bool intake_active; bool flywheel_active; bool transfer_active; int32 inventory_count; int32 superstructure_mode; int64 vision_time; double vision_x; double vision_y; bool vision_hasTarget; int64 timestamp;"
     }
 
     override fun pack(bb: ByteBuffer, value: RobotState) {
@@ -25,8 +25,12 @@ class RobotStateStruct : Struct<RobotState> {
         bb.putDouble(value.drive.odometryY)
         bb.putDouble(value.drive.odometryHeading)
         bb.putDouble(value.superstructure.elevatorHeightMeters)
+        bb.putDouble(value.superstructure.flywheelRPM)
         bb.put((if (value.superstructure.intakeActive) 1 else 0).toByte())
+        bb.put((if (value.superstructure.flywheelActive) 1 else 0).toByte())
+        bb.put((if (value.superstructure.transferActive) 1 else 0).toByte())
         bb.putInt(value.superstructure.inventoryCount)
+        bb.putInt(value.superstructure.mode.ordinal)
         bb.putLong(value.vision.lastTargetTimestampMs)
         bb.putDouble(value.vision.targetX)
         bb.putDouble(value.vision.targetY)
@@ -35,8 +39,6 @@ class RobotStateStruct : Struct<RobotState> {
     }
 
     override fun unpack(bb: ByteBuffer): RobotState {
-        // Unpacking is generally not needed on the robot for AdvantageScope logging,
-        // but required by the interface. We throw to enforce one-way data flow.
         throw UnsupportedOperationException("RobotState is immutable and should only be packed for logging.")
     }
 }

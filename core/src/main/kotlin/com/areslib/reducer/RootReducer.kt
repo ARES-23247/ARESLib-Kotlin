@@ -2,6 +2,7 @@ package com.areslib.reducer
 
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
+import com.areslib.state.SuperstructureMode
 
 /**
  * A pure function that transitions the robot state based on the dispatched action.
@@ -58,9 +59,6 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             )
         }
         is RobotAction.JoystickDriveIntent -> {
-            // Intent doesn't immediately change the physical state, but in a more 
-            // advanced system we might store target state separately. For now, we 
-            // simply acknowledge we can reduce intent.
             state
         }
         is RobotAction.PoseUpdate -> {
@@ -76,12 +74,21 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
         is RobotAction.PathEventTriggered -> {
             if (action.eventName == "IntakeOn") {
                 state.copy(
-                    superstructure = state.superstructure.copy(intakeActive = true),
+                    superstructure = state.superstructure.copy(
+                        intakeActive = true,
+                        mode = SuperstructureMode.INTAKING
+                    ),
                     timestampMs = action.timestampMs
                 )
             } else if (action.eventName == "IntakeOff") {
                 state.copy(
-                    superstructure = state.superstructure.copy(intakeActive = false),
+                    superstructure = state.superstructure.copy(
+                        intakeActive = false,
+                        mode = if (state.superstructure.flywheelActive) {
+                            if (state.superstructure.isFlywheelAtSpeed) SuperstructureMode.FLYWHEEL_READY
+                            else SuperstructureMode.FLYWHEEL_SPINUP
+                        } else SuperstructureMode.IDLE
+                    ),
                     timestampMs = action.timestampMs
                 )
             } else {
@@ -89,8 +96,74 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             }
         }
         is RobotAction.SetIntakeActive -> {
+            val newMode = if (action.active) {
+                SuperstructureMode.INTAKING
+            } else if (state.superstructure.flywheelActive) {
+                if (state.superstructure.isFlywheelAtSpeed) SuperstructureMode.FLYWHEEL_READY
+                else SuperstructureMode.FLYWHEEL_SPINUP
+            } else {
+                SuperstructureMode.IDLE
+            }
             state.copy(
-                superstructure = state.superstructure.copy(intakeActive = action.active),
+                superstructure = state.superstructure.copy(
+                    intakeActive = action.active,
+                    mode = newMode
+                ),
+                timestampMs = action.timestampMs
+            )
+        }
+        is RobotAction.SetFlywheelActive -> {
+            val newMode = if (action.active) {
+                SuperstructureMode.FLYWHEEL_SPINUP
+            } else {
+                // Turning off flywheel — also stop transfer
+                if (state.superstructure.intakeActive) SuperstructureMode.INTAKING
+                else SuperstructureMode.IDLE
+            }
+            state.copy(
+                superstructure = state.superstructure.copy(
+                    flywheelActive = action.active,
+                    transferActive = if (!action.active) false else state.superstructure.transferActive,
+                    mode = newMode
+                ),
+                timestampMs = action.timestampMs
+            )
+        }
+        is RobotAction.SetTransferActive -> {
+            // Transfer only activates when flywheel is at speed
+            val canTransfer = action.active && state.superstructure.isFlywheelAtSpeed && state.superstructure.inventoryCount > 0
+            val newMode = if (canTransfer) {
+                SuperstructureMode.SHOOTING
+            } else if (state.superstructure.flywheelActive) {
+                if (state.superstructure.isFlywheelAtSpeed) SuperstructureMode.FLYWHEEL_READY
+                else SuperstructureMode.FLYWHEEL_SPINUP
+            } else if (state.superstructure.intakeActive) {
+                SuperstructureMode.INTAKING
+            } else {
+                SuperstructureMode.IDLE
+            }
+            state.copy(
+                superstructure = state.superstructure.copy(
+                    transferActive = canTransfer,
+                    mode = newMode
+                ),
+                timestampMs = action.timestampMs
+            )
+        }
+        is RobotAction.UpdateFlywheelRPM -> {
+            // Derive the mode from current RPM and flywheel state
+            val newMode = when {
+                state.superstructure.transferActive && state.superstructure.isFlywheelAtSpeed -> SuperstructureMode.SHOOTING
+                state.superstructure.flywheelActive && action.rpm >= state.superstructure.flywheelTargetRPM * 0.95 -> SuperstructureMode.FLYWHEEL_READY
+                state.superstructure.flywheelActive -> SuperstructureMode.FLYWHEEL_SPINUP
+                state.superstructure.intakeActive -> SuperstructureMode.INTAKING
+                else -> SuperstructureMode.IDLE
+            }
+            state.copy(
+                superstructure = state.superstructure.copy(
+                    flywheelRPM = action.rpm,
+                    mode = newMode
+                ),
                 timestampMs = action.timestampMs
             )
         }

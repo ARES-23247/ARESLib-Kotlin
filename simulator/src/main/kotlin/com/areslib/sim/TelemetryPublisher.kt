@@ -28,6 +28,15 @@ object TelemetryPublisher {
     private val fieldCentricPub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/FieldCentric").publish()
     private val teleopModePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/TeleopMode").publish()
 
+    // Superstructure telemetry
+    private val flywheelRPMPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Superstructure/FlywheelRPM").publish()
+    private val flywheelTargetRPMPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Superstructure/FlywheelTargetRPM").publish()
+    private val superstructureModePub = ntInst.getStringTopic("AdvantageKit/RealOutputs/Superstructure/Mode").publish()
+    private val intakeActivePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Superstructure/IntakeActive").publish()
+    private val flywheelActivePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Superstructure/FlywheelActive").publish()
+    private val transferActivePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Superstructure/TransferActive").publish()
+    private val inventoryCountPub = ntInst.getIntegerTopic("AdvantageKit/RealOutputs/Superstructure/InventoryCount").publish()
+
     init {
         // Start DataLogManager for offline .wpilog generation
         DataLogManager.start()
@@ -90,6 +99,19 @@ object TelemetryPublisher {
     fun publishDriveMode(fieldCentric: Boolean, teleopMode: Boolean) {
         fieldCentricPub.set(fieldCentric)
         teleopModePub.set(teleopMode)
+    }
+
+    /**
+     * Publishes superstructure state (flywheel RPM, mode, active flags).
+     */
+    fun publishSuperstructure(state: RobotState) {
+        flywheelRPMPub.set(state.superstructure.flywheelRPM)
+        flywheelTargetRPMPub.set(state.superstructure.flywheelTargetRPM)
+        superstructureModePub.set(state.superstructure.mode.name)
+        intakeActivePub.set(state.superstructure.intakeActive)
+        flywheelActivePub.set(state.superstructure.flywheelActive)
+        transferActivePub.set(state.superstructure.transferActive)
+        inventoryCountPub.set(state.superstructure.inventoryCount.toLong())
     }
 
     /**

@@ -203,10 +203,18 @@ object DesktopSimLauncher {
                 robotDouble.steerPowers[i] = 0.0 // Already at target
             }
             
-            // Wire superstructure buttons to hardware double
+            // --- SUPERSTRUCTURE FSM WIRING ---
+            // 1. Intake motor: runs when intaking
             robotDouble.intakePower = if (driverStation.isIntaking) 1.0 else 0.0
-            robotDouble.transferPower = if (driverStation.isIntaking) 0.8 else 0.0
-            robotDouble.shooterPower = if (driverStation.isShooting) 1.0 else 0.0
+            
+            // 2. Flywheel motor: runs when flywheel toggle is on
+            robotDouble.flywheelPower = if (driverStation.isFlywheelOn) 1.0 else 0.0
+            
+            // 3. Transfer motor: only runs when flywheel is at speed AND user holds RT/ENTER
+            val flywheelAtSpeed = robotDouble.flywheelRPM >= state.superstructure.flywheelTargetRPM * 0.95
+            robotDouble.transferPower = if (driverStation.isTransferring && flywheelAtSpeed && state.superstructure.inventoryCount > 0) 1.0 else 0.0
+            
+            // Game piece load tracking for Floodgate current model
             robotDouble.hasBallInIntake = driverStation.isIntaking && state.superstructure.inventoryCount < 3
             robotDouble.hasBallInTransfer = state.superstructure.inventoryCount > 0
 
@@ -266,28 +274,30 @@ object DesktopSimLauncher {
             TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
             TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode)
 
-            // Print highly detailed current and thermal warning metrics periodically
-            if (System.currentTimeMillis() % 1000 < 20) {
-                println(String.format(
-                    "| FLOODGATE LOAD | Current: %.2f A | Temp: %.1f%% | Energy: %.4f Wh | Fuse Alert: %b |",
-                    floodgateCurrentSensor.current,
-                    floodgateCurrentSensor.fuseThermalLoadPercent,
-                    floodgateCurrentSensor.estimatedEnergyWattHours,
-                    floodgateCurrentSensor.isOverloadWarning()
-                ))
-                println(String.format(
-                    "| SUPERSTRUCTURE | Intake: %.0f | Transfer: %.0f | Shooter: %.0f |",
-                    intakeEncoder.position,
-                    transferEncoder.position,
-                    shooterEncoder.position
-                ))
-            }
-
-            // FSM state updates
+            // --- FSM STATE UPDATES ---
             if (driverStation.isTeleopMode) {
+                // Dispatch intake state
                 state = com.areslib.reducer.rootReducer(
                     state, 
                     com.areslib.action.RobotAction.SetIntakeActive(driverStation.isIntaking, System.currentTimeMillis())
+                )
+                
+                // Dispatch flywheel state
+                state = com.areslib.reducer.rootReducer(
+                    state, 
+                    com.areslib.action.RobotAction.SetFlywheelActive(driverStation.isFlywheelOn, System.currentTimeMillis())
+                )
+                
+                // Update flywheel RPM from physics model
+                state = com.areslib.reducer.rootReducer(
+                    state, 
+                    com.areslib.action.RobotAction.UpdateFlywheelRPM(robotDouble.flywheelRPM, System.currentTimeMillis())
+                )
+                
+                // Dispatch transfer state (reducer gates on flywheel readiness)
+                state = com.areslib.reducer.rootReducer(
+                    state, 
+                    com.areslib.action.RobotAction.SetTransferActive(driverStation.isTransferring, System.currentTimeMillis())
                 )
                 
                 // Intake Logic (Distance-based sensor approximation)
@@ -312,8 +322,8 @@ object DesktopSimLauncher {
                     }
                 }
 
-                // Shoot Logic
-                if (driverStation.isShooting && state.superstructure.inventoryCount > 0 && System.currentTimeMillis() - lastShootTime > 500) {
+                // Shoot Logic — only fires when transfer is active (flywheel at speed + RT held + has ball)
+                if (state.superstructure.transferActive && state.superstructure.inventoryCount > 0 && System.currentTimeMillis() - lastShootTime > 500) {
                     lastShootTime = System.currentTimeMillis()
                     state = com.areslib.reducer.rootReducer(
                         state, 
@@ -324,7 +334,6 @@ object DesktopSimLauncher {
                     val fixture = ball.addFixture(Geometry.createCircle(0.0635))
                     fixture.friction = 0.6
                     fixture.restitution = 0.4
-                    // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
                     fixture.density = 5.92
                     ball.setMass(MassType.NORMAL)
                     ball.linearDamping = 2.0
@@ -336,16 +345,39 @@ object DesktopSimLauncher {
                     val spawnY = currentPose.y + sin(currentPose.heading.radians) * spawnDist
                     ball.translate(spawnX, spawnY)
                     
-                    // Apply strong impulse forward
-                    val shootVelocity = 15.0 // m/s
+                    // Shot velocity scales with flywheel RPM (max 15 m/s at 4000 RPM)
+                    val shootVelocity = (robotDouble.flywheelRPM / 4000.0) * 15.0
                     val impulseX = cos(currentPose.heading.radians) * shootVelocity * ball.mass.mass
                     val impulseY = sin(currentPose.heading.radians) * shootVelocity * ball.mass.mass
                     ball.applyImpulse(org.dyn4j.geometry.Vector2(impulseX, impulseY))
                     
                     world.addBody(ball)
                     balls.add(ball)
-                    println("SHOT BALL! Inventory: ${state.superstructure.inventoryCount}")
+                    println("SHOT BALL! RPM: %.0f | Velocity: %.1f m/s | Inventory: ${state.superstructure.inventoryCount}".format(robotDouble.flywheelRPM, shootVelocity))
                 }
+            }
+            
+            // Publish superstructure telemetry
+            TelemetryPublisher.publishSuperstructure(state)
+
+            // Print highly detailed current and thermal warning metrics periodically
+            if (System.currentTimeMillis() % 1000 < 20) {
+                println(String.format(
+                    "| FLOODGATE LOAD | Current: %.2f A | Temp: %.1f%% | Energy: %.4f Wh | Fuse Alert: %b |",
+                    floodgateCurrentSensor.current,
+                    floodgateCurrentSensor.fuseThermalLoadPercent,
+                    floodgateCurrentSensor.estimatedEnergyWattHours,
+                    floodgateCurrentSensor.isOverloadWarning()
+                ))
+                println(String.format(
+                    "| SUPERSTRUCTURE | Mode: %-15s | Flywheel: %4.0f / %4.0f RPM | Intake: %-3s | Transfer: %-3s | Inventory: %d |",
+                    state.superstructure.mode.name,
+                    robotDouble.flywheelRPM,
+                    state.superstructure.flywheelTargetRPM,
+                    if (state.superstructure.intakeActive) "ON" else "OFF",
+                    if (state.superstructure.transferActive) "ON" else "OFF",
+                    state.superstructure.inventoryCount
+                ))
             }
 
             // Step physics engine
