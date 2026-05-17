@@ -55,17 +55,17 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - [ ] Resilient telemetry on real hardware
 - [ ] Successful wireless ADB deploy to Control Hub
 
-## Current Milestone: v2.0 Real Robot Deployment
+## Current Milestone: v2.1 FRC Physics Simulation
 
-**Goal:** Fix the build chain, resolve mock conflicts, create a registered OpMode, and deploy ARESLib-Kotlin onto a physical FTC robot.
+**Goal:** Implement full 2D physical interactions for the FRC 2026 REBUILT simulation in ARESLib-Kotlin using dyn4j.
 
 **Target features:**
-- Unified Gradle build chain (resolve JVM vs Android module conflict)
-- Mock class isolation (separate FTC SDK stubs from production code)
-- Registered TeamCode OpMode with @TeleOp annotation
-- Hardware configuration mapping (motors, pinpoint, IMU)
-- Resilient telemetry (graceful NT4/logging failures on real hardware)
-- Successful wireless ADB deploy to Control Hub
+- Initialize `dyn4j` World in the `frc-app` loop.
+- Construct 2026 REBUILT static field obstacles (Hubs, Towers, Trenches).
+- Spawn and track dynamic Fuel game pieces.
+- Pipe `ChassisSpeeds` physical forces into the robot body.
+- Map and publish all game pieces to AdvantageScope `Robot/FuelPoses`.
+
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
 - AdvantageKit `@AutoLog` or KAPT usage — drastically increases build times and breaks cross-platform compatibility on Android.
