@@ -1,5 +1,38 @@
 # Milestones
 
+## v1.10 Match-Ready Telemetry & Hardware Integration (Shipped: 2026-05-17)
+
+**Phases completed:** 4 phases, 4 plans
+
+**Key accomplishments:**
+- Developed unified `ARESController` edge-detection trigger logic.
+- Embedded a lightweight, pure-Kotlin NT4 WebSocket server.
+- Built physical hardware vision wrappers for Limelight 3A and AprilTags.
+- Implemented high-performance asynchronous thread-safe local CSV data logging.
+
+---
+
+## v1.9 Core Hardware IO Interfaces (Shipped: 2026-05-17)
+
+**Phases completed:** 4 phases, 4 plans
+
+**Key accomplishments:**
+- Implemented concrete `FtcRevHubIO`, `PinpointOdometryIO`, and auxiliary `I2C Octoquad` wrappers.
+- Created robust absolute PWM and analog encoder wrappers for continuous CRServos.
+
+---
+
+## v1.8 Vision & Localization (Shipped: 2026-05-17)
+
+**Phases completed:** 4 phases, 4 plans
+
+**Key accomplishments:**
+- Built platform-agnostic 3D geometry matrix classes (`Pose3d`, `Translation3d`, `Rotation3d`).
+- Implemented immutable array-backed Kalman Filter pose estimator.
+- Added pure `VisionState` processing and pose disambiguation structures.
+
+---
+
 ## v1.6 Advanced Path Generation (Shipped: 2026-05-16)
 
 **Phases completed:** 3 phases, 3 plans

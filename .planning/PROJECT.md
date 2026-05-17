@@ -39,19 +39,21 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Immutable chronological array-backed Kalman Filter. — v1.8
 - ✓ IO Layer abstraction for Limelight. — v1.8
 - ✓ FtcRevHubIO, PinpointOdometryIO, I2C Octoquad wrappers — v1.9
-- ✓ Absolute encoder wrapppers for CRServos — v1.9
+- ✓ Absolute encoder wrappers for CRServos — v1.9
+- ✓ Advanced Gamepad/Controller Architecture (edge detection and custom triggers) — v1.10
+- ✓ Native NetworkTables 4 (NT4) Server — v1.10
+- ✓ Physical Vision Hardware Wrappers (Limelight 3A & VisionPortal) — v1.10
+- ✓ Centralized RobotConfig mapping — v1.10
+- ✓ On-Device SD Card WPILog/CSV Logging — v1.10
+
 ### Active
 
-## Current Milestone: v1.10 Match-Ready Telemetry & Hardware Integration
+## Current Milestone: None
 
-**Goal:** Implement physical hardware wrappers and advanced tuning/telemetry to prepare the robot for match play.
+**Goal:** Ready to define the next milestone cycle.
 
 **Target features:**
-- Advanced Gamepad/Controller Architecture with edge detection and custom triggers.
-- Native NetworkTables 4 (NT4) Server for pure FTC/FRC debugging and live-tuning ecosystem unification.
-- Physical Vision Hardware Wrappers (Limelight 3A & VisionPortal).
-- Centralized RobotConfig mapping.
-- On-Device SD Card WPILog/CSV Logging for post-match analysis.
+- (Run /gsd-new-milestone to configure)
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
 - AdvantageKit `@AutoLog` or KAPT usage — drastically increases build times and breaks cross-platform compatibility on Android.

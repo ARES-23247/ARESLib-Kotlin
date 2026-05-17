@@ -11,56 +11,21 @@
 - ✅ **v1.5 Trajectory Following in Simulation** — Phase 17 (shipped 2026-05-16)
 
 - ✅ **v1.7 Virtual Driver Station** — Phase 21 (shipped 2026-05-16)
+- ✅ **v1.8 Vision & Localization** — Phases 22-25 (shipped 2026-05-17)
+- ✅ **v1.9 Core Hardware IO Interfaces** — Phases 26-29 (shipped 2026-05-17)
+- ✅ **v1.10 Match-Ready Telemetry & Hardware Integration** — Phases 30-33 (shipped 2026-05-17)
 
 ## Phases
 
-### Phase 30: Advanced Controller Architecture [COMPLETED]
+<details>
+<summary>✅ v1.10 Match-Ready Telemetry & Hardware Integration (Phases 30-33) — SHIPPED 2026-05-17</summary>
 
-**Goal:** Build a cross-platform Controller wrapper with edge detection and state tracking.
-**Requirements**: CTRL-01, CTRL-02, CTRL-03, CTRL-04
-**Depends on:** Phase 29
-**Plans:** 1 plans
+- [x] Phase 30: Advanced Controller Architecture (completed 2026-05-17)
+- [x] Phase 31: NetworkTables 4 (NT4) Server (completed 2026-05-17)
+- [x] Phase 32: Physical Vision & Hardware Configuration (completed 2026-05-17)
+- [x] Phase 33: On-Device Data Logging (completed 2026-05-17)
 
-Plans:
-- [x] Create ControllerState and ARESController
-- [x] Write Unit tests and FtcGamepadAdapter
-
-### Phase 31: NetworkTables 4 (NT4) Server [COMPLETED]
-
-**Goal:** Build or integrate a lightweight pure Kotlin NT4 server for telemetry and tuning.
-**Requirements**: NT-01, NT-02, NT-03
-**Depends on:** Phase 30
-**Plans:** 1 plans
-
-Plans:
-- [x] Integrate `nt-self-impl` into `:core` dependencies.
-- [x] Create `ITelemetry` interface with getters and setters.
-- [x] Create `NT4Telemetry` to wrap `NetworkTablesInstance`.
-- [x] Migrate `ARESMecanumTeleOp` and deprecate FTC Dashboard coupling.
-
-### Phase 32: Physical Vision & Hardware Configuration [COMPLETED]
-
-**Goal:** Implement Limelight 3A/VisionPortal wrappers and centralized `RobotConfig`.
-**Requirements**: HW-01, HW-02
-**Depends on:** Phase 31
-**Plans:** 1 plans
-
-Plans:
-- [x] Create `FtcLimelightIO` and `FtcVisionPortalIO`.
-- [x] Create `RobotConfig` dependency injector.
-- [x] Mock FTC vision classes in `:core` for cross-platform simulation capability.
-
-### Phase 33: On-Device Data Logging [COMPLETED]
-
-**Goal:** Implement WPILog or CSV local logging to the Control Hub SD card.
-**Requirements**: LOG-01
-**Depends on:** Phase 32
-**Plans:** 1 plans
-
-Plans:
-- [x] Create `ARESDataLogger` supporting thread-safe, asynchronous CSV logging.
-- [x] Implement `DataLoggingTelemetry` composite ITelemetry.
-- [x] Integrate with `ARESMecanumTeleOp` and verify through testing.
+</details>
 
 <details>
 <summary>✅ v1.9 Core Hardware IO Interfaces (Phases 26-29) — SHIPPED 2026-05-17</summary>
