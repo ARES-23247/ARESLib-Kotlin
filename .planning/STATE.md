@@ -28,16 +28,15 @@ Milestone v2.0 started. All library features (v1.0–v1.10) are complete. The go
 
 ## Current Position
 
-Phase: 35
+Phase: 36
 State: planning
 
 ### Current Focus
-Implementing the `@TeleOp` entry point for the real robot hardware in Phase 35.
+Harden the `NT4Telemetry` and `ARESDataLogger` for physical device storage paths (REV Control Hub) and connection states.
 
 ### Next Steps
-1. Run `gsd-plan-phase` for Phase 35.
-2. Implement the `ARESMecanumTeleOp` equivalent for the real REV Control Hub in `TeamCode`.
-3. Verify basic gamepad-to-hardware data flow mapping in the Android environment.
+1. Run `gsd-plan-phase` for Phase 36.
+2. Implement NT4 connection handling to endure wifi drops.
 
 ## Accumulated Context
 
