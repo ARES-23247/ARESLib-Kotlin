@@ -29,47 +29,53 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     override fun getDeviceName(): String = "SRS Hub"
 
+    @Synchronized
     fun getAnalogVoltage(port: Int): Double {
         return 0.0 // Read from I2C registers in real driver
     }
 
+    @Synchronized
     fun getDigitalState(port: Int): Boolean {
         return false // Read from I2C registers in real driver
     }
 
+    @Synchronized
     fun setPwmDutyCycle(port: Int, dutyCycle: Double) {
         // Write to I2C registers in real driver
     }
 
+    @Synchronized
     fun readPwmPulseWidth(port: Int): Int {
         return 0 // Read from I2C registers in real driver
     }
 
+    @Synchronized
     fun readEncoder(port: Int): Int {
         return 0 // Read from I2C registers in real driver
     }
 
     // --- I2C Sensor Support (e.g. APDS9151, VL53L5CX, VL53L0X, Pinpoint) ---
 
+    @Synchronized
     fun getVL53L5CXDistances(port: Int): IntArray {
         // Read 8x8 matrix (64 zones in mm) from the VL53L5CX connected to the SRS Hub I2C port
         return IntArray(64) { 0 }
     }
 
-    fun getI2cColorRed(port: Int): Int = 0
-    fun getI2cColorGreen(port: Int): Int = 0
-    fun getI2cColorBlue(port: Int): Int = 0
-    fun getI2cColorAlpha(port: Int): Int = 0
-    fun getI2cDistanceMeters(port: Int): Double = 0.0
+    @Synchronized fun getI2cColorRed(port: Int): Int = 0
+    @Synchronized fun getI2cColorGreen(port: Int): Int = 0
+    @Synchronized fun getI2cColorBlue(port: Int): Int = 0
+    @Synchronized fun getI2cColorAlpha(port: Int): Int = 0
+    @Synchronized fun getI2cDistanceMeters(port: Int): Double = 0.0
 
-    fun resetI2cOdometry(port: Int) {}
-    fun updateI2cOdometry(port: Int) {}
-    fun getI2cOdometryX(port: Int): Double = 0.0
-    fun getI2cOdometryY(port: Int): Double = 0.0
-    fun getI2cOdometryHeading(port: Int): Double = 0.0
-    fun getI2cOdometryVelX(port: Int): Double = 0.0
-    fun getI2cOdometryVelY(port: Int): Double = 0.0
-    fun getI2cOdometryHeadingVel(port: Int): Double = 0.0
+    @Synchronized fun resetI2cOdometry(port: Int) {}
+    @Synchronized fun updateI2cOdometry(port: Int) {}
+    @Synchronized fun getI2cOdometryX(port: Int): Double = 0.0
+    @Synchronized fun getI2cOdometryY(port: Int): Double = 0.0
+    @Synchronized fun getI2cOdometryHeading(port: Int): Double = 0.0
+    @Synchronized fun getI2cOdometryVelX(port: Int): Double = 0.0
+    @Synchronized fun getI2cOdometryVelY(port: Int): Double = 0.0
+    @Synchronized fun getI2cOdometryHeadingVel(port: Int): Double = 0.0
 }
 
 class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) {
