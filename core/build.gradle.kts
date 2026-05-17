@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    implementation(kotlin("stdlib"))
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.github.FRC-For-FTC-Tools:nt-self-impl:0.0.2")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
