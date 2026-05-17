@@ -54,14 +54,6 @@ open class Gamepad {
     var right_stick_button: Boolean = false
 }
 
-open class GoBildaPinpointDriver {
-    var posX: Double = 0.0
-    var posY: Double = 0.0
-    var heading: Double = 0.0
-    
-    fun update() {}
-}
-
 open class Canvas {
     fun drawCircle(x: Double, y: Double, radius: Double) {}
     fun drawLine(x1: Double, y1: Double, x2: Double, y2: Double) {}

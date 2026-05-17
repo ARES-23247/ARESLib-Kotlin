@@ -1,6 +1,6 @@
 package com.areslib.ftc
 
-import com.qualcomm.robotcore.hardware.GoBildaPinpointDriver
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.action.RobotAction
 
 class PinpointIO(private val driver: GoBildaPinpointDriver) {

@@ -5,11 +5,17 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
 
-class MecanumHardwareIO(hardwareMap: HardwareMap) {
-    private val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, "fl")
-    private val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, "fr")
-    private val backLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, "bl")
-    private val backRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, "br")
+class MecanumHardwareIO(
+    hardwareMap: HardwareMap,
+    flName: String = "fl",
+    frName: String = "fr",
+    blName: String = "bl",
+    brName: String = "br"
+) {
+    private val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, flName)
+    private val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
+    private val backLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, blName)
+    private val backRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, brName)
 
     init {
         // Typical mecanum configuration requires right side to be reversed
