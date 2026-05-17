@@ -102,9 +102,10 @@
 | 23. Vision State & Actions | v1.8 | 1/1 | Complete | 2026-05-17 |
 | 24. Pose Estimator | v1.8 | 1/1 | Complete | 2026-05-17 |
 | 25. IO Layer Integrations | v1.8 | 1/1 | Complete | 2026-05-17 |
-| 26. Core Hardware IO Interfaces | v1.9 | 0/1 | Pending | |
-| 27. FTC REV Hub & Pinpoint Integration | v1.9 | 0/1 | Pending | |
-| 28. I2C Auxiliary Wrappers | v1.9 | 0/1 | Pending | |
+| 26. Core Hardware IO Interfaces | v1.9 | 1/1 | Complete | 2026-05-17 |
+| 27. FTC REV Hub & Pinpoint Integration | v1.9 | 1/1 | Complete | 2026-05-17 |
+| 28. I2C Auxiliary Wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
+| 29. Add absolute encoder wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
 
 ### Phase 22: 3D Geometry and Transformations
 
@@ -154,7 +155,7 @@ Plans:
 **Plans:** 1 plans
 
 Plans:
-- [ ] Implement interfaces.
+- [x] Implement interfaces.
 
 ### Phase 27: FTC REV Hub & Pinpoint Integration
 
@@ -164,7 +165,7 @@ Plans:
 **Plans:** 1 plans
 
 Plans:
-- [ ] Create module and wrappers.
+- [x] Create module and wrappers.
 
 ### Phase 28: I2C Auxiliary Wrappers
 
@@ -174,7 +175,7 @@ Plans:
 **Plans:** 1 plans
 
 Plans:
-- [ ] Implement `OctoquadIO` and `SrsHubIO`.
+- [x] Implement `OctoquadIO` and `SrsHubIO`.
 
 ### Phase 29: Add absolute encoder wrappers
 
@@ -184,4 +185,4 @@ Plans:
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 29 to break down)
+- [x] TBD (run /gsd-plan-phase 29 to break down)
