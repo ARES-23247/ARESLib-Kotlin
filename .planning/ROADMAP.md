@@ -38,15 +38,17 @@ Plans:
 - [x] Create `NT4Telemetry` to wrap `NetworkTablesInstance`.
 - [x] Migrate `ARESMecanumTeleOp` and deprecate FTC Dashboard coupling.
 
-### Phase 32: Physical Vision & Hardware Configuration
+### Phase 32: Physical Vision & Hardware Configuration [COMPLETED]
 
 **Goal:** Implement Limelight 3A/VisionPortal wrappers and centralized `RobotConfig`.
 **Requirements**: HW-01, HW-02
 **Depends on:** Phase 31
-**Plans:** 0 plans
+**Plans:** 1 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 32 to break down)
+- [x] Create `FtcLimelightIO` and `FtcVisionPortalIO`.
+- [x] Create `RobotConfig` dependency injector.
+- [x] Mock FTC vision classes in `:core` for cross-platform simulation capability.
 
 ### Phase 33: On-Device Data Logging
 
@@ -170,7 +172,7 @@ Plans:
 | 27. FTC REV Hub & Pinpoint Integration | v1.9 | 1/1 | Complete | 2026-05-17 |
 | 28. I2C Auxiliary Wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
 | 29. Add absolute encoder wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
-| 30. Advanced Controller Architecture | v1.10 | 0/1 | Pending | |
-| 31. NetworkTables 4 (NT4) Server | v1.10 | 0/1 | Pending | |
-| 32. Physical Vision & Hardware Configuration | v1.10 | 0/1 | Pending | |
+| 30. Advanced Controller Architecture | v1.10 | 1/1 | Complete | 2026-05-17 |
+| 31. NetworkTables 4 (NT4) Server | v1.10 | 1/1 | Complete | 2026-05-17 |
+| 32. Physical Vision & Hardware Configuration | v1.10 | 1/1 | Complete | 2026-05-17 |
 | 33. On-Device Data Logging | v1.10 | 0/1 | Pending | |

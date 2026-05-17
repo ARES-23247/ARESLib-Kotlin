@@ -6,6 +6,7 @@ plugins {
 repositories {
     mavenCentral()
     maven("https://frcmaven.wpi.edu/artifactory/release/")
+    maven("https://jitpack.io")
 }
 
 application {
