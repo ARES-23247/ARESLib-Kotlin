@@ -198,7 +198,10 @@ object DesktopSimLauncher {
                 robotDouble.drivePowers[i] = targetStates[i].speedMetersPerSecond / 4.0
                 
                 // CR Servo steering closed-loop logic (proportional steer angle correction)
-                val steerError: Double = (targetStates[i].angle.radians - robotDouble.steerAngles[i] + kotlin.math.PI) % (2.0 * kotlin.math.PI) - kotlin.math.PI
+                val steerErrorRaw = targetStates[i].angle.radians - robotDouble.steerAngles[i]
+                var steerError = (steerErrorRaw + kotlin.math.PI) % (2.0 * kotlin.math.PI)
+                if (steerError < 0.0) steerError += 2.0 * kotlin.math.PI
+                steerError -= kotlin.math.PI
                 robotDouble.steerPowers[i] = (steerError * 4.0).coerceIn(-1.0, 1.0)
             }
             
