@@ -64,11 +64,12 @@ class SwerveRobotDouble {
     val flywheelPosition = DoubleArray(1) // Ticks (encoder)
     
     // Flywheel physics parameters
-    private val flywheelMOI = 0.008 // Moment of inertia (kg·m²) — typical for a 6" flywheel
-    private val flywheelMotorStallTorque = 0.18 // Nm (goBILDA 5202/3/4 series)
+    private val flywheelMOI = 0.002 // Moment of inertia (kg·m²) — 4" aluminum flywheel
+    private val flywheelMotorStallTorque = 0.6 // Nm (goBILDA 5202 geared motor)
     private val flywheelMotorFreeSpeedRPM = 6000.0 // Free speed RPM
-    private val flywheelFrictionTorque = 0.005 // Nm drag from bearings
+    private val flywheelFrictionTorque = 0.008 // Nm drag from bearings
     private val flywheelEncoderTicksPerRev = 2048.0
+    var flywheelTargetRPM = 4000.0 // Setpoint for the P-controller
 
     // Game piece tracking for Floodgate load spikes
     var hasBallInIntake = false
@@ -125,10 +126,20 @@ class SwerveRobotDouble {
         val transferBytes = ByteBuffer.allocate(4).order(endian).putInt(transferPosition[0].toInt()).array()
         System.arraycopy(transferBytes, 0, srsHubI2c.registers, 13, 4) // SRS Port 1 (Offset 13)
 
-        // 3. Flywheel Motor — Angular Momentum Physics
-        // Motor torque model: T_motor = stallTorque * power * (1 - RPM/freeSpeed)
+        // 3. Flywheel Motor — Angular Momentum with P-controller
+        // The motor controller regulates to flywheelTargetRPM using proportional control.
+        // flywheelPower acts as on/off enable; the internal P-controller modulates actual voltage.
+        val controllerOutput = if (flywheelPower > 0.0) {
+            // P-controller: error-proportional voltage, clamped to [0, 1]
+            val error = flywheelTargetRPM - flywheelRPM
+            (error * 0.003).coerceIn(0.0, 1.0)
+        } else {
+            0.0
+        }
+        
+        // Motor torque model: T = stallTorque * voltage * (1 - RPM/freeSpeed)
         val currentSpeedFraction = flywheelRPM / flywheelMotorFreeSpeedRPM
-        val motorTorque = flywheelMotorStallTorque * flywheelPower * (1.0 - currentSpeedFraction).coerceAtLeast(0.0)
+        val motorTorque = flywheelMotorStallTorque * controllerOutput * (1.0 - currentSpeedFraction).coerceAtLeast(0.0)
         
         // Net torque = motor torque - friction (always opposes motion)
         val frictionSign = if (flywheelRPM > 0.1) 1.0 else 0.0
