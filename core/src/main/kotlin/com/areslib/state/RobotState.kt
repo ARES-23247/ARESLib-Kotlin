@@ -1,5 +1,8 @@
 package com.areslib.state
 
+import com.areslib.math.Pose3d
+import com.areslib.math.PoseEstimatorState
+
 /**
  * The root immutable state tree for the entire robot.
  */
@@ -16,7 +19,8 @@ data class DriveState(
     val angularVelocityRadiansPerSecond: Double = 0.0,
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
-    val odometryHeading: Double = 0.0
+    val odometryHeading: Double = 0.0,
+    val poseEstimator: PoseEstimatorState = PoseEstimatorState()
 )
 
 data class SuperstructureState(
@@ -25,9 +29,17 @@ data class SuperstructureState(
     val inventoryCount: Int = 0
 )
 
+data class VisionMeasurement(
+    val timestampMs: Long = 0L,
+    val targetPose: Pose3d = Pose3d(),
+    val tagId: Int = -1,
+    val ambiguity: Double = 0.0
+)
+
 data class VisionState(
     val lastTargetTimestampMs: Long = 0L,
     val targetX: Double = 0.0,
     val targetY: Double = 0.0,
-    val hasTarget: Boolean = false
+    val hasTarget: Boolean = false,
+    val measurements: List<VisionMeasurement> = emptyList()
 )

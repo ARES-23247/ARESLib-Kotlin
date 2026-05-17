@@ -77,13 +77,10 @@ object DesktopSimLauncher {
         // Create the Robot Body
         val robotBody = Body()
         // Standard FTC robot footprint (18x18 inches ~ 0.45x0.45 meters)
-        robotBody.addFixture(Geometry.createRectangle(0.45, 0.45))
+        val robotFixture = robotBody.addFixture(Geometry.createRectangle(0.45, 0.45))
+        // 35 lbs ~ 15.875 kg. Area = 0.45 * 0.45 = 0.2025. Density = 15.875 / 0.2025 = 78.395
+        robotFixture.density = 78.395
         robotBody.setMass(MassType.NORMAL)
-        // 35 lbs ~ 15.875 kg
-        robotBody.mass.mass = 15.875
-        // Add carpet friction damping
-        robotBody.linearDamping = 8.0
-        robotBody.angularDamping = 8.0
         // Spawn robot in the exact center of the field (0, 0)
         robotBody.translate(0.0, 0.0)
         world.addBody(robotBody)
@@ -95,8 +92,11 @@ object DesktopSimLauncher {
             val fixture = ball.addFixture(Geometry.createCircle(0.0635))
             fixture.friction = 0.6
             fixture.restitution = 0.4 // Moderate bounce
+            // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
+            fixture.density = 5.92
             ball.setMass(MassType.NORMAL)
-            ball.mass.mass = 0.075
+            ball.linearDamping = 2.0 // Carpet friction for balls
+            ball.angularDamping = 2.0
             // Spawn balls somewhat randomly in front of the robot
             ball.translate(1.0, -1.0 + i * 1.0)
             world.addBody(ball)
@@ -169,17 +169,17 @@ object DesktopSimLauncher {
             var worldVy = 0.0
 
             if (driverStation.isTeleopMode && driverStation.isFieldCentric) {
-                // Field-centric: WASD directly map to world coordinates
-                var fieldX = chassisSpeeds.vxMetersPerSecond
-                var fieldY = chassisSpeeds.vyMetersPerSecond
-                
-                // If red alliance, invert controls since driver stands on opposite side of field
+                // In FTC, Red alliance is on the -Y side looking +Y. Blue is on +Y side looking -Y.
+                // W (forward = vx), A (left = vy).
                 if (driverStation.isRedAlliance) {
-                    fieldX = -fieldX
-                    fieldY = -fieldY
+                    // Red driver looks towards +Y. Left is -X.
+                    worldVx = -chassisSpeeds.vyMetersPerSecond
+                    worldVy = chassisSpeeds.vxMetersPerSecond
+                } else {
+                    // Blue driver looks towards -Y. Left is +X.
+                    worldVx = chassisSpeeds.vyMetersPerSecond
+                    worldVy = -chassisSpeeds.vxMetersPerSecond
                 }
-                worldVx = fieldX
-                worldVy = fieldY
             } else {
                 // Robot-centric: Rotate WASD vectors by current robot heading
                 worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
@@ -240,8 +240,11 @@ object DesktopSimLauncher {
                     val fixture = ball.addFixture(Geometry.createCircle(0.0635))
                     fixture.friction = 0.6
                     fixture.restitution = 0.4
+                    // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
+                    fixture.density = 5.92
                     ball.setMass(MassType.NORMAL)
-                    ball.mass.mass = 0.075
+                    ball.linearDamping = 2.0
+                    ball.angularDamping = 2.0
                     
                     // Spawn slightly in front of robot
                     val spawnDist = 0.35
@@ -270,18 +273,6 @@ object DesktopSimLauncher {
             var newY = newTransform.translationY
             val newHeading = newTransform.rotationAngle
 
-            // Enforce virtual field boundary (robot half-width is 0.225)
-            val boundaryLimit = (FIELD_WIDTH / 2.0) - 0.225
-            var clamped = false
-            if (newX > boundaryLimit) { newX = boundaryLimit; clamped = true }
-            if (newX < -boundaryLimit) { newX = -boundaryLimit; clamped = true }
-            if (newY > boundaryLimit) { newY = boundaryLimit; clamped = true }
-            if (newY < -boundaryLimit) { newY = -boundaryLimit; clamped = true }
-
-            if (clamped) {
-                robotBody.transform.setTranslation(newX, newY)
-            }
-
             // Update Robot State
             state = state.copy(
                 timestampMs = System.currentTimeMillis(),
@@ -292,20 +283,21 @@ object DesktopSimLauncher {
                 )
             )
 
-            if (driverStation.isTeleopMode) {
-                // Log pose to see if it's actually changing
-                println("TELEOP POSE -> X: $newX, Y: $newY, Heading: $newHeading")
-            }
-
             // Publish to AdvantageScope
             TelemetryPublisher.publish(state)
             
-            // Publish Game Pieces
-            val gamePieceData = DoubleArray(balls.size * 3)
+            // Publish Game Pieces (AdvantageScope expects 7 doubles per Pose3d)
+            val gamePieceData = DoubleArray(balls.size * 7)
             for (i in balls.indices) {
-                gamePieceData[i * 3] = balls[i].transform.translationX
-                gamePieceData[i * 3 + 1] = balls[i].transform.translationY
-                gamePieceData[i * 3 + 2] = 0.0635 // Z height (radius)
+                gamePieceData[i * 7] = balls[i].transform.translationX
+                gamePieceData[i * 7 + 1] = balls[i].transform.translationY
+                gamePieceData[i * 7 + 2] = 0.0635 // Z height (radius)
+                
+                val theta = balls[i].transform.rotationAngle
+                gamePieceData[i * 7 + 3] = kotlin.math.cos(theta / 2.0) // qW
+                gamePieceData[i * 7 + 4] = 0.0                          // qX
+                gamePieceData[i * 7 + 5] = 0.0                          // qY
+                gamePieceData[i * 7 + 6] = kotlin.math.sin(theta / 2.0) // qZ
             }
             TelemetryPublisher.publishGamePieces(gamePieceData)
 

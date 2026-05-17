@@ -232,14 +232,31 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
                     // Shoot Momentary (combined with keyboard)
                     val isKeyboardShooting = pressedKeys.contains(KeyEvent.VK_ENTER)
-                    isShooting = enterPressedThisFrame || isKeyboardShooting
+                    val newIsShooting = enterPressedThisFrame || isKeyboardShooting
+                    if (isShooting != newIsShooting) {
+                        isShooting = newIsShooting
+                    }
 
-                    repaint()
+                    // Only repaint if axes or buttons changed significantly to save CPU
+                    val changed = kotlin.math.abs(gamepadLx - lastLx) > 0.05f ||
+                                  kotlin.math.abs(gamepadLy - lastLy) > 0.05f ||
+                                  kotlin.math.abs(gamepadRx - lastRx) > 0.05f ||
+                                  kotlin.math.abs(gamepadRy - lastRy) > 0.05f ||
+                                  shiftPressedThisFrame != lastGamepadShift ||
+                                  enterPressedThisFrame != lastGamepadEnter
+
+                    if (changed || isKeyboardShooting) {
+                        lastLx = gamepadLx; lastLy = gamepadLy; lastRx = gamepadRx; lastRy = gamepadRy
+                        lastGamepadEnter = enterPressedThisFrame
+                        repaint()
+                    }
                 } else {
-                    isGamepadConnected = false
-                    gamepadName = "No Gamepad Detected"
-                    gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                    repaint()
+                    if (isGamepadConnected) {
+                        isGamepadConnected = false
+                        gamepadName = "No Gamepad Detected"
+                        gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                        repaint()
+                    }
                 }
                 Thread.sleep(20)
             } catch (e: Exception) {
@@ -247,6 +264,12 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
             }
         }
     }
+
+    @Volatile private var lastLx = 0f
+    @Volatile private var lastLy = 0f
+    @Volatile private var lastRx = 0f
+    @Volatile private var lastRy = 0f
+    @Volatile private var lastGamepadEnter = false
 
     override fun keyTyped(e: KeyEvent?) {}
 

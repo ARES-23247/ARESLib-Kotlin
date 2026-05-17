@@ -10,9 +10,16 @@
 - ✅ **v1.4 Desktop Simulation & Visualization** — Phase 16 (shipped 2026-05-16)
 - ✅ **v1.5 Trajectory Following in Simulation** — Phase 17 (shipped 2026-05-16)
 
-- ✅ **v1.6 Advanced Path Generation** — Phases 18-20 (shipped 2026-05-16)
+- ✅ **v1.7 Virtual Driver Station** — Phase 21 (shipped 2026-05-16)
 
 ## Phases
+
+<details>
+<summary>✅ v1.7 Virtual Driver Station (Phase 21) — SHIPPED 2026-05-16</summary>
+
+- [x] Phase 21: Virtual Driver Station UI and Gamepad Overhaul (completed 2026-05-16)
+
+</details>
 
 <details>
 <summary>✅ v1.6 Advanced Path Generation (Phases 18-20) — SHIPPED 2026-05-16</summary>
@@ -90,12 +97,48 @@
 | 19. Motion Profiling | v1.6 | 1/1 | Complete | 2026-05-16 |
 | 20. Event Marker State Machine Integration | v1.6 | 1/1 | Complete | 2026-05-16 |
 
-### Phase 21: Virtual Driver Station UI and Gamepad Overhaul
+| 21. Virtual Driver Station | v1.7 | 1/1 | Complete | 2026-05-16 |
+| 22. 3D Math | v1.8 | 1/1 | Complete | 2026-05-17 |
+| 23. Vision State & Actions | v1.8 | 1/1 | Complete | 2026-05-17 |
+| 24. Pose Estimator | v1.8 | 1/1 | Complete | 2026-05-17 |
+| 25. IO Layer Integrations | v1.8 | 1/1 | Complete | 2026-05-17 |
 
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 20
-**Plans:** 0 plans
+### Phase 22: 3D Geometry and Transformations
+
+**Goal:** Implement pure `Pose3d`, `Transform3d`, and `Rotation3d` data classes for coordinate transformations.
+**Requirements**: REQ-VIS-01
+**Depends on:** Phase 21
+**Plans:** 1 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 21 to break down)
+- [x] TBD (run /gsd-plan-phase 22 to break down)
+
+### Phase 23: Vision State & Actions
+
+**Goal:** Add immutable `VisionMeasurement` collections and `VisionReducer` to the Redux state.
+**Requirements**: REQ-VIS-02
+**Depends on:** Phase 22
+**Plans:** 1 plans
+
+Plans:
+- [x] TBD (run /gsd-plan-phase 23 to break down)
+
+### Phase 24: Pose Estimator
+
+**Goal:** Build a matrix-free / primitive-array chronological Kalman Filter equivalent for vision-odometry fusion.
+**Requirements**: REQ-VIS-03
+**Depends on:** Phase 23
+**Plans:** 1 plans
+
+Plans:
+- [x] TBD (run /gsd-plan-phase 24 to break down)
+
+### Phase 25: Vision IO Layer Integration
+
+**Goal:** Implement `VisionIO` interfaces to support Limelight 3A (FTC) and Limelight 4 / PhotonVision (FRC).
+**Requirements**: REQ-VIS-04
+**Depends on:** Phase 24
+**Plans:** 1 plans
+
+Plans:
+- [x] TBD (run /gsd-plan-phase 25 to break down)

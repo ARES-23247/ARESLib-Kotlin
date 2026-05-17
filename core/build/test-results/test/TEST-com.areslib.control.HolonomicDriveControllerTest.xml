@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.areslib.control.HolonomicDriveControllerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-05-16T11:32:49" hostname="DAVESLAPTOP" time="0.048">
+<testsuite name="com.areslib.control.HolonomicDriveControllerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-05-17T03:15:00" hostname="DAVESLAPTOP" time="0.042">
   <properties/>
-  <testcase name="calculate outputs zero speeds when at target()" classname="com.areslib.control.HolonomicDriveControllerTest" time="0.045"/>
+  <testcase name="calculate outputs zero speeds when at target()" classname="com.areslib.control.HolonomicDriveControllerTest" time="0.04"/>
   <testcase name="calculate outputs positive x when behind target()" classname="com.areslib.control.HolonomicDriveControllerTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

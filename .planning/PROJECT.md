@@ -36,12 +36,15 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Integration of PathPlanner Event Markers as `RobotAction` triggers in the state machine. — v1.6
 - ✓ Validation of smooth curved path following in the desktop simulator. — v1.6
 ### Active
-## Current Milestone: None
+## Current Milestone: v1.8 Vision & AprilTags
 
-**Goal:** (Pending next milestone planning)
+**Goal:** Integrate a pure, functional vision architecture that supports multiple AprilTags, camera-to-robot coordinate transformations, and robust pose disambiguation/fusion into the state machine.
 
 **Target features:**
-- (Pending)
+- Pose3d coordinate transformations
+- VisionState arrays and Redux updates
+- Chronological array-backed Kalman Filter equivalent (to avoid Android GC overhead)
+- IO Layer abstraction for Limelight 3A (FTC) and Limelight 4 / PhotonVision (FRC).
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
 - AdvantageKit `@AutoLog` or KAPT usage — drastically increases build times and breaks cross-platform compatibility on Android.
