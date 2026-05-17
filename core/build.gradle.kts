@@ -23,6 +23,8 @@ dependencies {
     compileOnly("edu.wpi.first.wpimath:wpimath-java:2024.3.2")
     compileOnly("edu.wpi.first.wpiutil:wpiutil-java:2024.3.2")
     compileOnly("com.ctre.phoenix6:wpiapi-java:24.1.0")
+    compileOnly(project(":ftc-mocks"))
+    testImplementation(project(":ftc-mocks"))
 }
 
 tasks.test {

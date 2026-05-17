@@ -16,6 +16,7 @@ application {
 dependencies {
     implementation(project(":core"))
     implementation(project(":ftc-hardware"))
+    implementation(project(":ftc-mocks"))
     
     // Dyn4j Physics Engine
     implementation("org.dyn4j:dyn4j:4.2.2")
