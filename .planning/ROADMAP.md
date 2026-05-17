@@ -184,7 +184,7 @@
 | 31. NetworkTables 4 (NT4) Server | v1.10 | 1/1 | Complete | 2026-05-17 |
 | 32. Physical Vision & Hardware Configuration | v1.10 | 1/1 | Complete | 2026-05-17 |
 | 33. On-Device Data Logging | v1.10 | 1/1 | Complete | 2026-05-17 |
-| 34. Build Chain Unification & Mock Isolation | v2.0 | 0/1 | Pending | — |
+| 34. Build Chain Unification & Mock Isolation | v2.0 | 1/1 | Complete | 2026-05-18 |
 | 35. Deployable TeleOp OpMode | v2.0 | 0/1 | Pending | — |
 | 36. Telemetry Hardening | v2.0 | 0/1 | Pending | — |
 | 37. Deployment & Smoke Test | v2.0 | 0/1 | Pending | — |

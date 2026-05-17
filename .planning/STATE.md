@@ -28,10 +28,16 @@ Milestone v2.0 started. All library features (v1.0–v1.10) are complete. The go
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-17 — Milestone v2.0 started
+Phase: 35
+State: planning
+
+### Current Focus
+Implementing the `@TeleOp` entry point for the real robot hardware in Phase 35.
+
+### Next Steps
+1. Run `gsd-plan-phase` for Phase 35.
+2. Implement the `ARESMecanumTeleOp` equivalent for the real REV Control Hub in `TeamCode`.
+3. Verify basic gamepad-to-hardware data flow mapping in the Android environment.
 
 ## Accumulated Context
 
