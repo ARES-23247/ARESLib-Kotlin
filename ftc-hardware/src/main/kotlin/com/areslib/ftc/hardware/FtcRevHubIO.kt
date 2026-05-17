@@ -7,6 +7,7 @@ import com.areslib.math.Rotation2d
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.Servo
+import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.DigitalChannel
 import com.qualcomm.hardware.bosch.BNO055IMU
@@ -36,6 +37,79 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
         val currentMode = motor.mode
         motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
         motor.mode = currentMode
+    }
+}
+
+/**
+ * Wraps a Continuous Rotation Servo (CRServo), which behaves similarly to a DC motor
+ * but lacks built-in encoder feedback. Can optionally be paired with an external
+ * MotorIO representation of an encoder for closed-loop control.
+ */
+class FtcCRServo(
+    private val crServo: CRServo,
+    private val externalEncoder: MotorIO? = null
+) : MotorIO {
+    override var power: Double
+        get() = crServo.power
+        set(value) {
+            crServo.power = value
+        }
+
+    override val velocity: Double
+        get() = externalEncoder?.velocity ?: 0.0
+
+    override val position: Double
+        get() = externalEncoder?.position ?: 0.0
+
+    override fun resetEncoder() {
+        externalEncoder?.resetEncoder()
+    }
+}
+
+/**
+ * A read-only representation of an encoder plugged into a standard motor port.
+ * Power assignments are ignored.
+ */
+class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
+    override var power: Double
+        get() = 0.0
+        set(value) {}
+
+    override val velocity: Double
+        get() = motor.velocity
+
+    override val position: Double
+        get() = motor.currentPosition.toDouble()
+
+    override fun resetEncoder() {
+        val currentMode = motor.mode
+        motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
+        motor.mode = currentMode
+    }
+}
+
+/**
+ * A composite wrapper that routes power commands to one device (e.g. a CRServo or un-encoded motor)
+ * and reads position/velocity from another device (e.g. an FtcEncoder, OctoQuadEncoder, etc.).
+ */
+class CompositeMotorIO(
+    private val actuator: MotorIO,
+    private val sensor: MotorIO
+) : MotorIO {
+    override var power: Double
+        get() = actuator.power
+        set(value) {
+            actuator.power = value
+        }
+
+    override val velocity: Double
+        get() = sensor.velocity
+
+    override val position: Double
+        get() = sensor.position
+
+    override fun resetEncoder() {
+        sensor.resetEncoder()
     }
 }
 
