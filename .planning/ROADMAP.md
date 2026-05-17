@@ -15,6 +15,26 @@
 ## Phases
 
 <details>
+<summary>✅ v1.9 Core Hardware IO Interfaces (Phases 26-29) — SHIPPED 2026-05-17</summary>
+
+- [x] Phase 26: Core Hardware IO Interfaces (completed 2026-05-17)
+- [x] Phase 27: FTC REV Hub & Pinpoint Integration (completed 2026-05-17)
+- [x] Phase 28: I2C Auxiliary Wrappers (completed 2026-05-17)
+- [x] Phase 29: Add absolute encoder wrappers (completed 2026-05-17)
+
+</details>
+
+<details>
+<summary>✅ v1.8 Vision & Localization (Phases 22-25) — SHIPPED 2026-05-17</summary>
+
+- [x] Phase 22: 3D Geometry and Transformations (completed 2026-05-17)
+- [x] Phase 23: Vision State & Actions (completed 2026-05-17)
+- [x] Phase 24: Pose Estimator (completed 2026-05-17)
+- [x] Phase 25: Vision IO Layer Integration (completed 2026-05-17)
+
+</details>
+
+<details>
 <summary>✅ v1.7 Virtual Driver Station (Phase 21) — SHIPPED 2026-05-16</summary>
 
 - [x] Phase 21: Virtual Driver Station UI and Gamepad Overhaul (completed 2026-05-16)
@@ -106,83 +126,3 @@
 | 27. FTC REV Hub & Pinpoint Integration | v1.9 | 1/1 | Complete | 2026-05-17 |
 | 28. I2C Auxiliary Wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
 | 29. Add absolute encoder wrappers | v1.9 | 1/1 | Complete | 2026-05-17 |
-
-### Phase 22: 3D Geometry and Transformations
-
-**Goal:** Implement pure `Pose3d`, `Transform3d`, and `Rotation3d` data classes for coordinate transformations.
-**Requirements**: REQ-VIS-01
-**Depends on:** Phase 21
-**Plans:** 1 plans
-
-Plans:
-- [x] TBD (run /gsd-plan-phase 22 to break down)
-
-### Phase 23: Vision State & Actions
-
-**Goal:** Add immutable `VisionMeasurement` collections and `VisionReducer` to the Redux state.
-**Requirements**: REQ-VIS-02
-**Depends on:** Phase 22
-**Plans:** 1 plans
-
-Plans:
-- [x] TBD (run /gsd-plan-phase 23 to break down)
-
-### Phase 24: Pose Estimator
-
-**Goal:** Build a matrix-free / primitive-array chronological Kalman Filter equivalent for vision-odometry fusion.
-**Requirements**: REQ-VIS-03
-**Depends on:** Phase 23
-**Plans:** 1 plans
-
-Plans:
-- [x] TBD (run /gsd-plan-phase 24 to break down)
-
-### Phase 25: Vision IO Layer Integration
-
-**Goal:** Implement `VisionIO` interfaces to support Limelight 3A (FTC) and Limelight 4 / PhotonVision (FRC).
-**Requirements**: REQ-VIS-04
-**Depends on:** Phase 24
-**Plans:** 1 plans
-
-Plans:
-- [x] TBD (run /gsd-plan-phase 25 to break down)
-
-### Phase 26: Core Hardware IO Interfaces
-
-**Goal:** Define abstract hardware interfaces in `:core` (`MotorIO`, `ServoIO`, `OdometryIO`, `ImuIO`).
-**Requirements**: REQ-HW-01
-**Depends on:** Phase 25
-**Plans:** 1 plans
-
-Plans:
-- [x] Implement interfaces.
-
-### Phase 27: FTC REV Hub & Pinpoint Integration
-
-**Goal:** Implement FTC SDK wrappers (`FtcRevHubIO`, `PinpointOdometryIO`) in the new `:ftc-hardware` module.
-**Requirements**: REQ-HW-02
-**Depends on:** Phase 26
-**Plans:** 1 plans
-
-Plans:
-- [x] Create module and wrappers.
-
-### Phase 28: I2C Auxiliary Wrappers
-
-**Goal:** Implement OctoQuad and SRS Hub modular wrappers.
-**Requirements**: REQ-HW-03
-**Depends on:** Phase 27
-**Plans:** 1 plans
-
-Plans:
-- [x] Implement `OctoquadIO` and `SrsHubIO`.
-
-### Phase 29: Add absolute encoder wrappers
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 28
-**Plans:** 0 plans
-
-Plans:
-- [x] TBD (run /gsd-plan-phase 29 to break down)
