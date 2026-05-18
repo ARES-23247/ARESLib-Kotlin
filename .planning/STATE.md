@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.6
-milestone_name: Dynamic Swerve Trajectory Optimization & Obstacle Avoidance
-status: Awaiting next milestone
-last_updated: "2026-05-18T15:17:31.258Z"
-last_activity: 2026-05-18 — Milestone v2.6 completed and archived
+milestone: v2.7
+milestone_name: Path Execution & Dynamic Task Planning
+status: planning
+last_updated: "2026-05-18T15:18:13.919Z"
+last_activity: 2026-05-18
 progress:
-  total_phases: 4
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 25
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +28,10 @@ Milestone v2.5 successfully completed EKF Localization hardening. We are now exe
 
 ## Current Position
 
-Phase: Milestone v2.6 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-05-18 — Milestone v2.6 completed and archived
+Status: Defining requirements
+Last activity: 2026-05-18 — Milestone v2.7 started
 
 ### Current Focus
 
