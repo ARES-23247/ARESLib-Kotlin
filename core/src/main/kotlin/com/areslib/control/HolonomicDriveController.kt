@@ -16,7 +16,8 @@ import kotlin.math.sin
 class HolonomicDriveController(
     private val xController: PIDController,
     private val yController: PIDController,
-    private val thetaController: PIDController
+    private val thetaController: PIDController,
+    private val telemetry: com.areslib.telemetry.ITelemetry? = null
 ) {
     private val vfh = VFHPlanner()
 
@@ -34,6 +35,7 @@ class HolonomicDriveController(
      * @param curvature Curvature of the path segment (1/radius).
      * @param maxCentripetalAccel Limit for lateral centripetal acceleration.
      * @param obstacles List of dynamic/static obstacles on the field.
+     * @param progressPercentage Progress along the trajectory (0.0 to 100.0).
      */
     fun calculate(
         currentPose: Pose2d,
@@ -43,8 +45,32 @@ class HolonomicDriveController(
         dtSeconds: Double,
         curvature: Double = 0.0,
         maxCentripetalAccel: Double = 2.5,
-        obstacles: List<Obstacle> = emptyList()
+        obstacles: List<Obstacle> = emptyList(),
+        progressPercentage: Double = 0.0
     ): ChassisSpeeds {
+        // Calculate raw error components
+        val xError = targetPose.x - currentPose.x
+        val yError = targetPose.y - currentPose.y
+        
+        // Perpendicular (lateral) error calculation relative to path heading
+        val dx = targetPose.x - currentPose.x
+        val dy = targetPose.y - currentPose.y
+        val pathHeading = if (dx == 0.0 && dy == 0.0) 0.0 else kotlin.math.atan2(dy, dx)
+        val lateralError = dx * kotlin.math.sin(pathHeading) - dy * kotlin.math.cos(pathHeading)
+        
+        // Angular error normalized between -PI and PI
+        var angularError = targetHeading.radians - currentPose.heading.radians
+        angularError = kotlin.math.atan2(kotlin.math.sin(angularError), kotlin.math.cos(angularError))
+        
+        // Broadcast diagnostics via telemetry if registered
+        telemetry?.let { tel ->
+            tel.putNumber("PathError/LateralMeters", lateralError)
+            tel.putNumber("PathError/AngularDegrees", Math.toDegrees(angularError))
+            tel.putNumber("PathError/XErrorMeters", xError)
+            tel.putNumber("PathError/YErrorMeters", yError)
+            tel.putNumber("PathError/ProgressPercentage", progressPercentage)
+        }
+
         // Calculate PID output for position error
         var xFeedback = xController.calculate(currentPose.x, targetPose.x, dtSeconds)
         var yFeedback = yController.calculate(currentPose.y, targetPose.y, dtSeconds)
@@ -53,9 +79,7 @@ class HolonomicDriveController(
         // Calculate velocity feedforward vector
         // In a real path, the direction is derived from the path's tangent.
         // We'll approximate the path heading as the angle from current to target
-        val dx = targetPose.x - currentPose.x
-        val dy = targetPose.y - currentPose.y
-        val pathHeading = if (dx == 0.0 && dy == 0.0) 0.0 else kotlin.math.atan2(dy, dx)
+        
         
         // Dynamically cap target velocity based on curve centripetal force
         val limitedVelocity = if (kotlin.math.abs(curvature) > 1e-4) {

@@ -18,34 +18,40 @@ class ARESLibOpMode : LinearOpMode() {
         val swerveIO = SwerveModuleIOFtc(driveMotor, steerMotor, analogEncoder)
         val swerveInputs = com.areslib.frc.SwerveInputs()
         
-        // 2. Initialize pure state
+        // 2. Initialize pure state and action logger
         var currentState = RobotState()
+        val actionLogger = com.areslib.action.ActionLogger()
 
-        // Wait for start...
-        
-        while (opModeIsActive()) {
-            // Read hardware
-            swerveIO.updateInputs(swerveInputs)
-            
-            // Generate immutable action
-            val action = RobotAction.DriveHardwareUpdate(
-                xVelocity = swerveInputs.driveVelocityRadsPerSec, // Simplify mapping
-                yVelocity = 0.0,
-                angularVelocity = 0.0,
-                deltaX = 0.0,
-                deltaY = 0.0,
-                deltaHeading = swerveInputs.steerAbsolutePositionRads,
-                timestampMs = swerveInputs.timestampMs
-            )
-            
-            // Dispatch to pure reducer
-            currentState = rootReducer(currentState, action)
-            
-            // Calculate pure logic / output commands (kinematics - Phase 4)
-            val outputVoltage = currentState.drive.odometryX * 0.1 // stub logic
-            
-            // Write to hardware
-            driveMotor.power = outputVoltage
+        try {
+            while (opModeIsActive()) {
+                // Read hardware
+                swerveIO.updateInputs(swerveInputs)
+                
+                // Generate immutable action
+                val action = RobotAction.DriveHardwareUpdate(
+                    xVelocity = swerveInputs.driveVelocityRadsPerSec, // Simplify mapping
+                    yVelocity = 0.0,
+                    angularVelocity = 0.0,
+                    deltaX = 0.0,
+                    deltaY = 0.0,
+                    deltaHeading = swerveInputs.steerAbsolutePositionRads,
+                    timestampMs = swerveInputs.timestampMs
+                )
+                
+                // Dispatch to pure reducer
+                currentState = rootReducer(currentState, action)
+                
+                // Log action to JSONL
+                actionLogger.logAction(action)
+                
+                // Calculate pure logic / output commands (kinematics - Phase 4)
+                val outputVoltage = currentState.drive.odometryX * 0.1 // stub logic
+                
+                // Write to hardware
+                driveMotor.power = outputVoltage
+            }
+        } finally {
+            actionLogger.stop()
         }
     }
 }
