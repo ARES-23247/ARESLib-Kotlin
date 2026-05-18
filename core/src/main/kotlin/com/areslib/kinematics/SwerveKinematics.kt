@@ -6,24 +6,29 @@ import com.areslib.math.Rotation2d
 import kotlin.math.hypot
 import kotlin.math.atan2
 
-class SwerveKinematics(vararg moduleTranslations: Translation2d) {
-    private val modules = moduleTranslations.toList()
-    private val numModules = modules.size
+class SwerveKinematics(
+    val moduleTranslations: List<Translation2d>,
+    val maxSteerVelRadPerSec: Double = Math.PI * 4.0,
+    val maxSteerAccelRadPerSec2: Double = Math.PI * 8.0,
+    val maxDriveAccelMps2: Double = 8.0
+) {
+    private val numModules = moduleTranslations.size
+    private val previousSteerVels = DoubleArray(numModules) { 0.0 }
+    private var previousStates: Array<SwerveModuleState>? = null
 
-    fun toSwerveModuleStates(chassisSpeeds: ChassisSpeeds): Array<SwerveModuleState> {
+    constructor(vararg moduleTranslations: Translation2d) : this(moduleTranslations.toList())
+
+    fun toSwerveModuleStates(chassisSpeeds: ChassisSpeeds, dtSeconds: Double = 0.02): Array<SwerveModuleState> {
         if (chassisSpeeds.vxMetersPerSecond == 0.0 && 
             chassisSpeeds.vyMetersPerSecond == 0.0 && 
             chassisSpeeds.omegaRadiansPerSecond == 0.0) {
-            return Array(numModules) { SwerveModuleState() }
+            val stopped = Array(numModules) { SwerveModuleState() }
+            previousStates = stopped
+            return stopped
         }
 
-        return Array(numModules) { i ->
-            val module = modules[i]
-            
-            // v = v_c + omega x r
-            // v_x = v_cx - omega * r_y
-            // v_y = v_cy + omega * r_x
-            
+        val targetStates = Array(numModules) { i ->
+            val module = moduleTranslations[i]
             val vx = chassisSpeeds.vxMetersPerSecond - chassisSpeeds.omegaRadiansPerSecond * module.y
             val vy = chassisSpeeds.vyMetersPerSecond + chassisSpeeds.omegaRadiansPerSecond * module.x
             
@@ -32,5 +37,50 @@ class SwerveKinematics(vararg moduleTranslations: Translation2d) {
             
             SwerveModuleState(speed, Rotation2d(angle))
         }
+
+        val prev = previousStates
+        val limitedStates = if (prev != null && dtSeconds > 1e-6) {
+            Array(numModules) { i ->
+                val pState = prev[i]
+                val tState = targetStates[i]
+
+                // Limit drive wheel acceleration
+                val maxSpeedChange = maxDriveAccelMps2 * dtSeconds
+                val speedChange = tState.speedMetersPerSecond - pState.speedMetersPerSecond
+                val limitedSpeed = pState.speedMetersPerSecond + 
+                    speedChange.coerceIn(-maxSpeedChange, maxSpeedChange)
+
+                // Limit steering velocity and acceleration
+                val targetAngleRad = tState.angle.radians
+                val prevAngleRad = pState.angle.radians
+
+                // Compute shortest angle difference
+                var angleDiff = targetAngleRad - prevAngleRad
+                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI
+                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI
+
+                // Target steering velocity
+                val targetSteerVel = angleDiff / dtSeconds
+                // Clamp steering velocity
+                val limitedSteerVel = targetSteerVel.coerceIn(-maxSteerVelRadPerSec, maxSteerVelRadPerSec)
+
+                // Clamp steering acceleration
+                val prevSteerVel = previousSteerVels[i]
+                val steerVelChange = limitedSteerVel - prevSteerVel
+                val maxSteerVelChange = maxSteerAccelRadPerSec2 * dtSeconds
+                val finalSteerVel = prevSteerVel + steerVelChange.coerceIn(-maxSteerVelChange, maxSteerVelChange)
+
+                previousSteerVels[i] = finalSteerVel
+
+                val finalAngle = prevAngleRad + finalSteerVel * dtSeconds
+                SwerveModuleState(limitedSpeed, Rotation2d(finalAngle))
+            }
+        } else {
+            targetStates
+        }
+
+        previousStates = limitedStates
+        return limitedStates
     }
 }
+

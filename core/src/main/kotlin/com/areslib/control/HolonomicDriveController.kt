@@ -27,13 +27,17 @@ class HolonomicDriveController(
      * @param targetVelocityMps Feedforward velocity along the path.
      * @param targetHeading The desired field-relative heading to face.
      * @param dtSeconds Time elapsed since last call.
+     * @param curvature Curvature of the path segment (1/radius).
+     * @param maxCentripetalAccel Limit for lateral centripetal acceleration.
      */
     fun calculate(
         currentPose: Pose2d,
         targetPose: Pose2d,
         targetVelocityMps: Double,
         targetHeading: Rotation2d,
-        dtSeconds: Double
+        dtSeconds: Double,
+        curvature: Double = 0.0,
+        maxCentripetalAccel: Double = 2.5
     ): ChassisSpeeds {
         // Calculate PID output for position error
         var xFeedback = xController.calculate(currentPose.x, targetPose.x, dtSeconds)
@@ -47,8 +51,16 @@ class HolonomicDriveController(
         val dy = targetPose.y - currentPose.y
         val pathHeading = if (dx == 0.0 && dy == 0.0) 0.0 else kotlin.math.atan2(dy, dx)
         
-        val xFF = targetVelocityMps * cos(pathHeading)
-        val yFF = targetVelocityMps * sin(pathHeading)
+        // Dynamically cap target velocity based on curve centripetal force
+        val limitedVelocity = if (kotlin.math.abs(curvature) > 1e-4) {
+            val maxVel = kotlin.math.sqrt(maxCentripetalAccel / kotlin.math.abs(curvature))
+            kotlin.math.min(targetVelocityMps, maxVel)
+        } else {
+            targetVelocityMps
+        }
+
+        val xFF = limitedVelocity * cos(pathHeading)
+        val yFF = limitedVelocity * sin(pathHeading)
 
         // Sum feedforward and feedback
         val fieldRelativeX = xFF + xFeedback

@@ -85,6 +85,25 @@ object PathPlannerParser {
             }
         }
 
+        // Calculate numerical curvature for each path point using central differences
+        for (idx in 0 until pathPoints.size) {
+            val nextIdx = if (idx < pathPoints.size - 1) idx + 1 else idx
+            val prevIdx = if (idx > 0) idx - 1 else idx
+            
+            val pPrev = pathPoints[prevIdx]
+            val pNext = pathPoints[nextIdx]
+            
+            val ds = pNext.distanceMeters - pPrev.distanceMeters
+            val dTheta = pNext.pose.heading.radians - pPrev.pose.heading.radians
+            var normDTheta = dTheta
+            while (normDTheta > Math.PI) normDTheta -= 2 * Math.PI
+            while (normDTheta < -Math.PI) normDTheta += 2 * Math.PI
+            
+            val kappa = if (ds > 1e-4) normDTheta / ds else 0.0
+            
+            pathPoints[idx] = pathPoints[idx].copy(curvature = kappa)
+        }
+
         // Pass 1: Forward Sweep (Acceleration limit)
         pathPoints[0] = pathPoints[0].copy(velocityMps = 0.0)
         for (i in 1 until pathPoints.size) {

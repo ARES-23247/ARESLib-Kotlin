@@ -10,7 +10,8 @@ import kotlin.math.hypot
 data class PathPoint(
     val pose: Pose2d,
     val velocityMps: Double,
-    val distanceMeters: Double = 0.0
+    val distanceMeters: Double = 0.0,
+    val curvature: Double = 0.0
 )
 
 /**
@@ -47,11 +48,13 @@ data class Path(
                 
                 val interpHeading = Rotation2d(p1.pose.heading.radians + normDelta * t)
                 val interpVel = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t
+                val interpCurvature = p1.curvature + (p2.curvature - p1.curvature) * t
                 
                 return PathPoint(
                     Pose2d(interpX, interpY, interpHeading),
                     interpVel,
-                    distanceMeters
+                    distanceMeters,
+                    interpCurvature
                 )
             }
         }
