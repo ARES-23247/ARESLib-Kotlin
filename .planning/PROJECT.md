@@ -76,15 +76,21 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ REP-01: Offline replay runner executing input logs through EKF. — v2.8
 - ✓ GUI-01: Native Compose Multiplatform desktop application visualizing real vs. ghost robot tracks with interactive tuning sliders. — v2.8
 - ✓ TEL-01: Simultaneously stream real and ghost robot poses via NT4 to AdvantageScope. — v2.8
+- ✓ FRC-SIM-01: Conditional dual-mode Swerve Hardware / Physics execution. — v2.9
+- ✓ FTC-PATH-01: Dynamic PathPlanner .path loader from Control Hub filesystem. — v2.9
+- ✓ FTC-EKF-01: Hardware Pinpoint & Vision measurement EKF pipeline integration. — v2.9
+- ✓ FTC-EKF-02: Mahalanobis Distance / Chi-Squared outlier rejection and teleportation recovery. — v2.9
+- ✓ DIAG-01: Real-robot gamepad calibrations and EKF diagnostic telemetry. — v2.9
+- ✓ FRC-MS-01: FRC Superstructure Redux State Core and Pure Reducers. — v2.9
+- ✓ FRC-MS-02: Platform-Agnostic Subsystem IO Boundaries. — v2.9
+- ✓ FRC-MS-03: Phoenix 6 TalonFX & CANcoder CTRE Wrappers with Current Limits. — v2.9
+- ✓ FRC-MS-04: High-Fidelity Superstructure Rotational and Gravity Simulator. — v2.9
 
 ### Active
-- [ ] FRC-SIM-01: Conditional dual-mode Swerve Hardware / Physics execution. — v2.9
-- [ ] FTC-PATH-01: Dynamic PathPlanner .path loader from Control Hub filesystem. — v2.9
-- [ ] FTC-EKF-01: Hardware Pinpoint & Vision measurement EKF pipeline integration. — v2.9
-- [ ] FTC-EKF-02: Mahalanobis Distance / Chi-Squared outlier rejection and teleportation recovery. — v2.9
-- [ ] DIAG-01: Real-robot gamepad calibrations and EKF diagnostic telemetry. — v2.9
 
-## Current Milestone: v2.9 (Physical Deployment & Hardware Bridging)
+*None (Milestone complete)*
+
+## Current Milestone: v2.9 (Physical Deployment & FRC Marvin 19 Redux Migration)
 
 **Goal:** Bridge the gap between pure simulation and real-world execution on physical robots by implementing conditional hardware/physics mode boundaries, dynamic file loading, EKF hardware sensor integration, and robust outlier rejection safeguards.
 
@@ -123,6 +129,8 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 | Stack-Based FSM Preemption | Allows mechanical subsystems to preempt and prioritize state transitions based on path events. | ✓ Good |
 | Microsecond Action Replay | Structured JSONL telemetry logs write microsecond-accurate physical outputs to enable deterministic offline simulation replay. | ✓ Good |
 | Path Progress Floor Velocity | Enforces a nominal floor velocity of 1.5 m/s in simulations when progress is driven strictly by target trajectory speed to prevent standstill profiles. | ✓ Good |
+| Chi-Squared Outlier Gating | Employs Mahalanobis Distance outlier verification to isolate and reject spurious visual camera updates. | ✓ Good |
+| Superstructure Redux State | Fully models FRC multi-state superstructures (Marvin 19) in pure immutable state and physics simulation. | ✓ Good |
 
 ---
 
@@ -144,4 +152,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 after v2.7 milestone complete*
+*Last updated: 2026-05-18 after v2.9 milestone complete*
