@@ -29,7 +29,8 @@ sealed class RobotAction {
 
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
-        val timestampMs: Long
+        val timestampMs: Long,
+        val customVisionStdDevs: com.areslib.math.Vector3? = null
     ) : RobotAction()
 
 

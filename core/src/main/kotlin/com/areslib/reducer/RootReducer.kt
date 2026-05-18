@@ -68,11 +68,12 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             }
 
             var currentEstimator = state.drive.poseEstimator
+            val stdDevs = action.customVisionStdDevs ?: com.areslib.math.Vector3(0.05, 0.05, 0.1)
             for (measurement in validMeasurements) {
                 currentEstimator = com.areslib.math.PoseEstimator.addVisionMeasurement(
                     state = currentEstimator,
                     measurement = measurement,
-                    visionStdDevs = com.areslib.math.Vector3(0.05, 0.05, 0.1), // Vision std dev tuning
+                    visionStdDevs = stdDevs,
                     numTags = validMeasurements.size
                 )
             }
