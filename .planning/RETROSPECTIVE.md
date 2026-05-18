@@ -1,5 +1,25 @@
 # Project Retrospective
 
+## Milestone: v2.4 — FRC/FTC Vision & Multi-Sensor Kalman Filter Integration
+
+**Shipped:** 2026-05-18
+**Phases:** 4 | **Plans:** 4
+
+### What Was Built
+1. Thread-safe sliding chronological queue (`VisionMeasurementBuffer`) to sort incoming asynchronous, out-of-order vision packets.
+2. High-performance, low-ambiguity and distance-based AprilTag outlier filter (`VisionOutlierFilter`).
+3. EKF pose estimator (`PoseEstimator`) multi-sensor fusion with standard deviation controls and retroactive rewind/replay tracking.
+4. Virtual 3D vision AprilTag camera detection system (`VisionSimulator`) under added Gaussian noise, latency delays, and outlier conditions.
+
+### What Worked
+- Creating a simulated top-down 3D visual field environment allowed testing vision-based EKF localization and outlier filtering resilience on pure JVM.
+- Applying standard-deviation-weighted parameters on the Kalman Filter updates successfully smoothed trajectory lines under dynamic simulation stress.
+
+### Key Lessons
+- Thread safety and strict boundary checks are non-negotiable when dealing with high-frequency asynchronous sensory inputs, ensuring zero state crashes under intensive telemetry loads.
+
+---
+
 ## Milestone: v1.1 — Driveable Base, Hardware Odometry & Telemetry
 
 **Shipped:** 2026-05-16
