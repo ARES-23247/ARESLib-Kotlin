@@ -54,4 +54,15 @@ class PathPlannerParserTest {
         // distance at index 10 should be roughly 2.5
         assertEquals(2.5, event.triggerDistanceMeters, 0.5)
     }
+
+    @Test
+    fun `dynamicPathLoader successfully locates and parses example path`() {
+        val path = DynamicPathLoader.loadPath("example_path")
+        assertNotNull(path)
+        assertEquals(41, path.points.size)
+        assertEquals(0.0, path.points.first().pose.x)
+        assertEquals(1.0, path.points.last().pose.x, 0.001)
+        assertEquals(1.0, path.points.last().pose.y, 0.001)
+    }
 }
+

@@ -71,24 +71,29 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ State-Driven Task Executor: Functional stack-preemptive state machine sequencing subsystem actions on path markers. — v2.7
 - ✓ Safety Interlocks: Instant drive freezing and task queue aborts if EKF state covariance exceeds safety parameters. — v2.7
 - ✓ E2E Simulation Validation: Fully automated physics-sim runs verifying combined kinematics, detours, and task transitions. — v2.7
+- ✓ IO-01: Platform-independent SubsystemIO interfaces and inputs structures. — v2.8
+- ✓ REC-01: Thread-safe raw input logger writing to microsecond-accurate JSONL. — v2.8
+- ✓ REP-01: Offline replay runner executing input logs through EKF. — v2.8
+- ✓ GUI-01: Native Compose Multiplatform desktop application visualizing real vs. ghost robot tracks with interactive tuning sliders. — v2.8
+- ✓ TEL-01: Simultaneously stream real and ghost robot poses via NT4 to AdvantageScope. — v2.8
 
 ### Active
-- [ ] IO-01: Platform-independent SubsystemIO interfaces and inputs structures. — v2.8
-- [ ] REC-01: Thread-safe raw input logger writing to microsecond-accurate JSONL. — v2.8
-- [ ] REP-01: Offline replay runner executing input logs through EKF. — v2.8
-- [ ] GUI-01: Native Compose Multiplatform desktop application visualizing real vs. ghost robot tracks with interactive tuning sliders. — v2.8
-- [ ] TEL-01: Simultaneously stream real and ghost robot poses via NT4 to AdvantageScope. — v2.8
+- [ ] FRC-SIM-01: Conditional dual-mode Swerve Hardware / Physics execution. — v2.9
+- [ ] FTC-PATH-01: Dynamic PathPlanner .path loader from Control Hub filesystem. — v2.9
+- [ ] FTC-EKF-01: Hardware Pinpoint & Vision measurement EKF pipeline integration. — v2.9
+- [ ] FTC-EKF-02: Mahalanobis Distance / Chi-Squared outlier rejection and teleportation recovery. — v2.9
+- [ ] DIAG-01: Real-robot gamepad calibrations and EKF diagnostic telemetry. — v2.9
 
-## Current Milestone: v2.8 (Deterministic Input Replay & "What-If" Ghost Simulation)
+## Current Milestone: v2.9 (Physical Deployment & Hardware Bridging)
 
-**Goal:** Implement platform-agnostic subsystem IO boundaries, raw input logging, a dual-state offline replay engine, and an interactive desktop GUI dashboard to allow students to visually replay, analyze, and auto-tune robot estimators.
+**Goal:** Bridge the gap between pure simulation and real-world execution on physical robots by implementing conditional hardware/physics mode boundaries, dynamic file loading, EKF hardware sensor integration, and robust outlier rejection safeguards.
 
 **Target features:**
-- IO-01 (Unified Subsystem IO)
-- REC-01 (Asynchronous Input Recorder)
-- REP-01 (Dual-State Offline Replay)
-- GUI-01 (Student Replay Tuning Dashboard)
-- TEL-01 (AdvantageScope Ghost Telemetry)
+- FRC-SIM-01 (Dual-Mode Swerve Execution)
+- FTC-PATH-01 (Android Spline File Loader)
+- FTC-EKF-01 (EKF Hardware Pipeline Wiring)
+- FTC-EKF-02 (Chi-Squared Outlier Gating)
+- DIAG-01 (Real-Robot Diagnostic Utilities)
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.

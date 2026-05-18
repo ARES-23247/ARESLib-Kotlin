@@ -23,8 +23,19 @@
 - ✅ **v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance** — Phases 53-55 (shipped 2026-05-18)
 - ✅ **v2.7 Path Execution & Dynamic Task Planning** — Phases 56-59 (shipped 2026-05-18)
 - ✅ **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (shipped 2026-05-18)
+- 🚧 **v2.9 Physical Deployment & Hardware Bridging** — Phases 64-67 (Active)
 
 ## Phases
+
+<details>
+<summary>🚧 v2.9 Physical Deployment & Hardware Bridging (Phases 64-67) — ACTIVE</summary>
+
+- [x] Phase 64: FRC Dual-Mode Drivetrain (Swerve Hardware Bridging) (shipped 2026-05-18)
+- [x] Phase 65: FTC Dynamic PathLoader (On-Device Trajectory Loading) (shipped 2026-05-18)
+- [ ] Phase 66: FTC EKF Real-Time Sensor Fusion Integration
+- [ ] Phase 67: Real-Robot Diagnostic Utilities & Safeguards
+
+</details>
 
 <details>
 <summary>✅ v2.8 Deterministic Input Replay & "What-If" Ghost Simulation (Phases 60-63) — SHIPPED 2026-05-18</summary>
@@ -175,5 +186,9 @@
 | 61. Asynchronous Raw Input Logging & Mock Clock Interceptor | v2.8 | 1/1 | Complete | 2026-05-18 |
 | 62. Dual-State Offline Replay Runner & AdvantageScope Ghost Telemetry | v2.8 | 1/1 | Complete | 2026-05-18 |
 | 63. Kotlin Compose Multiplatform Replay GUI & Parameter Sweeper Dashboard | v2.8 | 1/1 | Complete | 2026-05-18 |
+| 64. FRC Dual-Mode Drivetrain (Swerve Hardware Bridging) | v2.9 | 1/1 | Complete | 2026-05-18 |
+| 65. FTC Dynamic PathLoader (On-Device Trajectory Loading) | v2.9 | 1/1 | Complete | 2026-05-18 |
+| 66. FTC EKF Real-Time Sensor Fusion Integration | v2.9 | 0/1 | Active | |
+| 67. Real-Robot Diagnostic Utilities & Safeguards | v2.9 | 0/1 | Active | |
 
 

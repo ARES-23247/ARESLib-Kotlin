@@ -1,47 +1,47 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.8
-milestone_name: Deterministic Input Replay & "What-If" Ghost Simulation
-status: Shipped
-last_updated: "2026-05-18T16:51:00.000Z"
-last_activity: 2026-05-18 — Phase 63 modular slice-reducers refactored, verified, and committed successfully
+milestone: v2.9
+milestone_name: Physical Deployment & Hardware Bridging
+status: Active
+last_updated: "2026-05-18T17:15:00.000Z"
+last_activity: 2026-05-18 — Completed Phase 65 FTC Dynamic PathLoader. Preparing Phase 66 FTC EKF Real-Time Sensor Fusion.
 progress:
   total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-18)
+See: [PROJECT.md](file:///c:/Users/david/dev/robotics/ftc/ARESLib-Kotlin/.planning/PROJECT.md)
 
 **Core value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
-**Current focus:** Deterministic Input Replay & "What-If" Ghost Simulation.
+**Current focus:** Physical Deployment & Hardware Bridging.
 
 ## Session Memory
 
-Milestone v2.7 successfully completed path chaining, dynamic tangent Bezier detours, preemptive task stack scheduling, NT4 AdvantageScope/Dashboard streaming, and closed with 100% closed-loop physics simulation coverage.
+Phase 65 Dynamic PathLoader has been successfully built and verified inside `:core`, replacing all compiled trajectory strings with a resilient multi-hierarchy scanning sequence resolving local Android `/sdcard/FIRST/` tuning paths first and fallback classpaths last. All core and pathing unit tests pass flawlessly.
 
 ## Current Position
  
-Phase: Completed Milestone v2.8
-Plan: Shipped
-Status: Milestone v2.8 is fully complete, verified, and committed
-Last activity: 2026-05-18 — Phase 63 completed, including Compose GUI tuning suite and modular slice-reducers.
+Phase: 66. FTC EKF Real-Time Sensor Fusion Integration
+Plan: Not Started
+Status: Active
+Last activity: Completed Phase 65 Dynamic PathLoader.
  
 ### Current Focus
  
-Perform milestone validation and audit using GSD tools to prepare for milestone archive or upcoming development work.
+Refactor `ARESMecanumTeleOp.java` and `ARESMecanumAuto.kt` to feed raw positional updates from `PinpointOdometryIO` and vision frames directly into the EKF PoseEstimator. Wire filtered EKF pose output to feed the `HolonomicDriveController` during auto following, integrating Chi-Squared vision outlier gating and teleport recovery modes.
  
 ### Next Steps
  
-1. Perform milestone audit to ensure full requirements coverage.
-2. Archive Milestone v2.8 to history.
+1. Build EKF Pose Estimator wireup in autonomous/teleop control loops.
+2. Incorporate relative-delta pinpoint odometry tracking and covariance updates.
  
 ## Operator Next Steps
  
-- Review milestone results and prepare for next milestone definition or feature expansion.
+- Create and execute GSD Phase 66 planning workflow.

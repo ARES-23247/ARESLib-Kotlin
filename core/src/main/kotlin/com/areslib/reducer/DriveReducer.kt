@@ -39,10 +39,27 @@ object DriveReducer {
                 )
             }
             is RobotAction.PoseUpdate -> {
+                val deltaX = action.xMeters - state.odometryX
+                val deltaY = action.yMeters - state.odometryY
+                var deltaHeading = action.headingRadians - state.odometryHeading
+                while (deltaHeading > Math.PI) deltaHeading -= 2 * Math.PI
+                while (deltaHeading < -Math.PI) deltaHeading += 2 * Math.PI
+
+                val deltaTrans = Translation2d(deltaX, deltaY)
+                val updatedEstimator = PoseEstimator.addOdometryObservation(
+                    state = state.poseEstimator,
+                    timestampMs = action.timestampMs,
+                    deltaTranslation = deltaTrans,
+                    deltaHeading = Rotation2d(deltaHeading),
+                    pitchDegrees = action.pitchDegrees,
+                    rollDegrees = action.rollDegrees
+                )
+
                 state.copy(
                     odometryX = action.xMeters,
                     odometryY = action.yMeters,
                     odometryHeading = action.headingRadians,
+                    poseEstimator = updatedEstimator,
                     pitchDegrees = action.pitchDegrees,
                     rollDegrees = action.rollDegrees,
                     xAccelerationG = action.xAccelerationG,

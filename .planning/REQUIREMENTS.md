@@ -1,29 +1,26 @@
-# Requirements - Milestone v2.8: Deterministic Input Replay & "What-If" Ghost Simulation
+# Requirements - Milestone v2.9: Physical Deployment & Hardware Bridging
 
-Active requirements for Milestone v2.8.
+Active requirements for Milestone v2.9.
 
 ## Active Requirements
 
-### Category: Subsystem IO Design
-* [ ] **IO-01 (Unified Subsystem IO Interfaces)**: Define platform-agnostic `SwerveIO`, `OdometryIO`, and `VisionIO` interfaces in `:core`. Each must declare a serializable nested data class `Inputs` holding raw, unfiltered sensor data.
-* [ ] **IO-02 (Mock/Simulation Implementations)**: Implement mock and simulation variants of these IO interfaces that run identically on both pure JVM testing and REV Control Hubs.
+### Category: FRC Dual-Mode Drivetrain
+* [ ] **FRC-SIM-01 (WPILib Real/Sim separation boundary)**: Abstract swerve execution in `ARESRobot.kt` to fully separate the physical `FRCSwerveHardwareIO` (using the CTRE Phoenix 6 `SwerveDrivetrain`) from the `dyn4j` physics simulation model, driven dynamically by standard `RobotBase.isReal()` and `RobotBase.isSimulation()` toggles.
 
-### Category: Raw Sensory Logging
-* [ ] **REC-01 (InputLogger Thread-Safety)**: Create a high-performance, asynchronous `InputLogger` that serializes and flushes raw `Inputs` structs to a JSONL file without blocking the main control loop.
-* [ ] **REC-02 (Low Garbage Allocation)**: Design the serialization pipeline to reuse buffers or object pools, minimizing garbage collection allocations to guarantee zero loop-time jitter.
+### Category: FTC On-Device Trajectory Loading
+* [ ] **FTC-PATH-01 (Dynamic File Loader)**: Build an Android-compatible dynamic path loader class that scans and reads PathPlanner `.path` JSON files directly from the Control Hub's local filesystem (`/sdcard/FIRST/`) or app assets at runtime, eliminating hardcoded JSON string templates inside source files.
 
-### Category: Replay Engine
-* [ ] **REP-01 (Clock Mocking Interceptor)**: Implement a mockable `RobotClock` system allowing the replay engine to inject historical log timestamps, ensuring identical integration math.
-* [ ] **REP-02 (Dual-State Reducer Runner)**: Implement an offline replay runner that executes log data through the root reducer and EKF, simultaneously generating `LoggedRobotState` and `ReplayedRobotState` traces.
+### Category: EKF Physical Hardware Integration
+* [ ] **FTC-EKF-01 (EKF Hardware Pipeline Wiring)**: Refactor `ARESMecanumTeleOp.java` and `ARESMecanumAuto.kt` to pipe raw, high-resolution measurements from physical pinpoint odometry (`PinpointOdometryIO`) and vision cameras directly to the redux EKF store as state updates.
+* [ ] **FTC-EKF-02 (Holonomic Trajectory Coupling)**: Direct the `HolonomicDriveController` to track paths using the globally filtered EKF `estimatedPose` instead of raw, un-fused wheel integration.
 
-### Category: Student GUI Dashboard
-* [ ] **GUI-01 (Compose Desktop Architecture)**: Set up a `:tools:replay-gui` Compose Multiplatform module runnable with a single Gradle task (`./gradlew :tools:replay-gui:run`).
-* [ ] **GUI-02 (Interactive Sliders & Tuning)**: Provide visual sliders for Kalman Filter vision trust (standard deviation bounds), collision lockouts, and loop gains. Adjusting a slider must trigger a live, sub-millisecond local replay.
-* [ ] **GUI-03 (2D Field Canvas Visualizer)**: Renders a high-fidelity 2D canvas of the field showing the original logged trajectory vs. the new "Ghost" trajectory dynamically.
-* [ ] **GUI-04 (Grid Sweep Auto-Tuner)**: Integrate a one-click optimizer button that sweeps parameters over the loaded log to find and set the mathematically optimal values.
+### Category: Safety & Outlier Gating
+* [ ] **FTC-EKF-03 (Chi-Squared Outlier Gating)**: Implement a mathematical **Mahalanobis Distance ($\chi^2$) Outlier Gate** in the EKF's vision update method to calculate target residuals relative to combined state and camera covariances, instantly discarding severe tracking glitches (e.g. reflections or false visual targets).
+* [ ] **FTC-EKF-04 (Drift Recovery Teleportation)**: Implement a consecutive-rejection recovery mechanism that snaps the EKF state directly to high-confidence vision frames if the robot has slowly drifted over a long duration and accumulated uncorrectable dead-reckoning offset.
 
-### Category: Diagnostics & Telemetry
-* [ ] **TEL-01 (AdvantageScope Dual-Pose NT4)**: Stream separate NT4 pathways (`/Odom/Real` and `/Odom/Ghost`) simultaneously to render overlapping robots in AdvantageScope's 3D visualizer.
+### Category: Diagnostics & Calibration
+* [ ] **DIAG-01 (On-Device Calibrations)**: Implement driver-centric calibration triggers on the gamepads to manually reset gyro orientation, update starting pinpoint boundaries, and zero field coordinates.
+* [ ] **DIAG-02 (Covariance Ellipse Telemetry)**: Broadcast real-time EKF estimation error covariances ($P$) as standard deviation coordinates to AdvantageScope and FTC Dashboard for student diagnostic reviews.
 
 ---
 
@@ -31,24 +28,21 @@ Active requirements for Milestone v2.8.
 
 | Requirement ID | Description | Mapped Phase | Status |
 |----------------|-------------|--------------|--------|
-| **IO-01**     | Unified Subsystem IO Interfaces | Phase TBD    | Planned|
-| **IO-02**     | Mock/Simulation Implementations | Phase TBD    | Planned|
-| **REC-01**    | InputLogger Thread-Safety | Phase TBD    | Planned|
-| **REC-02**    | Low Garbage Allocation | Phase TBD    | Planned|
-| **REP-01**    | Clock Mocking Interceptor | Phase TBD    | Planned|
-| **REP-02**    | Dual-State Reducer Runner | Phase TBD    | Planned|
-| **GUI-01**    | Compose Desktop Architecture | Phase TBD    | Planned|
-| **GUI-02**    | Interactive Sliders & Tuning | Phase TBD    | Planned|
-| **GUI-03**    | 2D Field Canvas Visualizer | Phase TBD    | Planned|
-| **GUI-04**    | Grid Sweep Auto-Tuner | Phase TBD    | Planned|
-| **TEL-01**    | AdvantageScope Dual-Pose NT4 | Phase TBD    | Planned|
+| **FRC-SIM-01** | WPILib Real/Sim separation boundary | Phase 64     | Planned|
+| **FTC-PATH-01**| Dynamic spline file loader | Phase 65     | Planned|
+| **FTC-EKF-01** | EKF Hardware Pipeline Wiring | Phase 66     | Planned|
+| **FTC-EKF-02** | Holonomic Trajectory Coupling | Phase 66     | Planned|
+| **FTC-EKF-03** | Chi-Squared Outlier Gating | Phase 66     | Planned|
+| **FTC-EKF-04** | Drift Recovery Teleportation | Phase 66     | Planned|
+| **DIAG-01**    | On-Device Calibrations | Phase 67     | Planned|
+| **DIAG-02**    | Covariance Ellipse Telemetry | Phase 67     | Planned|
 
 ---
 
 ## Future Requirements (Deferred)
-- None.
+- Multi-camera 3D triangulation (Limelight megaTag2) — Deferred to v3.0 until single-camera EKF fusion is fully tuned and proven on physical FTC/FRC robots.
 
 ---
 
 ## Out of Scope
-- Direct bytecode manipulation or custom Kotlin compiler plugins (ASM / KAPT) — we will use native Kotlin serialization to maintain zero build-time overhead.
+- Direct firmware modifications to the goBILDA Pinpoint computer — the library will interact strictly through the official public driver interfaces.

@@ -6,10 +6,13 @@ import com.areslib.control.HolonomicDriveController
 import com.areslib.control.PIDController
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
-import com.areslib.pathing.PathPlannerParser
 import com.areslib.pathing.Path
+import com.areslib.pathing.DynamicPathLoader
 import com.qualcomm.robotcore.hardware.ElapsedTime
 import com.areslib.kinematics.MecanumKinematics
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
+import com.areslib.state.RobotState
+import com.areslib.reducer.rootReducer
 
 @Autonomous(name = "ARES Mecanum Auto", group = "ARES")
 class ARESMecanumAuto : LinearOpMode() {
@@ -23,6 +26,12 @@ class ARESMecanumAuto : LinearOpMode() {
         val driveIO = MecanumHardwareIO(hardwareMap)
         val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
         
+        val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, "pinpoint")
+        val pinpointIO = PinpointIO(pinpointDriver)
+
+        // Initialize RobotState store
+        var state = RobotState()
+
         // 2. Initialize Controllers
         val xController = PIDController(p = 1.0, i = 0.0, d = 0.1)
         val yController = PIDController(p = 1.0, i = 0.0, d = 0.1)
@@ -32,25 +41,11 @@ class ARESMecanumAuto : LinearOpMode() {
         val driveController = HolonomicDriveController(xController, yController, thetaController)
 
         // 3. Parse Trajectory
-        // For testing/mocking, we provide a valid JSON structure representing a simple path
-        val mockJson = """
-            {
-              "waypoints": [
-                {"anchor": {"x": 0.0, "y": 0.0}},
-                {"anchor": {"x": 1.0, "y": 0.0}},
-                {"anchor": {"x": 1.0, "y": 1.0}}
-              ],
-              "rotationTargets": [
-                {"waypointRelativePos": 0, "rotationDegrees": 0.0},
-                {"waypointRelativePos": 1, "rotationDegrees": 90.0}
-              ]
-            }
-        """.trimIndent()
-        
+        val pathName = "example_path"
         val path: Path = try {
-            PathPlannerParser.parsePath(mockJson)
+            DynamicPathLoader.loadPath(pathName)
         } catch (e: Exception) {
-            telemetry.addData("Error", "Failed to parse path: ${e.message}")
+            telemetry.addData("Error", "Failed to load dynamic path: ${e.message}")
             telemetry.update()
             return
         }
@@ -63,40 +58,53 @@ class ARESMecanumAuto : LinearOpMode() {
         val timer = ElapsedTime()
         timer.reset()
 
-        // Dummy localization tracking for the test OpMode loop
-        var currentDistance = 0.0
         var lastTime = 0.0
-
         val totalLength = if (path.points.isNotEmpty()) path.points.last().distanceMeters else 0.0
 
         // 4. Autonomous Loop
-        while (opModeIsActive() && currentDistance < totalLength) {
+        while (opModeIsActive()) {
             val currentTime = timer.seconds()
             val dt = if (currentTime > lastTime) currentTime - lastTime else 0.02
             lastTime = currentTime
             
-            // Assume robot moves forward perfectly at 0.5 m/s for this mock
-            currentDistance = currentTime * 0.5
+            // Read raw pinpoint odometry relative updates and dispatch them to the EKF store
+            val poseUpdate = pinpointIO.getPoseUpdate()
+            state = rootReducer(state, poseUpdate)
+
+            // Fetch current fused EKF pose estimate
+            val currentPose = state.drive.poseEstimator.estimatedPose
+
+            // Map time elapsed directly to nominal target distance progress
+            val nominalVelocity = 0.5 // m/s
+            val currentDistance = currentTime * nominalVelocity
+
+            if (currentDistance >= totalLength) {
+                break
+            }
             
-            // Get target state from path
+            // Get target state from PathPlanner spline
             val targetState = path.sampleAtDistance(currentDistance)
 
-            // Get current state from odometry (mocked here)
-            val currentPose = Pose2d(currentDistance, 0.0, Rotation2d.fromDegrees(0.0))
-
-            // Calculate speeds
+            // Calculate speeds driven by the fused EKF pose
             val chassisSpeeds = driveController.calculate(
-                currentPose,
-                targetState.pose,
-                targetVelocityMps = 0.5,
-                targetHeading = Rotation2d.fromDegrees(0.0), // Assume heading is 0 for mock
+                currentPose = currentPose,
+                targetPose = targetState.pose,
+                targetVelocityMps = targetState.velocityMps,
+                targetHeading = targetState.pose.heading,
                 dtSeconds = dt
             )
 
             // Convert to wheel speeds and apply
             val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
-            driveIO.apply(wheelSpeeds.normalize(1.0))
+            
+            // Fetch battery voltage for compensation
+            val batteryVoltage = 12.0
+            
+            driveIO.apply(wheelSpeeds, batteryVoltage)
 
+            telemetry.addData("EKF Pose X", currentPose.x)
+            telemetry.addData("EKF Pose Y", currentPose.y)
+            telemetry.addData("EKF Pose Heading", Math.toDegrees(currentPose.heading.radians))
             telemetry.addData("Target X", targetState.pose.x)
             telemetry.addData("Target Y", targetState.pose.y)
             telemetry.addData("Chassis Vx", chassisSpeeds.vxMetersPerSecond)
@@ -104,6 +112,6 @@ class ARESMecanumAuto : LinearOpMode() {
         }
 
         // Stop robot
-        driveIO.apply(com.areslib.kinematics.MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0))
+        driveIO.apply(com.areslib.kinematics.MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0), 12.0)
     }
 }
