@@ -1,5 +1,36 @@
 # Milestones
 
+## v2.9 Physical Deployment & FRC Marvin 19 Redux Migration (Shipped: 2026-05-18)
+
+**Phases completed:** 8 phases, 8 plans
+
+**Key accomplishments:**
+
+- Programmed conditional dual-mode Swerve Hardware / Physics execution dynamically toggling between physical `FRCSwerveHardwareIO` and a high-fidelity simulator body.
+- Built an Android-compatible dynamic path loader scanning from local Control Hub directory (`/sdcard/FIRST/`) first and classpath resources as fallback.
+- Refactored `ARESMecanumTeleOp` to pipe Pinpoint absolute odometry and Limelight measurements directly to EKF.
+- Implemented standard EKF pose-directed holonomic trajectory coupling for path following.
+- Developed a mathematical Mahalanobis Distance outlier filter gating noisy camera frames and coordinate glitches.
+- Created a consecutive-rejection automatic recovery snap-teleport mechanism.
+- Wired driver-centric gamepad calibrations to zero gyros and reset coordinates.
+- Ported the Marvin 19 FRC Superstructure to a state-driven Redux model, defining platform-agnostic IO boundaries (`FlywheelIO`, `CowlIO`, `IntakeIO`, `FeederIO`, `ClimberIO`), Phoenix 6 CTRE hardware wrappers with 40A current limits, and high-fidelity rotational/gravity physics simulations.
+
+---
+
+## v2.8 Deterministic Input Replay & "What-If" Ghost Simulation (Shipped: 2026-05-18)
+
+**Phases completed:** 4 phases, 4 plans
+
+**Key accomplishments:**
+
+- Established unified platform-independent Subsystem IO boundaries for decoupled core validation.
+- Created a thread-safe raw input logger writing microsecond-accurate JSONL logs to disk.
+- Engineered a dual-state offline replay runner executing recorded logs directly through EKF pose estimation.
+- Built a Kotlin Compose Multiplatform desktop application visualizing real vs. ghost robot tracks with interactive tuning sliders.
+- Configured NT4 telemetry to simultaneously stream real and ghost robot trajectories to AdvantageScope.
+
+---
+
 ## v2.7 Path Execution & Dynamic Task Planning (Shipped: 2026-05-18)
 
 **Phases completed:** 4 phases, 4 plans

@@ -15,7 +15,6 @@
 - ✅ **v1.10 Match-Ready Telemetry & Hardware Integration** — Phases 30-33 (shipped 2026-05-17)
 - ✅ **v2.0 Real Robot Deployment** — Phases 34-37 (shipped 2026-05-18)
 - ✅ **v2.1 FRC CTRE Swerve Integration** — Phases 38-40 (shipped 2026-05-18)
-
 - ✅ **v2.2 FRC Physics Simulation** — Phases 41-42 (shipped 2026-05-18)
 - ✅ **v2.3 FRC Autonomous Trajectory Following** — Phases 43-44 (shipped 2026-05-18)
 - ✅ **v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration** — Phases 45-48 (shipped 2026-05-18)
@@ -23,17 +22,21 @@
 - ✅ **v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance** — Phases 53-55 (shipped 2026-05-18)
 - ✅ **v2.7 Path Execution & Dynamic Task Planning** — Phases 56-59 (shipped 2026-05-18)
 - ✅ **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (shipped 2026-05-18)
-- 🚧 **v2.9 Physical Deployment & Hardware Bridging** — Phases 64-67 (Active)
+- ✅ **v2.9 Physical Deployment & FRC Marvin 19 Redux Migration** — Phases 64-71 (shipped 2026-05-18)
 
 ## Phases
 
 <details>
-<summary>🚧 v2.9 Physical Deployment & Hardware Bridging (Phases 64-67) — ACTIVE</summary>
+<summary>✅ v2.9 Physical Deployment & FRC Marvin 19 Redux Migration (Phases 64-71) — SHIPPED 2026-05-18</summary>
 
 - [x] Phase 64: FRC Dual-Mode Drivetrain (Swerve Hardware Bridging) (shipped 2026-05-18)
 - [x] Phase 65: FTC Dynamic PathLoader (On-Device Trajectory Loading) (shipped 2026-05-18)
-- [ ] Phase 66: FTC EKF Real-Time Sensor Fusion Integration
-- [ ] Phase 67: Real-Robot Diagnostic Utilities & Safeguards
+- [x] Phase 66: FTC EKF Real-Time Sensor Fusion Integration (shipped 2026-05-18)
+- [x] Phase 67: Real-Robot Diagnostic Utilities & Safeguards (shipped 2026-05-18)
+- [x] Phase 68: FRC Superstructure Redux State Core (shipped 2026-05-18)
+- [x] Phase 69: Platform-Agnostic IO Boundaries (shipped 2026-05-18)
+- [x] Phase 70: FRC Hardware Wrappers (Phoenix 6 CTRE) (shipped 2026-05-18)
+- [x] Phase 71: High-Fidelity Dyn4j Physics Simulator (shipped 2026-05-18)
 
 </details>
 
@@ -50,145 +53,20 @@
 <details>
 <summary>✅ v2.7 Path Execution & Dynamic Task Planning (Phases 56-59) — SHIPPED 2026-05-18</summary>
 
-- [x] Phase 56: Multi-Path Chaining & Dynamic Trajectory Switching
-- [x] Phase 57: Telemetry-Driven Diagnostic Dashboard
-- [x] Phase 58: Dynamic State Machine Task Executor
-- [x] Phase 59: Autonomous System E2E Validation
+- [x] Phase 56: Multi-Path Chaining & Dynamic Trajectory Switching (shipped 2026-05-18)
+- [x] Phase 57: Telemetry-Driven Diagnostic Dashboard (shipped 2026-05-18)
+- [x] Phase 58: Dynamic State Machine Task Executor (shipped 2026-05-18)
+- [x] Phase 59: Autonomous System E2E Validation (shipped 2026-05-18)
 
 </details>
 
 <details>
-<summary>✅ v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance (Phases 53-55) — SHIPPED 2026-05-18</summary>
+<summary>✅ Legacy Milestones (v1.0 to v2.6) — SHIPPED</summary>
 
-- [x] Phase 53: Centripetal Velocity Limiting & Swerve Rate Limiting
-- [x] Phase 54: Distance Sensor Local Costmap Integration
-- [x] Phase 55: VFH+ Obstacle Avoidance Detours & Simulator Verification
-
-</details>
-
-<details>
-<summary>✅ v2.5 Hardened EKF Localization & Dynamic Sensor Fusion (Phases 49-52) — SHIPPED</summary>
-
-- [x] Phase 49: State Expansion & IMU Pitch/Roll Telemetry
-- [x] Phase 50: Advanced Outlier Filter (3D Boundaries, Angular Speed, Acceleration/Shock Lockouts)
-- [x] Phase 51: Dynamic Odometry Covariance Scaling (Tilt/Beaching Protection)
-- [x] Phase 52: Dynamic Vision Covariance Scaling (Distance-based SD & Multi-Tag Trust)
-
-</details>
-
-<details>
-<summary>✅ v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration (Phases 45-48) — SHIPPED</summary>
-
-- [x] Phase 45: Chronological Asynchronous Vision Measurement Buffer
-- [x] Phase 46: Pose Disambiguation and Outlier Filtering
-- [x] Phase 47: Extended Kalman Filter Integration
-- [x] Phase 48: High-Fidelity Vision Simulation & Noise Rejection
-
-</details>
-
-<details>
-<summary>✅ v2.3 FRC Autonomous Trajectory Following (Phases 43-44) — SHIPPED</summary>
-
-- [x] Phase 43: Autonomous Path Parsing & State Wiring
-- [x] Phase 44: Trajectory Follower Integration & Simulation Verification
-
-</details>
-
-<details>
-<summary>✅ v2.2 FRC Physics Simulation (Phases 41-42) — SHIPPED</summary>
-
-- [x] Phase 41: Simulation Core & Field Obstacles
-- [x] Phase 42: Fuel Dynamics & Telemetry
-
-</details>
-
-<details>
-<summary>✅ v2.1 FRC CTRE Swerve Integration (Phases 38-40) — SHIPPED</summary>
-
-- [x] Phase 38: Initialize FRC App & Telemetry
-- [x] Phase 39: Swerve Hardware IO Bridge
-- [x] Phase 40: FRC Robot Loop & Simulation
-
-</details>
-
-<details>
-<summary>✅ v2.0 Real Robot Deployment (Phases 34-37) — SHIPPED</summary>
-
-- [x] Phase 34: Build Chain Unification & Mock Isolation
-- [x] Phase 35: Deployable TeleOp OpMode
-- [x] Phase 36: Telemetry Hardening
-- [x] Phase 37: Deployment & Smoke Test
-
-</details>
-
-<details>
-<summary>✅ v1.10 Match-Ready Telemetry & Hardware Integration (Phases 30-33) — SHIPPED</summary>
-
-- [x] Phase 30: Advanced Controller Architecture
-- [x] Phase 31: NetworkTables 4 (NT4) Server
-- [x] Phase 32: Physical Vision & Hardware Configuration
-- [x] Phase 33: On-Device Data Logging
-
-</details>
-
-<details>
-<summary>✅ v1.9 Core Hardware IO Interfaces (Phases 26-29) — SHIPPED</summary>
-
-- [x] Phase 26: Core Hardware IO Interfaces
-- [x] Phase 27: FTC REV Hub & Pinpoint Integration
-- [x] Phase 28: I2C Auxiliary Wrappers
-- [x] Phase 29: Add absolute encoder wrappers
-
-</details>
-
-<details>
-<summary>✅ v1.8 Vision & Localization (Phases 22-25) — SHIPPED</summary>
-
-- [x] Phase 22: 3D Geometry and Transformations
-- [x] Phase 23: Vision State & Actions
-- [x] Phase 24: Pose Estimator
-- [x] Phase 25: Vision IO Layer Integration
+- [x] Phases 1-55 completed successfully and archived.
 
 </details>
 
 ## Progress
 
-| Phase             | Milestone | Plans Complete | Status      | Completed  |
-| ----------------- | --------- | -------------- | ----------- | ---------- |
-| ...               |           |                |             |            |
-| 34. Build Chain Unification & Mock Isolation | v2.0 | 1/1 | Complete | 2026-05-18 |
-| 35. Deployable TeleOp OpMode | v2.0 | 1/1 | Complete | 2026-05-18 |
-| 36. Telemetry Hardening | v2.0 | 1/1 | Complete | 2026-05-18 |
-| 37. Deployment & Smoke Test | v2.0 | 1/1 | Complete | 2026-05-18 |
-| 38. Initialize FRC App & Telemetry | v2.1 | 1/1 | Complete | 2026-05-18 |
-| 39. Swerve Hardware IO Bridge | v2.1 | 1/1 | Complete | 2026-05-18 |
-| 40. FRC Robot Loop & Simulation | v2.1 | 1/1 | Complete | 2026-05-18 |
-| 41. Simulation Core & Field Obstacles | v2.2 | 1/1 | Complete | 2026-05-18 |
-| 42. Fuel Dynamics & Telemetry | v2.2 | 1/1 | Complete | 2026-05-18 |
-| 43. Autonomous Path Parsing & State Wiring | v2.3 | 1/1 | Complete | 2026-05-18 |
-| 44. Trajectory Follower Integration & Simulation Verification | v2.3 | 1/1 | Complete | 2026-05-18 |
-| 45. Chronological Asynchronous Vision Measurement Buffer | v2.4 | 1/1 | Complete | 2026-05-18 |
-| 46. Pose Disambiguation and Outlier Filtering | v2.4 | 1/1 | Complete | 2026-05-18 |
-| 47. Extended Kalman Filter Integration | v2.4 | 1/1 | Complete | 2026-05-18 |
-| 48. High-Fidelity Vision Simulation & Noise Rejection | v2.4 | 1/1 | Complete | 2026-05-18 |
-| 49. State Expansion & IMU Pitch/Roll Telemetry | v2.5 | 1/1 | Complete | 2026-05-18 |
-| 50. Advanced Outlier Filter (3D Boundaries, Angular Speed, Acceleration/Shock Lockouts) | v2.5 | 1/1 | Complete | 2026-05-18 |
-| 51. Dynamic Odometry Covariance Scaling (Tilt/Beaching Protection) | v2.5 | 1/1 | Complete | 2026-05-18 |
-| 52. Dynamic Vision Covariance Scaling (Distance-based SD & Multi-Tag Trust) | v2.5 | 1/1 | Complete | 2026-05-18 |
-| 53. Centripetal Velocity Limiting & Swerve Rate Limiting | v2.6 | 1/1 | Complete | 2026-05-18 |
-| 54. Distance Sensor Local Costmap Integration | v2.6 | 1/1 | Complete | 2026-05-18 |
-| 55. VFH+ Obstacle Avoidance Detours & Simulator Verification | v2.6 | 1/1 | Complete | 2026-05-18 |
-| 56. Multi-Path Chaining & Dynamic Trajectory Switching | v2.7 | 1/1 | Complete | 2026-05-18 |
-| 57. Telemetry-Driven Diagnostic Dashboard | v2.7 | 1/1 | Complete | 2026-05-18 |
-| 58. Dynamic State Machine Task Executor | v2.7 | 1/1 | Complete | 2026-05-18 |
-| 59. Autonomous System E2E Validation | v2.7 | 1/1 | Complete | 2026-05-18 |
-| 60. Unified Subsystem IO Boundaries | v2.8 | 1/1 | Complete | 2026-05-18 |
-| 61. Asynchronous Raw Input Logging & Mock Clock Interceptor | v2.8 | 1/1 | Complete | 2026-05-18 |
-| 62. Dual-State Offline Replay Runner & AdvantageScope Ghost Telemetry | v2.8 | 1/1 | Complete | 2026-05-18 |
-| 63. Kotlin Compose Multiplatform Replay GUI & Parameter Sweeper Dashboard | v2.8 | 1/1 | Complete | 2026-05-18 |
-| 64. FRC Dual-Mode Drivetrain (Swerve Hardware Bridging) | v2.9 | 1/1 | Complete | 2026-05-18 |
-| 65. FTC Dynamic PathLoader (On-Device Trajectory Loading) | v2.9 | 1/1 | Complete | 2026-05-18 |
-| 66. FTC EKF Real-Time Sensor Fusion Integration | v2.9 | 0/1 | Active | |
-| 67. Real-Robot Diagnostic Utilities & Safeguards | v2.9 | 0/1 | Active | |
-
-
+All phases up to Phase 71 are completed successfully.
