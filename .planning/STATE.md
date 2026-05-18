@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Hardened EKF Localization & Dynamic Sensor Fusion
-status: planning
-last_updated: "2026-05-18T12:51:00.000Z"
+status: executing
+last_updated: "2026-05-18T13:24:00.000Z"
 last_activity: 2026-05-18
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 25
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State
@@ -28,18 +28,18 @@ Milestone v2.4 successfully completed and shipped FRC/FTC Vision & Multi-Sensor 
 
 ## Current Position
 
-Phase: Phase 50: Advanced Outlier Filter (3D Boundaries, Angular Speed, Acceleration/Shock Lockouts)
+Phase: Phase 52: Elite Multi-Tag Variance Scaling & Distance Penalization (Kalman Noise Scaling)
 Plan: —
-Status: Planning Phase 50
-Last activity: 2026-05-18 — Phase 49 completed successfully
+Status: Planning Phase 52
+Last activity: 2026-05-18 — Phase 51 completed successfully
 
 ### Current Focus
 
-Define and plan Phase 50: Advanced Outlier Filter to filter invalid visual frames based on spatial boundaries (out-of-bounds field limits, underground Z), gyroscopic speed motion blur, and collision-shock lockouts.
+Define and plan Phase 52: Elite Multi-Tag Variance Scaling & Distance Penalization. Scale vision measurement noise R quadratically with tag distance ($R = R_{base} \cdot (1.0 + d^2)$) and decrease measurement standard deviations by $\frac{1}{\sqrt{\text{numTags}}}$ when multiple tags are detected in a single frame.
 
 ### Next Steps
 
-1. Create CONTEXT.md and PLAN.md for Phase 50.
+1. Create CONTEXT.md and PLAN.md for Phase 52.
 
 ## Accumulated Context
 

@@ -62,4 +62,81 @@ class VisionOutlierFilterTest {
         )
         assertFalse(filter.isValid(measurement, robotHeadingRad, robotPose))
     }
+
+    @Test
+    fun test3DFieldBoundaryRejections() {
+        // X out of bounds (> 2.5)
+        val outOfBoundsX = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(2.6, 0.0, 0.2), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+        assertFalse(filter.isValid(outOfBoundsX, robotHeadingRad, robotPose))
+
+        // Y out of bounds (< -2.5)
+        val outOfBoundsY = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(0.0, -2.6, 0.2), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+        assertFalse(filter.isValid(outOfBoundsY, robotHeadingRad, robotPose))
+
+        // Z underground (< -0.2)
+        val undergroundZ = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(0.0, 0.0, -0.25), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+        assertFalse(filter.isValid(undergroundZ, robotHeadingRad, robotPose))
+
+        // Z floating (> 1.0)
+        val floatingZ = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(0.0, 0.0, 1.05), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+        assertFalse(filter.isValid(floatingZ, robotHeadingRad, robotPose))
+    }
+
+    @Test
+    fun testAngularVelocityBlurLockout() {
+        val measurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(1.0, 0.0, 0.2), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+
+        // Spin too fast (2.1 rad/s > 2.0 rad/s limit)
+        assertFalse(filter.isValid(measurement, robotHeadingRad, robotPose, angularVelocityRadPerSec = 2.1))
+        
+        // Spin under limit (1.9 rad/s <= 2.0 rad/s limit)
+        assertTrue(filter.isValid(measurement, robotHeadingRad, robotPose, angularVelocityRadPerSec = 1.9))
+    }
+
+    @Test
+    fun testHighGShockCollisionLockout() {
+        val measurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(1.0, 0.0, 0.2), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+
+        // Rest case (1G Z gravity, 0G lateral) should pass
+        assertTrue(filter.isValid(measurement, robotHeadingRad, robotPose, linearAccelXG = 0.0, linearAccelYG = 0.0, linearAccelZG = 1.0))
+
+        // Dynamic shock in X/Y exceeding 2.5G: X=2.6G should fail
+        assertFalse(filter.isValid(measurement, robotHeadingRad, robotPose, linearAccelXG = 2.6, linearAccelYG = 0.0, linearAccelZG = 1.0))
+
+        // Dynamic shock in Z exceeding 2.5G: Z=3.6G (dynamic Z = 2.6G) should fail
+        assertFalse(filter.isValid(measurement, robotHeadingRad, robotPose, linearAccelXG = 0.0, linearAccelYG = 0.0, linearAccelZG = 3.6))
+
+        // Under 2.5G limit (e.g. 2.0G dynamic shock) should pass
+        assertTrue(filter.isValid(measurement, robotHeadingRad, robotPose, linearAccelXG = 2.0, linearAccelYG = 0.0, linearAccelZG = 1.0))
+    }
 }

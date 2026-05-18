@@ -13,10 +13,12 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             val deltaTrans = com.areslib.math.Translation2d(action.deltaX, action.deltaY)
             val deltaHeading = com.areslib.math.Rotation2d(action.deltaHeading)
             val updatedEstimator = com.areslib.math.PoseEstimator.addOdometryObservation(
-                state.drive.poseEstimator,
-                action.timestampMs,
-                deltaTrans,
-                deltaHeading
+                state = state.drive.poseEstimator,
+                timestampMs = action.timestampMs,
+                deltaTranslation = deltaTrans,
+                deltaHeading = deltaHeading,
+                pitchDegrees = action.pitchDegrees,
+                rollDegrees = action.rollDegrees
             )
             state.copy(
                 drive = state.drive.copy(
@@ -52,15 +54,24 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             val robotPose = state.drive.poseEstimator.estimatedPose
             val robotHeading = robotPose.heading.radians
             val validMeasurements = action.measurements.filter {
-                filter.isValid(it, robotHeading, robotPose)
+                filter.isValid(
+                    measurement = it,
+                    robotHeadingRad = robotHeading,
+                    robotPose = robotPose,
+                    angularVelocityRadPerSec = state.drive.angularVelocityRadiansPerSecond,
+                    linearAccelXG = state.drive.xAccelerationG,
+                    linearAccelYG = state.drive.yAccelerationG,
+                    linearAccelZG = state.drive.zAccelerationG
+                )
             }
 
             var currentEstimator = state.drive.poseEstimator
             for (measurement in validMeasurements) {
                 currentEstimator = com.areslib.math.PoseEstimator.addVisionMeasurement(
-                    currentEstimator,
-                    measurement,
-                    com.areslib.math.Vector3(0.05, 0.05, 0.1) // Vision std dev tuning
+                    state = currentEstimator,
+                    measurement = measurement,
+                    visionStdDevs = com.areslib.math.Vector3(0.05, 0.05, 0.1), // Vision std dev tuning
+                    numTags = validMeasurements.size
                 )
             }
 

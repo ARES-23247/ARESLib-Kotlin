@@ -4,6 +4,7 @@ import com.areslib.math.Pose2d
 import com.areslib.math.Translation2d
 import com.areslib.state.VisionMeasurement
 import kotlin.math.abs
+import kotlin.math.sqrt
 
 /**
  * Filter configuration thresholds for AprilTag measurements.
@@ -11,7 +12,15 @@ import kotlin.math.abs
 data class VisionFilterConfig(
     val maxDistanceMeters: Double = 6.0,
     val maxAmbiguity: Double = 0.2,
-    val maxRotationDeviationRad: Double = Math.toRadians(15.0)
+    val maxRotationDeviationRad: Double = Math.toRadians(15.0),
+    val minFieldX: Double = -2.5,
+    val maxFieldX: Double = 2.5,
+    val minFieldY: Double = -2.5,
+    val maxFieldY: Double = 2.5,
+    val minFieldZ: Double = -0.2,
+    val maxFieldZ: Double = 1.0,
+    val maxAngularVelocityRadPerSec: Double = 2.0,
+    val maxAccelerationG: Double = 2.5
 )
 
 /**
@@ -22,14 +31,30 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
     /**
      * Returns true if the vision measurement is physically valid and falls within all threshold constraints.
      */
-    fun isValid(measurement: VisionMeasurement, robotHeadingRad: Double, robotPose: Pose2d): Boolean {
+    fun isValid(
+        measurement: VisionMeasurement,
+        robotHeadingRad: Double,
+        robotPose: Pose2d,
+        angularVelocityRadPerSec: Double = 0.0,
+        linearAccelXG: Double = 0.0,
+        linearAccelYG: Double = 0.0,
+        linearAccelZG: Double = 1.0
+    ): Boolean {
         // 1. Check Ambiguity (if >= 0.0)
         if (measurement.ambiguity > config.maxAmbiguity) {
             return false
         }
 
-        // 2. Check Distance
-        val tagPose2d = measurement.targetPose.toPose2d()
+        // 2. Check 3D Spatial Boundaries
+        val tagPose3d = measurement.targetPose
+        if (tagPose3d.x < config.minFieldX || tagPose3d.x > config.maxFieldX ||
+            tagPose3d.y < config.minFieldY || tagPose3d.y > config.maxFieldY ||
+            tagPose3d.z < config.minFieldZ || tagPose3d.z > config.maxFieldZ) {
+            return false
+        }
+
+        // 3. Check Distance
+        val tagPose2d = tagPose3d.toPose2d()
         val dx = tagPose2d.x - robotPose.x
         val dy = tagPose2d.y - robotPose.y
         val distance = Translation2d(dx, dy).norm
@@ -38,11 +63,27 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             return false
         }
 
-        // 3. Check Yaw rotation alignment relative to robot gyro heading
-        val tagYaw = measurement.targetPose.rotation.z
+        // 4. Check Yaw rotation alignment relative to robot gyro heading
+        val tagYaw = tagPose3d.rotation.z
         val headingDiff = normalizeAngle(tagYaw - robotHeadingRad)
 
         if (abs(headingDiff) > config.maxRotationDeviationRad) {
+            return false
+        }
+
+        // 5. Check Angular Velocity Lockout (Motion Blur guard)
+        if (abs(angularVelocityRadPerSec) > config.maxAngularVelocityRadPerSec) {
+            return false
+        }
+
+        // 6. Check High-G Shock Lockout (Collision guard)
+        val dynamicZ = if (linearAccelZG == 0.0) 0.0 else linearAccelZG - 1.0
+        val shockMagnitude = sqrt(
+            linearAccelXG * linearAccelXG +
+            linearAccelYG * linearAccelYG +
+            dynamicZ * dynamicZ
+        )
+        if (shockMagnitude > config.maxAccelerationG) {
             return false
         }
 

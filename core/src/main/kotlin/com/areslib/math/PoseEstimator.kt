@@ -28,6 +28,14 @@ object PoseEstimator {
         0.0,  0.0,  0.01
     )
 
+    // Known AprilTag coordinates for distance calculations
+    private val TAGS = mapOf(
+        1 to Pose3d(Translation3d(1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
+        2 to Pose3d(Translation3d(1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
+        3 to Pose3d(Translation3d(-1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, 0.0)),
+        4 to Pose3d(Translation3d(-1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, 0.0))
+    )
+
     /**
      * Integrates a new odometry delta into the state.
      * Call this every time wheel odometry updates.
@@ -36,8 +44,22 @@ object PoseEstimator {
         state: PoseEstimatorState,
         timestampMs: Long,
         deltaTranslation: Translation2d,
-        deltaHeading: Rotation2d
+        deltaHeading: Rotation2d,
+        pitchDegrees: Double = 0.0,
+        rollDegrees: Double = 0.0
     ): PoseEstimatorState {
+        val tiltDegrees = kotlin.math.sqrt(pitchDegrees * pitchDegrees + rollDegrees * rollDegrees)
+
+        // Catastrophic tilt / beaching check: Freeze odometry updates
+        if (tiltDegrees > 15.0) {
+            val newEntry = PoseHistoryEntry(timestampMs, state.estimatedPose, state.covariance)
+            val newHistory = (state.history + newEntry).takeLast(MAX_HISTORY_SIZE)
+            return state.copy(history = newHistory)
+        }
+
+        // High tilt / wheel slippage check: Scale odometry covariance by 100x
+        val currentQ = if (tiltDegrees > 8.0) Q * 100.0 else Q
+
         val newHeading = Rotation2d(state.estimatedPose.heading.radians + deltaHeading.radians)
         val newPose = Pose2d(
             state.estimatedPose.x + deltaTranslation.x,
@@ -45,8 +67,8 @@ object PoseEstimator {
             newHeading
         )
         
-        // Simple propagation: P = P + Q
-        val newCovariance = state.covariance + Q
+        // Simple propagation: P = P + dynamic Q
+        val newCovariance = state.covariance + currentQ
 
         val newEntry = PoseHistoryEntry(timestampMs, newPose, newCovariance)
         val newHistory = (state.history + newEntry).takeLast(MAX_HISTORY_SIZE)
@@ -65,7 +87,8 @@ object PoseEstimator {
     fun addVisionMeasurement(
         state: PoseEstimatorState,
         measurement: VisionMeasurement,
-        visionStdDevs: Vector3 // Vector3(x, y, heading)
+        visionStdDevs: Vector3, // Vector3(x, y, heading)
+        numTags: Int = 1
     ): PoseEstimatorState {
         if (state.history.isEmpty()) return state
 
@@ -85,11 +108,30 @@ object PoseEstimator {
 
         val baseEntry = state.history[closestIndex]
 
+        // 1. Calculate physical distance to AprilTag
+        val tagPose = TAGS[measurement.tagId]
+        val distance = if (tagPose != null) {
+            val dx = tagPose.x - baseEntry.pose.x
+            val dy = tagPose.y - baseEntry.pose.y
+            kotlin.math.sqrt(dx * dx + dy * dy)
+        } else {
+            // Fallback to measurement pose distance from robot base
+            val measurementPose = measurement.targetPose.toPose2d()
+            val dx = measurementPose.x - baseEntry.pose.x
+            val dy = measurementPose.y - baseEntry.pose.y
+            kotlin.math.sqrt(dx * dx + dy * dy)
+        }
+
+        // 2. Dynamic EKF vision noise scaling (multi-tag division & quadratic distance growth)
+        val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
+        val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
+        val scaledStdDevs = visionStdDevs * (multiTagFactor * distFactor)
+
         // Extended Kalman Filter Update at the historical timestamp
         val R = Vector3(
-            visionStdDevs.x * visionStdDevs.x,
-            visionStdDevs.y * visionStdDevs.y,
-            visionStdDevs.z * visionStdDevs.z
+            scaledStdDevs.x * scaledStdDevs.x,
+            scaledStdDevs.y * scaledStdDevs.y,
+            scaledStdDevs.z * scaledStdDevs.z
         ).let { v -> 
             Matrix3x3(
                 v.x, 0.0, 0.0,

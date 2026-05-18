@@ -73,4 +73,156 @@ class PoseEstimatorTest {
         assertTrue(state.estimatedPose.x > 2.1, "Pose X should be retroactively corrected forward: ${state.estimatedPose.x}")
         assertEquals(0.0, state.estimatedPose.y, 1e-6)
     }
+
+    @Test
+    fun testOdometryCovarianceScalingUnderTilt() {
+        val flatState = PoseEstimator.addOdometryObservation(
+            PoseEstimatorState(),
+            100L,
+            Translation2d(1.0, 0.0),
+            Rotation2d(0.0),
+            pitchDegrees = 0.0,
+            rollDegrees = 0.0
+        )
+
+        val tiltedState = PoseEstimator.addOdometryObservation(
+            PoseEstimatorState(),
+            100L,
+            Translation2d(1.0, 0.0),
+            Rotation2d(0.0),
+            pitchDegrees = 10.0, // Exceeds 8.0 degree slip threshold
+            rollDegrees = 0.0
+        )
+
+        // Flat state covariance: base Q added (e.g. m00 = 1.0 + 0.01 = 1.01)
+        // Tilted state covariance: 100x Q added (e.g. m00 = 1.0 + 1.0 = 2.0)
+        val flatCovDiff = flatState.covariance.m00 - 1.0
+        val tiltedCovDiff = tiltedState.covariance.m00 - 1.0
+
+        assertEquals(0.01, flatCovDiff, 1e-6)
+        assertEquals(1.0, tiltedCovDiff, 1e-6)
+    }
+
+    @Test
+    fun testOdometryFreezeUnderBeaching() {
+        val initialState = PoseEstimatorState()
+
+        // 20 degrees roll exceeds the 15.0 degree beaching threshold
+        val beachedState = PoseEstimator.addOdometryObservation(
+            initialState,
+            100L,
+            Translation2d(1.0, 0.5),
+            Rotation2d(0.1),
+            pitchDegrees = 0.0,
+            rollDegrees = 20.0
+        )
+
+        // The position and orientation should remain unchanged (frozen)
+        assertEquals(initialState.estimatedPose.x, beachedState.estimatedPose.x, 1e-6)
+        assertEquals(initialState.estimatedPose.y, beachedState.estimatedPose.y, 1e-6)
+        assertEquals(initialState.estimatedPose.heading.radians, beachedState.estimatedPose.heading.radians, 1e-6)
+
+        // The covariance should not grow
+        assertEquals(initialState.covariance.m00, beachedState.covariance.m00, 1e-6)
+        assertEquals(initialState.covariance.m11, beachedState.covariance.m11, 1e-6)
+        assertEquals(initialState.covariance.m22, beachedState.covariance.m22, 1e-6)
+    }
+
+    @Test
+    fun testVisionDistancePenalization() {
+        // Setup initial history
+        var stateClose = PoseEstimatorState()
+        stateClose = PoseEstimator.addOdometryObservation(
+            stateClose,
+            100L,
+            Translation2d(1.8, 1.8), // Robot is right on top of Tag 1 (1.8, 1.8)
+            Rotation2d(0.0)
+        )
+
+        var stateFar = PoseEstimatorState()
+        stateFar = PoseEstimator.addOdometryObservation(
+            stateFar,
+            100L,
+            Translation2d(0.0, 0.0), // Robot is far from Tag 1 (1.8, 1.8)
+            Rotation2d(0.0)
+        )
+
+        // Vision says robot is at (+1.0m, +1.0m) relative to current position
+        val measurementClose = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(2.8, 2.8, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1
+        )
+        val measurementFar = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(1.0, 1.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1
+        )
+
+        val updatedClose = PoseEstimator.addVisionMeasurement(
+            stateClose,
+            measurementClose,
+            Vector3(0.1, 0.1, 0.1)
+        )
+
+        val updatedFar = PoseEstimator.addVisionMeasurement(
+            stateFar,
+            measurementFar,
+            Vector3(0.1, 0.1, 0.1)
+        )
+
+        // The close measurement (distance = 0) should pull the estimator further than the far measurement
+        val diffClose = updatedClose.estimatedPose.x - 1.8
+        val diffFar = updatedFar.estimatedPose.x - 0.0
+
+        // Because the far measurement has penalized trust (higher R due to distance),
+        // the correction towards the far target pose should be significantly smaller.
+        assertTrue(diffClose > diffFar, "Close vision measurement should pull more ($diffClose) than far penalized one ($diffFar)")
+    }
+
+    @Test
+    fun testVisionMultiTagScaling() {
+        var stateSingle = PoseEstimatorState()
+        stateSingle = PoseEstimator.addOdometryObservation(
+            stateSingle,
+            100L,
+            Translation2d(0.0, 0.0),
+            Rotation2d(0.0)
+        )
+
+        var stateMulti = PoseEstimatorState()
+        stateMulti = PoseEstimator.addOdometryObservation(
+            stateMulti,
+            100L,
+            Translation2d(0.0, 0.0),
+            Rotation2d(0.0)
+        )
+
+        val measurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(1.0, 1.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1
+        )
+
+        // Fuse with 1 tag vs 4 tags
+        val updatedSingle = PoseEstimator.addVisionMeasurement(
+            stateSingle,
+            measurement,
+            Vector3(0.1, 0.1, 0.1),
+            numTags = 1
+        )
+
+        val updatedMulti = PoseEstimator.addVisionMeasurement(
+            stateMulti,
+            measurement,
+            Vector3(0.1, 0.1, 0.1),
+            numTags = 4
+        )
+
+        val diffSingle = updatedSingle.estimatedPose.x
+        val diffMulti = updatedMulti.estimatedPose.x
+
+        // More tags reduces noise covariance R, which means we trust vision MORE, so diffMulti should be larger!
+        assertTrue(diffMulti > diffSingle, "Multi-tag fusion should pull estimate closer to vision ($diffMulti) than single-tag ($diffSingle)")
+    }
 }
