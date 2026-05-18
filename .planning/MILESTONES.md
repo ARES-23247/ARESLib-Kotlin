@@ -1,5 +1,52 @@
 # Milestones
 
+## v2.3 FRC Autonomous Trajectory Following (Shipped: 2026-05-18)
+
+**Phases completed:** 2 phases, 2 plans
+
+**Key accomplishments:**
+- Thread-safe loading and parsing of PathPlanner JSON trajectory assets inside `frc-app` module.
+- Smooth start coordinate snapping/alignment for both Redux state and dyn4j physics bodies.
+- Feedforward/feedback `HolonomicDriveController` loop integration inside FRC `autonomousPeriodic()` loops.
+- Structured streaming of target poses and active deviations to AdvantageScope.
+
+---
+
+## v2.2 FRC Physics Simulation (Shipped: 2026-05-18)
+
+**Phases completed:** 2 phases, 2 plans
+
+**Key accomplishments:**
+- Implemented high-fidelity dyn4j rigid-body 2D physics swerve simulator core.
+- Configured dynamic timestep updates, floor friction damping, and collision dynamics (wall and hub).
+- Designed flywheel physics with angular momentum (MOI/torque) and speed regulation.
+- Automated simulation telemetry streaming to AdvantageScope.
+
+---
+
+## v2.1 FRC CTRE Swerve Integration (Shipped: 2026-05-18)
+
+**Phases completed:** 3 phases, 3 plans
+
+**Key accomplishments:**
+- Decoupled physical motor and sensor wrappers into platform-agnostic `SwerveModuleIO` structures.
+- Implemented thin airlock for CTRE CANivore (Phoenix 6 `waitForUpdate`) thread-safe bus sync.
+- Constructed FRC `ARESRobot` central framework loop routing telemetry to WPILog.
+
+---
+
+## v2.0 Real Robot Deployment (Shipped: 2026-05-18)
+
+**Phases completed:** 4 phases, 4 plans
+
+**Key accomplishments:**
+- Unified multi-module gradle build chain supporting pure JVM/Android project builds.
+- Isolated mock SDK classes completely from physical production modules.
+- Deployed TeleOp LinearOpMode with hardware maps for motor, pinpoint, and IMU configurations.
+- Hardened wireless ADB developer deployment capabilities.
+
+---
+
 ## v1.10 Match-Ready Telemetry & Hardware Integration (Shipped: 2026-05-17)
 
 **Phases completed:** 4 phases, 4 plans

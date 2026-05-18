@@ -24,11 +24,9 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Mecanum Kinematics Math — v1.2
 - ✓ Mecanum Hardware IO (DcMotorEx bridge) — v1.2
 - ✓ Deployable TeleOp LinearOpMode — v1.2
-
 - ✓ PathPlanner JSON parsing logic into immutable Path structs — v1.3
 - ✓ Pure Holonomic Drive Controller for trajectory following — v1.3
 - ✓ Autonomous OpMode for deploying paths on FTC hardware — v1.3
-
 - ✓ Dyn4j Desktop Simulation & Visualization (AdvantageScope telemetry streaming) — v1.4
 - ✓ Trajectory Following in Simulation (HolonomicDriveController + path sampling) — v1.5
 - ✓ Quintic Hermite Spline calculation from waypoints. — v1.6
@@ -45,26 +43,31 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Physical Vision Hardware Wrappers (Limelight 3A & VisionPortal) — v1.10
 - ✓ Centralized RobotConfig mapping — v1.10
 - ✓ On-Device SD Card WPILog/CSV Logging — v1.10
+- ✓ Unified Gradle build chain (JVM/Android module compatibility) — v2.0
+- ✓ Mock class isolation from production code — v2.0
+- ✓ Registered TeamCode OpMode with @TeleOp annotation — v2.0
+- ✓ Hardware configuration mapping (motors, pinpoint, IMU) — v2.0
+- ✓ Resilient telemetry on real hardware — v2.0
+- ✓ Successful wireless ADB deploy to Control Hub — v2.0
+- ✓ FRC CTRE Swerve Integration — v2.1
 - ✓ FRC dyn4j Physics Simulation: dynamic time delta steps, floor damping, self-healing spawn guards, static wall and hub collisions — v2.2
+- ✓ FRC Autonomous Trajectory Following (PathPlanner spline parsing, start coordinate snap-alignment, HolonomicDriveController loop, AdvantageScope diagnostics) — v2.3
 
 ### Active
+- [ ] Thread-safe queue buffer for asynchronous vision camera measurements sorted chronologically before processing. — v2.4
+- [ ] Ambiguity-based vision filter that rejects measurements with high pose ambiguity or when tag distance/rotation limits are exceeded. — v2.4
+- [ ] Integrate multi-sensor vision measurements with retro-active EKF pose estimates in the `PoseEstimator`. — v2.4
+- [ ] Validate correct Kalman-Filter vision pose corrections using high-fidelity simulations. — v2.4
 
-- [ ] Unified Gradle build chain (JVM/Android module compatibility)
-- [ ] Mock class isolation from production code
-- [ ] Registered TeamCode OpMode with @TeleOp annotation
-- [ ] Hardware configuration mapping (motors, pinpoint, IMU)
-- [ ] Resilient telemetry on real hardware
-- [ ] Successful wireless ADB deploy to Control Hub
+## Current Milestone: v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration
 
-## Current Milestone: v2.3 FRC Autonomous Trajectory Following
-
-**Goal:** Parse PathPlanner JSON trajectories and autonomously drive the dyn4j simulated swerve robot using the HolonomicDriveController in FRC.
+**Goal:** Integrate physical Limelight 3D AprilTag vision measurements with our retroactive Extended Kalman Filter (EKF) pose estimator to provide resilient, low-latency, and high-fidelity robot localization.
 
 **Target features:**
-- Thread-safe loading and parsing of PathPlanner JSON trajectory assets inside `frc-app` module.
-- Align/offset initial simulated robot odometry coordinate variables with path start-points.
-- Integrate the pure `HolonomicDriveController` inside `autonomousPeriodic` robot execution loops.
-- Stream target path translation arrays (`Robot/TargetPose`) and active deviations (`Robot/TrajectoryError`) to AdvantageScope for visual evaluation.
+- Implement a thread-safe sorting buffer to handle asynchronous, out-of-order vision measurements chronologically.
+- Add elite team pose disambiguation based on rotation and distance check thresholds.
+- Enable full multi-sensor fusion in `PoseEstimator.kt` using standard deviation vector parameters.
+- Verify EKF localization stability and vision noise rejection under dynamic physical simulator stress.
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
@@ -85,9 +88,10 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 ## Key Decisions
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Pure Functional Core | Maximizes testability and allows sharing 100% of mathematical logic between FTC and FRC. | — Pending |
-| No KAPT / `@AutoLog` | Speeds up build times and ensures Android/RoboRIO cross-compatibility. | — Pending |
-| Redux-style State Store | Centralizes all robot state, enabling time-travel debugging and unified logging. | — Pending |
+| Pure Functional Core | Maximizes testability and allows sharing 100% of mathematical logic between FTC and FRC. | ✓ Good |
+| No KAPT / `@AutoLog` | Speeds up build times and ensures Android/RoboRIO cross-compatibility. | ✓ Good |
+| Redux-style State Store | Centralizes all robot state, enabling time-travel debugging and unified logging. | ✓ Good |
+| Chronological Vision Replay | Solves asynchronous pipeline latency by rewind/replay of historical odometry entries in EKF. | ✓ Good |
 
 ---
 
@@ -109,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-17 after v2.0 milestone start*
+*Last updated: 2026-05-18 after v2.3 milestone complete*
