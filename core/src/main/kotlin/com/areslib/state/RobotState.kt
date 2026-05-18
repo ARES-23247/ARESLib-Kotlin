@@ -4,12 +4,30 @@ import com.areslib.math.Pose3d
 import com.areslib.math.PoseEstimatorState
 
 /**
+ * Represents a detected obstacle on the field.
+ */
+data class Obstacle(
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val radius: Double = 0.2
+)
+
+/**
+ * Stores the dynamic costmap of fused local range observations.
+ */
+data class CostmapState(
+    val obstacles: List<Obstacle> = emptyList(),
+    val lastUpdateTimestampMs: Long = 0L
+)
+
+/**
  * The root immutable state tree for the entire robot.
  */
 data class RobotState(
     val drive: DriveState = DriveState(),
     val superstructure: SuperstructureState = SuperstructureState(),
     val vision: VisionState = VisionState(),
+    val costmap: CostmapState = CostmapState(),
     val timestampMs: Long = 0L
 )
 

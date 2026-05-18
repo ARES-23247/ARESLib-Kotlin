@@ -83,4 +83,19 @@ sealed class RobotAction {
         val count: Int,
         val timestampMs: Long
     ) : RobotAction()
+
+    // Obstacle Avoidance Actions
+    data class DistanceSensorObservation(
+        val sensorId: String,
+        val angleOffsetRad: Double,
+        val positionOffsetXMeters: Double,
+        val positionOffsetYMeters: Double,
+        val distanceMeters: Double,
+        val maxRangeMeters: Double = 4.0
+    )
+
+    data class ObstacleCostmapUpdate(
+        val observations: List<DistanceSensorObservation>,
+        val timestampMs: Long
+    ) : RobotAction()
 }
