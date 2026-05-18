@@ -1,5 +1,27 @@
 # Project Retrospective
 
+## Milestone: v2.6 — Dynamic Swerve Trajectory Optimization & Obstacle Avoidance
+
+**Shipped:** 2026-05-18
+**Phases:** 3 | **Plans:** 3
+
+### What Was Built
+1. Spline Curvature-based centripetal linear velocity capping to prevent tipping or sliding on sharp corners.
+2. Angular steering acceleration and drive acceleration rate-limiting caps inside the Swerve Kinematics engine.
+3. Local 2D costmap grid state reducer projecting distance sensors into world coordinates via EKF pose updates.
+4. Lightweight Vector Field Histogram (VFH+) planner featuring detour side-locking memory and path progress projection passing checks to prevent early corner-cutting and steering oscillations.
+5. High-fidelity closed-loop swerve path following simulator verification confirming collision safety and target arrival thresholds.
+
+### What Worked
+- Blending feedback force vectors relative to the VFH+ safe detour angle prevented target rush, resulting in elegant detours around costmap obstacles.
+- Emphasizing path-relative progress projections instead of simple robot-coordinate boundaries guaranteed stable, consistent detour side-locking.
+- Re-injecting the nominal target vector as a candidate heading when safe completely eliminated hysteresis and steering jitter.
+
+### Key Lessons
+- Side-locking memory is critical when running dynamic planners; without it, subtle lateral sensor noise or speed changes can trigger wild high-frequency trajectory oscillations.
+
+---
+
 ## Milestone: v2.4 — FRC/FTC Vision & Multi-Sensor Kalman Filter Integration
 
 **Shipped:** 2026-05-18
