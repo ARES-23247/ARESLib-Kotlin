@@ -16,6 +16,9 @@ class FRCTelemetry : ITelemetry {
         // Starts the deterministic logger (logs all NT4 values, joystick inputs, and console output to a .wpilog)
         DataLogManager.start()
         
+        // Explicitly start NT4 Server for AdvantageScope to connect to
+        NetworkTableInstance.getDefault().startServer()
+        
         // Log custom strings or events if necessary
         DataLogManager.log("ARESLib: FRC Telemetry Initialized")
     }

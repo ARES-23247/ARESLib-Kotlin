@@ -6,6 +6,7 @@ import com.areslib.reducer.rootReducer
 import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.RobotController
+import edu.wpi.first.wpilibj.Timer
 
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
@@ -41,6 +42,7 @@ class ARESRobot : TimedRobot() {
     private val world = World<Body>()
     private val robotBody = Body()
     private val balls = mutableListOf<Body>()
+    private var lastSimTime = 0.0
 
     override fun robotInit() {
         // Initialize CTRE SwerveDrivetrain here using TunerConstants
@@ -51,12 +53,16 @@ class ARESRobot : TimedRobot() {
         // Robot Setup
         val robotFixture = robotBody.addFixture(Geometry.createRectangle(0.7, 0.7)) // ~28 inch square
         robotFixture.density = 78.0
+        robotBody.linearDamping = 1.0
+        robotBody.angularDamping = 2.0
         robotBody.setMass(MassType.NORMAL)
         robotBody.translate(2.0, 2.0)
         world.addBody(robotBody)
         
         createWalls()
         spawnFuel()
+        
+        lastSimTime = Timer.getFPGATimestamp()
     }
 
     override fun robotPeriodic() {
@@ -73,7 +79,7 @@ class ARESRobot : TimedRobot() {
         )
         
         // In teleop, we would map the XboxController to ChassisSpeeds or commands here.
-        if (isTeleop) {
+        if (isTeleop && driverController.isConnected) {
             // Apply deadbands so it doesn't drift
             val applyDeadband = { value: Double -> if (Math.abs(value) < 0.1) 0.0 else value }
             val forward = applyDeadband(-driverController.leftY)
@@ -90,6 +96,15 @@ class ARESRobot : TimedRobot() {
                     xVelocityMetersPerSecond = vx,
                     yVelocityMetersPerSecond = vy,
                     angularVelocityRadiansPerSecond = omega
+                )
+            )
+        } else {
+            // Reset target velocities to 0 when disabled or controller disconnected
+            currentState = currentState.copy(
+                drive = currentState.drive.copy(
+                    xVelocityMetersPerSecond = 0.0,
+                    yVelocityMetersPerSecond = 0.0,
+                    angularVelocityRadiansPerSecond = 0.0
                 )
             )
         }
@@ -109,28 +124,34 @@ class ARESRobot : TimedRobot() {
     }
 
     override fun simulationPeriodic() {
-        // Step Dyn4j Physics Engine
-        val kpLinear = 50.0
-        val kpAngular = 20.0
-        val forceX = (currentState.drive.xVelocityMetersPerSecond - robotBody.linearVelocity.x) * kpLinear
-        val forceY = (currentState.drive.yVelocityMetersPerSecond - robotBody.linearVelocity.y) * kpLinear
-        val torque = (currentState.drive.angularVelocityRadiansPerSecond - robotBody.angularVelocity) * kpAngular
+        val now = Timer.getFPGATimestamp()
+        val dt = Math.min(now - lastSimTime, 0.05)
+        lastSimTime = now
 
-        robotBody.isAtRest = false
-        robotBody.applyForce(org.dyn4j.geometry.Vector2(forceX, forceY))
-        robotBody.applyTorque(torque)
-        
-        world.step(1, 0.02)
+        if (dt > 0.0) {
+            // Step Dyn4j Physics Engine
+            val kpLinear = 50.0
+            val kpAngular = 20.0
+            val forceX = (currentState.drive.xVelocityMetersPerSecond - robotBody.linearVelocity.x) * kpLinear
+            val forceY = (currentState.drive.yVelocityMetersPerSecond - robotBody.linearVelocity.y) * kpLinear
+            val torque = (currentState.drive.angularVelocityRadiansPerSecond - robotBody.angularVelocity) * kpAngular
 
-        // Read back the pose from physics
-        val t = robotBody.transform
-        currentState = currentState.copy(
-            drive = currentState.drive.copy(
-                odometryX = t.translationX,
-                odometryY = t.translationY,
-                odometryHeading = t.rotationAngle
+            robotBody.isAtRest = false
+            robotBody.applyForce(org.dyn4j.geometry.Vector2(forceX, forceY))
+            robotBody.applyTorque(torque)
+            
+            world.step(1, dt)
+
+            // Read back the pose from physics
+            val t = robotBody.transform
+            currentState = currentState.copy(
+                drive = currentState.drive.copy(
+                    odometryX = t.translationX,
+                    odometryY = t.translationY,
+                    odometryHeading = t.rotationAngle
+                )
             )
-        )
+        }
         
         // Publish Fuel 3D Array
         val gamePieceData = DoubleArray(balls.size * 7)
