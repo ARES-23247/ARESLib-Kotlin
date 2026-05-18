@@ -1,15 +1,18 @@
 # Requirements
 
 ## Active
-### Core Physics Subsystem
-- [ ] **PHYS-01**: Initialize dyn4j `World` in the `frc-app` simulation loop.
-- [ ] **PHYS-02**: Link `DriveState.ChassisSpeeds` to dyn4j `Body` forces for rigid body driving.
-- [ ] **PHYS-03**: Create static rigid bodies matching the 2026 REBUILT field boundaries.
-- [ ] **PHYS-04**: Create static rigid bodies matching the 2026 REBUILT Hubs, Towers, and Trenches.
 
-### Game Piece Simulation
-- [ ] **FUEL-01**: Spawn dynamic rigid bodies representing 2026 REBUILT Fuel.
-- [ ] **FUEL-02**: Extract fuel positions from dyn4j to a `DoubleArray` compatible with AdvantageScope `Robot/FuelPoses`.
+### Path Parsing & Setup
+- [ ] **AUTO-01**: Provide deterministic, thread-safe loading of PathPlanner JSON files in `frc-app` at robot initiation.
+- [ ] **AUTO-02**: Map path structures to standard `Trajectory` representation compatible with our Redux states.
+
+### Autonomous Control Loop
+- [ ] **AUTO-03**: Integrate the functional `HolonomicDriveController` into FRC `autonomousPeriodic()` loops.
+- [ ] **AUTO-04**: Support start-state position reset (odometry alignment) based on initial trajectory points.
+- [ ] **AUTO-05**: Implement state-driven path-action commands (events triggers) during path following.
+
+### Trajectory Diagnostics
+- [ ] **AUTO-06**: Stream target path translation poses array (`Robot/TargetPose`) and active trajectory deviations (`Robot/TrajectoryError`) to AdvantageScope.
 
 ## Traceability
 *Updated by roadmap generation.*

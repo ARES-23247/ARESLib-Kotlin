@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: FRC Physics Simulation
+milestone: v2.3
+milestone_name: FRC Autonomous Trajectory Following
 status: planning
-last_updated: "2026-05-17T23:49:54.254Z"
-last_activity: 2026-05-17
+last_updated: "2026-05-18T11:33:00.000Z"
+last_activity: 2026-05-18
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,31 +17,31 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-17)
+See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
-**Current focus:** v2.0 Real Robot Deployment
+**Current focus:** v2.3 FRC Autonomous Trajectory Following
 
 ## Session Memory
 
-Milestone v2.0 started. All library features (v1.0–v1.10) are complete. The goal is to fix build tooling, isolate mocks, wire up a real OpMode, and deploy to a physical FTC robot.
+Milestone v2.3 started to bridge path execution features from our core library to FRC Swerve, enabling path parsing, autonomous state loops, and AdvantageScope visual target tracking.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 43 (Not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-17 — Milestone v2.1 started
+Status: Planning
+Last activity: 2026-05-18 — Milestone v2.3 started
 
 ### Current Focus
 
-Implementing Milestone v3.0 (FRC CTRE Swerve Integration). Setting up the `frc-app` module with WPILib, Phoenix 6 vendordeps, and the `FRCTelemetry` deterministic logging system.
+Scaffolding PathPlanner JSON trajectory deserializers in the FRC context and mapping target paths to the Holonomic Drive Controller.
 
 ### Next Steps
 
-1. Scaffold `frc-app` Gradle project.
-2. Download WPILib and Phoenix 6 vendordep JSON files.
-3. Write `FRCTelemetry.kt` mapped to `DataLogManager`.
+1. Parse PathPlanner JSON trajectories in `frc-app` resource context.
+2. Set up initial autonomous pose odometry offsets.
+3. Develop `autonomousPeriodic` execution loops inside `ARESRobot.kt`.
 
 ## Accumulated Context
 

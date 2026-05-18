@@ -45,6 +45,7 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Physical Vision Hardware Wrappers (Limelight 3A & VisionPortal) — v1.10
 - ✓ Centralized RobotConfig mapping — v1.10
 - ✓ On-Device SD Card WPILog/CSV Logging — v1.10
+- ✓ FRC dyn4j Physics Simulation: dynamic time delta steps, floor damping, self-healing spawn guards, static wall and hub collisions — v2.2
 
 ### Active
 
@@ -55,16 +56,15 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - [ ] Resilient telemetry on real hardware
 - [ ] Successful wireless ADB deploy to Control Hub
 
-## Current Milestone: v2.1 FRC Physics Simulation
+## Current Milestone: v2.3 FRC Autonomous Trajectory Following
 
-**Goal:** Implement full 2D physical interactions for the FRC 2026 REBUILT simulation in ARESLib-Kotlin using dyn4j.
+**Goal:** Parse PathPlanner JSON trajectories and autonomously drive the dyn4j simulated swerve robot using the HolonomicDriveController in FRC.
 
 **Target features:**
-- Initialize `dyn4j` World in the `frc-app` loop.
-- Construct 2026 REBUILT static field obstacles (Hubs, Towers, Trenches).
-- Spawn and track dynamic Fuel game pieces.
-- Pipe `ChassisSpeeds` physical forces into the robot body.
-- Map and publish all game pieces to AdvantageScope `Robot/FuelPoses`.
+- Thread-safe loading and parsing of PathPlanner JSON trajectory assets inside `frc-app` module.
+- Align/offset initial simulated robot odometry coordinate variables with path start-points.
+- Integrate the pure `HolonomicDriveController` inside `autonomousPeriodic` robot execution loops.
+- Stream target path translation arrays (`Robot/TargetPose`) and active deviations (`Robot/TrajectoryError`) to AdvantageScope for visual evaluation.
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
