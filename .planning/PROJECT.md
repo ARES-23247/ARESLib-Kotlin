@@ -73,14 +73,22 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ E2E Simulation Validation: Fully automated physics-sim runs verifying combined kinematics, detours, and task transitions. — v2.7
 
 ### Active
-- [ ] Planning next milestone... — v2.8
+- [ ] IO-01: Platform-independent SubsystemIO interfaces and inputs structures. — v2.8
+- [ ] REC-01: Thread-safe raw input logger writing to microsecond-accurate JSONL. — v2.8
+- [ ] REP-01: Offline replay runner executing input logs through EKF. — v2.8
+- [ ] GUI-01: Native Compose Multiplatform desktop application visualizing real vs. ghost robot tracks with interactive tuning sliders. — v2.8
+- [ ] TEL-01: Simultaneously stream real and ghost robot poses via NT4 to AdvantageScope. — v2.8
 
-## Current Milestone: v2.8 (Planning)
+## Current Milestone: v2.8 (Deterministic Input Replay & "What-If" Ghost Simulation)
 
-**Goal:** Plan next milestone requirements and pathing targets for real FTC and FRC deployment, optimization, and advanced autonomous enhancements.
+**Goal:** Implement platform-agnostic subsystem IO boundaries, raw input logging, a dual-state offline replay engine, and an interactive desktop GUI dashboard to allow students to visually replay, analyze, and auto-tune robot estimators.
 
 **Target features:**
-- TBD during next milestone requirements phase.
+- IO-01 (Unified Subsystem IO)
+- REC-01 (Asynchronous Input Recorder)
+- REP-01 (Dual-State Offline Replay)
+- GUI-01 (Student Replay Tuning Dashboard)
+- TEL-01 (AdvantageScope Ghost Telemetry)
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.

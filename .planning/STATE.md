@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.7
-milestone_name: Path Execution & Dynamic Task Planning
-status: Awaiting next milestone
-last_updated: "2026-05-18T16:13:46.650Z"
-last_activity: 2026-05-18 — Milestone v2.7 completed and archived
+milestone: v2.8
+milestone_name: Deterministic Input Replay & "What-If" Ghost Simulation
+status: Scoping requirements
+last_updated: "2026-05-18T16:21:00.000Z"
+last_activity: 2026-05-18 — Milestone v2.8 initialized
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -20,27 +20,28 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
-**Current focus:** Path Execution & Dynamic Task Planning.
+**Current focus:** Deterministic Input Replay & "What-If" Ghost Simulation.
 
 ## Session Memory
 
-Milestone v2.6 successfully completed Swerve Trajectory Optimization & Obstacle Avoidance (Phases 53-55). Phase 56 built smooth trajectory stitching, blending, and tangent arc spline detour switching. Phase 57 implemented real-time tracking error diagnostics and asynchronous JSONL logging. Phase 58 successfully developed the dynamic FSM TaskExecutor with wait criteria and prioritized stack preemption.
+Milestone v2.7 successfully completed path chaining, dynamic tangent Bezier detours, preemptive task stack scheduling, NT4 AdvantageScope/Dashboard streaming, and closed with 100% closed-loop physics simulation coverage.
 
 ## Current Position
 
-Phase: Milestone v2.7 complete
+Phase: Scoping requirements
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-05-18 — Milestone v2.7 completed and archived
+Status: Scoping requirements
+Last activity: 2026-05-18 — Milestone v2.8 initialized
 
 ### Current Focus
 
-Completed execution of Milestone v2.7! All autonomous path execution, stitching, detour spline generation, NT4 logging, and state machine action sequencing tasks have been implemented and validated using our E2E closed-loop simulation suite.
+Scoping requirements for Milestone v2.8 to design platform-agnostic SubsystemIO boundaries, asynchronous sensory input logging, EKF replay runners, and a Kotlin Compose desktop GUI tuning tool for students.
 
 ### Next Steps
 
-1. Await next milestone planning.
+1. Gather detailed requirements for the IO interfaces, logging serialization format, replay execution timing, grid search optimizer, and Compose desktop layout.
+2. Draft `.planning/REQUIREMENTS.md` with explicit, falsifiable requirements.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Detail requirements inside .planning/REQUIREMENTS.md
