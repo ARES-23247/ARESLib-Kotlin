@@ -1,12 +1,29 @@
 # Milestones
 
-## v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance (Shipped: 2026-05-18)
+## v2.7 Path Execution & Dynamic Task Planning (Shipped: 2026-05-18)
 
-**Phases completed:** 4 phases, 0 plans, 0 tasks
+**Phases completed:** 4 phases, 4 plans
 
 **Key accomplishments:**
 
-- (none recorded)
+- Programmed continuous multi-path trajectory chaining, automatically matching endpoint velocity and orientation constraints at segment boundaries.
+- Developed real-time dynamic Bezier tangent detour switching (<20ms execution) to seamlessly steer around costmap obstacles without snapping or stopping.
+- Built a pure, stack-preemptive FSM Task Executor allowing prioritized mechanical task preemption (e.g., intake vs. shoot) synchronized with path markers.
+- Configured EKF covariance-derived safety interlocks to instantly freeze drive commands if pose uncertainty exceeds safe thresholds.
+- Implemented high-fidelity NetworkTables 4 (NT4) telemetry for real-time AdvantageScope path-following error visualization alongside microsecond-accurate JSONL on-device ActionLogger.
+
+---
+
+## v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance (Shipped: 2026-05-18)
+
+**Phases completed:** 3 phases, 3 plans
+
+**Key accomplishments:**
+
+- Implemented centripetal velocity limiting ($v_{\text{limit}} = \sqrt{a_c / |\kappa|}$) based on path curvature to prevent robot tipping.
+- Built Swerve Rate Limiting for maximum angular steering acceleration and drive acceleration caps to eliminate actuator saturation.
+- Designed local 2D Grid Costmap in Redux fusing time-synchronized distance sensor scans with EKF position coordinates.
+- Programmed advanced VFH+ Obstacle Avoidance featuring polar histogram sector binning, 3-point smoothing, side-locking memory, and unblocked direct-to-target valley selection.
 
 ---
 

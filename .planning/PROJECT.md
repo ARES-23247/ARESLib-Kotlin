@@ -64,11 +64,18 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Sensor Costmap: Local 2D grid costmap in Redux fusing distance sensor probes with EKF coordinate offsets. — v2.6
 - ✓ VFH+ Detours: Polar histogram sector binning, 3-point smoothing, detour side-locking memory, and nominal target candidate insertion. — v2.6
 - ✓ Closed-Loop Verification: Collision-free trajectory following around static obstacles in physics simulator. — v2.6
+- ✓ Path Chaining: Parsing and stitching multiple sequential PathPlanner paths together with smooth boundary constraint matching. — v2.7
+- ✓ Dynamic Trajectory Detours: Real-time dynamic Bezier detour switching in response to costmap warnings. — v2.7
+- ✓ NT4 diagnostics: Broadcast comprehensive tracking errors to AdvantageScope and FTC Dashboard in real-time. — v2.7
+- ✓ Microsecond ActionLogger: Detailed JSONL command/actuator logs enabling offline deterministic simulation replay. — v2.7
+- ✓ State-Driven Task Executor: Functional stack-preemptive state machine sequencing subsystem actions on path markers. — v2.7
+- ✓ Safety Interlocks: Instant drive freezing and task queue aborts if EKF state covariance exceeds safety parameters. — v2.7
+- ✓ E2E Simulation Validation: Fully automated physics-sim runs verifying combined kinematics, detours, and task transitions. — v2.7
 
 ### Active
-- [ ] Planning next milestone... — v2.7
+- [ ] Planning next milestone... — v2.8
 
-## Current Milestone: v2.7 (Planning)
+## Current Milestone: v2.8 (Planning)
 
 **Goal:** Plan next milestone requirements and pathing targets for real FTC and FRC deployment, optimization, and advanced autonomous enhancements.
 
@@ -100,6 +107,9 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 | Chronological Vision Replay | Solves asynchronous pipeline latency by rewind/replay of historical odometry entries in EKF. | ✓ Good |
 | Path Projection Side-Locking | Locks chosen detour side based on path progress vector projection to prevent oscillation. | ✓ Good |
 | Target-in-Valley Candidate | Integrates direct target heading as detour candidate when unblocked to eliminate hysteresis. | ✓ Good |
+| Stack-Based FSM Preemption | Allows mechanical subsystems to preempt and prioritize state transitions based on path events. | ✓ Good |
+| Microsecond Action Replay | Structured JSONL telemetry logs write microsecond-accurate physical outputs to enable deterministic offline simulation replay. | ✓ Good |
+| Path Progress Floor Velocity | Enforces a nominal floor velocity of 1.5 m/s in simulations when progress is driven strictly by target trajectory speed to prevent standstill profiles. | ✓ Good |
 
 ---
 
@@ -121,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 after v2.6 milestone complete*
+*Last updated: 2026-05-18 after v2.7 milestone complete*
