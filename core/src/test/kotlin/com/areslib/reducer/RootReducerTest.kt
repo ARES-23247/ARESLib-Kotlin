@@ -82,4 +82,52 @@ class RootReducerTest {
         assertEquals(1, stateAfterValid.vision.measurements.size)
         assertEquals(2, stateAfterValid.vision.measurements[0].tagId)
     }
+
+    @Test
+    fun `test state expansion propagates IMU metrics correctly`() {
+        val initialState = RobotState()
+        
+        val hardwareAction = RobotAction.DriveHardwareUpdate(
+            xVelocity = 1.0,
+            yVelocity = 0.0,
+            angularVelocity = 0.0,
+            deltaX = 0.1,
+            deltaY = 0.0,
+            deltaHeading = 0.0,
+            timestampMs = 1000L,
+            pitchDegrees = 8.5,
+            rollDegrees = -4.2,
+            xAccelerationG = 0.15,
+            yAccelerationG = -0.22,
+            zAccelerationG = 0.98
+        )
+        
+        val hardwareState = rootReducer(initialState, hardwareAction)
+        
+        assertEquals(8.5, hardwareState.drive.pitchDegrees)
+        assertEquals(-4.2, hardwareState.drive.rollDegrees)
+        assertEquals(0.15, hardwareState.drive.xAccelerationG)
+        assertEquals(-0.22, hardwareState.drive.yAccelerationG)
+        assertEquals(0.98, hardwareState.drive.zAccelerationG)
+
+        val poseAction = RobotAction.PoseUpdate(
+            xMeters = 2.0,
+            yMeters = 3.0,
+            headingRadians = 1.5,
+            timestampMs = 1100L,
+            pitchDegrees = 11.2,
+            rollDegrees = 2.4,
+            xAccelerationG = -0.05,
+            yAccelerationG = 0.1,
+            zAccelerationG = 1.05
+        )
+        
+        val poseState = rootReducer(hardwareState, poseAction)
+        
+        assertEquals(11.2, poseState.drive.pitchDegrees)
+        assertEquals(2.4, poseState.drive.rollDegrees)
+        assertEquals(-0.05, poseState.drive.xAccelerationG)
+        assertEquals(0.1, poseState.drive.yAccelerationG)
+        assertEquals(1.05, poseState.drive.zAccelerationG)
+    }
 }

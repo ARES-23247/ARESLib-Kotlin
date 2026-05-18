@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.4
-milestone_name: FRC/FTC Vision & Multi-Sensor Kalman Filter Integration
+milestone: v2.5
+milestone_name: Hardened EKF Localization & Dynamic Sensor Fusion
 status: planning
-last_updated: "2026-05-18T12:02:40.000Z"
+last_updated: "2026-05-18T12:51:00.000Z"
 last_activity: 2026-05-18
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 75
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -20,30 +20,30 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
-**Current focus:** FRC/FTC Vision & Multi-Sensor Kalman Filter Integration.
+**Current focus:** Hardened EKF Localization & Dynamic Sensor Fusion.
 
 ## Session Memory
 
-Milestone v2.3 successfully completed trajectory following inside FRC physics simulations. We are now transitioning to Milestone v2.4 to integrate physical Limelight AprilTag vision measurements with our retroactive Extended Kalman Filter (EKF) pose estimator. Phase 45 built the thread-safe chronological sliding-window vision buffer. Phase 46 implemented robust AprilTag outlier rejection filtering. Phase 47 integrated the outlier filter into the central `rootReducer` and `VisionReducer` pipeline.
+Milestone v2.4 successfully completed and shipped FRC/FTC Vision & Multi-Sensor EKF Integration. We are now transitioning to Milestone v2.5 to harden the EKF localization against boundary violations, high-speed motion blur, collision shocks, wheel beaching/slippage, and dynamic tag measurement noise.
 
 ## Current Position
 
-Phase: Phase 48: High-Fidelity Vision Simulation & Noise Rejection
+Phase: Phase 49: State Expansion & IMU Pitch/Roll Telemetry
 Plan: —
-Status: Planning Phase 48
-Last activity: 2026-05-18 — Phase 47 completed successfully
+Status: Planning Phase 49
+Last activity: 2026-05-18 — Milestone v2.4 completed successfully
 
 ### Current Focus
 
-Define and plan Phase 48: High-Fidelity Vision Simulation & Noise Rejection to simulate AprilTag visual tracking under realistic delay, jitter, and noise profiles.
+Define and plan Phase 49: State Expansion & IMU Pitch/Roll Telemetry to integrate angular accelerations, dynamic tilt (pitch/roll), and linear acceleration tracking into the centralized robot state models.
 
 ### Next Steps
 
-1. Execute `/gsd-plan-phase 48` to build the implementation plan for high-fidelity vision simulation.
+1. Execute `/gsd-plan-phase 49` to build the implementation plan for state expansion and IMU integration.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
-- Phases 1-47 completed across milestones v1.0–v2.4.
-- Milestone v2.4 currently on Phase 48.
+- Phases 1-48 completed across milestones v1.0–v2.4.
+- Milestone v2.5 currently on Phase 49.

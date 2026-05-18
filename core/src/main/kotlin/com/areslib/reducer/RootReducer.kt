@@ -26,7 +26,12 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                     odometryX = state.drive.odometryX + action.deltaX,
                     odometryY = state.drive.odometryY + action.deltaY,
                     odometryHeading = state.drive.odometryHeading + action.deltaHeading,
-                    poseEstimator = updatedEstimator
+                    poseEstimator = updatedEstimator,
+                    pitchDegrees = action.pitchDegrees,
+                    rollDegrees = action.rollDegrees,
+                    xAccelerationG = action.xAccelerationG,
+                    yAccelerationG = action.yAccelerationG,
+                    zAccelerationG = action.zAccelerationG
                 ),
                 timestampMs = action.timestampMs
             )
@@ -74,7 +79,12 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 drive = state.drive.copy(
                     odometryX = action.xMeters,
                     odometryY = action.yMeters,
-                    odometryHeading = action.headingRadians
+                    odometryHeading = action.headingRadians,
+                    pitchDegrees = action.pitchDegrees,
+                    rollDegrees = action.rollDegrees,
+                    xAccelerationG = action.xAccelerationG,
+                    yAccelerationG = action.yAccelerationG,
+                    zAccelerationG = action.zAccelerationG
                 ),
                 timestampMs = action.timestampMs
             )

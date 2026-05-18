@@ -20,7 +20,12 @@ data class DriveState(
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
     val odometryHeading: Double = 0.0,
-    val poseEstimator: PoseEstimatorState = PoseEstimatorState()
+    val poseEstimator: PoseEstimatorState = PoseEstimatorState(),
+    val pitchDegrees: Double = 0.0,
+    val rollDegrees: Double = 0.0,
+    val xAccelerationG: Double = 0.0,
+    val yAccelerationG: Double = 0.0,
+    val zAccelerationG: Double = 0.0
 )
 
 /**

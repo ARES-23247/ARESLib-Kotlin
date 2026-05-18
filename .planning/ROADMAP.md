@@ -19,8 +19,16 @@
 - ✅ **v2.2 FRC Physics Simulation** — Phases 41-42 (shipped 2026-05-18)
 - ✅ **v2.3 FRC Autonomous Trajectory Following** — Phases 43-44 (shipped 2026-05-18)
 - ✅ **v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration** — Phases 45-48 (shipped 2026-05-18)
+- 📍 **v2.5 Hardened EKF Localization & Dynamic Sensor Fusion** — Phases 49-52 (In Planning)
 
 ## Phases
+
+## 📍 v2.5 Hardened EKF Localization & Dynamic Sensor Fusion (Phases 49-52)
+
+- [ ] Phase 49: State Expansion & IMU Pitch/Roll Telemetry
+- [ ] Phase 50: Advanced Outlier Filter (3D Boundaries, Angular Speed, Acceleration/Shock Lockouts)
+- [ ] Phase 51: Dynamic Odometry Covariance Scaling (Tilt/Beaching Protection)
+- [ ] Phase 52: Dynamic Vision Covariance Scaling (Distance-based SD & Multi-Tag Trust)
 
 <details>
 <summary>✅ v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration (Phases 45-48) — SHIPPED</summary>
@@ -117,5 +125,9 @@
 | 46. Pose Disambiguation and Outlier Filtering | v2.4 | 1/1 | Complete | 2026-05-18 |
 | 47. Extended Kalman Filter Integration | v2.4 | 1/1 | Complete | 2026-05-18 |
 | 48. High-Fidelity Vision Simulation & Noise Rejection | v2.4 | 1/1 | Complete | 2026-05-18 |
+| 49. State Expansion & IMU Pitch/Roll Telemetry | v2.5 | 0/1 | Planned | - |
+| 50. Advanced Outlier Filter (3D Boundaries, Angular Speed, Acceleration/Shock Lockouts) | v2.5 | 0/1 | Planned | - |
+| 51. Dynamic Odometry Covariance Scaling (Tilt/Beaching Protection) | v2.5 | 0/1 | Planned | - |
+| 52. Dynamic Vision Covariance Scaling (Distance-based SD & Multi-Tag Trust) | v2.5 | 0/1 | Planned | - |
 
 

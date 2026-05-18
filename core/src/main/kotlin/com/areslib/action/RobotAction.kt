@@ -12,7 +12,12 @@ sealed class RobotAction {
         val deltaX: Double,
         val deltaY: Double,
         val deltaHeading: Double,
-        val timestampMs: Long
+        val timestampMs: Long,
+        val pitchDegrees: Double = 0.0,
+        val rollDegrees: Double = 0.0,
+        val xAccelerationG: Double = 0.0,
+        val yAccelerationG: Double = 0.0,
+        val zAccelerationG: Double = 0.0
     ) : RobotAction()
     
     data class VisionUpdate(
@@ -32,7 +37,12 @@ sealed class RobotAction {
         val xMeters: Double,
         val yMeters: Double,
         val headingRadians: Double,
-        val timestampMs: Long
+        val timestampMs: Long,
+        val pitchDegrees: Double = 0.0,
+        val rollDegrees: Double = 0.0,
+        val xAccelerationG: Double = 0.0,
+        val yAccelerationG: Double = 0.0,
+        val zAccelerationG: Double = 0.0
     ) : RobotAction()
 
     // Human Intent
