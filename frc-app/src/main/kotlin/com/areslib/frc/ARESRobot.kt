@@ -3,6 +3,12 @@ package com.areslib.frc
 import com.areslib.state.DriveState
 import com.areslib.state.RobotState
 import com.areslib.reducer.rootReducer
+import com.areslib.pathing.Path
+import com.areslib.pathing.PathPoint
+import com.areslib.control.HolonomicDriveController
+import com.areslib.control.PIDController
+import com.areslib.math.Rotation2d
+import com.areslib.math.Pose2d
 import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.RobotController
@@ -44,6 +50,17 @@ class ARESRobot : TimedRobot() {
     private val balls = mutableListOf<Body>()
     private var lastSimTime = 0.0
 
+    // PathPlanner Trajectory Follower
+    private var activePath: Path? = null
+    private var autoStartTime = 0.0
+    private var autoDistance = 0.0
+
+    private val driveController = HolonomicDriveController(
+        PIDController(4.0, 0.0, 0.1),
+        PIDController(4.0, 0.0, 0.1),
+        PIDController(3.0, 0.0, 0.0)
+    )
+
     override fun robotInit() {
         // Initialize CTRE SwerveDrivetrain here using TunerConstants
         // swerveIO = FRCSwerveHardwareIO(CommandSwerveDrivetrain(...))
@@ -63,6 +80,100 @@ class ARESRobot : TimedRobot() {
         spawnFuel()
         
         lastSimTime = Timer.getFPGATimestamp()
+    }
+
+    override fun autonomousInit() {
+        try {
+            activePath = PathLoader.loadPath("SimPath")
+            val startPoint = activePath?.points?.firstOrNull()
+            if (startPoint != null) {
+                // Snap Redux State
+                currentState = currentState.copy(
+                    drive = currentState.drive.copy(
+                        odometryX = startPoint.pose.x,
+                        odometryY = startPoint.pose.y,
+                        odometryHeading = startPoint.pose.heading.radians
+                    )
+                )
+                
+                // Snap Dyn4j Physics Body to match initial trajectory pose
+                robotBody.transform.setTranslation(startPoint.pose.x, startPoint.pose.y)
+                robotBody.transform.setRotation(startPoint.pose.heading.radians)
+                robotBody.linearVelocity.set(0.0, 0.0)
+                robotBody.angularVelocity = 0.0
+                robotBody.isAtRest = false
+            }
+        } catch (e: Exception) {
+            println("ERROR: Failed to load autonomous path SimPath: ${e.message}")
+            activePath = null
+        }
+        autoStartTime = Timer.getFPGATimestamp()
+        autoDistance = 0.0
+    }
+
+    override fun autonomousPeriodic() {
+        val path = activePath
+        if (path != null) {
+            val dt = 0.02 // TimedRobot standard loop period (20ms)
+            
+            val currentPose = Pose2d(
+                currentState.drive.odometryX,
+                currentState.drive.odometryY,
+                Rotation2d(currentState.drive.odometryHeading)
+            )
+            
+            // Sample path
+            val targetPoint = path.sampleAtDistance(autoDistance)
+            
+            // Compute desired ChassisSpeeds (robot-relative)
+            val speeds = driveController.calculate(
+                currentPose = currentPose,
+                targetPose = targetPoint.pose,
+                targetVelocityMps = targetPoint.velocityMps,
+                targetHeading = targetPoint.pose.heading,
+                dtSeconds = dt
+            )
+            
+            // Rotate robot-relative speeds back to field-relative velocities for the simulation
+            val cos = currentPose.heading.cos
+            val sin = currentPose.heading.sin
+            val fieldX = speeds.vxMetersPerSecond * cos - speeds.vyMetersPerSecond * sin
+            val fieldY = speeds.vxMetersPerSecond * sin + speeds.vyMetersPerSecond * cos
+            
+            // Write target velocities to state
+            currentState = currentState.copy(
+                drive = currentState.drive.copy(
+                    xVelocityMetersPerSecond = fieldX,
+                    yVelocityMetersPerSecond = fieldY,
+                    angularVelocityRadiansPerSecond = speeds.omegaRadiansPerSecond
+                )
+            )
+            
+            // Check for event markers
+            for (event in path.events) {
+                val prevDistance = autoDistance
+                val nextDistance = autoDistance + targetPoint.velocityMps * dt
+                if (event.triggerDistanceMeters in prevDistance..nextDistance) {
+                    println("AUTO EVENT TRIGGERED: ${event.eventName} at distance ${event.triggerDistanceMeters}m")
+                    telemetry.putString("Robot/ActiveEvent", event.eventName)
+                }
+            }
+
+            // Stream target trajectory and errors to AdvantageScope
+            telemetry.putDoubleArray("Robot/TargetPose", doubleArrayOf(
+                targetPoint.pose.x,
+                targetPoint.pose.y,
+                targetPoint.pose.heading.radians
+            ))
+            
+            val dx = targetPoint.pose.x - currentPose.x
+            val dy = targetPoint.pose.y - currentPose.y
+            val error = kotlin.math.hypot(dx, dy)
+            telemetry.putNumber("Robot/TrajectoryError", error)
+
+            // Propagate distance along profile
+            autoDistance += targetPoint.velocityMps * dt
+        }
     }
 
     override fun robotPeriodic() {

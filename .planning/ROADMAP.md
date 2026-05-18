@@ -17,26 +17,17 @@
 - ✅ **v2.1 FRC CTRE Swerve Integration** — Phases 38-40 (shipped 2026-05-18)
 
 - ✅ **v2.2 FRC Physics Simulation** — Phases 41-42 (shipped 2026-05-18)
-- ◆ **v2.3 FRC Autonomous Trajectory Following** — Phases 43-44
+- ✅ **v2.3 FRC Autonomous Trajectory Following** — Phases 43-44 (shipped 2026-05-18)
 
 ## Phases
 
-### v2.3 FRC Autonomous Trajectory Following (Phases 43-44)
+<details>
+<summary>✅ v2.3 FRC Autonomous Trajectory Following (Phases 43-44) — SHIPPED</summary>
 
-### Phase 43: Autonomous Path Parsing & State Wiring
-- **Goal:** Parse PathPlanner trajectories in the FRC app module and wire them to autonomous init.
-- **Requirements:** AUTO-01, AUTO-02, AUTO-04
-- **Success criteria:**
-  1. Target JSON trajectory files load from project resources without crash
-  2. Initial pose of trajectory correctly aligns/offsets the simulated drive state odometry
+- [x] Phase 43: Autonomous Path Parsing & State Wiring
+- [x] Phase 44: Trajectory Follower Integration & Simulation Verification
 
-### Phase 44: Trajectory Follower Integration & Simulation Verification
-- **Goal:** Drive the dyn4j simulated robot autonomously using the HolonomicDriveController.
-- **Requirements:** AUTO-03, AUTO-05, AUTO-06
-- **Depends on:** Phase 43
-- **Success criteria:**
-  1. Robot autonomously executes trajectory loops with stable force calculation
-  2. AdvantageScope correctly displays the active Target vs. Actual poses in 3D space
+</details>
 
 <details>
 <summary>✅ v2.2 FRC Physics Simulation (Phases 41-42) — SHIPPED</summary>
@@ -109,6 +100,6 @@
 | 40. FRC Robot Loop & Simulation | v2.1 | 1/1 | Complete | 2026-05-18 |
 | 41. Simulation Core & Field Obstacles | v2.2 | 1/1 | Complete | 2026-05-18 |
 | 42. Fuel Dynamics & Telemetry | v2.2 | 1/1 | Complete | 2026-05-18 |
-| 43. Autonomous Path Parsing & State Wiring | v2.3 | 0/1 | Pending | — |
-| 44. Trajectory Follower Integration & Simulation Verification | v2.3 | 0/1 | Pending | — |
+| 43. Autonomous Path Parsing & State Wiring | v2.3 | 1/1 | Complete | 2026-05-18 |
+| 44. Trajectory Follower Integration & Simulation Verification | v2.3 | 1/1 | Complete | 2026-05-18 |
 
