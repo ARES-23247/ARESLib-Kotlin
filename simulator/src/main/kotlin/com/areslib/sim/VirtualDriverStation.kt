@@ -192,103 +192,123 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     }
 
     private fun pollGamepad() {
-        while (true) {
-            try {
-                // Find first connected joystick
-                var activeJoy = -1
-                for (i in GLFW_JOYSTICK_1..GLFW_JOYSTICK_16) {
-                    if (glfwJoystickPresent(i)) {
-                        activeJoy = i
-                        break
+        val gamepadState = org.lwjgl.glfw.GLFWGamepadState.malloc()
+        try {
+            while (true) {
+                try {
+                    // Find first connected joystick
+                    var activeJoy = -1
+                    for (i in GLFW_JOYSTICK_1..GLFW_JOYSTICK_16) {
+                        if (glfwJoystickPresent(i)) {
+                            activeJoy = i
+                            break
+                        }
                     }
-                }
 
-                if (activeJoy != -1) {
-                    isGamepadConnected = true
-                    gamepadName = glfwGetJoystickName(activeJoy) ?: "Unknown Gamepad"
-                    
-                    val axes = glfwGetJoystickAxes(activeJoy)
-                    val buttons = glfwGetJoystickButtons(activeJoy)
-                    
-                    var lbPressedThisFrame = false
-                    var rbPressedThisFrame = false
-                    var rtPressedThisFrame = false
-
-                    if (axes != null && axes.capacity() >= 4) {
-                        gamepadLx = axes[0]
-                        gamepadLy = axes[1]
+                    if (activeJoy != -1) {
+                        isGamepadConnected = true
+                        gamepadName = glfwGetJoystickName(activeJoy) ?: "Unknown Gamepad"
                         
-                        if (axes.capacity() >= 6) {
-                            gamepadRx = axes[2]
-                            gamepadRy = axes[3]
+                        var lbPressedThisFrame = false
+                        var rbPressedThisFrame = false
+                        var rtPressedThisFrame = false
+
+                        if (glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState)) {
+                            // Standardized Gamepad API (Xbox Controller Normalized Mappings)
+                            gamepadLx = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_X)
+                            gamepadLy = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_Y)
+                            gamepadRx = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_X)
+                            gamepadRy = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_Y)
                             
-                            // Right trigger on XInput (axis 5 usually)
-                            if (axes.capacity() >= 6 && axes[5] > 0.5f) {
+                            // Triggers map from -1.0 to 1.0 in GLFW Gamepad State
+                            val rtValue = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER)
+                            if (rtValue > 0.0f) {
                                 rtPressedThisFrame = true
                             }
+                            
+                            lbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER) == GLFW_PRESS.toByte()
+                            rbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) == GLFW_PRESS.toByte()
                         } else {
-                            gamepadRx = axes[2]
-                            gamepadRy = axes[3]
+                            // Fallback to raw joystick inputs
+                            val axes = glfwGetJoystickAxes(activeJoy)
+                            val buttons = glfwGetJoystickButtons(activeJoy)
+                            
+                            if (axes != null && axes.capacity() >= 4) {
+                                gamepadLx = axes[0]
+                                gamepadLy = axes[1]
+                                
+                                if (axes.capacity() >= 6) {
+                                    gamepadRx = axes[2]
+                                    gamepadRy = axes[3]
+                                    if (axes[5] > 0.5f) {
+                                        rtPressedThisFrame = true
+                                    }
+                                } else {
+                                    gamepadRx = axes[2]
+                                    gamepadRy = axes[3]
+                                }
+                            } else {
+                                gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                            }
+
+                            if (buttons != null && buttons.capacity() >= 6) {
+                                if (buttons[4] == GLFW_PRESS.toByte()) {
+                                    lbPressedThisFrame = true
+                                }
+                                if (buttons[5] == GLFW_PRESS.toByte()) {
+                                    rbPressedThisFrame = true
+                                }
+                            }
+                        }
+
+                        // Intake Toggle Edge Detection (Left Bumper)
+                        if (lbPressedThisFrame && !lastGamepadShift) {
+                            isIntaking = !isIntaking
+                        }
+                        lastGamepadShift = lbPressedThisFrame
+
+                        // Flywheel Toggle Edge Detection (Right Bumper)
+                        if (rbPressedThisFrame && !lastGamepadRb) {
+                            isFlywheelOn = !isFlywheelOn
+                        }
+                        lastGamepadRb = rbPressedThisFrame
+
+                        // Transfer/Shoot Momentary (Right Trigger)
+                        val isKeyboardTransferring = pressedKeys.contains(KeyEvent.VK_ENTER)
+                        val newIsTransferring = rtPressedThisFrame || isKeyboardTransferring
+                        if (isTransferring != newIsTransferring) {
+                            isTransferring = newIsTransferring
+                        }
+
+                        // Only repaint if axes or buttons changed significantly to save CPU
+                        val changed = kotlin.math.abs(gamepadLx - lastLx) > 0.05f ||
+                                      kotlin.math.abs(gamepadLy - lastLy) > 0.05f ||
+                                      kotlin.math.abs(gamepadRx - lastRx) > 0.05f ||
+                                      kotlin.math.abs(gamepadRy - lastRy) > 0.05f ||
+                                      lbPressedThisFrame != lastGamepadShift ||
+                                      rbPressedThisFrame != lastGamepadRb ||
+                                      rtPressedThisFrame != lastGamepadEnter
+
+                        if (changed || isKeyboardTransferring) {
+                            lastLx = gamepadLx; lastLy = gamepadLy; lastRx = gamepadRx; lastRy = gamepadRy
+                            lastGamepadEnter = rtPressedThisFrame
+                            repaint()
                         }
                     } else {
-                        gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                    }
-
-                    if (buttons != null && buttons.capacity() >= 6) {
-                        // 0=A, 1=B, 2=X, 3=Y, 4=LB, 5=RB
-                        if (buttons[4] == GLFW_PRESS.toByte()) {
-                            lbPressedThisFrame = true
-                        }
-                        if (buttons[5] == GLFW_PRESS.toByte()) {
-                            rbPressedThisFrame = true
+                        if (isGamepadConnected) {
+                            isGamepadConnected = false
+                            gamepadName = "No Gamepad Detected"
+                            gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                            repaint()
                         }
                     }
-
-                    // Intake Toggle Edge Detection (Left Bumper)
-                    if (lbPressedThisFrame && !lastGamepadShift) {
-                        isIntaking = !isIntaking
-                    }
-                    lastGamepadShift = lbPressedThisFrame
-
-                    // Flywheel Toggle Edge Detection (Right Bumper)
-                    if (rbPressedThisFrame && !lastGamepadRb) {
-                        isFlywheelOn = !isFlywheelOn
-                    }
-                    lastGamepadRb = rbPressedThisFrame
-
-                    // Transfer/Shoot Momentary (Right Trigger)
-                    val isKeyboardTransferring = pressedKeys.contains(KeyEvent.VK_ENTER)
-                    val newIsTransferring = rtPressedThisFrame || isKeyboardTransferring
-                    if (isTransferring != newIsTransferring) {
-                        isTransferring = newIsTransferring
-                    }
-
-                    // Only repaint if axes or buttons changed significantly to save CPU
-                    val changed = kotlin.math.abs(gamepadLx - lastLx) > 0.05f ||
-                                  kotlin.math.abs(gamepadLy - lastLy) > 0.05f ||
-                                  kotlin.math.abs(gamepadRx - lastRx) > 0.05f ||
-                                  kotlin.math.abs(gamepadRy - lastRy) > 0.05f ||
-                                  lbPressedThisFrame != lastGamepadShift ||
-                                  rbPressedThisFrame != lastGamepadRb ||
-                                  rtPressedThisFrame != lastGamepadEnter
-
-                    if (changed || isKeyboardTransferring) {
-                        lastLx = gamepadLx; lastLy = gamepadLy; lastRx = gamepadRx; lastRy = gamepadRy
-                        lastGamepadEnter = rtPressedThisFrame
-                        repaint()
-                    }
-                } else {
-                    if (isGamepadConnected) {
-                        isGamepadConnected = false
-                        gamepadName = "No Gamepad Detected"
-                        gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                        repaint()
-                    }
+                    Thread.sleep(20)
+                } catch (e: Exception) {
+                    Thread.sleep(1000)
                 }
-                Thread.sleep(20)
-            } catch (e: Exception) {
-                Thread.sleep(1000)
             }
+        } finally {
+            gamepadState.free()
         }
     }
 
