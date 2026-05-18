@@ -43,8 +43,14 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             )
         }
         is RobotAction.VisionMeasurementsReceived -> {
+            val filter = com.areslib.hardware.vision.VisionOutlierFilter()
+            val robotPose = state.drive.poseEstimator.estimatedPose
+            val robotHeading = robotPose.heading.radians
+            val validMeasurements = action.measurements.filter {
+                filter.isValid(it, robotHeading, robotPose)
+            }
+
             var currentEstimator = state.drive.poseEstimator
-            val validMeasurements = action.measurements.filter { it.ambiguity < 0.2 }
             for (measurement in validMeasurements) {
                 currentEstimator = com.areslib.math.PoseEstimator.addVisionMeasurement(
                     currentEstimator,
@@ -52,8 +58,10 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                     com.areslib.math.Vector3(0.05, 0.05, 0.1) // Vision std dev tuning
                 )
             }
+
+            val filteredAction = action.copy(measurements = validMeasurements)
             state.copy(
-                vision = VisionReducer.reduce(state.vision, action),
+                vision = VisionReducer.reduce(state.vision, filteredAction),
                 drive = state.drive.copy(poseEstimator = currentEstimator),
                 timestampMs = action.timestampMs
             )

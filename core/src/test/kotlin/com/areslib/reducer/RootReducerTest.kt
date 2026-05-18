@@ -1,10 +1,15 @@
 package com.areslib.reducer
 
 import com.areslib.action.RobotAction
+import com.areslib.math.Pose3d
+import com.areslib.math.Rotation3d
+import com.areslib.math.Translation3d
 import com.areslib.state.RobotState
+import com.areslib.state.VisionMeasurement
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
+import kotlin.test.assertTrue
 
 class RootReducerTest {
 
@@ -32,5 +37,49 @@ class RootReducerTest {
         assertEquals(0.0, initialState.drive.odometryX)
         assertEquals(0.1, newState.drive.odometryX)
         assertEquals(1000L, newState.timestampMs)
+    }
+
+    @Test
+    fun `test vision measurements received filters outliers and fuses valid`() {
+        var state = RobotState()
+
+        // 1. Establish odometry history:
+        // t=100 -> x=1.0
+        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 100L))
+        // t=150 -> x=2.0
+        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 150L))
+
+        val poseBeforeVision = state.drive.poseEstimator.estimatedPose
+        assertEquals(2.0, poseBeforeVision.x, 1e-6)
+
+        // 2. Dispatch an OUTLIER measurement (exceeds max distance: 9.0 - 2.0 = 7.0 meters > 6.0 meters)
+        val outlierMeasurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(9.0, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+        val stateAfterOutlier = rootReducer(state, RobotAction.VisionMeasurementsReceived(listOf(outlierMeasurement), 160L))
+
+        // Ensure the outlier was completely discarded: pose and vision measurements are unchanged
+        assertEquals(2.0, stateAfterOutlier.drive.poseEstimator.estimatedPose.x, 1e-6)
+        assertTrue(stateAfterOutlier.vision.measurements.isEmpty())
+
+        // 3. Dispatch a VALID measurement
+        val validMeasurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(1.5, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 2,
+            ambiguity = 0.01
+        )
+        val stateAfterValid = rootReducer(state, RobotAction.VisionMeasurementsReceived(listOf(validMeasurement), 170L))
+
+        // Ensure the valid measurement was fused, pulling x forward retroactively
+        val poseAfterValid = stateAfterValid.drive.poseEstimator.estimatedPose
+        assertTrue(poseAfterValid.x > 2.1, "Pose should be retroactively corrected forward: ${poseAfterValid.x}")
+        
+        // Ensure vision state tracked the valid measurement
+        assertEquals(1, stateAfterValid.vision.measurements.size)
+        assertEquals(2, stateAfterValid.vision.measurements[0].tagId)
     }
 }
