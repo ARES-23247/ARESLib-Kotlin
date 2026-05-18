@@ -29,10 +29,30 @@
 
 ### 🚧 v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification (Phases 72-75)
 
-- [ ] Phase 72: Unified FRC Marvin 19 Robot Loop
+- [x] Phase 72: Unified FRC Marvin 19 Robot Loop (completed 2026-05-18)
 - [ ] Phase 73: AdvantageScope 3D Visualizer & Stream
 - [ ] Phase 74: FTC Mock Isolation & Deployment Hardening
 - [ ] Phase 75: FRC Autonomous Match E2E Simulation
+
+### Phase 72: Unified FRC Marvin 19 Robot Loop
+
+**Goal**: Integrate the Redux state machine for the Marvin 19 superstructure and the Swerve drivetrain into a unified robot execution loop in `frc-app`.
+**Mode**: Smart Autonomous Discuss
+
+### Phase 73: AdvantageScope 3D Visualizer & Stream
+
+**Goal**: Implement AdvantageScope 3D simulation streaming and visualizer fields.
+**Mode**: Smart Autonomous Discuss
+
+### Phase 74: FTC Mock Isolation & Deployment Hardening
+
+**Goal**: Harden the FTC simulator and app deployment with mock isolation testing.
+**Mode**: Smart Autonomous Discuss
+
+### Phase 75: FRC Autonomous Match E2E Simulation
+
+**Goal**: Run end-to-end simulated FRC autonomous matches.
+**Mode**: Smart Autonomous Discuss
 
 <details>
 <summary>✅ Legacy Milestones (v1.0 to v2.9) — SHIPPED</summary>
@@ -45,7 +65,7 @@
 
 | Phase             | Milestone | Plans Complete | Status      | Completed  |
 | ----------------- | --------- | -------------- | ----------- | ---------- |
-| 72. Unified FRC Marvin 19 Robot Loop | v3.0 | 0/1 | Not started | -          |
+| 72. Unified FRC Marvin 19 Robot Loop | v3.0 | 0/1 | Complete    | 2026-05-18 |
 | 73. AdvantageScope 3D Visualizer & Stream | v3.0 | 0/1 | Not started | -          |
 | 74. FTC Mock Isolation & Deployment Hardening | v3.0 | 0/1 | Not started | -          |
 | 75. FRC Autonomous Match E2E Simulation | v3.0 | 0/1 | Not started | -          |
