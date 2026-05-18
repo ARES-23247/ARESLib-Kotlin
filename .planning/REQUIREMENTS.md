@@ -9,11 +9,11 @@ Active requirements for high-performance swerve trajectory following under physi
 - [x] **DYN-02 (Swerve Rate Limiter)**: Cap maximum angular steering acceleration ($\text{rad/s}^2$) and drive wheel acceleration ($m/s^2$) inside the Kinematics engine to prevent actuator saturation and wheel-spin peaks.
 
 ### Category: Local Costmap & Distance Sensor Fusion
-- [ ] **AVOID-01 (Sensor Costmap)**: Establish a local 2D grid-based or polar costmap in the Redux state, fusing real-time distance sensor readings (simulated distance probes) with coordinate offsets.
+- [x] **AVOID-01 (Sensor Costmap)**: Establish a local 2D grid-based or polar costmap in the Redux state, fusing real-time distance sensor readings (simulated distance probes) with coordinate offsets.
 
 ### Category: Vector Field Histogram Path Rerouting
-- [ ] **AVOID-02 (VFH+ Detours)**: Implement a lightweight Vector Field Histogram (VFH+) algorithm. When the active trajectory intersects costmap obstacles, calculate steering detour vectors to dynamically reroute around the threat.
-- [ ] **AVOID-03 (Closed-Loop Verification)**: Verify in our high-fidelity physics simulator that the robot successfully navigates around static and dynamic obstacles to reach target points without collisions.
+- [x] **AVOID-02 (VFH+ Detours)**: Implement a lightweight Vector Field Histogram (VFH+) algorithm. When the active trajectory intersects costmap obstacles, calculate steering detour vectors to dynamically reroute around the threat.
+- [x] **AVOID-03 (Closed-Loop Verification)**: Verify in our high-fidelity physics simulator that the robot successfully navigates around static and dynamic obstacles to reach target points without collisions.
 
 ---
 
