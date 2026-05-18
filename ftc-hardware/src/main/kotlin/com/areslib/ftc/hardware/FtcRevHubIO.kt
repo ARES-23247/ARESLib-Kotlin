@@ -94,6 +94,7 @@ class FtcCRServo(
 class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
     override var power: Double
         get() = 0.0
+        @Suppress("UNUSED_PARAMETER")
         set(value) {}
 
     override val velocity: Double
@@ -149,6 +150,7 @@ class FtcAbsoluteAnalogEncoder(
 
     override var power: Double
         get() = 0.0
+        @Suppress("UNUSED_PARAMETER")
         set(value) {}
 
     override val velocity: Double
