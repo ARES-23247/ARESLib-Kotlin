@@ -11,6 +11,7 @@ object TelemetryPublisher {
     private val ntInst = NetworkTableInstance.getDefault()
     private val statePublisher: StructPublisher<RobotState>
     private val targetPosePublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/TargetPose").publish()
+    private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/EstimatedPose").publish()
     private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/GamePieces").publish()
 
     // --- AdvantageKit-level Swerve Module Telemetry ---
@@ -61,6 +62,13 @@ object TelemetryPublisher {
      */
     fun publishTargetPose(pose: com.areslib.math.Pose2d) {
         targetPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
+    }
+
+    /**
+     * Publishes the estimated pose from the Kalman Filter (EKF) for AdvantageScope rendering.
+     */
+    fun publishEstimatedPose(pose: com.areslib.math.Pose2d) {
+        estimatedPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
     }
 
     /**

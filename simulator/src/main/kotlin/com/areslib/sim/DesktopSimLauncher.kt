@@ -135,6 +135,12 @@ object DesktopSimLauncher {
         var lastDistance = 0.0
         var lastShootTime = 0L
         
+        var lastX = 0.0
+        var lastY = 0.0
+        var lastHeading = 0.0
+        var simLoopCount = 0
+        val visionSimulator = com.areslib.hardware.vision.VisionSimulator()
+
         while (true) {
             val startTime = System.currentTimeMillis()
 
@@ -385,19 +391,54 @@ object DesktopSimLauncher {
 
             // Extract new simulated position after step
             val newTransform = robotBody.transform
-            var newX = newTransform.translationX
-            var newY = newTransform.translationY
+            val newX = newTransform.translationX
+            val newY = newTransform.translationY
             val newHeading = newTransform.rotationAngle
 
-            // Update Robot State
-            state = state.copy(
-                timestampMs = System.currentTimeMillis(),
-                drive = state.drive.copy(
-                    odometryX = newX,
-                    odometryY = newY,
-                    odometryHeading = newHeading
+            val deltaX = newX - lastX
+            val deltaY = newY - lastY
+            val deltaHeading = newHeading - lastHeading
+
+            lastX = newX
+            lastY = newY
+            lastHeading = newHeading
+
+            val currentTimeMs = System.currentTimeMillis()
+
+            // 1. Dispatch Odometry Hardware update using Redux Reducer
+            state = com.areslib.reducer.rootReducer(
+                state,
+                com.areslib.action.RobotAction.DriveHardwareUpdate(
+                    xVelocity = robotBody.linearVelocity.x,
+                    yVelocity = robotBody.linearVelocity.y,
+                    angularVelocity = robotBody.angularVelocity,
+                    deltaX = deltaX,
+                    deltaY = deltaY,
+                    deltaHeading = deltaHeading,
+                    timestampMs = currentTimeMs
                 )
             )
+
+            // 2. Dispatch Noisy Vision updates periodically (every 5 loop iterations ~ 100ms) with 80ms latency
+            simLoopCount++
+            if (simLoopCount % 5 == 0) {
+                val measurements = visionSimulator.generateMeasurements(
+                    truePose = currentPose,
+                    currentTimestampMs = currentTimeMs,
+                    latencyMs = 80L,
+                    outlierProbability = 0.02 // Emulate real-world noise & outlier conditions
+                )
+                state = com.areslib.reducer.rootReducer(
+                    state,
+                    com.areslib.action.RobotAction.VisionMeasurementsReceived(
+                        measurements = measurements,
+                        timestampMs = currentTimeMs
+                    )
+                )
+            }
+
+            // Publish Estimated Pose from EKF
+            TelemetryPublisher.publishEstimatedPose(state.drive.poseEstimator.estimatedPose)
 
             // Publish to AdvantageScope
             TelemetryPublisher.publish(state)
