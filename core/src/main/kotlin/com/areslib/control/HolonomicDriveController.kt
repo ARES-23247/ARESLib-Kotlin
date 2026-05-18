@@ -3,6 +3,8 @@ package com.areslib.control
 import com.areslib.math.ChassisSpeeds
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
+import com.areslib.state.Obstacle
+import com.areslib.pathing.VFHPlanner
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -16,6 +18,8 @@ class HolonomicDriveController(
     private val yController: PIDController,
     private val thetaController: PIDController
 ) {
+    private val vfh = VFHPlanner()
+
     init {
         thetaController.enableContinuousInput(-Math.PI, Math.PI)
     }
@@ -29,6 +33,7 @@ class HolonomicDriveController(
      * @param dtSeconds Time elapsed since last call.
      * @param curvature Curvature of the path segment (1/radius).
      * @param maxCentripetalAccel Limit for lateral centripetal acceleration.
+     * @param obstacles List of dynamic/static obstacles on the field.
      */
     fun calculate(
         currentPose: Pose2d,
@@ -37,7 +42,8 @@ class HolonomicDriveController(
         targetHeading: Rotation2d,
         dtSeconds: Double,
         curvature: Double = 0.0,
-        maxCentripetalAccel: Double = 2.5
+        maxCentripetalAccel: Double = 2.5,
+        obstacles: List<Obstacle> = emptyList()
     ): ChassisSpeeds {
         // Calculate PID output for position error
         var xFeedback = xController.calculate(currentPose.x, targetPose.x, dtSeconds)
@@ -59,12 +65,26 @@ class HolonomicDriveController(
             targetVelocityMps
         }
 
-        val xFF = limitedVelocity * cos(pathHeading)
-        val yFF = limitedVelocity * sin(pathHeading)
+        // Apply VFH+ to calculate dynamic steering detours
+        val detourHeading = if (obstacles.isNotEmpty()) {
+            vfh.computeDetourHeading(currentPose, pathHeading, obstacles)
+        } else {
+            pathHeading
+        }
+
+        val xFF = limitedVelocity * cos(detourHeading)
+        val yFF = limitedVelocity * sin(detourHeading)
 
         // Sum feedforward and feedback
-        val fieldRelativeX = xFF + xFeedback
-        val fieldRelativeY = yFF + yFeedback
+        var fieldRelativeX = xFF + xFeedback
+        var fieldRelativeY = yFF + yFeedback
+
+        // If detouring, project the entire desired speed vector along the safe detour direction
+        if (detourHeading != pathHeading) {
+            val speedMagnitude = kotlin.math.hypot(fieldRelativeX, fieldRelativeY)
+            fieldRelativeX = speedMagnitude * cos(detourHeading)
+            fieldRelativeY = speedMagnitude * sin(detourHeading)
+        }
 
         // Convert field-relative speeds to robot-relative speeds
         return ChassisSpeeds.fromFieldRelativeSpeeds(
