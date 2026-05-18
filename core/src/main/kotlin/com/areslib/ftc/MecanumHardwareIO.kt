@@ -10,7 +10,8 @@ class MecanumHardwareIO(
     flName: String = "fl",
     frName: String = "fr",
     blName: String = "bl",
-    brName: String = "br"
+    brName: String = "br",
+    private val maxWheelSpeedMetersPerSecond: Double = 3.5
 ) {
     private val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, flName)
     private val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
@@ -27,16 +28,18 @@ class MecanumHardwareIO(
 
     /**
      * Applies the calculated wheel speeds to the physical motors using voltage compensation.
-     * @param speeds The wheel speeds (assumed -1.0 to 1.0 normalized range).
+     * @param speeds The wheel speeds (in meters per second).
      * @param batteryVolts The current battery voltage to compensate for sag.
      */
     fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0) {
         val maxVolts = 12.0
         val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
+        val voltageCompensationFactor = maxVolts / actualVolts
         
-        frontLeft.power = (speeds.frontLeftMetersPerSecond * maxVolts) / actualVolts
-        frontRight.power = (speeds.frontRightMetersPerSecond * maxVolts) / actualVolts
-        backLeft.power = (speeds.backLeftMetersPerSecond * maxVolts) / actualVolts
-        backRight.power = (speeds.backRightMetersPerSecond * maxVolts) / actualVolts
+        // Normalize meters per second speed into [-1.0, 1.0] range and apply compensation
+        frontLeft.power = ((speeds.frontLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        frontRight.power = ((speeds.frontRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        backLeft.power = ((speeds.backLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        backRight.power = ((speeds.backRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
     }
 }
