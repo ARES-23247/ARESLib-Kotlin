@@ -424,6 +424,10 @@ class ARESRobot : TimedRobot() {
         telemetry.putNumber("Robot/Odometry/Y", robotY)
         telemetry.putNumber("Robot/Odometry/Heading", robotHeading)
         telemetry.putDoubleArray("Robot/Pose", doubleArrayOf(robotX, robotY, robotHeading))
+        
+        // Log EKF covariance diagonals
+        val cov = currentState.drive.poseEstimator.covariance
+        telemetry.putDoubleArray("Robot/Odometry/Covariance", doubleArrayOf(cov.m00, cov.m11, cov.m22))
 
         // Calculate and publish 3D poses for AdvantageScope
         val halfHeading = robotHeading / 2.0
@@ -504,7 +508,7 @@ class ARESRobot : TimedRobot() {
             val wvx = vx - omega * oy
             val wvy = vy + omega * ox
             val speed = Math.hypot(wvx, wvy)
-            val angle = Math.toDegrees(Math.atan2(wvy, wvx))
+            val angle = Math.atan2(wvy, wvx)
             swerveStates[i * 2] = angle
             swerveStates[i * 2 + 1] = speed
         }
