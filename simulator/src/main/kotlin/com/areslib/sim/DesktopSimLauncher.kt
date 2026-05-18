@@ -142,6 +142,7 @@ object DesktopSimLauncher {
         val visionSimulator = com.areslib.hardware.vision.VisionSimulator()
 
         while (true) {
+            org.lwjgl.glfw.GLFW.glfwPollEvents()
             val startTime = System.currentTimeMillis()
 
             // Current Simulated Pose
