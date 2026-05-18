@@ -22,17 +22,17 @@
 - ✅ **v2.5 Hardened EKF Localization & Dynamic Sensor Fusion** — Phases 49-52 (shipped 2026-05-18)
 - ✅ **v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance** — Phases 53-55 (shipped 2026-05-18)
 - ✅ **v2.7 Path Execution & Dynamic Task Planning** — Phases 56-59 (shipped 2026-05-18)
-- 🚧 **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (in planning)
+- ✅ **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (shipped 2026-05-18)
 
 ## Phases
 
 <details>
-<summary>🚧 v2.8 Deterministic Input Replay & "What-If" Ghost Simulation (Phases 60-63) — IN PLANNING</summary>
+<summary>✅ v2.8 Deterministic Input Replay & "What-If" Ghost Simulation (Phases 60-63) — SHIPPED 2026-05-18</summary>
 
 - [x] Phase 60: Unified Subsystem IO Boundaries (shipped 2026-05-18)
 - [x] Phase 61: Asynchronous Raw Input Logging & Mock Clock Interceptor (shipped 2026-05-18)
-- [ ] Phase 62: Dual-State Offline Replay Runner & AdvantageScope Ghost Telemetry
-- [ ] Phase 63: Kotlin Compose Multiplatform Replay GUI & Parameter Sweeper Dashboard
+- [x] Phase 62: Dual-State Offline Replay Runner & AdvantageScope Ghost Telemetry (shipped 2026-05-18)
+- [x] Phase 63: Kotlin Compose Multiplatform Replay GUI & Parameter Sweeper Dashboard (shipped 2026-05-18)
 
 </details>
 
@@ -174,6 +174,6 @@
 | 60. Unified Subsystem IO Boundaries | v2.8 | 1/1 | Complete | 2026-05-18 |
 | 61. Asynchronous Raw Input Logging & Mock Clock Interceptor | v2.8 | 1/1 | Complete | 2026-05-18 |
 | 62. Dual-State Offline Replay Runner & AdvantageScope Ghost Telemetry | v2.8 | 1/1 | Complete | 2026-05-18 |
-| 63. Kotlin Compose Multiplatform Replay GUI & Parameter Sweeper Dashboard | v2.8 | 0/1 | Planned | — |
+| 63. Kotlin Compose Multiplatform Replay GUI & Parameter Sweeper Dashboard | v2.8 | 1/1 | Complete | 2026-05-18 |
 
 
