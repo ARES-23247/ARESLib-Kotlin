@@ -5,8 +5,8 @@ Active requirements for high-performance swerve trajectory following under physi
 ## Active Requirements
 
 ### Category: Dynamic Physical Constraints
-- [ ] **DYN-01 (Centripetal Limiting)**: Monitor path curvature ($1/r$). Dynamically limit the maximum allowable linear velocity $v$ in curves based on centripetal acceleration ($a_c = v^2 \cdot \kappa \le a_{max}$) to prevent tipping and wheel slippage.
-- [ ] **DYN-02 (Swerve Rate Limiter)**: Cap maximum angular steering acceleration ($\text{rad/s}^2$) and drive wheel acceleration ($m/s^2$) inside the Kinematics engine to prevent actuator saturation and wheel-spin peaks.
+- [x] **DYN-01 (Centripetal Limiting)**: Monitor path curvature ($1/r$). Dynamically limit the maximum allowable linear velocity $v$ in curves based on centripetal acceleration ($a_c = v^2 \cdot \kappa \le a_{max}$) to prevent tipping and wheel slippage.
+- [x] **DYN-02 (Swerve Rate Limiter)**: Cap maximum angular steering acceleration ($\text{rad/s}^2$) and drive wheel acceleration ($m/s^2$) inside the Kinematics engine to prevent actuator saturation and wheel-spin peaks.
 
 ### Category: Local Costmap & Distance Sensor Fusion
 - [ ] **AVOID-01 (Sensor Costmap)**: Establish a local 2D grid-based or polar costmap in the Redux state, fusing real-time distance sensor readings (simulated distance probes) with coordinate offsets.
