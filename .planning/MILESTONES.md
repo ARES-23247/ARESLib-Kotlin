@@ -1,10 +1,21 @@
 # Milestones
 
+## v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance (Shipped: 2026-05-18)
+
+**Phases completed:** 4 phases, 0 plans, 0 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
+
 ## v2.5 Hardened EKF Localization & Dynamic Sensor Fusion (Shipped: 2026-05-18)
 
 **Phases completed:** 4 phases, 4 plans
 
 **Key accomplishments:**
+
 - Expanded global RobotState kinematics tracking to incorporate Pitch, Roll, angular velocities, and 3-axis G-forces.
 - Designed 3D spatial coordinate boundaries to filter invalid or floating camera measurements outside of the physical field area.
 - Built active motion blur and linear shock rejections, discarding updates during high-speed spins (>2.0 rad/s) or dynamic collision peaks (>2.5 G).
@@ -18,6 +29,7 @@
 **Phases completed:** 4 phases, 4 plans
 
 **Key accomplishments:**
+
 - Built a thread-safe, chronological sorting buffer (`VisionMeasurementBuffer`) to process asynchronous, latency-delayed vision measurements.
 - Implemented standard-deviation-driven multi-sensor Kalman Filter pose fusion supporting retroactive history rewinds/replays.
 - Created a robust outlier disambiguation filter (`VisionOutlierFilter`) to reject noisy, high-ambiguity or coordinate-divergent visual updates.
@@ -30,6 +42,7 @@
 **Phases completed:** 2 phases, 2 plans
 
 **Key accomplishments:**
+
 - Thread-safe loading and parsing of PathPlanner JSON trajectory assets inside `frc-app` module.
 - Smooth start coordinate snapping/alignment for both Redux state and dyn4j physics bodies.
 - Feedforward/feedback `HolonomicDriveController` loop integration inside FRC `autonomousPeriodic()` loops.
@@ -42,6 +55,7 @@
 **Phases completed:** 2 phases, 2 plans
 
 **Key accomplishments:**
+
 - Implemented high-fidelity dyn4j rigid-body 2D physics swerve simulator core.
 - Configured dynamic timestep updates, floor friction damping, and collision dynamics (wall and hub).
 - Designed flywheel physics with angular momentum (MOI/torque) and speed regulation.
@@ -54,6 +68,7 @@
 **Phases completed:** 3 phases, 3 plans
 
 **Key accomplishments:**
+
 - Decoupled physical motor and sensor wrappers into platform-agnostic `SwerveModuleIO` structures.
 - Implemented thin airlock for CTRE CANivore (Phoenix 6 `waitForUpdate`) thread-safe bus sync.
 - Constructed FRC `ARESRobot` central framework loop routing telemetry to WPILog.
@@ -65,6 +80,7 @@
 **Phases completed:** 4 phases, 4 plans
 
 **Key accomplishments:**
+
 - Unified multi-module gradle build chain supporting pure JVM/Android project builds.
 - Isolated mock SDK classes completely from physical production modules.
 - Deployed TeleOp LinearOpMode with hardware maps for motor, pinpoint, and IMU configurations.
@@ -77,6 +93,7 @@
 **Phases completed:** 4 phases, 4 plans
 
 **Key accomplishments:**
+
 - Developed unified `ARESController` edge-detection trigger logic.
 - Embedded a lightweight, pure-Kotlin NT4 WebSocket server.
 - Built physical hardware vision wrappers for Limelight 3A and AprilTags.
@@ -89,6 +106,7 @@
 **Phases completed:** 4 phases, 4 plans
 
 **Key accomplishments:**
+
 - Implemented concrete `FtcRevHubIO`, `PinpointOdometryIO`, and auxiliary `I2C Octoquad` wrappers.
 - Created robust absolute PWM and analog encoder wrappers for continuous CRServos.
 
@@ -99,6 +117,7 @@
 **Phases completed:** 4 phases, 4 plans
 
 **Key accomplishments:**
+
 - Built platform-agnostic 3D geometry matrix classes (`Pose3d`, `Translation3d`, `Rotation3d`).
 - Implemented immutable array-backed Kalman Filter pose estimator.
 - Added pure `VisionState` processing and pose disambiguation structures.

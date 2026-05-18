@@ -59,11 +59,16 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Hardened EKF outlier filter (3D boundaries, motion blur, and dynamic G-force collision lockout). — v2.5
 - ✓ Dynamic odometry process noise scaling under high chassis tilt and beached freeze safeties. — v2.5
 - ✓ Dynamic AprilTag measurement noise distance penalization and multi-tag confidence division. — v2.5
+- ✓ Centripetal Limiting: Curved trajectory velocity capping ($v_{\text{limit}} = \sqrt{a_c / |\kappa|}$) based on curvature to prevent tipping. — v2.6
+- ✓ Swerve Rate Limiter: Maximum angular steering acceleration and drive acceleration caps to prevent actuator saturation. — v2.6
+- ✓ Sensor Costmap: Local 2D grid costmap in Redux fusing distance sensor probes with EKF coordinate offsets. — v2.6
+- ✓ VFH+ Detours: Polar histogram sector binning, 3-point smoothing, detour side-locking memory, and nominal target candidate insertion. — v2.6
+- ✓ Closed-Loop Verification: Collision-free trajectory following around static obstacles in physics simulator. — v2.6
 
 ### Active
-- [ ] Planning next milestone... — v2.6
+- [ ] Planning next milestone... — v2.7
 
-## Current Milestone: v2.6 (Planning)
+## Current Milestone: v2.7 (Planning)
 
 **Goal:** Plan next milestone requirements and pathing targets for real FTC and FRC deployment, optimization, and advanced autonomous enhancements.
 
@@ -93,6 +98,8 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 | No KAPT / `@AutoLog` | Speeds up build times and ensures Android/RoboRIO cross-compatibility. | ✓ Good |
 | Redux-style State Store | Centralizes all robot state, enabling time-travel debugging and unified logging. | ✓ Good |
 | Chronological Vision Replay | Solves asynchronous pipeline latency by rewind/replay of historical odometry entries in EKF. | ✓ Good |
+| Path Projection Side-Locking | Locks chosen detour side based on path progress vector projection to prevent oscillation. | ✓ Good |
+| Target-in-Valley Candidate | Integrates direct target heading as detour candidate when unblocked to eliminate hysteresis. | ✓ Good |
 
 ---
 
@@ -114,4 +121,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 after v2.4 milestone complete*
+*Last updated: 2026-05-18 after v2.6 milestone complete*
