@@ -24,7 +24,7 @@ class SwerveModuleIOSim : SwerveModuleIO {
         inputs.drivePositionRads = simPositionRad
         inputs.driveVelocityRadsPerSec = simVelocityRadPerSec
         inputs.steerAbsolutePositionRads = simSteerAngleRad
-        inputs.timestampMs = System.currentTimeMillis()
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }
 
@@ -40,7 +40,7 @@ class ImuIOSim : ImuIO {
         inputs.pitchRadians = simPitchRad
         inputs.rollRadians = simRollRad
         inputs.yawVelocityRadPerSec = simYawVelocityRadPerSec
-        inputs.timestampMs = System.currentTimeMillis()
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 
     override fun resetHeading() {
@@ -74,7 +74,7 @@ class OdometryIOSim : OdometryIO {
         inputs.velX = simVelX
         inputs.velY = simVelY
         inputs.headingVelocity = simHeadingVel
-        inputs.timestampMs = System.currentTimeMillis()
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }
 
