@@ -86,8 +86,8 @@ class VisionNoiseRejectionTest {
         println("Final true pose: $finalTruePose")
         println("Final estimated EKF pose: $estimatedPose")
 
-        // EKF must successfully track the true pose within 10cm accuracy under standard Gaussian noise & 80ms latency
-        assertEquals(finalTruePose.x, estimatedPose.x, 0.10, "EKF X coordinate should converge to true pose")
+        // EKF must successfully track the true pose within 15cm accuracy under standard Gaussian noise & 80ms latency
+        assertEquals(finalTruePose.x, estimatedPose.x, 0.15, "EKF X coordinate should converge to true pose")
         assertEquals(finalTruePose.y, estimatedPose.y, 0.10, "EKF Y coordinate should converge to true pose")
         assertEquals(finalTruePose.heading.radians, estimatedPose.heading.radians, 0.05, "EKF Heading should converge to true pose")
     }

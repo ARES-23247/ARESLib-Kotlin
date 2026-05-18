@@ -25,10 +25,11 @@ class ARESDataLogger {
     private var isHeaderWritten = false
     private var isRunning = false
     
-    // Executor that processes the queue sequentially
+    // Executor that processes the queue sequentially using daemon threads to prevent JVM hanging
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
-        LinkedBlockingQueue()
+        LinkedBlockingQueue(),
+        { thread -> Thread(thread, "ARES-DataLogger-Thread").apply { isDaemon = true } }
     )
 
     init {

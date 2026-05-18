@@ -25,7 +25,8 @@ class ActionLogger {
     
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
-        LinkedBlockingQueue()
+        LinkedBlockingQueue(),
+        { thread -> Thread(thread, "ARES-ActionLogger-Thread").apply { isDaemon = true } }
     )
 
     init {

@@ -25,7 +25,8 @@ class InputLogger(customLogFile: File? = null) {
     
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
-        LinkedBlockingQueue()
+        LinkedBlockingQueue(),
+        { thread -> Thread(thread, "ARES-InputLogger-Thread").apply { isDaemon = true } }
     )
 
     init {
