@@ -1,5 +1,17 @@
 # Milestones
 
+## v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration (Shipped: 2026-05-18)
+
+**Phases completed:** 4 phases, 4 plans
+
+**Key accomplishments:**
+- Built a thread-safe, chronological sorting buffer (`VisionMeasurementBuffer`) to process asynchronous, latency-delayed vision measurements.
+- Implemented standard-deviation-driven multi-sensor Kalman Filter pose fusion supporting retroactive history rewinds/replays.
+- Created a robust outlier disambiguation filter (`VisionOutlierFilter`) to reject noisy, high-ambiguity or coordinate-divergent visual updates.
+- Modeled physical AprilTag targets in a high-fidelity simulator (`VisionSimulator`) to verify tracking accuracy and noise tolerance under Gaussian disturbances.
+
+---
+
 ## v2.3 FRC Autonomous Trajectory Following (Shipped: 2026-05-18)
 
 **Phases completed:** 2 phases, 2 plans

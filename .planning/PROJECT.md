@@ -52,22 +52,20 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ FRC CTRE Swerve Integration — v2.1
 - ✓ FRC dyn4j Physics Simulation: dynamic time delta steps, floor damping, self-healing spawn guards, static wall and hub collisions — v2.2
 - ✓ FRC Autonomous Trajectory Following (PathPlanner spline parsing, start coordinate snap-alignment, HolonomicDriveController loop, AdvantageScope diagnostics) — v2.3
+- ✓ Thread-safe queue buffer for asynchronous vision camera measurements sorted chronologically before processing. — v2.4
+- ✓ Ambiguity-based vision filter that rejects measurements with high pose ambiguity or when tag distance/rotation limits are exceeded. — v2.4
+- ✓ Integrate multi-sensor vision measurements with retro-active EKF pose estimates in the `PoseEstimator`. — v2.4
+- ✓ Validate correct Kalman-Filter vision pose corrections using high-fidelity simulations. — v2.4
 
 ### Active
-- [ ] Thread-safe queue buffer for asynchronous vision camera measurements sorted chronologically before processing. — v2.4
-- [ ] Ambiguity-based vision filter that rejects measurements with high pose ambiguity or when tag distance/rotation limits are exceeded. — v2.4
-- [ ] Integrate multi-sensor vision measurements with retro-active EKF pose estimates in the `PoseEstimator`. — v2.4
-- [ ] Validate correct Kalman-Filter vision pose corrections using high-fidelity simulations. — v2.4
+- [ ] Planning next milestone... — v2.5
 
-## Current Milestone: v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration
+## Current Milestone: v2.5 (Planning)
 
-**Goal:** Integrate physical Limelight 3D AprilTag vision measurements with our retroactive Extended Kalman Filter (EKF) pose estimator to provide resilient, low-latency, and high-fidelity robot localization.
+**Goal:** Plan next milestone requirements and pathing targets for real FTC and FRC deployment, optimization, and advanced autonomous enhancements.
 
 **Target features:**
-- Implement a thread-safe sorting buffer to handle asynchronous, out-of-order vision measurements chronologically.
-- Add elite team pose disambiguation based on rotation and distance check thresholds.
-- Enable full multi-sensor fusion in `PoseEstimator.kt` using standard deviation vector parameters.
-- Verify EKF localization stability and vision noise rejection under dynamic physical simulator stress.
+- TBD during next milestone requirements phase.
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
@@ -113,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 after v2.3 milestone complete*
+*Last updated: 2026-05-18 after v2.4 milestone complete*
