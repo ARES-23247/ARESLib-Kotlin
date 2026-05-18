@@ -3,6 +3,8 @@ package com.areslib.frc
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.BaseStatusSignal
 import com.areslib.action.RobotAction
+import com.areslib.hardware.drive.SwerveModuleIO
+import com.areslib.hardware.drive.SwerveModuleInputs
 
 class SwerveModuleIOPhoenix6(
     private val driveMotor: TalonFX,
@@ -14,7 +16,7 @@ class SwerveModuleIOPhoenix6(
     private val driveVelocity = driveMotor.velocity
     private val steerPosition = steerMotor.position
 
-    override fun updateInputs(inputs: SwerveInputs) {
+    override fun updateInputs(inputs: SwerveModuleInputs) {
         // FRC CANivore "Airlock" - block until all signals are perfectly synchronized
         BaseStatusSignal.waitForAll(20.0, drivePosition, driveVelocity, steerPosition)
         
@@ -28,7 +30,7 @@ class SwerveModuleIOPhoenix6(
     }
     
     fun dispatchHardwareUpdate() {
-        val inputs = SwerveInputs()
+        val inputs = SwerveModuleInputs()
         updateInputs(inputs)
         
         // Convert to immutable action and dispatch to central store

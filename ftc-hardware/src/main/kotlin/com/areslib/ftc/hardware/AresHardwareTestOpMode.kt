@@ -51,11 +51,14 @@ class AresHardwareTestOpMode : LinearOpMode() {
         telemetry.update()
         waitForStart()
 
+        val imuInputs = com.areslib.hardware.ImuInputs()
+
         while (opModeIsActive()) {
             // Update pure state from hardware IO
             val revMotorPos = motorIO.position
             val revMotorVel = motorIO.velocity
-            val imuHeading = imuIO.heading.radians
+            imuIO.updateInputs(imuInputs)
+            val imuHeading = imuInputs.headingRadians
             val srsVoltage = srsAnalog.voltage
             val octoPos = octoEncoder.position
             val octoVel = octoEncoder.velocity

@@ -1,23 +1,30 @@
 package com.areslib.hardware
 
-import com.areslib.math.Rotation2d
+import com.google.gson.annotations.SerializedName
+
+/**
+ * Serializable sensory inputs for an Inertial Measurement Unit (IMU).
+ * Adheres to the Logged IO pattern.
+ */
+data class ImuInputs(
+    @SerializedName("headingRadians") var headingRadians: Double = 0.0,
+    @SerializedName("pitchRadians") var pitchRadians: Double = 0.0,
+    @SerializedName("rollRadians") var rollRadians: Double = 0.0,
+    @SerializedName("yawVelocityRadPerSec") var yawVelocityRadPerSec: Double = 0.0,
+    @SerializedName("timestampMs") var timestampMs: Long = 0L
+)
 
 /**
  * Pure abstraction for reading a gyroscope / IMU.
  */
 interface ImuIO {
     /**
-     * Update the IMU state (e.g. read over I2C)
+     * Poll the latest IMU signals into the inputs structure.
      */
-    fun update()
+    fun updateInputs(inputs: ImuInputs)
     
     /**
-     * Continuous robot yaw/heading
-     */
-    val heading: Rotation2d
-    
-    /**
-     * Reset the robot heading to 0 degrees
+     * Reset the robot heading to 0 degrees.
      */
     fun resetHeading()
 }

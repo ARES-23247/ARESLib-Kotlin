@@ -188,32 +188,19 @@ class OctoQuadAbsolutePWMEncoder(
  * Wrapper for the OctoQuad's absolute localizer feature.
  */
 class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
-    private var lastData = OctoQuadFWv3.LocalizerDataBlock()
-
     override fun initialize(startPose: Pose2d) {
         // Reset command
         octoQuad.resetEncoder(0) // Dummy implementation for now
     }
 
-    override fun update() {
-        lastData = octoQuad.readLocalizerData()
+    override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {
+        val lastData = octoQuad.readLocalizerData()
+        inputs.posX = lastData.posX_mm / 1000.0
+        inputs.posY = lastData.posY_mm / 1000.0
+        inputs.heading = lastData.heading_rad.toDouble()
+        inputs.velX = lastData.velX_mmS / 1000.0
+        inputs.velY = lastData.velY_mmS / 1000.0
+        inputs.headingVelocity = lastData.velHeading_radS.toDouble()
+        inputs.timestampMs = System.currentTimeMillis()
     }
-
-    override val position: Pose2d
-        get() {
-            return Pose2d(
-                x = lastData.posX_mm / 1000.0,
-                y = lastData.posY_mm / 1000.0,
-                heading = Rotation2d(lastData.heading_rad.toDouble())
-            )
-        }
-
-    override val velocity: Pose2d
-        get() {
-            return Pose2d(
-                x = lastData.velX_mmS / 1000.0,
-                y = lastData.velY_mmS / 1000.0,
-                heading = Rotation2d(lastData.velHeading_radS.toDouble())
-            )
-        }
 }

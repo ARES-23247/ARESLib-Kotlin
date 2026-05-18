@@ -344,21 +344,14 @@ class SrsHubPinpointOdometry(
         srsHub.resetI2cOdometry(port)
     }
 
-    override fun update() {
+    override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {
         srsHub.updateI2cOdometry(port)
+        inputs.posX = srsHub.getI2cOdometryX(port) / 1000.0
+        inputs.posY = srsHub.getI2cOdometryY(port) / 1000.0
+        inputs.heading = srsHub.getI2cOdometryHeading(port)
+        inputs.velX = srsHub.getI2cOdometryVelX(port) / 1000.0
+        inputs.velY = srsHub.getI2cOdometryVelY(port) / 1000.0
+        inputs.headingVelocity = srsHub.getI2cOdometryHeadingVel(port)
+        inputs.timestampMs = System.currentTimeMillis()
     }
-
-    override val position: Pose2d
-        get() = Pose2d(
-            srsHub.getI2cOdometryX(port) / 1000.0,
-            srsHub.getI2cOdometryY(port) / 1000.0,
-            Rotation2d(srsHub.getI2cOdometryHeading(port))
-        )
-
-    override val velocity: Pose2d
-        get() = Pose2d(
-            srsHub.getI2cOdometryVelX(port) / 1000.0,
-            srsHub.getI2cOdometryVelY(port) / 1000.0,
-            Rotation2d(srsHub.getI2cOdometryHeadingVel(port))
-        )
 }

@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.state.RobotState
 import com.areslib.reducer.rootReducer
 import com.areslib.action.RobotAction
+import com.areslib.hardware.drive.SwerveModuleInputs
 
 class ARESLibOpMode : LinearOpMode() {
 
@@ -16,7 +17,7 @@ class ARESLibOpMode : LinearOpMode() {
         val analogEncoder = hardwareMap.get(AnalogInput::class.java, "analogEncoder")
         
         val swerveIO = SwerveModuleIOFtc(driveMotor, steerMotor, analogEncoder)
-        val swerveInputs = com.areslib.frc.SwerveInputs()
+        val swerveInputs = SwerveModuleInputs()
         
         // 2. Initialize pure state and action logger
         var currentState = RobotState()

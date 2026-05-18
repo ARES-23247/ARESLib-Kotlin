@@ -182,15 +182,15 @@ class FtcImu(private val imu: BNO055IMU) : ImuIO {
         imu.initialize(parameters)
     }
 
-    override fun update() {
-        // BNO055 automatically updates internal state. We just read it when needed.
+    override fun updateInputs(inputs: com.areslib.hardware.ImuInputs) {
+        val angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS)
+        inputs.headingRadians = angles.firstAngle.toDouble() - headingOffset
+        inputs.pitchRadians = angles.secondAngle.toDouble()
+        inputs.rollRadians = angles.thirdAngle.toDouble()
+        
+        inputs.yawVelocityRadPerSec = 0.0
+        inputs.timestampMs = System.currentTimeMillis()
     }
-
-    override val heading: Rotation2d
-        get() {
-            val angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS)
-            return Rotation2d(angles.firstAngle.toDouble() - headingOffset)
-        }
 
     override fun resetHeading() {
         val angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS)
