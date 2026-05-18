@@ -40,79 +40,88 @@ object SensoryReplayRunner {
         logFile: File,
         ghostVisionStdDevs: Vector3? = null
     ): ReplaySummary {
+        if (!logFile.exists()) {
+            return ReplaySummary(emptyList(), Pose2d(), Pose2d())
+        }
+        val lines = logFile.readLines()
+        return replaySensoryLines(lines, ghostVisionStdDevs)
+    }
+
+    /**
+     * Replays a list of raw sensory JSONL strings through two parallel state instances.
+     * @param lines List of raw sensory input JSON strings to process
+     * @param ghostVisionStdDevs Custom standard deviation scaling (x, y, heading) to apply to the Ghost EKF estimator
+     * @return ReplaySummary containing the complete step-by-step trace of both poses
+     */
+    fun replaySensoryLines(
+        lines: List<String>,
+        ghostVisionStdDevs: Vector3? = null
+    ): ReplaySummary {
         val steps = mutableListOf<ReplayStepResult>()
         
         var realState = RobotState()
         var ghostState = RobotState()
 
-        if (!logFile.exists()) {
-            return ReplaySummary(emptyList(), Pose2d(), Pose2d())
-        }
-
         var prevFrame: RobotInputsFrame? = null
 
-        BufferedReader(FileReader(logFile)).use { reader ->
-            var line = reader.readLine()
-            while (line != null) {
-                if (line.trim().isNotEmpty()) {
-                    try {
-                        val frame = gson.fromJson(line, RobotInputsFrame::class.java)
-                        
-                        // Map raw sensors to DriveHardwareUpdate action
-                        val prev = prevFrame
-                        val deltaX = if (prev == null) 0.0 else frame.odometryInputs.posX - prev.odometryInputs.posX
-                        val deltaY = if (prev == null) 0.0 else frame.odometryInputs.posY - prev.odometryInputs.posY
-                        val deltaHeading = if (prev == null) 0.0 else frame.odometryInputs.heading - prev.odometryInputs.heading
+        for (line in lines) {
+            if (line.trim().isNotEmpty()) {
+                try {
+                    val frame = gson.fromJson(line, RobotInputsFrame::class.java)
+                    
+                    // Map raw sensors to DriveHardwareUpdate action
+                    val prev = prevFrame
+                    val deltaX = if (prev == null) 0.0 else frame.odometryInputs.posX - prev.odometryInputs.posX
+                    val deltaY = if (prev == null) 0.0 else frame.odometryInputs.posY - prev.odometryInputs.posY
+                    val deltaHeading = if (prev == null) 0.0 else frame.odometryInputs.heading - prev.odometryInputs.heading
 
-                        val driveAction = RobotAction.DriveHardwareUpdate(
-                            xVelocity = frame.odometryInputs.velX,
-                            yVelocity = frame.odometryInputs.velY,
-                            angularVelocity = frame.odometryInputs.headingVelocity,
-                            deltaX = deltaX,
-                            deltaY = deltaY,
-                            deltaHeading = deltaHeading,
+                    val driveAction = RobotAction.DriveHardwareUpdate(
+                        xVelocity = frame.odometryInputs.velX,
+                        yVelocity = frame.odometryInputs.velY,
+                        angularVelocity = frame.odometryInputs.headingVelocity,
+                        deltaX = deltaX,
+                        deltaY = deltaY,
+                        deltaHeading = deltaHeading,
+                        timestampMs = frame.timestampMs,
+                        pitchDegrees = Math.toDegrees(frame.imuInputs.pitchRadians),
+                        rollDegrees = Math.toDegrees(frame.imuInputs.rollRadians)
+                    )
+
+                    // 1. Dispatch Drive update to both states
+                    realState = rootReducer(realState, driveAction)
+                    ghostState = rootReducer(ghostState, driveAction)
+
+                    // 2. Map and dispatch Vision measurements if present
+                    if (frame.visionInputs.measurements.isNotEmpty()) {
+                        val realVisionAction = RobotAction.VisionMeasurementsReceived(
+                            measurements = frame.visionInputs.measurements,
                             timestampMs = frame.timestampMs,
-                            pitchDegrees = Math.toDegrees(frame.imuInputs.pitchRadians),
-                            rollDegrees = Math.toDegrees(frame.imuInputs.rollRadians)
+                            customVisionStdDevs = null // Standard default trust
                         )
 
-                        // 1. Dispatch Drive update to both states
-                        realState = rootReducer(realState, driveAction)
-                        ghostState = rootReducer(ghostState, driveAction)
-
-                        // 2. Map and dispatch Vision measurements if present
-                        if (frame.visionInputs.measurements.isNotEmpty()) {
-                            val realVisionAction = RobotAction.VisionMeasurementsReceived(
-                                measurements = frame.visionInputs.measurements,
-                                timestampMs = frame.timestampMs,
-                                customVisionStdDevs = null // Standard default trust
-                            )
-
-                            val ghostVisionAction = RobotAction.VisionMeasurementsReceived(
-                                measurements = frame.visionInputs.measurements,
-                                timestampMs = frame.timestampMs,
-                                customVisionStdDevs = ghostVisionStdDevs // Customized 'what-if' trust
-                            )
-
-                            realState = rootReducer(realState, realVisionAction)
-                            ghostState = rootReducer(ghostState, ghostVisionAction)
-                        }
-
-                        // Save execution step result
-                        steps.add(
-                            ReplayStepResult(
-                                timestampMs = frame.timestampMs,
-                                realPose = realState.drive.poseEstimator.estimatedPose,
-                                ghostPose = ghostState.drive.poseEstimator.estimatedPose
-                            )
+                        val ghostVisionAction = RobotAction.VisionMeasurementsReceived(
+                            measurements = frame.visionInputs.measurements,
+                            timestampMs = frame.timestampMs,
+                            customVisionStdDevs = ghostVisionStdDevs // Customized 'what-if' trust
                         )
 
-                        prevFrame = frame
-                    } catch (e: Exception) {
-                        System.err.println("SensoryReplayRunner: Error processing frame: ${e.message}")
+                        realState = rootReducer(realState, realVisionAction)
+                        ghostState = rootReducer(ghostState, ghostVisionAction)
                     }
+
+                    // Save execution step result
+                    steps.add(
+                        ReplayStepResult(
+                            timestampMs = frame.timestampMs,
+                            realPose = realState.drive.poseEstimator.estimatedPose,
+                            ghostPose = ghostState.drive.poseEstimator.estimatedPose
+                        )
+                    )
+
+                    prevFrame = frame
+                } catch (e: Exception) {
+                    System.err.println("SensoryReplayRunner: Error processing frame: ${e.message}")
                 }
-                line = reader.readLine()
             }
         }
 
