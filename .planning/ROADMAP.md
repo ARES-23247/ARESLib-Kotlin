@@ -20,8 +20,16 @@
 - ✅ **v2.3 FRC Autonomous Trajectory Following** — Phases 43-44 (shipped 2026-05-18)
 - ✅ **v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration** — Phases 45-48 (shipped 2026-05-18)
 - ✅ **v2.5 Hardened EKF Localization & Dynamic Sensor Fusion** — Phases 49-52 (shipped 2026-05-18)
+- 📍 **v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance** — Phases 53-56 (In Planning)
 
 ## Phases
+
+## 📍 v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance (Phases 53-56)
+
+- [ ] Phase 53: Centripetal Velocity Limiting & Swerve Rate Limiting
+- [ ] Phase 54: Distance Sensor Local Costmap Integration
+- [ ] Phase 55: Real-Time Vector Field Histogram (VFH+) Path Planning
+- [ ] Phase 56: Closed-Loop Obstacle Avoidance Simulation & Verification
 
 <details>
 <summary>✅ v2.5 Hardened EKF Localization & Dynamic Sensor Fusion (Phases 49-52) — SHIPPED</summary>
@@ -132,5 +140,9 @@
 | 50. Advanced Outlier Filter (3D Boundaries, Angular Speed, Acceleration/Shock Lockouts) | v2.5 | 1/1 | Complete | 2026-05-18 |
 | 51. Dynamic Odometry Covariance Scaling (Tilt/Beaching Protection) | v2.5 | 1/1 | Complete | 2026-05-18 |
 | 52. Dynamic Vision Covariance Scaling (Distance-based SD & Multi-Tag Trust) | v2.5 | 1/1 | Complete | 2026-05-18 |
+| 53. Centripetal Velocity Limiting & Swerve Rate Limiting | v2.6 | 0/1 | Planned | - |
+| 54. Distance Sensor Local Costmap Integration | v2.6 | 0/1 | Planned | - |
+| 55. Real-Time Vector Field Histogram (VFH+) Path Planning | v2.6 | 0/1 | Planned | - |
+| 56. Closed-Loop Obstacle Avoidance Simulation & Verification | v2.6 | 0/1 | Planned | - |
 
 
