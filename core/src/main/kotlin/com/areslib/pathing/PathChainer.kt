@@ -1,0 +1,138 @@
+package com.areslib.pathing
+
+import com.areslib.math.Pose2d
+import com.areslib.math.Rotation2d
+import kotlin.math.hypot
+import kotlin.math.min
+import kotlin.math.sqrt
+import kotlin.math.PI
+
+object PathChainer {
+
+    /**
+     * Stitches multiple PathPlanner paths into a single continuous Path.
+     * Smoothes joint transitions and sweeps the resulting profile to respect acceleration limits.
+     */
+    fun chainPaths(
+        paths: List<Path>,
+        maxVelocityMps: Double = 2.0,
+        maxAccelerationMps2: Double = 1.5
+    ): Path {
+        if (paths.isEmpty()) return Path(emptyList())
+        if (paths.size == 1) return paths[0]
+
+        val stitchedPoints = mutableListOf<PathPoint>()
+        val stitchedEvents = mutableListOf<PathEvent>()
+
+        // Initialize with first path
+        stitchedPoints.addAll(paths[0].points)
+        stitchedEvents.addAll(paths[0].events)
+
+        for (pathIdx in 1 until paths.size) {
+            val nextPath = paths[pathIdx]
+            if (nextPath.points.isEmpty()) continue
+
+            val distanceOffset = stitchedPoints.last().distanceMeters
+            val jointDistance = distanceOffset
+
+            // Add events with offset
+            for (event in nextPath.events) {
+                stitchedEvents.add(
+                    PathEvent(
+                        event.eventName,
+                        event.triggerDistanceMeters + distanceOffset
+                    )
+                )
+            }
+
+            // Offset and add next points
+            val firstNextPoint = nextPath.points.first()
+            val startIdx = if (hypot(
+                    firstNextPoint.pose.x - stitchedPoints.last().pose.x,
+                    firstNextPoint.pose.y - stitchedPoints.last().pose.y
+                ) < 0.05
+            ) {
+                // If coordinates align extremely closely, drop the duplicate start point
+                1
+            } else {
+                0
+            }
+
+            for (i in startIdx until nextPath.points.size) {
+                val pt = nextPath.points[i]
+                stitchedPoints.add(
+                    PathPoint(
+                        pose = pt.pose,
+                        velocityMps = pt.velocityMps,
+                        distanceMeters = pt.distanceMeters + distanceOffset,
+                        curvature = pt.curvature
+                    )
+                )
+            }
+
+            // Perform blending around joint transition
+            val blendWindow = 0.2 // meters
+            val startBlendDist = jointDistance - blendWindow
+            val endBlendDist = jointDistance + blendWindow
+
+            // Joint anchor velocities/headings for interpolation
+            val vA = stitchedPoints.firstOrNull { it.distanceMeters >= startBlendDist }?.velocityMps ?: maxVelocityMps
+            val vB = stitchedPoints.firstOrNull { it.distanceMeters >= endBlendDist }?.velocityMps ?: maxVelocityMps
+
+            val headingA = stitchedPoints.firstOrNull { it.distanceMeters >= startBlendDist }?.pose?.heading?.radians ?: 0.0
+            val headingB = stitchedPoints.firstOrNull { it.distanceMeters >= endBlendDist }?.pose?.heading?.radians ?: 0.0
+
+            for (idx in stitchedPoints.indices) {
+                val pt = stitchedPoints[idx]
+                if (pt.distanceMeters in startBlendDist..endBlendDist) {
+                    val tau = (pt.distanceMeters - startBlendDist) / (2.0 * blendWindow)
+                    
+                    // Linear velocity interpolation
+                    val blendedVel = (1.0 - tau) * vA + tau * vB
+
+                    // Angle shortest-path interpolation
+                    var diff = headingB - headingA
+                    while (diff > PI) diff -= 2 * PI
+                    while (diff < -PI) diff += 2 * PI
+                    val blendedHeading = Rotation2d(headingA + diff * tau)
+
+                    stitchedPoints[idx] = pt.copy(
+                        pose = Pose2d(pt.pose.x, pt.pose.y, blendedHeading),
+                        velocityMps = blendedVel
+                    )
+                }
+            }
+        }
+
+        // Apply Trapezoidal Forward/Backward sweep on the fully stitched path to satisfy acceleration constraints
+        if (stitchedPoints.isNotEmpty()) {
+            // Sweep 1: Forward (Set start velocity to 0.0 to ramp up smoothly from standstill)
+            stitchedPoints[0] = stitchedPoints[0].copy(velocityMps = 0.0)
+            for (i in 1 until stitchedPoints.size) {
+                val prev = stitchedPoints[i - 1]
+                val curr = stitchedPoints[i]
+                val ds = curr.distanceMeters - prev.distanceMeters
+                if (ds > 1e-5) {
+                    val maxReachable = sqrt(prev.velocityMps * prev.velocityMps + 2.0 * maxAccelerationMps2 * ds)
+                    val newVel = min(curr.velocityMps, maxReachable)
+                    stitchedPoints[i] = curr.copy(velocityMps = newVel)
+                }
+            }
+
+            // Sweep 2: Backward (Ensure full deceleration at the very end point)
+            stitchedPoints[stitchedPoints.size - 1] = stitchedPoints.last().copy(velocityMps = 0.0)
+            for (i in stitchedPoints.size - 2 downTo 0) {
+                val next = stitchedPoints[i + 1]
+                val curr = stitchedPoints[i]
+                val ds = next.distanceMeters - curr.distanceMeters
+                if (ds > 1e-5) {
+                    val maxReachable = sqrt(next.velocityMps * next.velocityMps + 2.0 * maxAccelerationMps2 * ds)
+                    val newVel = min(curr.velocityMps, maxReachable)
+                    stitchedPoints[i] = curr.copy(velocityMps = newVel)
+                }
+            }
+        }
+
+        return Path(stitchedPoints, stitchedEvents)
+    }
+}

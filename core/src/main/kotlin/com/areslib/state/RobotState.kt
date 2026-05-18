@@ -28,6 +28,7 @@ data class RobotState(
     val superstructure: SuperstructureState = SuperstructureState(),
     val vision: VisionState = VisionState(),
     val costmap: CostmapState = CostmapState(),
+    val pathState: PathState = PathState(),
     val timestampMs: Long = 0L
 )
 

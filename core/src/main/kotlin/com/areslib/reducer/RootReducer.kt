@@ -268,5 +268,45 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 timestampMs = action.timestampMs
             )
         }
+        is RobotAction.ChainPaths -> {
+            val chained = com.areslib.pathing.PathChainer.chainPaths(
+                action.paths,
+                action.maxVelocityMps,
+                action.maxAccelerationMps2
+            )
+            state.copy(
+                pathState = state.pathState.copy(
+                    activePath = chained,
+                    currentDistanceMeters = 0.0,
+                    isChained = true,
+                    detourActive = false
+                ),
+                timestampMs = action.timestampMs
+            )
+        }
+        is RobotAction.SwitchPath -> {
+            val backupPath = if (action.isDetour) {
+                state.pathState.originalPathBeforeDetour ?: state.pathState.activePath
+            } else {
+                null
+            }
+            state.copy(
+                pathState = state.pathState.copy(
+                    activePath = action.path,
+                    currentDistanceMeters = 0.0,
+                    detourActive = action.isDetour,
+                    originalPathBeforeDetour = backupPath
+                ),
+                timestampMs = action.timestampMs
+            )
+        }
+        is RobotAction.UpdatePathProgress -> {
+            state.copy(
+                pathState = state.pathState.copy(
+                    currentDistanceMeters = action.distanceProgressMeters
+                ),
+                timestampMs = action.timestampMs
+            )
+        }
     }
 }

@@ -98,4 +98,23 @@ sealed class RobotAction {
         val observations: List<DistanceSensorObservation>,
         val timestampMs: Long
     ) : RobotAction()
+
+    // Path Following and Switching Actions
+    data class ChainPaths(
+        val paths: List<com.areslib.pathing.Path>,
+        val maxVelocityMps: Double = 2.0,
+        val maxAccelerationMps2: Double = 1.5,
+        val timestampMs: Long
+    ) : RobotAction()
+
+    data class SwitchPath(
+        val path: com.areslib.pathing.Path,
+        val isDetour: Boolean = false,
+        val timestampMs: Long
+    ) : RobotAction()
+
+    data class UpdatePathProgress(
+        val distanceProgressMeters: Double,
+        val timestampMs: Long
+    ) : RobotAction()
 }
