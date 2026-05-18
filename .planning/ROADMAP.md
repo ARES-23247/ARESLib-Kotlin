@@ -28,8 +28,8 @@
 ## 📍 v2.7 Path Execution & Dynamic Task Planning (Phases 56-59)
 
 - [x] Phase 56: Multi-Path Chaining & Dynamic Trajectory Switching
-- [ ] Phase 57: Telemetry-Driven Diagnostic Dashboard
-- [ ] Phase 58: Dynamic State Machine Task Executor
+- [x] Phase 57: Telemetry-Driven Diagnostic Dashboard
+- [x] Phase 58: Dynamic State Machine Task Executor
 - [ ] Phase 59: Autonomous System E2E Validation
 
 ### Phase 56: Multi-Path Chaining & Dynamic Trajectory Switching
@@ -184,9 +184,9 @@
 | 53. Centripetal Velocity Limiting & Swerve Rate Limiting | v2.6 | 1/1 | Complete | 2026-05-18 |
 | 54. Distance Sensor Local Costmap Integration | v2.6 | 1/1 | Complete | 2026-05-18 |
 | 55. VFH+ Obstacle Avoidance Detours & Simulator Verification | v2.6 | 1/1 | Complete | 2026-05-18 |
-| 56. Multi-Path Chaining & Dynamic Trajectory Switching | v2.7 | 0/1 | Planned | - |
-| 57. Telemetry-Driven Diagnostic Dashboard | v2.7 | 0/1 | Planned | - |
-| 58. Dynamic State Machine Task Executor | v2.7 | 0/1 | Planned | - |
+| 56. Multi-Path Chaining & Dynamic Trajectory Switching | v2.7 | 1/1 | Complete | 2026-05-18 |
+| 57. Telemetry-Driven Diagnostic Dashboard | v2.7 | 1/1 | Complete | 2026-05-18 |
+| 58. Dynamic State Machine Task Executor | v2.7 | 1/1 | Complete | 2026-05-18 |
 | 59. Autonomous System E2E Validation | v2.7 | 0/1 | Planned | - |
 
 
