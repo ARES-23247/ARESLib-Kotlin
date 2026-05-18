@@ -71,7 +71,14 @@ data class SuperstructureState(
     val flywheelRPM: Double = 0.0,
     val flywheelTargetRPM: Double = 4000.0,
     val inventoryCount: Int = 0,
-    val elevatorHeightMeters: Double = 0.0
+    val elevatorHeightMeters: Double = 0.0,
+    
+    // FRC Marvin 19 Sub-States
+    val flywheel: FlywheelState = FlywheelState(),
+    val cowl: CowlState = CowlState(),
+    val intake: IntakeState = IntakeState(),
+    val feeder: FeederState = FeederState(),
+    val climber: ClimberState = ClimberState()
 ) {
     /** Returns true when the flywheel is within 5% of target RPM */
     val isFlywheelAtSpeed: Boolean

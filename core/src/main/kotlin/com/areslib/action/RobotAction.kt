@@ -121,4 +121,38 @@ sealed class RobotAction {
         val distanceProgressMeters: Double,
         override val timestampMs: Long
     ) : RobotAction()
+
+    // FRC Marvin 19 Subsystem Actions
+    data class SetFlywheelSpeed(
+        val rpm: Double,
+        override val timestampMs: Long = System.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SetCowlAngle(
+        val degrees: Double,
+        override val timestampMs: Long = System.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SetIntakePivot(
+        val deployed: Boolean,
+        override val timestampMs: Long = System.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SetIntakeRollers(
+        val speedRps: Double,
+        override val timestampMs: Long = System.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SetFeederSpeed(
+        val speedRps: Double,
+        override val timestampMs: Long = System.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SuperstructureSensorUpdate(
+        val flywheelRpm: Double,
+        val cowlAngle: Double,
+        val intakeAngle: Double,
+        val pieceDetected: Boolean,
+        override val timestampMs: Long = System.currentTimeMillis()
+    ) : RobotAction()
 }

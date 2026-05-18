@@ -89,6 +89,43 @@ object SuperstructureReducer {
             is RobotAction.SetInventoryCount -> {
                 state.copy(inventoryCount = action.count)
             }
+            // FRC Subsystem Actions
+            is RobotAction.SetFlywheelSpeed -> {
+                state.copy(
+                    flywheel = state.flywheel.copy(targetVelocityRpm = action.rpm)
+                )
+            }
+            is RobotAction.SetCowlAngle -> {
+                state.copy(
+                    cowl = state.cowl.copy(targetAngleDegrees = action.degrees)
+                )
+            }
+            is RobotAction.SetIntakePivot -> {
+                state.copy(
+                    intake = state.intake.copy(
+                        isDeployed = action.deployed,
+                        targetAngleDegrees = if (action.deployed) 90.0 else 0.0
+                    )
+                )
+            }
+            is RobotAction.SetIntakeRollers -> {
+                state.copy(
+                    intake = state.intake.copy(targetRollerVelocityRps = action.speedRps)
+                )
+            }
+            is RobotAction.SetFeederSpeed -> {
+                state.copy(
+                    feeder = state.feeder.copy(targetVelocityRps = action.speedRps)
+                )
+            }
+            is RobotAction.SuperstructureSensorUpdate -> {
+                state.copy(
+                    flywheel = state.flywheel.copy(velocityRpm = action.flywheelRpm),
+                    cowl = state.cowl.copy(angleDegrees = action.cowlAngle),
+                    intake = state.intake.copy(pivotAngleDegrees = action.intakeAngle),
+                    feeder = state.feeder.copy(gamePieceDetected = action.pieceDetected)
+                )
+            }
             else -> state
         }
     }
