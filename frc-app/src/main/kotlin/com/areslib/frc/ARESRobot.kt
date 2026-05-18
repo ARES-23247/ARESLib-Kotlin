@@ -215,7 +215,26 @@ class ARESRobot : TimedRobot() {
 
     private fun spawnFuel() {
         val random = java.util.Random()
-        for (i in 0 until 100) {
+        var spawned = 0
+        while (spawned < 100) {
+            val x = 1.0 + random.nextDouble() * 14.0
+            val y = 1.0 + random.nextDouble() * 6.0
+            
+            // Check Blue Hub overlap
+            val dxBlue = x - 4.135
+            val dyBlue = y - 4.0345
+            if (dxBlue * dxBlue + dyBlue * dyBlue < 0.9) continue
+            
+            // Check Red Hub overlap
+            val dxRed = x - 12.406
+            val dyRed = y - 4.0345
+            if (dxRed * dxRed + dyRed * dyRed < 0.9) continue
+            
+            // Check Robot starting position overlap
+            val dxRobot = x - 2.0
+            val dyRobot = y - 2.0
+            if (dxRobot * dxRobot + dyRobot * dyRobot < 0.7) continue
+            
             val ball = Body()
             val fixture = ball.addFixture(Geometry.createCircle(0.0635)) // 5 inch diameter
             fixture.friction = 0.6
@@ -225,12 +244,10 @@ class ARESRobot : TimedRobot() {
             ball.linearDamping = 2.0
             ball.angularDamping = 2.0
             
-            // Random position inside the field walls, avoiding walls and hubs
-            val x = 1.0 + random.nextDouble() * 14.0
-            val y = 1.0 + random.nextDouble() * 6.0
             ball.translate(x, y)
             world.addBody(ball)
             balls.add(ball)
+            spawned++
         }
     }
 }
