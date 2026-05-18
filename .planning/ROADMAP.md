@@ -23,50 +23,29 @@
 - ✅ **v2.7 Path Execution & Dynamic Task Planning** — Phases 56-59 (shipped 2026-05-18)
 - ✅ **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (shipped 2026-05-18)
 - ✅ **v2.9 Physical Deployment & FRC Marvin 19 Redux Migration** — Phases 64-71 (shipped 2026-05-18)
+- 🚧 **v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification** — Phases 72-75 (in progress)
 
 ## Phases
 
-<details>
-<summary>✅ v2.9 Physical Deployment & FRC Marvin 19 Redux Migration (Phases 64-71) — SHIPPED 2026-05-18</summary>
+### 🚧 v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification (Phases 72-75)
 
-- [x] Phase 64: FRC Dual-Mode Drivetrain (Swerve Hardware Bridging) (shipped 2026-05-18)
-- [x] Phase 65: FTC Dynamic PathLoader (On-Device Trajectory Loading) (shipped 2026-05-18)
-- [x] Phase 66: FTC EKF Real-Time Sensor Fusion Integration (shipped 2026-05-18)
-- [x] Phase 67: Real-Robot Diagnostic Utilities & Safeguards (shipped 2026-05-18)
-- [x] Phase 68: FRC Superstructure Redux State Core (shipped 2026-05-18)
-- [x] Phase 69: Platform-Agnostic IO Boundaries (shipped 2026-05-18)
-- [x] Phase 70: FRC Hardware Wrappers (Phoenix 6 CTRE) (shipped 2026-05-18)
-- [x] Phase 71: High-Fidelity Dyn4j Physics Simulator (shipped 2026-05-18)
-
-</details>
+- [ ] Phase 72: Unified FRC Marvin 19 Robot Loop
+- [ ] Phase 73: AdvantageScope 3D Visualizer & Stream
+- [ ] Phase 74: FTC Mock Isolation & Deployment Hardening
+- [ ] Phase 75: FRC Autonomous Match E2E Simulation
 
 <details>
-<summary>✅ v2.8 Deterministic Input Replay & "What-If" Ghost Simulation (Phases 60-63) — SHIPPED 2026-05-18</summary>
+<summary>✅ Legacy Milestones (v1.0 to v2.9) — SHIPPED</summary>
 
-- [x] Phase 60: Unified Subsystem IO Boundaries (shipped 2026-05-18)
-- [x] Phase 61: Asynchronous Raw Input Logging & Mock Clock Interceptor (shipped 2026-05-18)
-- [x] Phase 62: Dual-State Offline Replay Runner & AdvantageScope Ghost Telemetry (shipped 2026-05-18)
-- [x] Phase 63: Kotlin Compose Multiplatform Replay GUI & Parameter Sweeper Dashboard (shipped 2026-05-18)
-
-</details>
-
-<details>
-<summary>✅ v2.7 Path Execution & Dynamic Task Planning (Phases 56-59) — SHIPPED 2026-05-18</summary>
-
-- [x] Phase 56: Multi-Path Chaining & Dynamic Trajectory Switching (shipped 2026-05-18)
-- [x] Phase 57: Telemetry-Driven Diagnostic Dashboard (shipped 2026-05-18)
-- [x] Phase 58: Dynamic State Machine Task Executor (shipped 2026-05-18)
-- [x] Phase 59: Autonomous System E2E Validation (shipped 2026-05-18)
-
-</details>
-
-<details>
-<summary>✅ Legacy Milestones (v1.0 to v2.6) — SHIPPED</summary>
-
-- [x] Phases 1-55 completed successfully and archived.
+- [x] Phases 1-71 completed successfully and archived.
 
 </details>
 
 ## Progress
 
-All phases up to Phase 71 are completed successfully.
+| Phase             | Milestone | Plans Complete | Status      | Completed  |
+| ----------------- | --------- | -------------- | ----------- | ---------- |
+| 72. Unified FRC Marvin 19 Robot Loop | v3.0 | 0/1 | Not started | -          |
+| 73. AdvantageScope 3D Visualizer & Stream | v3.0 | 0/1 | Not started | -          |
+| 74. FTC Mock Isolation & Deployment Hardening | v3.0 | 0/1 | Not started | -          |
+| 75. FRC Autonomous Match E2E Simulation | v3.0 | 0/1 | Not started | -          |

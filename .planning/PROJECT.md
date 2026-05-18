@@ -88,18 +88,20 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 
 ### Active
 
-*None (Milestone complete)*
+- [ ] FRC-INT-01: Unified FRC Marvin 19 Robot Loop
+- [ ] FRC-SIM-02: AdvantageScope Superstructure 2D/3D visualizer stream
+- [ ] FTC-SYS-01: Decouple simulated/mock FTC classes out of :core completely
+- [ ] SYS-TEST-01: Complete FRC autonomous match simulation (ShootAndMobility)
 
-## Current Milestone: v2.9 (Physical Deployment & FRC Marvin 19 Redux Migration)
+## Current Milestone: v3.0 (FRC Marvin 19 Unified Robot Integration & Full System Verification)
 
-**Goal:** Bridge the gap between pure simulation and real-world execution on physical robots by implementing conditional hardware/physics mode boundaries, dynamic file loading, EKF hardware sensor integration, and robust outlier rejection safeguards.
+**Goal:** Unify the Marvin 19 drivetrain and superstructure Redux states, decouple simulation mock boundaries, stream comprehensive AdvantageScope 3D telemetry, and validate end-to-end autonomous matches.
 
 **Target features:**
-- FRC-SIM-01 (Dual-Mode Swerve Execution)
-- FTC-PATH-01 (Android Spline File Loader)
-- FTC-EKF-01 (EKF Hardware Pipeline Wiring)
-- FTC-EKF-02 (Chi-Squared Outlier Gating)
-- DIAG-01 (Real-Robot Diagnostic Utilities)
+- FRC-INT-01 (Unified Robot Loop)
+- FRC-SIM-02 (AdvantageScope Superstructure Visualizer)
+- FTC-SYS-01 (Mocks Separation & Real OpMode Hardening)
+- SYS-TEST-01 (Autonomous Match Simulation)
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
