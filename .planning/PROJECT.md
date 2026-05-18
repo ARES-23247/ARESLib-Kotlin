@@ -56,11 +56,14 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ Ambiguity-based vision filter that rejects measurements with high pose ambiguity or when tag distance/rotation limits are exceeded. — v2.4
 - ✓ Integrate multi-sensor vision measurements with retro-active EKF pose estimates in the `PoseEstimator`. — v2.4
 - ✓ Validate correct Kalman-Filter vision pose corrections using high-fidelity simulations. — v2.4
+- ✓ Hardened EKF outlier filter (3D boundaries, motion blur, and dynamic G-force collision lockout). — v2.5
+- ✓ Dynamic odometry process noise scaling under high chassis tilt and beached freeze safeties. — v2.5
+- ✓ Dynamic AprilTag measurement noise distance penalization and multi-tag confidence division. — v2.5
 
 ### Active
-- [ ] Planning next milestone... — v2.5
+- [ ] Planning next milestone... — v2.6
 
-## Current Milestone: v2.5 (Planning)
+## Current Milestone: v2.6 (Planning)
 
 **Goal:** Plan next milestone requirements and pathing targets for real FTC and FRC deployment, optimization, and advanced autonomous enhancements.
 

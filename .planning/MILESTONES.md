@@ -1,5 +1,18 @@
 # Milestones
 
+## v2.5 Hardened EKF Localization & Dynamic Sensor Fusion (Shipped: 2026-05-18)
+
+**Phases completed:** 4 phases, 4 plans
+
+**Key accomplishments:**
+- Expanded global RobotState kinematics tracking to incorporate Pitch, Roll, angular velocities, and 3-axis G-forces.
+- Designed 3D spatial coordinate boundaries to filter invalid or floating camera measurements outside of the physical field area.
+- Built active motion blur and linear shock rejections, discarding updates during high-speed spins (>2.0 rad/s) or dynamic collision peaks (>2.5 G).
+- Created dynamic EKF Process Noise ($Q$) scaling to trust absolute tag corrections 100x more under chassis tilt, paired with automatic wheel encoder freezing under beaching situations (>15° tilt).
+- Implemented quadratic standard deviation AprilTag distance growth scaling alongside joint multi-tag geometric division.
+
+---
+
 ## v2.4 FRC/FTC Vision & Multi-Sensor Kalman Filter Integration (Shipped: 2026-05-18)
 
 **Phases completed:** 4 phases, 4 plans
