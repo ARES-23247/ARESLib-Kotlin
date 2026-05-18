@@ -31,7 +31,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     private val MAX_ANGULAR_SPEED = 4.0 // rad/s
 
     // Mode toggles
-    @Volatile var isTeleopMode = false
+    @Volatile var isTeleopMode = true
         private set
 
     @Volatile var isFieldCentric = false
@@ -213,7 +213,56 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                         var rbPressedThisFrame = false
                         var rtPressedThisFrame = false
 
-                        if (glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState)) {
+                        val isBluetoothXbox = gamepadName.contains("Bluetooth", ignoreCase = true) || 
+                                              gamepadName.contains("Wireless Controller", ignoreCase = true) ||
+                                              gamepadName.contains("LE XINPUT", ignoreCase = true)
+
+                        if (isBluetoothXbox) {
+                            // Direct, manual DirectInput mapping for Bluetooth Xbox/Wireless controllers
+                            val axes = glfwGetJoystickAxes(activeJoy)
+                            val buttons = glfwGetJoystickButtons(activeJoy)
+                            
+                            if (axes != null && axes.capacity() >= 5) {
+                                gamepadLx = axes[0]
+                                gamepadLy = axes[1]
+                                gamepadRx = axes[3] // Right Stick X is raw axis 3
+                                gamepadRy = axes[4] // Right Stick Y is raw axis 4
+                            } else {
+                                gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                            }
+
+                            if (buttons != null) {
+                                val capacity = buttons.capacity()
+                                lbPressedThisFrame = (capacity > 6 && buttons[6] == GLFW_PRESS.toByte()) || 
+                                                     (capacity > 4 && buttons[4] == GLFW_PRESS.toByte())
+                                                     
+                                rbPressedThisFrame = (capacity > 7 && buttons[7] == GLFW_PRESS.toByte()) || 
+                                                     (capacity > 5 && buttons[5] == GLFW_PRESS.toByte())
+                                
+                                // DirectInput standard Right Trigger button (button 9)
+                                if (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) {
+                                    rtPressedThisFrame = true
+                                }
+                                // Backups for different drivers (e.g. Button 16 or 12 or 11)
+                                if (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) {
+                                    rtPressedThisFrame = true
+                                }
+                                if (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) {
+                                    rtPressedThisFrame = true
+                                }
+                                if (capacity > 11 && buttons[11] == GLFW_PRESS.toByte()) {
+                                    rtPressedThisFrame = true
+                                }
+                                
+                                // Face buttons as additional shooting/transfer backups (A, B, X, Y)
+                                if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
+                                    (capacity > 1 && buttons[1] == GLFW_PRESS.toByte()) ||
+                                    (capacity > 2 && buttons[2] == GLFW_PRESS.toByte()) ||
+                                    (capacity > 3 && buttons[3] == GLFW_PRESS.toByte())) {
+                                    rtPressedThisFrame = true
+                                }
+                            }
+                        } else if (glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState)) {
                             // Standardized Gamepad API (Xbox Controller Normalized Mappings)
                             gamepadLx = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_X)
                             gamepadLy = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_Y)
@@ -251,12 +300,29 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                 gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
                             }
 
-                            if (buttons != null && buttons.capacity() >= 6) {
-                                if (buttons[4] == GLFW_PRESS.toByte()) {
-                                    lbPressedThisFrame = true
+                            if (buttons != null) {
+                                val capacity = buttons.capacity()
+                                if (capacity >= 6) {
+                                    if (buttons[4] == GLFW_PRESS.toByte()) {
+                                        lbPressedThisFrame = true
+                                    }
+                                    if (buttons[5] == GLFW_PRESS.toByte()) {
+                                        rbPressedThisFrame = true
+                                    }
                                 }
-                                if (buttons[5] == GLFW_PRESS.toByte()) {
-                                    rbPressedThisFrame = true
+                                // Backups for fallback joystick
+                                if (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) {
+                                    rtPressedThisFrame = true
+                                }
+                                if (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) {
+                                    rtPressedThisFrame = true
+                                }
+                                if (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) {
+                                    rtPressedThisFrame = true
+                                }
+                                if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
+                                    (capacity > 2 && buttons[2] == GLFW_PRESS.toByte())) {
+                                    rtPressedThisFrame = true
                                 }
                             }
                         }
@@ -280,6 +346,26 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                             isTransferring = newIsTransferring
                         }
 
+                        // Determine if ANY raw button changed state
+                        var anyButtonChanged = false
+                        val rawButtons = glfwGetJoystickButtons(activeJoy)
+                        if (rawButtons != null) {
+                            val capacity = rawButtons.capacity()
+                            val localLast = lastRawButtons
+                            if (localLast == null || localLast.size != capacity) {
+                                val newArr = ByteArray(capacity) { rawButtons[it] }
+                                lastRawButtons = newArr
+                                anyButtonChanged = true
+                            } else {
+                                for (idx in 0 until capacity) {
+                                    if (rawButtons[idx] != localLast[idx]) {
+                                        anyButtonChanged = true
+                                        localLast[idx] = rawButtons[idx]
+                                    }
+                                }
+                            }
+                        }
+
                         // Only repaint if axes or buttons changed significantly to save CPU
                         val changed = kotlin.math.abs(gamepadLx - lastLx) > 0.05f ||
                                       kotlin.math.abs(gamepadLy - lastLy) > 0.05f ||
@@ -287,9 +373,25 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                       kotlin.math.abs(gamepadRy - lastRy) > 0.05f ||
                                       lbPressedThisFrame != lastGamepadShift ||
                                       rbPressedThisFrame != lastGamepadRb ||
-                                      rtPressedThisFrame != lastGamepadEnter
+                                      rtPressedThisFrame != lastGamepadEnter ||
+                                      anyButtonChanged
 
                         if (changed || isKeyboardTransferring) {
+                            val isGamepad = glfwJoystickIsGamepad(activeJoy)
+                            println("[GAMEPAD DIAGNOSTIC] Name: $gamepadName | Mode: ${if (isBluetoothXbox) "ManualBluetoothXbox" else if (isGamepad) "GamepadAPI" else "RawJoystick"}")
+                            println(String.format("   - Sticks: Left(%.2f, %.2f) | Right(%.2f, %.2f)", gamepadLx, gamepadLy, gamepadRx, gamepadRy))
+                            println("   - Buttons: LB=$lbPressedThisFrame, RB=$rbPressedThisFrame, RT=$rtPressedThisFrame")
+                            
+                            val rawAxes = glfwGetJoystickAxes(activeJoy)
+                            if (rawAxes != null) {
+                                val axesStr = (0 until rawAxes.capacity()).joinToString(", ") { idx -> String.format("%d:%.2f", idx, rawAxes[idx]) }
+                                println("   - Raw Axes: $axesStr")
+                            }
+                            if (rawButtons != null) {
+                                val btnStr = (0 until rawButtons.capacity()).joinToString(", ") { idx -> "$idx:${rawButtons[idx]}" }
+                                println("   - Raw Buttons: $btnStr")
+                            }
+
                             lastLx = gamepadLx; lastLy = gamepadLy; lastRx = gamepadRx; lastRy = gamepadRy
                             lastGamepadEnter = rtPressedThisFrame
                             repaint()
@@ -317,6 +419,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     @Volatile private var lastRx = 0f
     @Volatile private var lastRy = 0f
     @Volatile private var lastGamepadEnter = false
+    @Volatile private var lastRawButtons: ByteArray? = null
 
     override fun keyTyped(e: KeyEvent?) {}
 
