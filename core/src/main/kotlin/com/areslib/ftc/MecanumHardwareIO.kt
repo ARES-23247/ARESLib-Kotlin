@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
 
-class MecanumHardwareIO(
+class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     hardwareMap: HardwareMap,
     flName: String = "fl",
     frName: String = "fr",

@@ -51,7 +51,7 @@ class MecanumHardwareIOTest {
             }
         }
         
-        val io = MecanumHardwareIO(hardwareMap)
+        val io = MecanumHardwareIO(hardwareMap, maxWheelSpeedMetersPerSecond = 1.0)
         
         // Assert init reversed right side
         assertEquals(DcMotorSimple.Direction.REVERSE, fr.direction)
