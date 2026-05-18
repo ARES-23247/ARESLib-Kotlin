@@ -15,6 +15,11 @@ dependencies {
     implementation(project(":core"))
     compileOnly(project(":ftc-mocks"))
     testImplementation(project(":ftc-mocks"))
+    testImplementation(kotlin("test"))
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 kotlin {
