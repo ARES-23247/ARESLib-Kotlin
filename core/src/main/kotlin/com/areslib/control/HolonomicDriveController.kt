@@ -53,10 +53,8 @@ class HolonomicDriveController(
         val yError = targetPose.y - currentPose.y
         
         // Perpendicular (lateral) error calculation relative to path heading
-        val dx = targetPose.x - currentPose.x
-        val dy = targetPose.y - currentPose.y
-        val pathHeading = if (dx == 0.0 && dy == 0.0) 0.0 else kotlin.math.atan2(dy, dx)
-        val lateralError = dx * kotlin.math.sin(pathHeading) - dy * kotlin.math.cos(pathHeading)
+        val pathHeading = targetPose.heading.radians
+        val lateralError = xError * kotlin.math.sin(pathHeading) - yError * kotlin.math.cos(pathHeading)
         
         // Angular error normalized between -PI and PI
         var angularError = targetHeading.radians - currentPose.heading.radians

@@ -33,7 +33,7 @@ class FtcLimelightIO(private val limelight: Limelight3A) : VisionIO {
             )
             
             val measurement = VisionMeasurement(
-                timestampMs = System.currentTimeMillis(),
+                timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
                 targetPose = pose,
                 tagId = -1, // Limelight result might give primary tag, but we mock -1 for now
                 ambiguity = 0.0 // Could map from result.ta

@@ -37,7 +37,7 @@ class ThreadedMultizoneDistanceSensor(
      * Instantly returns the latest cached zone readings from memory (0.0 ms execution time).
      */
     override val distancesMeters: DoubleArray
-        get() = cachedDistances
+        get() = cachedDistances.clone()
 
     /**
      * Safely shuts down the polling background thread.

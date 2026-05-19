@@ -16,6 +16,6 @@ class SwerveModuleIOFtc(
         inputs.drivePositionRads = driveMotor.currentPosition * 2.0 * Math.PI / 2048.0
         inputs.driveVelocityRadsPerSec = driveMotor.velocity * 2.0 * Math.PI / 2048.0
         inputs.steerAbsolutePositionRads = analogEncoder.voltage / 3.3 * 2.0 * Math.PI
-        inputs.timestampMs = System.currentTimeMillis() // System clock fallback
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis() // System clock fallback
     }
 }

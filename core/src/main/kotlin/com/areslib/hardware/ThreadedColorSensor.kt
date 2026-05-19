@@ -41,7 +41,7 @@ class ThreadedColorSensor(
     override val green: Int get() = cachedGreen
     override val blue: Int get() = cachedBlue
     override val alpha: Int get() = cachedAlpha
-    override val normalizedRgb: DoubleArray get() = cachedNormalized
+    override val normalizedRgb: DoubleArray get() = cachedNormalized.clone()
 
     /**
      * Safely shuts down the polling background thread.

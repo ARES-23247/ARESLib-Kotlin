@@ -52,7 +52,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param gamepad2 Optional operator gamepad state (use `gamepad2.toState()`)
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
-        val timestamp = System.currentTimeMillis()
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
 
         // 1. Read pinpoint sensors and update the EKF state store
         val poseUpdate = pinpointIO.getPoseUpdate()

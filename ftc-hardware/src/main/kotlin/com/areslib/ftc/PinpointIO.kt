@@ -15,7 +15,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) {
             xMeters = driver.posX,
             yMeters = driver.posY,
             headingRadians = driver.heading,
-            timestampMs = System.currentTimeMillis()
+            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         )
     }
 }

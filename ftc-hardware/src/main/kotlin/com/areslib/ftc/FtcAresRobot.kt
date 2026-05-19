@@ -25,7 +25,7 @@ class FtcAresRobot(hardwareMap: HardwareMap) : AresRobot() {
      * 4. Perform background telemetry logging (student does not write any logging boilerplate).
      */
     fun update() {
-        val timestamp = System.currentTimeMillis()
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
 
         // 1. Read hardware inputs
         imu.updateInputs(imuInputs)

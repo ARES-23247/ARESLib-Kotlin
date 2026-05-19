@@ -44,6 +44,11 @@ class FrcSwerveRobot(
     /** Direct access to the underlying telemetry for custom keys (3D viz, etc). */
     val telemetry: ITelemetry get() = dataLoggingTelemetry
 
+    // Pre-allocated buffers to prevent high-frequency GC allocations in update loop
+    private val covarianceDiagonals = DoubleArray(3)
+    private val pose3dArray = DoubleArray(7)
+    private val swerveStates = DoubleArray(8)
+
     /**
      * Coordinated frame update for FRC Swerve Drivetrain.
      *
@@ -55,7 +60,7 @@ class FrcSwerveRobot(
      * @param gamepad2 Optional operator gamepad
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
-        val timestamp = System.currentTimeMillis()
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
 
         // ── 1. READ: Hardware → Store ──
         if (!isSimulation && swerveIO != null) {
@@ -98,32 +103,41 @@ class FrcSwerveRobot(
 
         // Publish EKF covariance diagonals
         val cov = store.state.drive.poseEstimator.covariance
-        dataLoggingTelemetry.putDoubleArray("Robot/Odometry/Covariance", doubleArrayOf(cov.m00, cov.m11, cov.m22))
+        covarianceDiagonals[0] = cov.m00
+        covarianceDiagonals[1] = cov.m11
+        covarianceDiagonals[2] = cov.m22
+        dataLoggingTelemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceDiagonals)
 
         // Publish 3D robot pose (quaternion format for AdvantageScope)
         val heading = store.state.drive.odometryHeading
         val halfH = heading / 2.0
-        dataLoggingTelemetry.putDoubleArray("Robot/Pose3d", doubleArrayOf(
-            store.state.drive.odometryX, store.state.drive.odometryY, 0.0,
-            Math.cos(halfH), 0.0, 0.0, Math.sin(halfH)
-        ))
+        pose3dArray[0] = store.state.drive.odometryX
+        pose3dArray[1] = store.state.drive.odometryY
+        pose3dArray[2] = 0.0
+        pose3dArray[3] = Math.cos(halfH)
+        pose3dArray[4] = 0.0
+        pose3dArray[5] = 0.0
+        pose3dArray[6] = Math.sin(halfH)
+        dataLoggingTelemetry.putDoubleArray("Robot/Pose3d", pose3dArray)
 
         // Publish swerve module states
         val vx = store.state.drive.xVelocityMetersPerSecond
         val vy = store.state.drive.yVelocityMetersPerSecond
         val omega = store.state.drive.angularVelocityRadiansPerSecond
-        val offsets = arrayOf(
-            Pair(0.35, 0.35), Pair(0.35, -0.35),
-            Pair(-0.35, 0.35), Pair(-0.35, -0.35)
-        )
-        val swerveStates = DoubleArray(8)
         for (i in 0..3) {
-            val wvx = vx - omega * offsets[i].second
-            val wvy = vy + omega * offsets[i].first
+            val wvx = vx - omega * SWERVE_OFFSETS[i].second
+            val wvy = vy + omega * SWERVE_OFFSETS[i].first
             swerveStates[i * 2] = Math.atan2(wvy, wvx)
             swerveStates[i * 2 + 1] = Math.hypot(wvx, wvy)
         }
         dataLoggingTelemetry.putDoubleArray("Robot/SwerveStates", swerveStates)
+    }
+
+    companion object {
+        private val SWERVE_OFFSETS = arrayOf(
+            Pair(0.35, 0.35), Pair(0.35, -0.35),
+            Pair(-0.35, 0.35), Pair(-0.35, -0.35)
+        )
     }
 
     /**

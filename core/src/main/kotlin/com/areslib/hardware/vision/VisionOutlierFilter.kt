@@ -57,7 +57,7 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
         val tagPose2d = tagPose3d.toPose2d()
         val dx = tagPose2d.x - robotPose.x
         val dy = tagPose2d.y - robotPose.y
-        val distance = Translation2d(dx, dy).norm
+        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
 
         if (distance > config.maxDistanceMeters) {
             return false
