@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.AnalogInput
-import com.qualcomm.hardware.bosch.BNO055IMU
+import com.qualcomm.robotcore.hardware.IMU
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch
 import com.areslib.state.RobotState
@@ -23,7 +23,7 @@ class AresHardwareTestOpMode : LinearOpMode() {
 
         // 1. REV Hub Hardware
         val revMotor = hardwareMap.get(DcMotorEx::class.java, "revMotor")
-        val revImu = hardwareMap.get(BNO055IMU::class.java, "imu")
+        val revImu = hardwareMap.get(IMU::class.java, "imu")
         
         // Wrap REV components
         val motorIO = FtcMotor(revMotor)

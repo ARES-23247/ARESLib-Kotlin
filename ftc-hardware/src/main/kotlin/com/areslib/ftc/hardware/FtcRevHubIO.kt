@@ -10,12 +10,13 @@ import com.qualcomm.robotcore.hardware.Servo
 import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.DigitalChannel
-import com.qualcomm.hardware.bosch.BNO055IMU
+import com.qualcomm.robotcore.hardware.IMU
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference
 
 class FtcMotor(private val motor: DcMotorEx) : MotorIO {
+    private var encoderOffset = 0.0
+
     init {
         motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
         motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
@@ -40,15 +41,13 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
         get() = motor.velocity
 
     override val position: Double
-        get() = motor.currentPosition.toDouble()
+        get() = motor.currentPosition.toDouble() - encoderOffset
 
     override val currentAmps: Double
         get() = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
 
     override fun resetEncoder() {
-        val currentMode = motor.mode
-        motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
-        motor.mode = currentMode
+        encoderOffset = motor.currentPosition.toDouble()
     }
 }
 
@@ -92,6 +91,8 @@ class FtcCRServo(
  * Power assignments are ignored.
  */
 class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
+    private var encoderOffset = 0.0
+
     override var power: Double
         get() = 0.0
         @Suppress("UNUSED_PARAMETER")
@@ -101,12 +102,10 @@ class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
         get() = motor.velocity
 
     override val position: Double
-        get() = motor.currentPosition.toDouble()
+        get() = motor.currentPosition.toDouble() - encoderOffset
 
     override fun resetEncoder() {
-        val currentMode = motor.mode
-        motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
-        motor.mode = currentMode
+        encoderOffset = motor.currentPosition.toDouble()
     }
 }
 
@@ -175,28 +174,32 @@ class FtcServo(private val servo: Servo) : ServoIO {
         }
 }
 
-class FtcImu(private val imu: BNO055IMU) : ImuIO {
+class FtcImu(private val imu: IMU) : ImuIO {
     private var headingOffset = 0.0
 
     init {
-        val parameters = BNO055IMU.Parameters()
-        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS
+        val orientation = RevHubOrientationOnRobot(
+            RevHubOrientationOnRobot.LogoFacingDirection.UP,
+            RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+        )
+        val parameters = IMU.Parameters(orientation)
         imu.initialize(parameters)
     }
 
     override fun updateInputs(inputs: com.areslib.hardware.ImuInputs) {
-        val angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS)
-        inputs.headingRadians = angles.firstAngle.toDouble() - headingOffset
-        inputs.pitchRadians = angles.secondAngle.toDouble()
-        inputs.rollRadians = angles.thirdAngle.toDouble()
+        val yawPitchRoll = imu.getRobotYawPitchRollAngles()
+        inputs.headingRadians = yawPitchRoll.getYaw(AngleUnit.RADIANS) - headingOffset
+        inputs.pitchRadians = yawPitchRoll.getPitch(AngleUnit.RADIANS)
+        inputs.rollRadians = yawPitchRoll.getRoll(AngleUnit.RADIANS)
         
-        inputs.yawVelocityRadPerSec = 0.0
+        val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
+        inputs.yawVelocityRadPerSec = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
         inputs.timestampMs = System.currentTimeMillis()
     }
 
     override fun resetHeading() {
-        val angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS)
-        headingOffset = angles.firstAngle.toDouble()
+        val yawPitchRoll = imu.getRobotYawPitchRollAngles()
+        headingOffset = yawPitchRoll.getYaw(AngleUnit.RADIANS)
     }
 }
 

@@ -23,6 +23,8 @@ class ARESLibOpMode : LinearOpMode() {
         var currentState = RobotState()
         val actionLogger = com.areslib.action.ActionLogger()
 
+        waitForStart()
+
         try {
             while (opModeIsActive()) {
                 // Read hardware

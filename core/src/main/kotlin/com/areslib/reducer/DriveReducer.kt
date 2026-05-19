@@ -67,6 +67,13 @@ object DriveReducer {
                     zAccelerationG = action.zAccelerationG
                 )
             }
+            is RobotAction.JoystickDriveIntent -> {
+                state.copy(
+                    xVelocityMetersPerSecond = action.targetXVelocity,
+                    yVelocityMetersPerSecond = action.targetYVelocity,
+                    angularVelocityRadiansPerSecond = action.targetAngularVelocity
+                )
+            }
             else -> state
         }
     }

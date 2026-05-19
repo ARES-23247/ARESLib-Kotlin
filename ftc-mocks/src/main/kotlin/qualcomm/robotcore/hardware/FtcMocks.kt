@@ -102,3 +102,13 @@ interface NormalizedColorSensor {
     val normalizedColors: NormalizedRGBA
 }
 
+interface IMU {
+    class Parameters(val hubOrientationOnRobot: com.qualcomm.hardware.rev.RevHubOrientationOnRobot)
+
+    fun initialize(parameters: Parameters): Boolean
+    fun resetYaw()
+    fun getRobotYawPitchRollAngles(): org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
+    fun getRobotAngularVelocity(unit: org.firstinspires.ftc.robotcore.external.navigation.AngleUnit): org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity
+}
+
+
