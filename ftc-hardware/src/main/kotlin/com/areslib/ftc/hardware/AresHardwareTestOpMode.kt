@@ -2,77 +2,58 @@ package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import com.qualcomm.robotcore.hardware.DcMotorEx
-import com.qualcomm.robotcore.hardware.AnalogInput
-import com.qualcomm.robotcore.hardware.IMU
-import com.qualcomm.robotcore.hardware.HardwareMap
-import com.qualcomm.robotcore.hardware.I2cDeviceSynch
-import com.areslib.state.RobotState
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.ftc.FtcAresRobot
 
 /**
- * This integration test maps hardware from all requested systems 
- * (REV Hub, SRS Hub, OctoQuad, and goBILDA Pinpoint) to the immutable Redux state.
+ * Standard TeleOp demonstrating how novice students write code using ARESLib.
+ * All complex Redux dispatches, state tracking, and raw hardware polling
+ * are entirely encapsulated behind clean, intuitive subsystem facades.
  */
 @TeleOp(name = "ARES: Hardware Integration Test", group = "ARES")
 class AresHardwareTestOpMode : LinearOpMode() {
+    
     override fun runOpMode() {
-        telemetry.addData("Status", "Initializing Hardware")
+        telemetry.addData("Status", "Initializing Robot Facade...")
         telemetry.update()
 
-        // 1. REV Hub Hardware
-        val revMotor = hardwareMap.get(DcMotorEx::class.java, "revMotor")
-        val revImu = hardwareMap.get(IMU::class.java, "imu")
+        // Centrally initialize the robot container and all subsystem facades
+        val robot = FtcAresRobot(hardwareMap)
+
+        telemetry.addData("Status", "Initialized. Ready for match!")
+        telemetry.update()
         
-        // Wrap REV components
-        val motorIO = FtcMotor(revMotor)
-        val imuIO = FtcImu(revImu)
-
-        // 2. SRS Hub (via I2C)
-        val srsDevice = hardwareMap.get(I2cDeviceSynch::class.java, "srsHub")
-        val srsHub = SrsHubDriver(srsDevice)
-        srsHub.initialize()
-        val srsAnalog = SrsHubAnalogIO(srsHub, 0)
-
-        // 3. OctoQuad (via I2C)
-        val octoDevice = hardwareMap.get(I2cDeviceSynch::class.java, "octoQuad")
-        val octoQuad = OctoQuadFWv3(octoDevice)
-        octoQuad.initialize()
-        val octoEncoder = OctoQuadEncoderIO(octoQuad, 0)
-
-        // 4. goBILDA Pinpoint (simulated by proxy)
-        // Normally we'd fetch the PinpointDriver class from hardwareMap,
-        // but to keep the hardware abstraction decoupled, we use our proxy.
-        // val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, "pinpoint")
-        // val pinpointIO = PinpointOdometryIO(pinpointDriver)
-
-        telemetry.addData("Status", "Initialized. Waiting for Start")
-        telemetry.update()
         waitForStart()
 
-        val imuInputs = com.areslib.hardware.ImuInputs()
-
         while (opModeIsActive()) {
-            // Update pure state from hardware IO
-            val revMotorPos = motorIO.position
-            val revMotorVel = motorIO.velocity
-            imuIO.updateInputs(imuInputs)
-            val imuHeading = imuInputs.headingRadians
-            val srsVoltage = srsAnalog.voltage
-            val octoPos = octoEncoder.position
-            val octoVel = octoEncoder.velocity
+            // 1. Coordinates sensor reading, Redux updates, and motor command execution in the background
+            robot.update()
 
-            // Map physical telemetry to the immutable state representation
-            // We would normally dispatch an action to a Redux reducer here.
-            // For testing, we just update telemetry.
+            // 2. Simple student-level drive control
+            robot.drive.joystickDrive(
+                x = gamepad1.left_stick_x.toDouble(),
+                y = gamepad1.left_stick_y.toDouble(),
+                rot = gamepad1.right_stick_x.toDouble()
+            )
 
-            telemetry.addData("REV Motor Pos", revMotorPos)
-            telemetry.addData("REV Motor Vel", revMotorVel)
-            telemetry.addData("REV IMU Heading", imuHeading)
-            telemetry.addData("SRS Analog Volts", srsVoltage)
-            telemetry.addData("OctoQuad Enc Pos", octoPos)
-            telemetry.addData("OctoQuad Enc Vel", octoVel)
+            // 3. High-level subsystem interactions
+            if (gamepad1.a) {
+                robot.shooter.spinUp(3500.0) // Automatic state and target RPM updates
+            } else if (gamepad1.b) {
+                robot.shooter.stop()
+            }
+
+            if (gamepad1.x) {
+                robot.intake.deploy()
+            } else if (gamepad1.y) {
+                robot.intake.retract()
+            }
+
+            // 4. Stream automatically processed telemetry values
+            telemetry.addData("Robot Mode", robot.shooter.mode)
+            telemetry.addData("Flywheel RPM", robot.shooter.flywheelRPM)
+            telemetry.addData("Cowl Hood Angle", robot.shooter.cowlAngleDegrees)
+            telemetry.addData("Intake Deployed", robot.intake.isDeployed)
+            telemetry.addData("Odometry X Pose", robot.drive.odometryX)
             telemetry.update()
         }
     }
