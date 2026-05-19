@@ -16,13 +16,44 @@ class VFHPlanner(
     private val sectorWidthRad = 2.0 * PI / numSectors
     private var lastDetourSign = 0.0 // 1.0 = left (pos Y), -1.0 = right (neg Y), 0.0 = none
 
+    private val sectors = DoubleArray(numSectors)
+    private val smoothedSectors = DoubleArray(numSectors)
+    private val tempMergeBuffer = IntArray(numSectors)
+    private val candidatesBuffer = DoubleArray(3)
+
+    private class Valley(maxSectors: Int) {
+        var size: Int = 0
+        val sectorIndices = IntArray(maxSectors)
+
+        fun contains(sector: Int): Boolean {
+            for (i in 0 until size) {
+                if (sectorIndices[i] == sector) return true
+            }
+            return false
+        }
+
+        fun first(): Int = sectorIndices[0]
+        fun last(): Int = sectorIndices[size - 1]
+
+        fun add(sector: Int) {
+            sectorIndices[size++] = sector
+        }
+
+        fun clear() {
+            size = 0
+        }
+    }
+
+    private val valleyPool = Array(numSectors) { Valley(numSectors) }
+    private var valleyCount = 0
+
     /**
      * Compute a safe detour steering heading using Vector Field Histogram (VFH+).
      */
     fun computeDetourHeading(robotPose: Pose2d, targetHeadingRad: Double, obstacles: List<Obstacle>): Double {
         if (obstacles.isEmpty()) return targetHeadingRad
 
-        val sectors = DoubleArray(numSectors)
+        sectors.fill(0.0)
 
         // Step 1: Accumulate obstacle density weights in sector bins
         for (obstacle in obstacles) {
@@ -45,7 +76,7 @@ class VFHPlanner(
         }
 
         // Step 2: Smooth the histogram sector bins to account for robot physical width
-        val smoothedSectors = DoubleArray(numSectors)
+        smoothedSectors.fill(0.0)
         for (i in 0 until numSectors) {
             val prevVal = sectors[(i - 1 + numSectors) % numSectors]
             val currVal = sectors[i]
@@ -53,36 +84,48 @@ class VFHPlanner(
             smoothedSectors[i] = (prevVal + 2.0 * currVal + nextVal) / 4.0
         }
 
-        // Step 3: Find valleys (sectors below threshold)
-        val valleys = mutableListOf<List<Int>>()
-        var currentValley = mutableListOf<Int>()
+        // Step 3: Find valleys (sectors below threshold) using the pooled objects
+        valleyCount = 0
+        var activeValley = valleyPool[valleyCount]
+        activeValley.clear()
 
         for (i in 0 until numSectors) {
             if (smoothedSectors[i] < safetyThreshold) {
-                currentValley.add(i)
+                activeValley.add(i)
             } else {
-                if (currentValley.isNotEmpty()) {
-                    valleys.add(currentValley)
-                    currentValley = mutableListOf()
+                if (activeValley.size > 0) {
+                    valleyCount++
+                    activeValley = valleyPool[valleyCount]
+                    activeValley.clear()
                 }
             }
         }
-        if (currentValley.isNotEmpty()) {
-            valleys.add(currentValley)
+        if (activeValley.size > 0) {
+            valleyCount++
         }
 
         // Handle wrap-around valleys (sector 35 adjacent to sector 0)
-        if (valleys.size > 1 && smoothedSectors[0] < safetyThreshold && smoothedSectors[numSectors - 1] < safetyThreshold) {
-            val lastValley = valleys.last()
-            val firstValley = valleys.first()
+        if (valleyCount > 1 && smoothedSectors[0] < safetyThreshold && smoothedSectors[numSectors - 1] < safetyThreshold) {
+            val lastValley = valleyPool[valleyCount - 1]
+            val firstValley = valleyPool[0]
             if (lastValley.contains(numSectors - 1) && firstValley.contains(0)) {
-                val mergedValley = lastValley + firstValley
-                valleys.removeAt(valleys.size - 1)
-                valleys[0] = mergedValley
+                // Merge lastValley elements BEFORE firstValley elements
+                System.arraycopy(firstValley.sectorIndices, 0, tempMergeBuffer, 0, firstValley.size)
+                val tempSize = firstValley.size
+
+                firstValley.clear()
+                for (i in 0 until lastValley.size) {
+                    firstValley.add(lastValley.sectorIndices[i])
+                }
+                for (i in 0 until tempSize) {
+                    firstValley.add(tempMergeBuffer[i])
+                }
+
+                valleyCount--
             }
         }
 
-        if (valleys.isEmpty()) {
+        if (valleyCount == 0) {
             // No safe path found, fallback to target heading
             return targetHeadingRad
         }
@@ -104,11 +147,12 @@ class VFHPlanner(
             obsProgress + obs.radius + 0.15 > robotProgress
         }
 
-        for (valley in valleys) {
-            val candidates = mutableListOf<Double>()
+        for (vIdx in 0 until valleyCount) {
+            val valley = valleyPool[vIdx]
+            var candidateCount = 0
             val targetSector = (normalizedTargetRad / sectorWidthRad).toInt().coerceIn(0, numSectors - 1)
             if (valley.contains(targetSector)) {
-                candidates.add(normalizedTargetRad)
+                candidatesBuffer[candidateCount++] = normalizedTargetRad
             }
 
             if (valley.size > wideValleySectors) {
@@ -118,20 +162,22 @@ class VFHPlanner(
                 val angleFirst = firstSector * sectorWidthRad + (sectorWidthRad / 2.0)
                 val angleLast = lastSector * sectorWidthRad + (sectorWidthRad / 2.0)
 
-                candidates.add(angleFirst + safetyMarginSectors * sectorWidthRad)
-                candidates.add(angleLast - safetyMarginSectors * sectorWidthRad)
+                candidatesBuffer[candidateCount++] = angleFirst + safetyMarginSectors * sectorWidthRad
+                candidatesBuffer[candidateCount++] = angleLast - safetyMarginSectors * sectorWidthRad
             } else {
                 var sumAngleX = 0.0
                 var sumAngleY = 0.0
-                for (idx in valley) {
+                for (i in 0 until valley.size) {
+                    val idx = valley.sectorIndices[i]
                     val angle = idx * sectorWidthRad + (sectorWidthRad / 2.0)
                     sumAngleX += cos(angle)
                     sumAngleY += sin(angle)
                 }
-                candidates.add(atan2(sumAngleY, sumAngleX))
+                candidatesBuffer[candidateCount++] = atan2(sumAngleY, sumAngleX)
             }
 
-            for (chosenHeading in candidates) {
+            for (cIdx in 0 until candidateCount) {
+                val chosenHeading = candidatesBuffer[cIdx]
                 var diff = abs(chosenHeading - normalizedTargetRad)
                 while (diff > PI) diff = 2.0 * PI - diff
 
