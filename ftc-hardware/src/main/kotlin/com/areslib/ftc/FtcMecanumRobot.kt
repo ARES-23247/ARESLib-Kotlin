@@ -9,6 +9,7 @@ import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.kinematics.MecanumKinematics
 import com.areslib.math.ChassisSpeeds
 import com.areslib.action.RobotAction
+import com.areslib.telemetry.GamepadState
 
 import com.areslib.telemetry.NT4Telemetry
 import com.areslib.telemetry.DataLoggingTelemetry
@@ -42,12 +43,15 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
 
     /**
-     * Coordinated frame update for Mecanum Drivetrain:
-     * 1. Poll physical sensors (Pinpoint, Limelight).
-     * 2. Feed updates into EKF odometry & vision fusion store.
-     * 3. Fetch target joystick velocities, convert to wheel velocities via kinematics, and apply battery voltage scaling.
+     * Coordinated frame update for Mecanum Drivetrain.
+     *
+     * Pass gamepad states to get automatic input logging for replay.
+     * If omitted, everything else is still logged — gamepads are optional.
+     *
+     * @param gamepad1 Optional driver gamepad state (use `gamepad1.toState()`)
+     * @param gamepad2 Optional operator gamepad state (use `gamepad2.toState()`)
      */
-    fun update() {
+    fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
         val timestamp = System.currentTimeMillis()
 
         // 1. Read pinpoint sensors and update the EKF state store
@@ -85,25 +89,27 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         // Apply battery-compensated voltage vectors
         mecanumIO.apply(wheelSpeeds.normalize(1.0), batteryVoltage)
 
-        // 5. Publish to Network Tables & Offline Data Logger automatically
-        publisher.publish(store.state)
+        // 5. Publish EVERYTHING to NT4 + CSV automatically
+        publisher.publish(store.state, gamepad1, gamepad2)
 
-        // 6. Automatic Driver Station local telemetry update if provided
+        // 6. Driver Station local telemetry (human-readable summary)
         if (localTelemetry != null) {
             try {
                 val addDataMethod = localTelemetry.javaClass.getMethod("addData", String::class.java, Any::class.java)
                 val updateMethod = localTelemetry.javaClass.getMethod("update")
 
-                addDataMethod.invoke(localTelemetry, "State FSM Mode", store.state.superstructure.mode.name)
-                addDataMethod.invoke(localTelemetry, "Flywheel RPM", store.state.superstructure.flywheelRPM)
-                addDataMethod.invoke(localTelemetry, "Intake Deployed", store.state.superstructure.intakeActive)
-                addDataMethod.invoke(localTelemetry, "EKF Pose X", store.state.drive.poseEstimator.estimatedPose.x)
-                addDataMethod.invoke(localTelemetry, "EKF Pose Y", store.state.drive.poseEstimator.estimatedPose.y)
-                addDataMethod.invoke(localTelemetry, "Heading Deg", Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians))
+                addDataMethod.invoke(localTelemetry, "Mode", store.state.superstructure.mode.name)
+                addDataMethod.invoke(localTelemetry, "Flywheel", "${store.state.superstructure.flywheelRPM.toInt()} RPM")
+                addDataMethod.invoke(localTelemetry, "Intake", if (store.state.superstructure.intakeActive) "DEPLOYED" else "RETRACTED")
+                addDataMethod.invoke(localTelemetry, "Pose", String.format("(%.2f, %.2f) %.1f°",
+                    store.state.drive.poseEstimator.estimatedPose.x,
+                    store.state.drive.poseEstimator.estimatedPose.y,
+                    Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians)
+                ))
 
                 updateMethod.invoke(localTelemetry)
-            } catch (e: Exception) {
-                // Ignore reflection errors dynamically (e.g. in test/mock envs)
+            } catch (_: Exception) {
+                // Ignore reflection errors in test/mock environments
             }
         }
     }
