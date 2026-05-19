@@ -41,6 +41,16 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putBoolean("Superstructure/Intake_Active", state.superstructure.intakeActive)
         telemetry.putBoolean("Superstructure/Transfer_Active", state.superstructure.transferActive)
         telemetry.putNumber("Superstructure/Elevator_Height", state.superstructure.elevatorHeightMeters)
+        telemetry.putNumber("Superstructure/Inventory", state.superstructure.inventoryCount.toDouble())
+
+        // Detailed sub-states
+        telemetry.putNumber("Superstructure/Flywheel/Velocity", state.superstructure.flywheel.velocityRpm)
+        telemetry.putNumber("Superstructure/Flywheel/TargetVelocity", state.superstructure.flywheel.targetVelocityRpm)
+        telemetry.putNumber("Superstructure/Cowl/Angle", state.superstructure.cowl.angleDegrees)
+        telemetry.putNumber("Superstructure/Cowl/TargetAngle", state.superstructure.cowl.targetAngleDegrees)
+        telemetry.putNumber("Superstructure/Intake/PivotAngle", state.superstructure.intake.pivotAngleDegrees)
+        telemetry.putNumber("Superstructure/Intake/TargetAngle", state.superstructure.intake.targetAngleDegrees)
+        telemetry.putBoolean("Superstructure/Feeder/PieceDetected", state.superstructure.feeder.gamePieceDetected)
 
         // ── Vision ──
         telemetry.putBoolean("Vision/HasTarget", state.vision.hasTarget)
