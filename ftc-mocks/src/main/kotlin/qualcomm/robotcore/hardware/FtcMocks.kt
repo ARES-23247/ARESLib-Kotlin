@@ -6,6 +6,10 @@ interface HardwareMap {
     fun <T> getAll(classOrType: Class<out T>): List<T>
 }
 
+interface VoltageSensor {
+    val voltage: Double
+}
+
 interface DcMotorSimple {
     enum class Direction { FORWARD, REVERSE }
     var direction: Direction
