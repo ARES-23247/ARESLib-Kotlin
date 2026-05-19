@@ -53,7 +53,7 @@ sealed class RobotAction {
         val targetXVelocity: Double,
         val targetYVelocity: Double,
         val targetAngularVelocity: Double,
-        override val timestampMs: Long = System.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 
     // Autonomous Events
@@ -125,27 +125,27 @@ sealed class RobotAction {
     // FRC Marvin 19 Subsystem Actions
     data class SetFlywheelSpeed(
         val rpm: Double,
-        override val timestampMs: Long = System.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 
     data class SetCowlAngle(
         val degrees: Double,
-        override val timestampMs: Long = System.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 
     data class SetIntakePivot(
         val deployed: Boolean,
-        override val timestampMs: Long = System.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 
     data class SetIntakeRollers(
         val speedRps: Double,
-        override val timestampMs: Long = System.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 
     data class SetFeederSpeed(
         val speedRps: Double,
-        override val timestampMs: Long = System.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 
     data class SuperstructureSensorUpdate(
@@ -153,6 +153,6 @@ sealed class RobotAction {
         val cowlAngle: Double,
         val intakeAngle: Double,
         val pieceDetected: Boolean,
-        override val timestampMs: Long = System.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 }
