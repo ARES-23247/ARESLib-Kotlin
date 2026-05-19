@@ -39,58 +39,62 @@ open class ARESMecanumAuto : LinearOpMode() {
         telemetry.addData("Status", "Initialized. Path loaded.")
         telemetry.update()
 
-        waitForStart()
-        
-        val timer = ElapsedTime()
-        var lastTime = 0.0
-        val totalLength = if (path.points.isNotEmpty()) path.points.last().distanceMeters else 0.0
+        try {
+            waitForStart()
 
-        // --- 2. Autonomous Loop ---
-        while (opModeIsActive()) {
-            val currentTime = timer.seconds()
-            val dt = if (currentTime > lastTime) currentTime - lastTime else 0.02
-            lastTime = currentTime
-            
-            // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
-            robot.update()
+            val timer = ElapsedTime()
+            var lastTime = 0.0
+            val totalLength = if (path.points.isNotEmpty()) path.points.last().distanceMeters else 0.0
 
-            // Fetch current fused EKF pose estimate via clean facade
-            val currentPose = robot.drive.odometryPose
-            val currentDistance = currentTime * 0.5 // Progress at 0.5 m/s
+            // --- 2. Autonomous Loop ---
+            while (opModeIsActive()) {
+                val currentTime = timer.seconds()
+                val dt = if (currentTime > lastTime) currentTime - lastTime else 0.02
+                lastTime = currentTime
 
-            if (currentDistance >= totalLength) {
-                break
+                // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
+                robot.update()
+
+                // Fetch current fused EKF pose estimate via clean facade
+                val currentPose = robot.drive.odometryPose
+                val currentDistance = currentTime * 0.5 // Progress at 0.5 m/s
+
+                if (currentDistance >= totalLength) {
+                    break
+                }
+
+                // Get nominal target pose from Path spline
+                val targetState = path.sampleAtDistance(currentDistance)
+
+                // B. Calculate path follower speeds relative to EKF pose
+                val chassisSpeeds = driveController.calculate(
+                    currentPose = currentPose,
+                    targetPose = targetState.pose,
+                    targetVelocityMps = targetState.velocityMps,
+                    targetHeading = targetState.pose.heading,
+                    dtSeconds = dt
+                )
+
+                // C. Command drive facade relative to the calculated velocities
+                // scaling factor 2.0 maps max nominal velocity
+                robot.drive.joystickDrive(
+                    x = chassisSpeeds.vxMetersPerSecond / 2.0,
+                    y = chassisSpeeds.vyMetersPerSecond / 2.0,
+                    rot = chassisSpeeds.omegaRadiansPerSecond / 2.0
+                )
+
+                telemetry.addData("EKF Pose X", currentPose.x)
+                telemetry.addData("EKF Pose Y", currentPose.y)
+                telemetry.addData("Heading Deg", Math.toDegrees(currentPose.heading.radians))
+                telemetry.addData("Target X", targetState.pose.x)
+                telemetry.addData("Target Y", targetState.pose.y)
+                telemetry.update()
             }
-            
-            // Get nominal target pose from Path spline
-            val targetState = path.sampleAtDistance(currentDistance)
 
-            // B. Calculate path follower speeds relative to EKF pose
-            val chassisSpeeds = driveController.calculate(
-                currentPose = currentPose,
-                targetPose = targetState.pose,
-                targetVelocityMps = targetState.velocityMps,
-                targetHeading = targetState.pose.heading,
-                dtSeconds = dt
-            )
-
-            // C. Command drive facade relative to the calculated velocities
-            // scaling factor 2.0 maps max nominal velocity
-            robot.drive.joystickDrive(
-                x = chassisSpeeds.vxMetersPerSecond / 2.0,
-                y = chassisSpeeds.vyMetersPerSecond / 2.0,
-                rot = chassisSpeeds.omegaRadiansPerSecond / 2.0
-            )
-
-            telemetry.addData("EKF Pose X", currentPose.x)
-            telemetry.addData("EKF Pose Y", currentPose.y)
-            telemetry.addData("Heading Deg", Math.toDegrees(currentPose.heading.radians))
-            telemetry.addData("Target X", targetState.pose.x)
-            telemetry.addData("Target Y", targetState.pose.y)
-            telemetry.update()
+            // Clean stop at target
+            robot.drive.joystickDrive(0.0, 0.0, 0.0)
+        } finally {
+            robot.close()
         }
-
-        // C. Clean stop at target
-        robot.drive.joystickDrive(0.0, 0.0, 0.0)
     }
 }

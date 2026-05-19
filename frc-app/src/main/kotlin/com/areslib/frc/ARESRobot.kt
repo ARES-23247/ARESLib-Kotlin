@@ -462,7 +462,7 @@ class ARESRobot : TimedRobot() {
         val cowlSinY = Math.sin(halfCowl)
         val cowlQW = robotQW * cowlCosY
         val cowlQX = -robotQZ * cowlSinY
-        val cowlQY = robotQW * cowlCosY
+        val cowlQY = robotQW * cowlSinY
         val cowlQZ = robotQZ * cowlCosY
         
         val cowlPose3d = doubleArrayOf(
