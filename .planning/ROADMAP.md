@@ -31,7 +31,8 @@
 
 - [x] Phase 72: Unified FRC Marvin 19 Robot Loop (completed 2026-05-18)
 - [x] Phase 73: AdvantageScope 3D Visualizer & Stream (completed 2026-05-18)
-- [ ] Phase 74: FTC Mock Isolation & Deployment Hardening
+- [x] Phase 74: FTC Mock Isolation & Deployment Hardening (completed 2026-05-19)
+- [ ] Phase 74.1: Subsystem Modularity & Student Loop Facade (INSERTED)
 - [ ] Phase 75: FRC Autonomous Match E2E Simulation
 
 ### Phase 72: Unified FRC Marvin 19 Robot Loop
@@ -48,6 +49,12 @@
 ### Phase 74: FTC Mock Isolation & Deployment Hardening
 
 **Goal**: Harden the FTC simulator and app deployment with mock isolation testing.
+**Mode**: Smart Autonomous Discuss
+**Completed**: 2026-05-19
+
+### Phase 74.1: Subsystem Modularity & Student Loop Facade (INSERTED)
+
+**Goal**: Implement a clean vertical-slice subsystem modularity design and an intuitive student-facing loop facade to simplify state, action dispatching, and background telemetry.
 **Mode**: Smart Autonomous Discuss
 
 ### Phase 75: FRC Autonomous Match E2E Simulation
@@ -68,5 +75,6 @@
 | ----------------- | --------- | -------------- | ----------- | ---------- |
 | 72. Unified FRC Marvin 19 Robot Loop | v3.0 | 0/1 | Complete    | 2026-05-18 |
 | 73. AdvantageScope 3D Visualizer & Stream | v3.0 | 1/1 | Complete    | 2026-05-18 |
-| 74. FTC Mock Isolation & Deployment Hardening | v3.0 | 0/1 | Not started | -          |
+| 74. FTC Mock Isolation & Deployment Hardening | v3.0 | 1/1 | Complete    | 2026-05-19 |
+| 74.1 Subsystem Modularity & Student Loop Facade | v3.0 | 0/1 | Not started | -          |
 | 75. FRC Autonomous Match E2E Simulation | v3.0 | 0/1 | Not started | -          |
