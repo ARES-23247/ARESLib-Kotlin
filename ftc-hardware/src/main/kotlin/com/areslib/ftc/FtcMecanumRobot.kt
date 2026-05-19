@@ -10,6 +10,10 @@ import com.areslib.kinematics.MecanumKinematics
 import com.areslib.math.ChassisSpeeds
 import com.areslib.action.RobotAction
 
+import com.areslib.telemetry.NT4Telemetry
+import com.areslib.telemetry.DataLoggingTelemetry
+import com.areslib.telemetry.ARESNetworkStatePublisher
+
 class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
     flName: String = "fl",
@@ -17,8 +21,14 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     blName: String = "bl",
     brName: String = "br",
     pinpointName: String = "pinpoint",
-    limelightName: String = "limelight"
+    limelightName: String = "limelight",
+    private val localTelemetry: Any? = null
 ) : AresRobot() {
+
+    // Telemetry & Network Tables State Publisher
+    private val nt4 = NT4Telemetry()
+    private val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
+    private val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
 
     // 1. Physical Hardware IO & Kinematics Controllers
     private val mecanumIO = MecanumHardwareIO(hardwareMap, flName, frName, blName, brName)
@@ -74,5 +84,34 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
         // Apply battery-compensated voltage vectors
         mecanumIO.apply(wheelSpeeds.normalize(1.0), batteryVoltage)
+
+        // 5. Publish to Network Tables & Offline Data Logger automatically
+        publisher.publish(store.state)
+
+        // 6. Automatic Driver Station local telemetry update if provided
+        if (localTelemetry != null) {
+            try {
+                val addDataMethod = localTelemetry.javaClass.getMethod("addData", String::class.java, Any::class.java)
+                val updateMethod = localTelemetry.javaClass.getMethod("update")
+
+                addDataMethod.invoke(localTelemetry, "State FSM Mode", store.state.superstructure.mode.name)
+                addDataMethod.invoke(localTelemetry, "Flywheel RPM", store.state.superstructure.flywheelRPM)
+                addDataMethod.invoke(localTelemetry, "Intake Deployed", store.state.superstructure.intakeActive)
+                addDataMethod.invoke(localTelemetry, "EKF Pose X", store.state.drive.poseEstimator.estimatedPose.x)
+                addDataMethod.invoke(localTelemetry, "EKF Pose Y", store.state.drive.poseEstimator.estimatedPose.y)
+                addDataMethod.invoke(localTelemetry, "Heading Deg", Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians))
+
+                updateMethod.invoke(localTelemetry)
+            } catch (e: Exception) {
+                // Ignore reflection errors dynamically (e.g. in test/mock envs)
+            }
+        }
+    }
+
+    /**
+     * Gracefully cleans up background logging threads and closes network telemetry.
+     */
+    fun close() {
+        dataLoggingTelemetry.close()
     }
 }
