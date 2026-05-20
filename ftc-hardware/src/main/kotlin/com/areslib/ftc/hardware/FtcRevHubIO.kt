@@ -194,7 +194,7 @@ class FtcImu(private val imu: IMU) : ImuIO {
         
         val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
         inputs.yawVelocityRadPerSec = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-        inputs.timestampMs = System.currentTimeMillis()
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 
     override fun resetHeading() {

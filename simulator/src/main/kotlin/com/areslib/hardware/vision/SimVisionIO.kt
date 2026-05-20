@@ -22,7 +22,7 @@ class SimVisionIO : VisionIO {
             Rotation3d(0.0, 0.0, heading)
         )
         val measurement = VisionMeasurement(
-            timestampMs = System.currentTimeMillis(),
+            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
             targetPose = pose,
             tagId = 1,
             ambiguity = ambiguity

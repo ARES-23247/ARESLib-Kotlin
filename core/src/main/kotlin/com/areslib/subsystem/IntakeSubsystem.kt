@@ -13,17 +13,17 @@ class IntakeSubsystem(private val store: Store) {
         get() = store.state.superstructure.intake.rollerVelocityRps
 
     fun deploy() {
-        val timestamp = System.currentTimeMillis()
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         store.dispatch(RobotAction.SetIntakePivot(deployed = true, timestampMs = timestamp))
     }
 
     fun retract() {
-        val timestamp = System.currentTimeMillis()
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         store.dispatch(RobotAction.SetIntakePivot(deployed = false, timestampMs = timestamp))
     }
 
     fun setRollerSpeed(rps: Double) {
-        val timestamp = System.currentTimeMillis()
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         store.dispatch(RobotAction.SetIntakeRollers(speedRps = rps, timestampMs = timestamp))
     }
 }

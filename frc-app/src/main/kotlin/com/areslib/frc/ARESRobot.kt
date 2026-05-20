@@ -146,7 +146,7 @@ class ARESRobot : TimedRobot() {
                     xMeters = startPoint.pose.x,
                     yMeters = startPoint.pose.y,
                     headingRadians = startPoint.pose.heading.radians,
-                    timestampMs = System.currentTimeMillis()
+                    timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                 ))
             }
         } catch (e: Exception) {

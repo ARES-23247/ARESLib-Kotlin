@@ -352,6 +352,6 @@ class SrsHubPinpointOdometry(
         inputs.velX = srsHub.getI2cOdometryVelX(port) / 1000.0
         inputs.velY = srsHub.getI2cOdometryVelY(port) / 1000.0
         inputs.headingVelocity = srsHub.getI2cOdometryHeadingVel(port)
-        inputs.timestampMs = System.currentTimeMillis()
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }

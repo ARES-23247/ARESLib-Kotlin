@@ -32,7 +32,7 @@ class FtcVisionPortalIO(private val aprilTagProcessor: AprilTagProcessor) : Visi
                 )
                 
                 VisionMeasurement(
-                    timestampMs = System.currentTimeMillis(),
+                    timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
                     targetPose = poseMeters,
                     tagId = detection.id,
                     ambiguity = 0.0

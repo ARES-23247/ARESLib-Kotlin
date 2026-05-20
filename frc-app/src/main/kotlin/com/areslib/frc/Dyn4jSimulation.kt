@@ -118,7 +118,7 @@ class Dyn4jSimulation(seed: Long = 42L) {
      */
     fun step(state: RobotState, dt: Double): List<RobotAction> {
         val actions = mutableListOf<RobotAction>()
-        val timestamp = System.currentTimeMillis()
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
 
         if (dt <= 0.0) return actions
 
@@ -217,7 +217,7 @@ class Dyn4jSimulation(seed: Long = 42L) {
             xMeters = t.translationX,
             yMeters = t.translationY,
             headingRadians = t.rotationAngle,
-            timestampMs = System.currentTimeMillis()
+            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         )
     }
 

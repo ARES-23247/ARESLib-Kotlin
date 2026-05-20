@@ -13,7 +13,7 @@ class VisionHardware(
         if (inputs.measurements.isNotEmpty()) {
             val action = RobotAction.VisionMeasurementsReceived(
                 measurements = inputs.measurements.toList(), // Defensive copy
-                timestampMs = System.currentTimeMillis()
+                timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
             )
             // Clear inputs after dispatch to prevent duplicate dispatches
             inputs.measurements = emptyList()

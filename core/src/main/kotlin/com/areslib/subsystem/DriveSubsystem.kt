@@ -31,7 +31,7 @@ class DriveSubsystem(private val store: Store) {
             targetXVelocity = x,
             targetYVelocity = y,
             targetAngularVelocity = rot,
-            timestampMs = System.currentTimeMillis()
+            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         ))
     }
 }

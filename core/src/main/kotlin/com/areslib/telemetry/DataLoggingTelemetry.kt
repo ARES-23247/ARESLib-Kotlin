@@ -48,7 +48,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
 
     override fun update() {
         // Inject current timestamp for chronological analysis
-        currentFrame["TimestampMs"] = System.currentTimeMillis()
+        currentFrame["TimestampMs"] = com.areslib.util.RobotClock.currentTimeMillis()
         
         // Log the complete frame asynchronously
         logger.logFrame(HashMap(currentFrame))

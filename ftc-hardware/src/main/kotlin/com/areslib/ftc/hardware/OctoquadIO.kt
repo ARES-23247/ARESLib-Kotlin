@@ -201,6 +201,6 @@ class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
         inputs.velX = lastData.velX_mmS / 1000.0
         inputs.velY = lastData.velY_mmS / 1000.0
         inputs.headingVelocity = lastData.velHeading_radS.toDouble()
-        inputs.timestampMs = System.currentTimeMillis()
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }

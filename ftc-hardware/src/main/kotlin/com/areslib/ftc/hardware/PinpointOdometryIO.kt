@@ -32,6 +32,6 @@ class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO {
         inputs.velX = driver.velX
         inputs.velY = driver.velY
         inputs.headingVelocity = driver.headingVelocity
-        inputs.timestampMs = System.currentTimeMillis()
+        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }
