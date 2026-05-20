@@ -65,4 +65,61 @@ class MecanumHardwareIOTest {
         assertEquals(-0.5, bl.currentPower, 0.001)
         assertEquals(-1.0, br.currentPower, 0.001)
     }
+
+    @Test
+    fun `apply with voltage compensated slew rate limiting`() {
+        val fl = MockDcMotorEx()
+        val fr = MockDcMotorEx()
+        val bl = MockDcMotorEx()
+        val br = MockDcMotorEx()
+        
+        val hardwareMap = object : HardwareMap {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
+                return when(deviceName) {
+                    "fl" -> fl as T
+                    "fr" -> fr as T
+                    "bl" -> bl as T
+                    "br" -> br as T
+                    else -> throw IllegalArgumentException()
+                }
+            }
+
+            override fun <T> getAll(classOrType: Class<out T>): List<T> {
+                return emptyList()
+            }
+        }
+        
+        val io = MecanumHardwareIO(hardwareMap, maxWheelSpeedMetersPerSecond = 1.0)
+        
+        // Enable voltage-compensated slew rate limit
+        io.slewRateLimit = 2.0
+        io.enableVoltageCompensatedSlew = true
+        
+        // 1. First call initializes the last value of slew rate limiters
+        io.apply(MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0), batteryVolts = 12.0, dtSeconds = 0.02)
+        
+        // 2. Accelerate: target is positive (1.0). Battery is sagging heavily to 9.75V
+        // scale = (9.75 - 7.5) / (12.0 - 7.5) = 2.25 / 4.5 = 0.5.
+        // Positive slew limit = 2.0 * 0.5 = 1.0 power units per second.
+        // At dt = 0.5 seconds, max positive change = 1.0 * 0.5 = 0.5 units.
+        // Target is 1.0. With start value = 0.0, the power should be limited to 0.0 + 0.5 = 0.5.
+        io.apply(MecanumWheelSpeeds(1.0, 1.0, 1.0, 1.0), batteryVolts = 9.75, dtSeconds = 0.5)
+        
+        assertEquals(0.5, fl.currentPower, 0.001)
+        assertEquals(0.5, fr.currentPower, 0.001)
+        assertEquals(0.5, bl.currentPower, 0.001)
+        assertEquals(0.5, br.currentPower, 0.001)
+        
+        // 3. Decelerate: target is negative (-1.0). Battery is still 9.75V
+        // Negative slew limit remains unthrottled at -2.0.
+        // At dt = 0.5 seconds, max negative change = -2.0 * 0.5 = -1.0.
+        // With start value = 0.5, the power should be allowed to drop to 0.5 - 1.0 = -0.5.
+        io.apply(MecanumWheelSpeeds(-1.0, -1.0, -1.0, -1.0), batteryVolts = 9.75, dtSeconds = 0.5)
+        
+        assertEquals(-0.5, fl.currentPower, 0.001)
+        assertEquals(-0.5, fr.currentPower, 0.001)
+        assertEquals(-0.5, bl.currentPower, 0.001)
+        assertEquals(-0.5, br.currentPower, 0.001)
+    }
 }

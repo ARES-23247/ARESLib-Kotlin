@@ -4,6 +4,7 @@ import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.test.assertSame
+import kotlin.test.assertEquals
 
 class ARESDataLoggerTest {
 
@@ -73,5 +74,44 @@ class ARESDataLoggerTest {
         logger.recycleMap(map2)
         
         logger.stop()
+    }
+
+    @Test
+    fun testDataLoggingThrottle() {
+        val telemetry = DataLoggingTelemetry()
+        telemetry.minLogIntervalMs = 50L // 50ms interval
+
+        // Log 5 times in rapid succession (dt ~ 0ms)
+        for (i in 1..5) {
+            telemetry.putNumber("Test/Throttle", i.toDouble())
+            telemetry.update()
+        }
+
+        // Wait 60ms to exceed the interval and log once more
+        Thread.sleep(60)
+        telemetry.putNumber("Test/Throttle", 100.0)
+        telemetry.update()
+
+        // Close to flush
+        telemetry.close()
+
+        val logsDir = File("./logs/")
+        assertTrue(logsDir.exists(), "Logs directory should exist")
+
+        val logFiles = logsDir.listFiles { _, name -> name.startsWith("ares_log_") && name.endsWith(".csv") }
+        assertTrue(logFiles != null && logFiles.isNotEmpty())
+
+        val latestLog = logFiles.maxByOrNull { it.lastModified() }!!
+        val lines = latestLog.readLines()
+
+        // We expect:
+        // Line 0: Header
+        // Line 1: First frame (written at t = 0)
+        // Line 2: Second frame (written after sleep of 60ms)
+        // Total lines should be exactly 3
+        assertEquals(3, lines.size, "Logging throttle should restrict output to exactly 2 frames")
+
+        // Cleanup
+        latestLog.delete()
     }
 }

@@ -12,6 +12,14 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     private val logger = ARESDataLogger()
     private val currentFrame = ConcurrentHashMap<String, Any>()
 
+    /**
+     * The minimum time interval in milliseconds between file-based logging writes.
+     * Defaults to 20ms (maximum 50Hz logging rate) to prevent storage and CPU congestion.
+     */
+    var minLogIntervalMs: Long = 20L
+    
+    private var lastLogTimeMs = 0L
+
     override fun putNumber(key: String, value: Double) {
         currentFrame[key] = value
         ntTelemetry?.putNumber(key, value)
@@ -47,15 +55,19 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     }
 
     override fun update() {
-        // Inject current timestamp for chronological analysis
-        currentFrame["TimestampMs"] = com.areslib.util.RobotClock.currentTimeMillis()
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
         
-        // Log the complete frame asynchronously using the GC-free map pool
-        val map = logger.obtainMap()
-        map.putAll(currentFrame)
-        logger.logFrame(map)
+        // Log the complete frame asynchronously using the GC-free map pool only if interval elapsed
+        if (now - lastLogTimeMs >= minLogIntervalMs) {
+            lastLogTimeMs = now
+            currentFrame["TimestampMs"] = now
+            
+            val map = logger.obtainMap()
+            map.putAll(currentFrame)
+            logger.logFrame(map)
+        }
         
-        // Forward the update trigger to live streaming network tables
+        // Forward the update trigger to live streaming network tables (always unthrottled)
         ntTelemetry?.update()
         
         // We do not clear the frame completely because standard telemetry backends

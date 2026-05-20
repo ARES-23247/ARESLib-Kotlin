@@ -75,6 +75,25 @@ class Costmap(
     }
 
     /**
+     * Checks if a grid cell coordinate is occupied by a raw obstacle.
+     */
+    fun isCellOccupied(cellX: Int, cellY: Int): Boolean {
+        if (cellX !in 0 until widthCells || cellY !in 0 until heightCells) {
+            return true // Out-of-bounds is considered occupied
+        }
+        return grid[cellY * widthCells + cellX]
+    }
+
+    /**
+     * Checks if a field-relative coordinate is occupied by a raw obstacle.
+     */
+    fun isOccupied(x: Double, y: Double): Boolean {
+        val cellX = ((x - origin.x) / resolutionMeters).roundToInt()
+        val cellY = ((y - origin.y) / resolutionMeters).roundToInt()
+        return isCellOccupied(cellX, cellY)
+    }
+
+    /**
      * Inflates the obstacle boundaries by the robot's physical bumper radius.
      * Prevents any paths from running the chassis edges directly into structures.
      * @param robotRadiusMeters Radius of the robot bumper boundary.

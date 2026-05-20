@@ -51,6 +51,12 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             }
         }
 
+    /**
+     * Set to true to dynamically scale the positive slew rate limit (acceleration)
+     * downwards during battery voltage sag to prevent brownout.
+     */
+    var enableVoltageCompensatedSlew: Boolean = false
+
     init {
         // Typical mecanum configuration requires right side to be reversed
         frontLeft.direction = DcMotorSimple.Direction.FORWARD
@@ -75,6 +81,21 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         var frPower = ((speeds.frontRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
         var blPower = ((speeds.backLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
         var brPower = ((speeds.backRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+
+        // Adjust positive slew rate limits based on battery voltage if enabled
+        val baseLimit = slewRateLimit
+        if (baseLimit != null) {
+            val posLimit = if (enableVoltageCompensatedSlew) {
+                val scale = ((actualVolts - 7.5) / (12.0 - 7.5)).coerceIn(0.2, 1.0)
+                baseLimit * scale
+            } else {
+                baseLimit
+            }
+            flLimiter?.setRateLimits(posLimit, -baseLimit)
+            frLimiter?.setRateLimits(posLimit, -baseLimit)
+            blLimiter?.setRateLimits(posLimit, -baseLimit)
+            brLimiter?.setRateLimits(posLimit, -baseLimit)
+        }
 
         // Apply slew rate limiters if configured
         flLimiter?.let { flPower = it.calculate(flPower, dtSeconds) }
