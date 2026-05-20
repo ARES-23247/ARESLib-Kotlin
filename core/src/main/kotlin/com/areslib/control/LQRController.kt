@@ -3,9 +3,17 @@ package com.areslib.control
 import kotlin.math.abs
 
 /**
- * World-class Discrete-Time State-Space Linear-Quadratic Regulator (LQR)
- * and Discrete Kalman Filter (LQE) Observer.
- * Incorporates input saturation limits and slew-rate acceleration bounds for motor safety.
+ * A championship-grade Discrete-Time State-Space **Linear-Quadratic Regulator (LQR)**
+ * coupled with a Discrete Kalman Filter (**LQE State Observer**).
+ *
+ * This controller tracks multi-variable systems optimally by evaluating feedback gain matrices
+ * resolved from dynamic value-iteration solutions of the Discrete-Time Algebraic Riccati Equation (DARE):
+ * $$u_k = -K (x_k - x_{\text{ref}, k})$$
+ *
+ * It incorporates:
+ * - A full state Kalman observer to estimate unmeasured states (such as estimating joint velocities from raw encoder positions).
+ * - Control input voltage saturation clipping to prevent motor burnouts.
+ * - Optional slew-rate limits to enforce strict acceleration constraints.
  */
 class LQRController(
     val numStates: Int,

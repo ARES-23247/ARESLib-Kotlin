@@ -10,7 +10,13 @@ data class PoseHistoryEntry(
 
 /**
  * Immutable chronological state representation of the Pose Estimator.
- * Avoids Android ART GC overhead by using small pre-sized lists and primitive-backed matrices.
+ *
+ * Designed to prevent high-frequency garbage collection overhead in Android ART
+ * and RoboRIO runtimes by utilizing small, pre-allocated lists and primitive-backed matrices.
+ *
+ * @property estimatedPose The current best estimate of the robot's 2D field-centric position and heading.
+ * @property covariance The 3x3 error covariance matrix representing estimate uncertainty.
+ * @property history The rolling history of past state estimations used for retroactive latency compensation.
  */
 data class PoseEstimatorState(
     val estimatedPose: Pose2d = Pose2d(),
@@ -18,6 +24,15 @@ data class PoseEstimatorState(
     val history: List<PoseHistoryEntry> = emptyList() // Max size typically ~50
 )
 
+/**
+ * A world-class, high-fidelity Extended Kalman Filter (EKF) state estimator.
+ *
+ * This estimator fuses high-frequency wheel odometry with asynchronous, latency-delayed 3D vision measurements
+ * (such as multi-tag Perspective-n-Point observations). It incorporates:
+ * - Dynamic gyro-rate slip covariance scaling to adapt to wheel slippage.
+ * - Retroactive observation rewinding to compensate for vision processing latency.
+ * - Statistical 3-DOF Mahalanobis Distance outlier rejection to handle erroneous camera targets.
+ */
 object PoseEstimator {
     private const val MAX_HISTORY_SIZE = 50
 
@@ -37,8 +52,21 @@ object PoseEstimator {
     )
 
     /**
-     * Integrates a new odometry delta into the state.
-     * Call this every time wheel odometry updates.
+     * Integrates a new high-frequency wheel odometry observation delta into the state estimator.
+     *
+     * Processes state propagation ($x_{k} = f(x_{k-1}, u)$) and covariance updates. If the robot
+     * experiences excessive roll/pitch (beaching) or high wheel slippage (scaled dynamically by gyro rate mismatch),
+     * the system expands the process noise covariance matrix ($Q$) to discount wheel inputs.
+     *
+     * @param state The current state estimator state.
+     * @param timestampMs The system timestamp in milliseconds when the sensors were read.
+     * @param deltaTranslation The relative change in longitudinal and lateral distance since the last update.
+     * @param deltaHeading The relative change in orientation since the last update.
+     * @param pitchDegrees Current pitch tilt of the chassis in degrees.
+     * @param rollDegrees Current roll tilt of the chassis in degrees.
+     * @param gyroRateRadPerSec The angular velocity reading from the IMU in radians per second.
+     * @param dtSeconds Elapsed time since the last frame update.
+     * @return The updated [PoseEstimatorState] with new estimated pose, covariance, and rolling history entry.
      */
     fun addOdometryObservation(
         state: PoseEstimatorState,
@@ -92,8 +120,23 @@ object PoseEstimator {
     }
 
     /**
-     * Fuses a vision measurement by retroactively calculating its effect 
-     * at its exact timestamp, then re-integrating subsequent odometry.
+     * Fuses an asynchronous vision pose observation into the Extended Kalman Filter.
+     *
+     * Compensates for camera-to-system latency by searching the chronological [PoseHistoryEntry] list,
+     * applying the measurement correction retroactively at the exact historical timestamp, and then
+     * re-propagating subsequent odometry observations up to the current frame.
+     *
+     * Vision noise covariance $R$ scales quadratically with physical distance to targets, ensuring distant
+     * noisy targets are weighted less than closer ones. An optional 3-DOF statistical Mahalanobis Distance
+     * outlier filter rejects anomalous measurements (such as background reflections or bad tag decodes).
+     *
+     * @param state The current state estimator state.
+     * @param measurement The vision measurement packet, including coordinates, target tag ID, and latency.
+     * @param visionStdDevs Standard deviation [Vector3] (x, y, heading) representing measurement baseline noise.
+     * @param numTags The number of tags visible in the frame (vision covariance scales by 1/sqrt(numTags)).
+     * @param useMahalanobisRejection Enables statistical Mahalanobis distance outlier filtering.
+     * @param mahalanobisThreshold Threshold beyond which vision measurements are rejected as outliers.
+     * @return The updated [PoseEstimatorState] with new estimated pose, corrected covariance, and re-integrated history.
      */
     fun addVisionMeasurement(
         state: PoseEstimatorState,

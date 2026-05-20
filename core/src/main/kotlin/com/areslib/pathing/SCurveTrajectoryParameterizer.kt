@@ -9,9 +9,15 @@ import kotlin.math.hypot
 import kotlin.math.sin
 
 /**
- * Jerk-limited S-Curve Trajectory Parameterizer.
- * Generates smooth velocity profiles along waypoints, enforcing maximum velocity,
- * acceleration, and jerk limits, plus lateral centripetal acceleration caps.
+ * A high-performance **Jerk-Limited S-Curve Trajectory Parameterizer**.
+ *
+ * Translates static spatial waypoints into a dynamically optimized [Path]. It designs a smooth velocity
+ * profile along the trajectory path by executing sequential forward and backward integration passes to enforce:
+ * - Maximum velocity limits ($V_{\text{max}}$).
+ * - Maximum forward/backward acceleration limits ($A_{\text{max}}$).
+ * - Maximum jerk limits ($J_{\text{max}}$) to prevent sharp torque transitions, wheel slippage, and chassis rocking.
+ * - Local centripetal lateral acceleration boundaries ($V_{\text{limit}} = \sqrt{a_{\text{centripetal}} / |\kappa|}$)
+ *   along curved path segments to prevent tipping or sliding.
  */
 object SCurveTrajectoryParameterizer {
 

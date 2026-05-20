@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    `maven-publish`
 }
 
 group = "com.areslib"
@@ -24,4 +25,15 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            groupId = "com.areslib"
+            artifactId = "ftc-hardware"
+            version = "1.0-SNAPSHOT"
+        }
+    }
 }

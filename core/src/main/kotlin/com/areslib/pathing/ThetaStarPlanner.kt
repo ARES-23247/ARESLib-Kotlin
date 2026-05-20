@@ -5,8 +5,14 @@ import java.util.PriorityQueue
 import kotlin.math.roundToInt
 
 /**
- * Any-angle Theta* pathfinder.
- * Computes optimal, grid-snap-free global paths around obstacles.
+ * A state-of-the-art any-angle global pathfinder implementing the **Theta\*** path planning algorithm.
+ *
+ * Traditional A* restricts paths to grid lines, generating jagged, artificial zigzag patterns.
+ * Theta* bypasses these restrictions by performing a high-speed Bresenham line-of-sight check during
+ * neighbor expansion. If a direct line-of-sight exists between a candidate node's parent and a neighbor,
+ * the path skips the candidate, linking the neighbor directly to the parent.
+ *
+ * This results in mathematically optimal, straight, grid-snap-free global paths around costmap obstacles.
  */
 object ThetaStarPlanner {
 

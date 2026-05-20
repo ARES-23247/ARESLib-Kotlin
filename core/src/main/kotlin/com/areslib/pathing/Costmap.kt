@@ -4,8 +4,17 @@ import com.areslib.math.Translation2d
 import kotlin.math.roundToInt
 
 /**
- * High-performance 2D occupancy grid costmap.
- * Supports static obstacle mapping, inflation radii, and dynamic dynamic inserts.
+ * A high-performance 2D occupancy grid costmap for global robot navigation.
+ *
+ * Exposes a field grid model designed for fast obstacle intersection tests and dynamic updates.
+ * Features circular bumper radius obstacle inflation to prevent the robot boundary from clipping
+ * walls or structural field corners. Uses a single 1D primitive array backing internally to avoid
+ * multi-dimensional index pointer dereference overhead and dynamic allocations during execution.
+ *
+ * @property widthMeters Total width of the field in meters. Defaults to `16.0`.
+ * @property heightMeters Total height of the field in meters. Defaults to `8.0`.
+ * @property resolutionMeters Grid cell size resolution in meters. Defaults to `0.1` (10cm).
+ * @property origin Field-relative translation coordinate mapping to the grid's top-left cell.
  */
 class Costmap(
     val widthMeters: Double = 16.0,
