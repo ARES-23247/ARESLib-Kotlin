@@ -1,62 +1,94 @@
-<!-- GSD:project-start source:PROJECT.md -->
-## Project
+# ARESLib-Kotlin: AI & Developer Guidelines
 
-**ARESLib-Kotlin**
+This document serves as the absolute source of truth for repository structure, building, testing, and coding standards. AI agents and developers must strictly adhere to these directives.
 
-ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library built with Kotlin 1.9+. It provides a highly performant, functional, and immutable state-driven core. By leveraging a Redux-style state store and an "IO Layer" pattern, it fully decouples pure control logic (such as Swerve, Mecanum, and Differential kinematics, and PathPlanner trajectory following) from hardware SDKs, ensuring 100% offline testability.
+---
 
-**Core Value:** 100% pure, immutable, and testable control logic completely isolated from hardware SDKs, allowing the exact same mathematical core to run flawlessly on both FTC Control Hubs and FRC RoboRIOs.
+## 1. Project Overview & Architecture
 
-### Constraints
+`ARESLib-Kotlin` is a high-performance, functional, cross-platform (FTC and FRC) robotics library. The codebase is designed around two core principles: **Immutable State Representation** (Redux-style flow) and **Decoupled Hardware Interfaces** (IO Layer pattern).
 
-- **Architecture**: Redux-style — State must be immutable and transitioned strictly via Actions and pure Reducers.
-- **Garbage Collection**: Android ART GC constraints — Avoid heavy allocations in `opModeIsActive()` or `robotPeriodic()`.
-- **Cross-Platform**: Code must build and run on both Android (FTC) and RoboRIO (FRC).
-- **Tooling**: Pure data struct serialization for AdvantageScope rather than annotation generation.
-<!-- GSD:project-end -->
+```mermaid
+graph TD
+    A[Driver Input / Gamepads] -->|Joystick Drive Intent| B[Mecanum / Swerve Facades]
+    B -->|Dispatch Action| C[Store / State Reducer]
+    C -->|Calculate Kinematics| D[Kinematics & Control Controllers]
+    D -->|Voltage Command| E[Hardware IO Layer]
+    E -->|Write| F[Physical Motors / Mocks]
+    F -->|Read Sensors| G[Pinpoint / Gyro / Vision IO]
+    G -->|Dispatch Observation| C
+```
 
-<!-- GSD:stack-start source:STACK.md -->
-## Technology Stack
+### Core Architecture Constraints:
+1. **Redux Store Architecture**: 
+   * **State**: The `RobotState` and its sub-states (`DriveState`, `SuperstructureState`, etc.) are 100% immutable data classes.
+   * **Actions**: All state updates occur by dispatching `RobotAction` objects.
+   * **Reducers**: State transitions are handled exclusively through pure, deterministic reducer functions (e.g., `rootReducer`).
+2. **Unified Simulation Clock**:
+   * **CRITICAL**: Never call `System.currentTimeMillis()` or `System.nanoTime()` inside library code.
+   * Always use `com.areslib.util.RobotClock.currentTimeMillis()` to ensure that simulation logs and replay runs are perfectly deterministic and free from wall-clock drift.
+3. **Android/RoboRIO GC Allocation Budget**:
+   * Drivetrain update cycles, state-space controller loops, and pathfinders execute at high frequencies (50Hz - 100Hz).
+   * **CRITICAL**: Object allocations are prohibited inside hot paths (e.g. `update()`, trajectory sampling, VFH steering loops). 
+   * Always use pre-allocated buffers, primitive types, and object pools (like `Valley` pools in `VFHPlanner`) to maintain a zero-allocation footprint.
+4. **Decoupled Hardware IO Layer**:
+   * All hardware interactions are abstracted through thin IO interfaces (e.g. `MecanumHardwareIO`, `PinpointIO`).
+   * The actual implementation is split between physical SDK implementations (`ftc-hardware/`) and robust mock components (`ftc-mocks/`), enabling 100% offline desktop-level simulation.
 
-Technology stack not yet documented. Will populate after codebase mapping or first phase.
-<!-- GSD:stack-end -->
+---
 
-<!-- GSD:conventions-start source:CONVENTIONS.md -->
-## Conventions
+## 2. Directory Structure
 
-Conventions not yet established. Will populate as patterns emerge during development.
-<!-- GSD:conventions-end -->
+* **`core/`**: Pure mathematical, planning, and control logic. Fully decoupled from FRC and FTC SDKs.
+  * `src/main/kotlin/com/areslib/state/`: Immutable Redux state definitions.
+  * `src/main/kotlin/com/areslib/control/`: DARE-converged LQR controllers, Kalman observers, gravity feedforwards.
+  * `src/main/kotlin/com/areslib/math/`: EKF localization, Mahalanobis outlier filtering, geometry wrappers.
+  * `src/main/kotlin/com/areslib/pathing/`: Theta* any-angle pathfinders, costmap inflation, jerk-limited S-curve generators, and VFH+.
+  * `src/main/kotlin/com/areslib/subsystem/`: Subsystem facades and Ares robot definitions.
+* **`ftc-hardware/`**: FTC-specific hardware wrapping, GoBilda Pinpoint and Limelight integration, and the student-facing Mecanum robot facade.
+* **`ftc-mocks/`**: Stubbed, light implementation of Qualcomm and external FTC APIs, enabling core compilation and desktop test executions without Android hardware.
+* **`frc-app/`**: FRC-specific kinematics, Swerve Facades, and WPILib adapters.
+* **`simulator/`**: Dynamic physics simulator and dynamic visualizers.
 
-<!-- GSD:architecture-start source:ARCHITECTURE.md -->
-## Architecture
+---
 
-Architecture not yet mapped. Follow existing patterns found in the codebase.
-<!-- GSD:architecture-end -->
+## 3. Build & Test Commands
 
-<!-- GSD:skills-start source:skills/ -->
-## Project Skills
+Always default to using the local Gradle wrapper (`gradlew.bat` on Windows, `./gradlew` on Linux/WSL2).
 
-No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, `.github/skills/`, or `.codex/skills/` with a `SKILL.md` index file.
-<!-- GSD:skills-end -->
+### Standard Development Commands:
+* **Compile Kotlin Code**:
+  ```powershell
+  .\gradlew.bat compileKotlin compileTestKotlin
+  ```
+* **Run Entire Test Suite**:
+  ```powershell
+  .\gradlew.bat test
+  ```
+* **Run Specific Module Tests**:
+  ```powershell
+  .\gradlew.bat :core:test
+  .\gradlew.bat :ftc-hardware:test
+  ```
+* **Publish to Local Maven Repository (Transitive Dependencies Packaged)**:
+  ```powershell
+  .\gradlew.bat publishToMavenLocal
+  ```
+* **Clean Build Cache**:
+  ```powershell
+  .\gradlew.bat clean build
+  ```
 
-<!-- GSD:workflow-start source:GSD defaults -->
-## GSD Workflow Enforcement
+---
 
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+## 4. Coding Conventions
 
-Use these entry points:
-- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd-debug` for investigation and bug fixing
-- `/gsd-execute-phase` for planned phase work
-
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
-
-
-
-<!-- GSD:profile-start -->
-## Developer Profile
-
-> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
+1. **Kotlin Features**:
+   * Leverage Kotlin DSLs for student configuration: `aresRobot { ... }` and `ftcMecanumRobot(hardwareMap) { ... }`.
+   * Use trailing lambdas and functional programming idioms.
+2. **KDoc API Documentation**:
+   * All public classes, parameters, facades, and mathematical algorithms must be documented using descriptive inline KDoc formatting.
+   * Document specific math equations, coordinate directions, positive/negative rotations, and expected physical units (meters, radians, seconds).
+3. **Redux Reducer Safety**:
+   * Reducer logic must be pure. No side-effects, I/O calls, or clock calls inside reducers.
+   * Use `.copy()` on state data classes to transition values.
