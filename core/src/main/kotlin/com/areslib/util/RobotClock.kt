@@ -25,6 +25,13 @@ object RobotClock {
     }
 
     /**
+     * Helper specifically for E2E tests using setMockTimeMs naming convention.
+     */
+    fun setMockTimeMs(timeMs: Long) {
+        useMockTime(timeMs)
+    }
+
+    /**
      * Revert the global clock to real-time system clock operation.
      */
     fun useSystemTime() {
