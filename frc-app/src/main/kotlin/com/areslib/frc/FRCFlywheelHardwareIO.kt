@@ -24,12 +24,25 @@ class FRCFlywheelHardwareIO(
         // Configure followers as opposed to their respective masters
         leftFollower.setControl(Follower(leftMaster.deviceID, true))
         rightFollower.setControl(Follower(rightMaster.deviceID, true))
-        
-        // Enforce basic standard current limiting to protect FRC superstructures
+
+        // Enforce exact physical configurations matching SystemConstants.java
         val config = com.ctre.phoenix6.configs.TalonFXConfiguration()
-        config.CurrentLimits.StatorCurrentLimit = 40.0
+        config.Slot0.kP = 0.5
+        config.Slot0.kI = 2.0
+        config.Slot0.kD = 0.0
+        config.Slot0.kV = 0.12 // 12.0 / 100.0 (Max speed: 6000 RPM / 60 = 100 RPS)
+
+        config.MotorOutput.NeutralMode = com.ctre.phoenix6.signals.NeutralModeValue.Coast
+        config.MotorOutput.Inverted = com.ctre.phoenix6.signals.InvertedValue.CounterClockwise_Positive
+
+        config.Feedback.SensorToMechanismRatio = 1.0
+
+        config.Voltage.PeakReverseVoltage = 0.0 // Software lock reversal of flywheel
+        config.CurrentLimits.SupplyCurrentLimitEnable = true
+        config.CurrentLimits.SupplyCurrentLimit = 70.0
         config.CurrentLimits.StatorCurrentLimitEnable = true
-        
+        config.CurrentLimits.StatorCurrentLimit = 120.0
+
         leftMaster.configurator.apply(config)
         leftFollower.configurator.apply(config)
         rightMaster.configurator.apply(config)

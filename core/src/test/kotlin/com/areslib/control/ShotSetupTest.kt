@@ -19,25 +19,30 @@ class ShotSetupTest {
         val result = ShotResult()
         ShotSetup.calculate(robotPose, speeds, target, result)
         
-        // Since the shooter is offset by -0.25m along X:
-        // Compensated pos: X = 0.0, heading = 0.0
-        // Shooter pos: X = -0.25, Y = 0.0
+        // Since the shooter is offset by -0.044704 along X, -0.055626 along Y:
+        // Compensated pos: X = 0.0, Y = 0.0, heading = 0.0
+        // Shooter pos: X = -0.044704, Y = -0.055626
         // Target is at X = 4.0, Y = 0.0
-        // Aim vector from shooter to target: dx = 4.25, dy = 0.0
-        // Distance should be exactly 4.25
-        assertEquals(4.25, result.aimDistanceMeters, 1e-6)
+        // Aim vector from shooter to target: dx = 4.044704, dy = 0.055626
+        // Distance should be hypot(4.044704, 0.055626) = 4.0450865
+        val expectedDistance = hypot(4.044704, 0.055626)
+        assertEquals(expectedDistance, result.aimDistanceMeters, 1e-6)
         
-        // Aim angle is 0.0 (atan2(0, 4.25))
-        assertEquals(0.0, result.aimAngleRad, 1e-6)
+        // Aim angle is atan2(0.055626, 4.044704)
+        val expectedAimAngle = atan2(0.055626, 4.044704)
+        assertEquals(expectedAimAngle, result.aimAngleRad, 1e-6)
         
-        // Robot target heading should be PI (180 degrees) to point the rear shooter at the target
-        assertEquals(PI, abs(result.robotTargetHeadingRad), 1e-6)
+        // Robot target heading should be expectedAimAngle + PI
+        var expectedRobotHeading = expectedAimAngle + PI
+        while (expectedRobotHeading > PI) expectedRobotHeading -= 2.0 * PI
+        while (expectedRobotHeading < -PI) expectedRobotHeading += 2.0 * PI
+        assertEquals(expectedRobotHeading, result.robotTargetHeadingRad, 1e-6)
         
         // Feedforward should be zero since speeds are zero
         assertEquals(0.0, result.angularVelocityFeedforwardRadPerSec, 1e-6)
 
         // Interpolation checks
-        val expectedRpm = ShotSetup.interpolateRpm(4.25)
+        val expectedRpm = ShotSetup.interpolateRpm(expectedDistance)
         assertEquals(expectedRpm, result.targetFlywheelRpm, 1e-6)
     }
 

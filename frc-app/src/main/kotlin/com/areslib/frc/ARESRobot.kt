@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.Timer
+import edu.wpi.first.wpilibj.DriverStation
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain
 
 /**
@@ -41,7 +42,7 @@ class ARESRobot : TimedRobot() {
 
     // Pre-allocated ShotResult for SOTM (zero-allocation)
     private val shotResult = ShotResult()
-    private val speakerTranslation = Translation2d(0.0, 5.54)
+    private var speakerTranslation = Translation2d(4.625, 4.035)
 
     // Simulation timing
     private var lastSimTime = 0.0
@@ -125,6 +126,15 @@ class ARESRobot : TimedRobot() {
     // ── Teleop ──
 
     override fun teleopPeriodic() {
+        val alliance = DriverStation.getAlliance()
+        if (alliance.isPresent) {
+            speakerTranslation = if (alliance.get() == DriverStation.Alliance.Red) {
+                Translation2d(11.915, 4.035)
+            } else {
+                Translation2d(4.625, 4.035)
+            }
+        }
+
         val applyDeadband = { value: Double -> if (Math.abs(value) < 0.1) 0.0 else value }
         val forward = applyDeadband(-controller.leftY) * 4.5
         val strafe = applyDeadband(-controller.leftX) * 4.5
@@ -282,6 +292,15 @@ class ARESRobot : TimedRobot() {
     }
 
     override fun autonomousPeriodic() {
+        val alliance = DriverStation.getAlliance()
+        if (alliance.isPresent) {
+            speakerTranslation = if (alliance.get() == DriverStation.Alliance.Red) {
+                Translation2d(11.915, 4.035)
+            } else {
+                Translation2d(4.625, 4.035)
+            }
+        }
+
         val path = activePath ?: return
         val dt = 0.02
 

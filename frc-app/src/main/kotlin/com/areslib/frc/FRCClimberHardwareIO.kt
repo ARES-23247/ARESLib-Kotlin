@@ -1,9 +1,12 @@
 package com.areslib.frc
 
 import com.areslib.hardware.ClimberIO
+import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX
+import com.ctre.phoenix6.signals.InvertedValue
+import com.ctre.phoenix6.signals.NeutralModeValue
 
 /**
  * Concrete implementation of ClimberIO utilizing a CTRE TalonFX motor
@@ -16,20 +19,29 @@ class FRCClimberHardwareIO(
     private val positionRequest = PositionVoltage(0.0)
     private val voltageRequest = VoltageOut(0.0)
 
-    // Climber scaling: 20 motor rotations per meter of climber extension
-    private val rotationsPerMeter = 20.0
+    // Climber scaling: 1 mechanism rotation is treated as the extension unit
+    private val rotationsPerMeter = 1.0
 
     init {
-        val config = com.ctre.phoenix6.configs.TalonFXConfiguration()
-        config.CurrentLimits.StatorCurrentLimit = 40.0
+        val config = TalonFXConfiguration()
+        
+        // Neutral mode and inversions
+        config.MotorOutput.NeutralMode = NeutralModeValue.Brake
+        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
+        
+        // Gearing / Sensor scaling
+        config.Feedback.SensorToMechanismRatio = 80.0
+
+        // Supply and Stator current limits matching SystemConstants.java
+        config.CurrentLimits.SupplyCurrentLimit = 70.0
+        config.CurrentLimits.SupplyCurrentLimitEnable = true
+        config.CurrentLimits.StatorCurrentLimit = 120.0
         config.CurrentLimits.StatorCurrentLimitEnable = true
 
-        // Configure software soft limits to protect climber elevator
-        // Range: 0.0 to 0.6 meters of vertical extension
-        config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 0.6 * rotationsPerMeter
+        // Software soft limits
+        config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 1.73
         config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true
-        config.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0.0 * rotationsPerMeter
-        config.SoftwareLimitSwitch.ReverseSoftLimitEnable = true
+        config.SoftwareLimitSwitch.ReverseSoftLimitEnable = false
 
         motor.configurator.apply(config)
     }

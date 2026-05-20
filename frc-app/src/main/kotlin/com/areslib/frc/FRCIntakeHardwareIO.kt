@@ -20,16 +20,38 @@ class FRCIntakeHardwareIO(
     private val voltageRequest = VoltageOut(0.0)
 
     init {
-        // Apply standard current limits and sensor feedback ratio (4:1 mechanism reduction)
+        // Configure Pivot Motor with exact specs from SystemConstants.java
         val pivotConfig = com.ctre.phoenix6.configs.TalonFXConfiguration()
-        pivotConfig.CurrentLimits.StatorCurrentLimit = 35.0
+        pivotConfig.Slot0.kP = 1.0
+        pivotConfig.Slot0.kI = 0.0
+        pivotConfig.Slot0.kD = 0.0
+        pivotConfig.Slot0.kV = 0.38247 // 12.0 / 31.375 (Max speed: 7530 RPM / 4 = 1882.5 RPM = 31.375 RPS)
+
+        pivotConfig.MotorOutput.NeutralMode = com.ctre.phoenix6.signals.NeutralModeValue.Brake
+        pivotConfig.MotorOutput.Inverted = com.ctre.phoenix6.signals.InvertedValue.Clockwise_Positive
+        pivotConfig.Feedback.SensorToMechanismRatio = 4.0 // 4:1 pivot gear reduction
+
+        pivotConfig.CurrentLimits.SupplyCurrentLimitEnable = true
+        pivotConfig.CurrentLimits.SupplyCurrentLimit = 40.0
         pivotConfig.CurrentLimits.StatorCurrentLimitEnable = true
-        pivotConfig.Feedback.SensorToMechanismRatio = 4.0 // 4:1 feedback reduction ratio
+        pivotConfig.CurrentLimits.StatorCurrentLimit = 80.0
         pivotMotor.configurator.apply(pivotConfig)
 
+        // Configure Roller Motor with exact specs from SystemConstants.java
         val rollerConfig = com.ctre.phoenix6.configs.TalonFXConfiguration()
-        rollerConfig.CurrentLimits.StatorCurrentLimit = 30.0
+        rollerConfig.Slot0.kP = 0.5
+        rollerConfig.Slot0.kI = 2.0
+        rollerConfig.Slot0.kD = 0.0
+        rollerConfig.Slot0.kV = 0.0956 // 12.0 / 125.5 (Max speed: 7530 RPM = 125.5 RPS)
+
+        rollerConfig.MotorOutput.NeutralMode = com.ctre.phoenix6.signals.NeutralModeValue.Coast
+        rollerConfig.MotorOutput.Inverted = com.ctre.phoenix6.signals.InvertedValue.Clockwise_Positive
+        rollerConfig.Feedback.SensorToMechanismRatio = 1.0
+
+        rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true
+        rollerConfig.CurrentLimits.SupplyCurrentLimit = 60.0
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true
+        rollerConfig.CurrentLimits.StatorCurrentLimit = 100.0
         rollerMotor.configurator.apply(rollerConfig)
     }
 

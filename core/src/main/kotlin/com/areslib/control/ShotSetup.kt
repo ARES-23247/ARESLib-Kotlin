@@ -24,16 +24,22 @@ class ShotResult {
  * Computes exact target flywheel RPM, cowl angle, and angular velocity feedforward.
  */
 object ShotSetup {
-    private val TOF_KEYS = doubleArrayOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
-    private val TOF_VALUES = doubleArrayOf(0.15, 0.25, 0.35, 0.45, 0.55, 0.65)
+    private val TOF_KEYS = doubleArrayOf(1.24, 2.0, 3.0, 4.0, 5.6)
+    private val TOF_VALUES = doubleArrayOf(1.310, 1.330, 1.335, 1.340, 1.350)
 
-    private val SHOT_KEYS = doubleArrayOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
-    private val SHOT_RPM = doubleArrayOf(3000.0, 3200.0, 3500.0, 3800.0, 4200.0, 4500.0)
-    private val SHOT_COWL = doubleArrayOf(15.0, 22.0, 30.0, 37.0, 43.0, 48.0)
+    private val SHOT_KEYS = doubleArrayOf(
+        1.24, 2.0, 2.2, 2.5, 3.0, 3.2, 3.4, 3.63, 3.80, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6
+    )
+    private val SHOT_RPM = doubleArrayOf(
+        3350.0, 3400.0, 3450.0, 3500.0, 3550.0, 3600.0, 3650.0, 3700.0, 3750.0, 3800.0, 3850.0, 3900.0, 3950.0, 4000.0, 4050.0, 4100.0, 4150.0, 4200.0
+    )
+    private val SHOT_COWL = doubleArrayOf(
+        0.50, 0.70, 0.80, 0.95, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.45, 1.50, 1.55, 1.60, 1.65, 1.70, 1.75
+    )
 
-    // Marvin 19 has the shooter offset at the back of the chassis (-0.25m)
-    private const val SHOOTER_OFFSET_X = -0.25
-    private const val SHOOTER_OFFSET_Y = 0.0
+    // Marvin 19 has the shooter offset at the back of the chassis
+    private const val SHOOTER_OFFSET_X = -0.044704
+    private const val SHOOTER_OFFSET_Y = -0.055626
 
     fun interpolateTof(distance: Double): Double {
         if (distance <= TOF_KEYS.first()) return TOF_VALUES.first()
@@ -109,7 +115,7 @@ object ShotSetup {
         var virtualTargetX = target.x
         var virtualTargetY = target.y
         var tof: Double
-        var aimDistance = 0.0
+        var aimDistance: Double
 
         for (i in 0 until 5) {
             val dx = virtualTargetX - shooterX

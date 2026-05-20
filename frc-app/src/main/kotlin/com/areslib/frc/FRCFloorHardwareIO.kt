@@ -16,8 +16,19 @@ class FRCFloorHardwareIO(
 
     init {
         val config = com.ctre.phoenix6.configs.TalonFXConfiguration()
-        config.CurrentLimits.StatorCurrentLimit = 30.0
+        config.Slot0.kP = 0.5
+        config.Slot0.kI = 2.0
+        config.Slot0.kD = 0.0
+        config.Slot0.kV = 0.0956 // 12.0 / 125.5 (Max speed: 7530 RPM = 125.5 RPS)
+
+        config.MotorOutput.NeutralMode = com.ctre.phoenix6.signals.NeutralModeValue.Coast
+        config.MotorOutput.Inverted = com.ctre.phoenix6.signals.InvertedValue.CounterClockwise_Positive
+        config.Feedback.SensorToMechanismRatio = 1.0
+
+        config.CurrentLimits.SupplyCurrentLimitEnable = true
+        config.CurrentLimits.SupplyCurrentLimit = 60.0
         config.CurrentLimits.StatorCurrentLimitEnable = true
+        config.CurrentLimits.StatorCurrentLimit = 100.0
         motor.configurator.apply(config)
     }
 
