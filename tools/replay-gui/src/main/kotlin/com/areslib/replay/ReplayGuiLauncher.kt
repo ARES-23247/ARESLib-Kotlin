@@ -304,33 +304,37 @@ fun ReplayDashboardContent() {
                 Canvas(
                     modifier = Modifier
                         .weight(1f)
-                        .aspectRatio(1.0f)
+                        .aspectRatio(16.541f / 8.069f)
                         .background(Color(0xFF0A0C12), RoundedCornerShape(8.dp))
                         .border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(8.dp))
                 ) {
                     val width = size.width
                     val height = size.height
 
-                    // 1. Draw Field Grid Lines
-                    val gridCount = 6
-                    for (i in 1 until gridCount) {
-                        val x = width * i / gridCount
-                        val y = height * i / gridCount
-                        drawLine(Color(0x0FFFFFFF), Offset(x, 0f), Offset(x, height), strokeWidth = 1f)
-                        drawLine(Color(0x0FFFFFFF), Offset(0f, y), Offset(width, y), strokeWidth = 1f)
+                    // 1. Draw Field Grid Lines (every 2 meters)
+                    for (xMeter in 2..16 step 2) {
+                        val px = ((xMeter / 16.541) * (width * 0.9) + (width * 0.05)).toFloat()
+                        drawLine(Color(0x0FFFFFFF), Offset(px, 0f), Offset(px, height), strokeWidth = 1f)
+                    }
+                    for (yMeter in 2..8 step 2) {
+                        val py = (height - ((yMeter / 8.069) * (height * 0.9) + (height * 0.05))).toFloat()
+                        drawLine(Color(0x0FFFFFFF), Offset(0f, py), Offset(width, py), strokeWidth = 1f)
                     }
 
-                    // Mapping coordinates from [0..3.0] meters to pixels with scale offset
+                    // FRC Midfield Line (8.27m) in a slightly brighter color
+                    val midPx = ((8.27 / 16.541) * (width * 0.9) + (width * 0.05)).toFloat()
+                    drawLine(Color(0x22FFFFFF), Offset(midPx, 0f), Offset(midPx, height), strokeWidth = 2f)
+
+                    // Mapping coordinates from [0..16.541] for X and [0..8.069] for Y meters to pixels
                     fun mapToPixel(meterX: Double, meterY: Double): Offset {
-                        // Offset and pad scale to fit inside canvas perfectly
-                        val px = ((meterX / 3.0) * (width * 0.8) + (width * 0.1)).toFloat()
+                        val px = ((meterX / 16.541) * (width * 0.9) + (width * 0.05)).toFloat()
                         // Invert Y for screen coordinates
-                        val py = (height - ((meterY / 3.0) * (height * 0.8) + (height * 0.1))).toFloat()
+                        val py = (height - ((meterY / 8.069) * (height * 0.9) + (height * 0.05))).toFloat()
                         return Offset(px, py)
                     }
 
-                    // 2. Draw Vision Targets Snapping Location
-                    val targetPixel = mapToPixel(1.0, 0.5)
+                    // 2. Draw Vision Targets Snapping Location (FRC Tag at x=8.0, y=4.0)
+                    val targetPixel = mapToPixel(8.0, 4.0)
                     drawCircle(Color(0xFFFFEA00), radius = 8f, center = targetPixel)
                     drawCircle(Color(0xFFFFEA00), radius = 14f, center = targetPixel, style = Stroke(width = 2f))
 
@@ -415,8 +419,8 @@ private fun generateSyntheticLog(): List<String> {
             
             // Standard forward odometer driving with minor drift noise
             odometryInputs.apply {
-                posX = i * 0.04
-                posY = i * 0.04 + (if (i > 25) 0.05 else 0.0)
+                posX = i * 0.25
+                posY = i * 0.10 + (if (i > 25) 0.5 else 0.0)
                 heading = 0.0
                 velX = 2.0
                 velY = 2.0
@@ -429,7 +433,7 @@ private fun generateSyntheticLog(): List<String> {
                 timestampMs = timeMs
             }
 
-            // Simulate one camera update frame at step 25 (tag target is at x=1.0, y=0.5)
+            // Simulate one camera update frame at step 25 (tag target is at x=8.0, y=4.0 in FRC scale)
             if (i == 25) {
                 visionInputs.apply {
                     isConnected = true
@@ -437,10 +441,10 @@ private fun generateSyntheticLog(): List<String> {
                         com.areslib.state.VisionMeasurement(
                             timestampMs = timeMs,
                             targetPose = com.areslib.math.Pose3d(
-                                com.areslib.math.Translation3d(1.0, 0.5, 0.0),
+                                com.areslib.math.Translation3d(8.0, 4.0, 0.0),
                                 com.areslib.math.Rotation3d()
                             ),
-                            tagId = 1,
+                            tagId = 9,
                             ambiguity = 0.05
                         )
                     )
