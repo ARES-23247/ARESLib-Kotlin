@@ -14,6 +14,7 @@ import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.NT4Telemetry
 import com.areslib.telemetry.DataLoggingTelemetry
 import com.areslib.telemetry.ARESNetworkStatePublisher
+import com.areslib.control.BrownoutGuard
 
 class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
@@ -41,6 +42,9 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val visionInputs = VisionIOInputs()
     
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
+
+    /** Brownout protection guard — auto-scales motor power on voltage sag */
+    val brownoutGuard = BrownoutGuard.ftcDefaults()
 
     /**
      * Coordinated frame update for Mecanum Drivetrain.
@@ -88,6 +92,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
         // Apply battery-compensated voltage vectors
         mecanumIO.apply(wheelSpeeds.normalize(1.0), batteryVoltage)
+
+        // 4b. Brownout protection — graduated power scaling on voltage sag
+        brownoutGuard.update(batteryVoltage)
+        mecanumIO.applyPowerScale(brownoutGuard.powerScale)
 
         // 5. Publish EVERYTHING to NT4 + CSV automatically
         publisher.publish(store.state, gamepad1, gamepad2)

@@ -42,4 +42,17 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         backLeft.power = ((speeds.backLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
         backRight.power = ((speeds.backRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
     }
+
+    /**
+     * Applies a global power scale factor to all 4 drive motors.
+     * Used by the BrownoutGuard to reduce output during voltage sag.
+     * @param scale Power multiplier (0.0 = disabled, 1.0 = full power)
+     */
+    fun applyPowerScale(scale: Double) {
+        val s = scale.coerceIn(0.0, 1.0)
+        frontLeft.power = frontLeft.power * s
+        frontRight.power = frontRight.power * s
+        backLeft.power = backLeft.power * s
+        backRight.power = backRight.power * s
+    }
 }

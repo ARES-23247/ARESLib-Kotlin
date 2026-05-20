@@ -11,6 +11,7 @@ import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.telemetry.DataLoggingTelemetry
 import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.ITelemetry
+import com.areslib.control.BrownoutGuard
 
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain
 
@@ -48,6 +49,12 @@ class FrcSwerveRobot(
     private val covarianceDiagonals = DoubleArray(3)
     private val pose3dArray = DoubleArray(7)
     private val swerveStates = DoubleArray(8)
+
+    /** Brownout protection guard — auto-scales motor power on voltage sag */
+    val brownoutGuard = BrownoutGuard.frcDefaults()
+
+    /** Battery voltage supplier — set this from the platform layer (e.g., RobotController.getBatteryVoltage()) */
+    var batteryVoltageSupplier: () -> Double = { 12.6 }
 
     /**
      * Coordinated frame update for FRC Swerve Drivetrain.
@@ -87,19 +94,33 @@ class FrcSwerveRobot(
             swerveIO.write(store.state.drive)
         }
 
-        // Superstructure outputs
-        flywheelIO.setVelocityRpm(store.state.superstructure.flywheel.targetVelocityRpm)
+        // ── 3. BROWNOUT PROTECTION ──
+        val batteryVoltage = batteryVoltageSupplier()
+        brownoutGuard.update(batteryVoltage)
+
+        // Apply power scaling to all superstructure outputs
+        // (Drive swerve modules have their own voltage compensation via CTRE)
+        val scale = brownoutGuard.powerScale
+        flywheelIO.setVelocityRpm(store.state.superstructure.flywheel.targetVelocityRpm * scale)
         cowlIO.setTargetAngle(store.state.superstructure.cowl.targetAngleDegrees)
-        intakeIO.setPivotAngle(store.state.superstructure.intake.targetAngleDegrees)
+
+        val pivotAngle = store.state.superstructure.intake.targetAngleDegrees
+        intakeIO.setPivotAngle(pivotAngle)
 
         val targetRollerSpeed = store.state.superstructure.intake.targetRollerVelocityRps
-        intakeIO.setRollerVoltage((targetRollerSpeed / 10.0) * 12.0)
+        intakeIO.setRollerVoltage((targetRollerSpeed / 10.0) * 12.0 * scale)
 
         val targetFeederSpeed = store.state.superstructure.feeder.targetVelocityRps
-        feederIO.setAppliedVoltage((targetFeederSpeed / 12.0) * 12.0)
+        feederIO.setAppliedVoltage((targetFeederSpeed / 12.0) * 12.0 * scale)
 
-        // ── 3. PUBLISH: Everything → NT4 + CSV ──
+        // ── 4. PUBLISH: Everything → NT4 + CSV ──
         publisher.publish(store.state, gamepad1, gamepad2)
+
+        // Publish brownout telemetry
+        dataLoggingTelemetry.putNumber("Robot/BatteryVoltage", batteryVoltage)
+        dataLoggingTelemetry.putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
+        dataLoggingTelemetry.putString("Robot/BrownoutState", brownoutGuard.state.name)
+        dataLoggingTelemetry.putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
 
         // Publish EKF covariance diagonals
         val cov = store.state.drive.poseEstimator.covariance

@@ -89,6 +89,15 @@ class ARESRobot : TimedRobot() {
         }
 
         lastSimTime = Timer.getFPGATimestamp()
+
+        // Wire brownout guard to read live battery voltage from roboRIO
+        robot.batteryVoltageSupplier = {
+            try {
+                edu.wpi.first.wpilibj.RobotController.getBatteryVoltage()
+            } catch (_: Exception) {
+                12.6 // Fallback for simulation environments
+            }
+        }
     }
 
     override fun robotPeriodic() {
