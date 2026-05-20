@@ -25,12 +25,23 @@ import org.dyn4j.geometry.Vector2
  * The ARESRobot TimedRobot shell calls [step] each cycle and reads results back
  * via [getPoseUpdate] and the simulated IO properties.
  */
+class FlyingBall(
+    var x: Double,
+    var y: Double,
+    var z: Double,
+    var vx: Double,
+    var vy: Double,
+    var vz: Double
+)
+
 class Dyn4jSimulation(seed: Long = 42L) {
 
     // ── Physics World ──
     private val world = World<Body>()
     private val robotBody = Body()
     private val balls = mutableListOf<Body>()
+    private val flyingBalls = mutableListOf<FlyingBall>()
+    private var shootCooldownTimer = 0.0
 
     // ── Sim Models ──
     private val flywheelSim = FlywheelSim()
@@ -148,6 +159,11 @@ class Dyn4jSimulation(seed: Long = 42L) {
 
         if (dt <= 0.0) return actions
 
+        // Update shoot cooldown
+        if (shootCooldownTimer > 0.0) {
+            shootCooldownTimer -= dt
+        }
+
         // ── Drive Physics ──
         val kpLinear = 50.0
         val kpAngular = 20.0
@@ -192,7 +208,7 @@ class Dyn4jSimulation(seed: Long = 42L) {
         val intakeDeployed = intakePivotSim.angleDegrees > 45.0
         val intakeSpinning = simIntakeRollerVoltage > 1.0
 
-        if (intakeDeployed && intakeSpinning && state.superstructure.inventoryCount < 3) {
+        if (intakeDeployed && intakeSpinning && state.superstructure.inventoryCount < 40) {
             val ballIterator = balls.iterator()
             while (ballIterator.hasNext()) {
                 val ball = ballIterator.next()
@@ -214,31 +230,102 @@ class Dyn4jSimulation(seed: Long = 42L) {
         // ── Shooting ──
         val flywheelAtSpeed = state.superstructure.isFlywheelAtSpeed
         val feederSpinning = simFeederVoltage > 2.0
-        if (flywheelAtSpeed && feederSpinning && state.superstructure.inventoryCount > 0) {
+        if (flywheelAtSpeed && feederSpinning && state.superstructure.inventoryCount > 0 && shootCooldownTimer <= 0.0) {
+            shootCooldownTimer = 0.15
             val newCount = state.superstructure.inventoryCount - 1
             actions.add(RobotAction.SetInventoryCount(newCount, timestamp))
             simFeederPieceDetected = newCount > 0
 
-            val shootSpeed = 12.0
+            val vLaunch = flywheelRps * 0.18 // At 4000 RPM, vLaunch is ~12.0 m/s
+            
+            val hoodRad = Math.toRadians(simCowlAngle)
+            val vPlanar = vLaunch * Math.cos(hoodRad)
+            val vVert = vLaunch * Math.sin(hoodRad)
+
+            val robotVx = robotBody.linearVelocity.x
+            val robotVy = robotBody.linearVelocity.y
+            
             val bx = robotX + Math.cos(robotHeading) * 0.5
             val by = robotY + Math.sin(robotHeading) * 0.5
-            val vx = robotBody.linearVelocity.x + Math.cos(robotHeading) * shootSpeed
-            val vy = robotBody.linearVelocity.y + Math.sin(robotHeading) * shootSpeed
+            val bz = 0.6 // Launch height from shooter
 
-            val newBall = Body()
-            val fixture = newBall.addFixture(Geometry.createCircle(0.0635))
-            fixture.friction = 0.6
-            fixture.restitution = 0.4
-            fixture.density = 5.92
-            newBall.setMass(MassType.NORMAL)
-            newBall.linearDamping = 0.5
-            newBall.angularDamping = 0.5
-            newBall.translate(bx, by)
-            newBall.linearVelocity.set(vx, vy)
+            val vx = robotVx + Math.cos(robotHeading) * vPlanar
+            val vy = robotVy + Math.sin(robotHeading) * vPlanar
+            val vz = vVert
 
-            world.addBody(newBall)
-            balls.add(newBall)
-            println("BALL SHOT! Inventory left: $newCount")
+            val flyingBall = FlyingBall(bx, by, bz, vx, vy, vz)
+            flyingBalls.add(flyingBall)
+            println("BALL SHOT (2.5D)! Pos: ($bx, $by, $bz), Vel: ($vx, $vy, $vz). Inventory left: $newCount")
+        }
+
+        // ── Flying Balls Physics & Scoring ──
+        val g = 9.80665
+        val flyingIterator = flyingBalls.iterator()
+        val random = java.util.Random()
+        while (flyingIterator.hasNext()) {
+            val fb = flyingIterator.next()
+            fb.x += fb.vx * dt
+            fb.y += fb.vy * dt
+            fb.z += fb.vz * dt
+            fb.vz -= g * dt
+
+            // 1. Check for scoring in either hub cylindrical volume
+            var scored = false
+            for (hubCenter in listOf(Vector2(4.135, 4.0345), Vector2(12.406, 4.0345))) {
+                val dx = fb.x - hubCenter.x
+                val dy = fb.y - hubCenter.y
+                val dist = Math.hypot(dx, dy)
+                if (dist < 0.6 && fb.z >= 1.6 && fb.z <= 2.8) {
+                    scored = true
+                    break
+                }
+            }
+
+            if (scored) {
+                flyingIterator.remove()
+                println("BALL SCORED! Ejecting to center...")
+                
+                val ejectAngle = random.nextDouble() * 2.0 * Math.PI
+                val ejectSpeed = 1.5 + random.nextDouble() * 1.5 // 1.5 to 3.0 m/s
+                val evx = Math.cos(ejectAngle) * ejectSpeed
+                val evy = Math.sin(ejectAngle) * ejectSpeed
+
+                val ball = Body()
+                val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+                fixture.friction = 0.6
+                fixture.restitution = 0.4
+                fixture.density = 5.92
+                ball.setMass(MassType.NORMAL)
+                ball.linearDamping = 2.0
+                ball.angularDamping = 2.0
+                ball.translate(8.2705, 4.0345)
+                ball.linearVelocity.set(evx, evy)
+                
+                world.addBody(ball)
+                balls.add(ball)
+            } else if (fb.z <= 0.0635) { // Lands on the ground
+                flyingIterator.remove()
+                println("BALL LANDED! Spawning back as dynamic 2D body at (${fb.x}, ${fb.y})")
+
+                val fieldWidth = 16.541
+                val fieldHeight = 8.069
+                val cx = fb.x.coerceIn(0.1, fieldWidth - 0.1)
+                val cy = fb.y.coerceIn(0.1, fieldHeight - 0.1)
+
+                val ball = Body()
+                val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+                fixture.friction = 0.6
+                fixture.restitution = 0.4
+                fixture.density = 5.92
+                ball.setMass(MassType.NORMAL)
+                ball.linearDamping = 2.0
+                ball.angularDamping = 2.0
+                ball.translate(cx, cy)
+                ball.linearVelocity.set(fb.vx, fb.vy)
+
+                world.addBody(ball)
+                balls.add(ball)
+            }
         }
 
         return actions
@@ -305,16 +392,30 @@ class Dyn4jSimulation(seed: Long = 42L) {
         ))
 
         // ── Fuel 3D Poses ──
-        val gamePieceData = DoubleArray(balls.size * 7)
+        val totalBallsCount = balls.size + flyingBalls.size
+        val gamePieceData = DoubleArray(totalBallsCount * 7)
         for (i in balls.indices) {
-            gamePieceData[i * 7] = balls[i].transform.translationX
-            gamePieceData[i * 7 + 1] = balls[i].transform.translationY
-            gamePieceData[i * 7 + 2] = 0.0635
+            val idx = i * 7
+            gamePieceData[idx] = balls[i].transform.translationX
+            gamePieceData[idx + 1] = balls[i].transform.translationY
+            gamePieceData[idx + 2] = 0.0635
             val theta = balls[i].transform.rotationAngle
-            gamePieceData[i * 7 + 3] = kotlin.math.cos(theta / 2.0)
-            gamePieceData[i * 7 + 4] = 0.0
-            gamePieceData[i * 7 + 5] = 0.0
-            gamePieceData[i * 7 + 6] = kotlin.math.sin(theta / 2.0)
+            gamePieceData[idx + 3] = kotlin.math.cos(theta / 2.0)
+            gamePieceData[idx + 4] = 0.0
+            gamePieceData[idx + 5] = 0.0
+            gamePieceData[idx + 6] = kotlin.math.sin(theta / 2.0)
+        }
+        val groundOffset = balls.size * 7
+        for (i in flyingBalls.indices) {
+            val fb = flyingBalls[i]
+            val idx = groundOffset + i * 7
+            gamePieceData[idx] = fb.x
+            gamePieceData[idx + 1] = fb.y
+            gamePieceData[idx + 2] = fb.z
+            gamePieceData[idx + 3] = 1.0 // qw
+            gamePieceData[idx + 4] = 0.0 // qx
+            gamePieceData[idx + 5] = 0.0 // qy
+            gamePieceData[idx + 6] = 0.0 // qz
         }
         telemetry.putDoubleArray("Robot/FuelPoses", gamePieceData)
     }
