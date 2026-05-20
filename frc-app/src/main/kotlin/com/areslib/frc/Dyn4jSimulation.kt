@@ -5,6 +5,8 @@ import com.areslib.hardware.FlywheelIO
 import com.areslib.hardware.CowlIO
 import com.areslib.hardware.IntakeIO
 import com.areslib.hardware.FeederIO
+import com.areslib.hardware.FloorIO
+import com.areslib.hardware.ClimberIO
 import com.areslib.sim.FlywheelSim
 import com.areslib.sim.IntakePivotSim
 import com.areslib.state.RobotState
@@ -40,6 +42,10 @@ class Dyn4jSimulation(seed: Long = 42L) {
     private var simIntakePivotVoltage = 0.0
     private var simIntakeRollerVoltage = 0.0
     private var simFeederVoltage = 0.0
+    private var simFloorVoltage = 0.0
+    private var simFloorVelocityRps = 0.0
+    private var simClimberVoltage = 0.0
+    private var simClimberExtensionMeters = 0.0
     private var simCowlAngle = 0.0
     private var simFeederPieceDetected = false
     var flywheelRotationAngle = 0.0
@@ -96,6 +102,26 @@ class Dyn4jSimulation(seed: Long = 42L) {
         override val currentAmps: Double get() = Math.abs(simFeederVoltage) * 0.1
     }
 
+    val floorIO: FloorIO = object : FloorIO {
+        override fun setAppliedVoltage(volts: Double) {
+            simFloorVoltage = volts.coerceIn(-12.0, 12.0)
+        }
+        override val velocityRps: Double get() = simFloorVelocityRps
+        override val currentAmps: Double get() = Math.abs(simFloorVoltage) * 0.15
+    }
+
+    val climberIO: ClimberIO = object : ClimberIO {
+        override fun setTargetExtension(meters: Double) {
+            val error = meters - simClimberExtensionMeters
+            simClimberVoltage = (error * 10.0).coerceIn(-12.0, 12.0)
+        }
+        override fun setAppliedVoltage(volts: Double) {
+            simClimberVoltage = volts.coerceIn(-12.0, 12.0)
+        }
+        override val extensionMeters: Double get() = simClimberExtensionMeters
+        override val currentAmps: Double get() = Math.abs(simClimberVoltage) * 0.25
+    }
+
     init {
         world.setGravity(Vector2(0.0, 0.0))
 
@@ -146,6 +172,16 @@ class Dyn4jSimulation(seed: Long = 42L) {
         // Cowl position integration
         simCowlAngle += (simCowlVoltage * 15.0) * dt
         simCowlAngle = simCowlAngle.coerceIn(0.0, 70.0)
+
+        // Floor velocity integration
+        val targetFloorVelocityRps = (simFloorVoltage / 12.0) * 125.5
+        simFloorVelocityRps += (targetFloorVelocityRps - simFloorVelocityRps) * 15.0 * dt
+        simFloorVelocityRps = simFloorVelocityRps.coerceIn(-125.5, 125.5)
+
+        // Climber extension integration
+        val climberVelocity = (simClimberVoltage / 12.0) * 1.0
+        simClimberExtensionMeters += climberVelocity * dt
+        simClimberExtensionMeters = simClimberExtensionMeters.coerceIn(0.0, 1.73)
 
         // ── Game Piece Collision ──
         val t = robotBody.transform

@@ -93,6 +93,8 @@ class ARESRobot : TimedRobot() {
                     cowlIO = sim.cowlIO,
                     intakeIO = sim.intakeIO,
                     feederIO = sim.feederIO,
+                    floorIO = sim.floorIO,
+                    climberIO = sim.climberIO,
                     isSimulation = true
                 )
             }
@@ -102,6 +104,8 @@ class ARESRobot : TimedRobot() {
                 cowlIO = sim.cowlIO,
                 intakeIO = sim.intakeIO,
                 feederIO = sim.feederIO,
+                floorIO = sim.floorIO,
+                climberIO = sim.climberIO,
                 isSimulation = true
             )
         }
