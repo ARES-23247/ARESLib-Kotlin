@@ -225,4 +225,47 @@ class PoseEstimatorTest {
         // More tags reduces noise covariance R, which means we trust vision MORE, so diffMulti should be larger!
         assertTrue(diffMulti > diffSingle, "Multi-tag fusion should pull estimate closer to vision ($diffMulti) than single-tag ($diffSingle)")
     }
+
+    @Test
+    fun testMahalanobisOutlierRejection() {
+        var state = PoseEstimatorState()
+        state = PoseEstimator.addOdometryObservation(
+            state,
+            100L,
+            Translation2d(0.0, 0.0),
+            Rotation2d(0.0)
+        )
+
+        // Vision measurement is a major outlier (far away at 10m, 10m)
+        val measurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(10.0, 10.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+            tagId = 1
+        )
+
+        // Fuse with Mahalanobis rejection enabled (default)
+        val rejectedState = PoseEstimator.addVisionMeasurement(
+            state,
+            measurement,
+            Vector3(0.1, 0.1, 0.1),
+            useMahalanobisRejection = true,
+            mahalanobisThreshold = 12.0
+        )
+
+        // Estimated pose should remain unchanged (rejected)
+        assertEquals(0.0, rejectedState.estimatedPose.x, 1e-6)
+        assertEquals(0.0, rejectedState.estimatedPose.y, 1e-6)
+
+        // Fuse with Mahalanobis rejection disabled
+        val acceptedState = PoseEstimator.addVisionMeasurement(
+            state,
+            measurement,
+            Vector3(0.1, 0.1, 0.1),
+            useMahalanobisRejection = false
+        )
+
+        // Estimated pose should be corrected towards the outlier (accepted)
+        assertTrue(acceptedState.estimatedPose.x > 1.0, "State should be corrected when rejection is disabled")
+    }
 }
+

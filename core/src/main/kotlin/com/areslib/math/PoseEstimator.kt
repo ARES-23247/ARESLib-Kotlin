@@ -46,7 +46,9 @@ object PoseEstimator {
         deltaTranslation: Translation2d,
         deltaHeading: Rotation2d,
         pitchDegrees: Double = 0.0,
-        rollDegrees: Double = 0.0
+        rollDegrees: Double = 0.0,
+        gyroRateRadPerSec: Double = 0.0,
+        dtSeconds: Double = 0.02
     ): PoseEstimatorState {
         val tiltDegrees = kotlin.math.sqrt(pitchDegrees * pitchDegrees + rollDegrees * rollDegrees)
 
@@ -57,8 +59,17 @@ object PoseEstimator {
             return state.copy(history = newHistory)
         }
 
+        // Gyro rate mismatch check for wheel slippage detection
+        val expectedHeadingVel = deltaHeading.radians / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
+        val slipScale = if (gyroRateRadPerSec != 0.0 && kotlin.math.abs(expectedHeadingVel - gyroRateRadPerSec) > 0.5) {
+            10.0 // Dynamic wheel slippage covariance expansion
+        } else {
+            1.0
+        }
+
         // High tilt / wheel slippage check: Scale odometry covariance by 100x
-        val currentQ = if (tiltDegrees > 8.0) Q * 100.0 else Q
+        var currentQ = if (tiltDegrees > 8.0) Q * 100.0 else Q
+        currentQ = currentQ * slipScale
 
         val newHeading = Rotation2d(state.estimatedPose.heading.radians + deltaHeading.radians)
         val newPose = Pose2d(
@@ -88,7 +99,9 @@ object PoseEstimator {
         state: PoseEstimatorState,
         measurement: VisionMeasurement,
         visionStdDevs: Vector3, // Vector3(x, y, heading)
-        numTags: Int = 1
+        numTags: Int = 1,
+        useMahalanobisRejection: Boolean = true,
+        mahalanobisThreshold: Double = 12.0
     ): PoseEstimatorState {
         if (state.history.isEmpty()) return state
 
@@ -140,12 +153,7 @@ object PoseEstimator {
             )
         }
 
-        // K = P * (P + R)^-1
-        val S = baseEntry.covariance + R
-        val S_inv = S.inverse()
-        val K = baseEntry.covariance * S_inv
-
-        // Residual y = z - Hx (where H is identity since we directly measure pose)
+        // Innovation residual y = z - Hx (where H is identity since we directly measure pose)
         val measurementPose2d = measurement.targetPose.toPose2d()
         var headingDiff = measurementPose2d.heading.radians - baseEntry.pose.heading.radians
         // normalize heading difference
@@ -157,6 +165,22 @@ object PoseEstimator {
             measurementPose2d.y - baseEntry.pose.y,
             headingDiff
         )
+
+        // S = P + R (where H is Identity)
+        val S = baseEntry.covariance + R
+        val S_inv = S.inverse()
+
+        // 3. Statistical Mahalanobis Distance Outlier Rejection
+        if (useMahalanobisRejection) {
+            val S_inv_y = S_inv * y
+            val dMSquared = y.x * S_inv_y.x + y.y * S_inv_y.y + y.z * S_inv_y.z
+            if (dMSquared > mahalanobisThreshold) {
+                return state // Outlier rejected autonomously!
+            }
+        }
+
+        // K = P * S^-1
+        val K = baseEntry.covariance * S_inv
 
         // Updated state delta: dx = K * y
         val dx = K * y

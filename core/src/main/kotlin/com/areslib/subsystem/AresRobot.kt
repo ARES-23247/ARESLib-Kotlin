@@ -8,6 +8,8 @@ open class AresRobot(
     val store = Store(initialState)
 
     val drive = DriveSubsystem(store)
+    val mecanumDrive = MecanumDriveFacade(store)
+    val swerveDrive = SwerveDriveFacade(store)
     val shooter = ShooterSubsystem(store)
     val intake = IntakeSubsystem(store)
 }
