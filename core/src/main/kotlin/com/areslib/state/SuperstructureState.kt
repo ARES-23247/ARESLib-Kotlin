@@ -45,5 +45,16 @@ data class FeederState(
 data class ClimberState(
     val extensionMeters: Double = 0.0,
     val targetExtensionMeters: Double = 0.0,
+    val currentAmps: Double = 0.0,
+    val targetVoltage: Double = 0.0
+)
+
+/**
+ * Immutable representation of the floor rollers.
+ */
+data class FloorState(
+    val velocityRps: Double = 0.0,
+    val targetVelocityRps: Double = 0.0,
     val currentAmps: Double = 0.0
 )
+

@@ -78,7 +78,8 @@ data class SuperstructureState(
     val cowl: CowlState = CowlState(),
     val intake: IntakeState = IntakeState(),
     val feeder: FeederState = FeederState(),
-    val climber: ClimberState = ClimberState()
+    val climber: ClimberState = ClimberState(),
+    val floor: FloorState = FloorState()
 ) {
     /** Returns true when the flywheel is within 5% of target RPM */
     val isFlywheelAtSpeed: Boolean

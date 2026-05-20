@@ -148,11 +148,23 @@ sealed class RobotAction {
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 
+    data class SetFloorSpeed(
+        val speedRps: Double,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SetClimberVoltage(
+        val volts: Double,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction()
+
     data class SuperstructureSensorUpdate(
         val flywheelRpm: Double,
         val cowlAngle: Double,
         val intakeAngle: Double,
         val pieceDetected: Boolean,
+        val floorVelocityRps: Double = 0.0,
+        val climberExtensionMeters: Double = 0.0,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 }

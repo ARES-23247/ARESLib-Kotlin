@@ -103,3 +103,19 @@ interface ClimberIO {
     val currentAmps: Double
         get() = 0.0
 }
+
+/**
+ * Pure abstraction for the floor rollers.
+ */
+interface FloorIO {
+    /** Sets the applied voltage of the floor rollers directly (-12.0 to 12.0 volts) */
+    fun setAppliedVoltage(volts: Double)
+
+    /** Gets the measured rotational velocity of the floor rollers in RPS */
+    val velocityRps: Double
+        get() = 0.0
+
+    /** Gets the stator current draw in Amperes */
+    val currentAmps: Double
+        get() = 0.0
+}

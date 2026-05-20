@@ -34,6 +34,13 @@ class FrcSwerveRobot(
     private val cowlIO: CowlIO,
     private val intakeIO: IntakeIO,
     private val feederIO: FeederIO,
+    private val floorIO: com.areslib.hardware.FloorIO = object : com.areslib.hardware.FloorIO {
+        override fun setAppliedVoltage(volts: Double) {}
+    },
+    private val climberIO: com.areslib.hardware.ClimberIO = object : com.areslib.hardware.ClimberIO {
+        override fun setTargetExtension(meters: Double) {}
+        override fun setAppliedVoltage(volts: Double) {}
+    },
     private val isSimulation: Boolean = false,
     baseTelemetry: ITelemetry = FRCTelemetry()
 ) : AresRobot() {
@@ -86,6 +93,8 @@ class FrcSwerveRobot(
             cowlAngle = cowlIO.angleDegrees,
             intakeAngle = intakeIO.pivotAngleDegrees,
             pieceDetected = feederIO.isBeamBroken,
+            floorVelocityRps = floorIO.velocityRps,
+            climberExtensionMeters = climberIO.extensionMeters,
             timestampMs = timestamp
         ))
 
@@ -112,6 +121,12 @@ class FrcSwerveRobot(
 
         val targetFeederSpeed = store.state.superstructure.feeder.targetVelocityRps
         feederIO.setAppliedVoltage((targetFeederSpeed / 12.0) * 12.0 * scale)
+
+        val targetFloorSpeed = store.state.superstructure.floor.targetVelocityRps
+        floorIO.setAppliedVoltage((targetFloorSpeed / 12.0) * 12.0 * scale)
+
+        val targetClimberVoltage = store.state.superstructure.climber.targetVoltage
+        climberIO.setAppliedVoltage(targetClimberVoltage * scale)
 
         // ── 4. PUBLISH: Everything → NT4 + CSV ──
         publisher.publish(store.state, gamepad1, gamepad2)

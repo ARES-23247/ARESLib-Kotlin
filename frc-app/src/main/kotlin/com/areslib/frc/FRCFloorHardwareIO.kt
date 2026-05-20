@@ -1,22 +1,22 @@
 package com.areslib.frc
 
-import com.areslib.hardware.FeederIO
+import com.areslib.hardware.FloorIO
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX
 
 /**
- * Concrete implementation of FeederIO utilizing a CTRE TalonFX motor on CAN2.
- * Note: Marvin 19 does not have a physical beam break sensor.
+ * Concrete implementation of FloorIO utilizing a CTRE TalonFX motor
+ * on ID 16 on the "CAN2" high-speed bus.
  */
-class FRCFeederHardwareIO(
+class FRCFloorHardwareIO(
     private val motor: TalonFX
-) : FeederIO {
+) : FloorIO {
 
     private val voltageRequest = VoltageOut(0.0)
 
     init {
         val config = com.ctre.phoenix6.configs.TalonFXConfiguration()
-        config.CurrentLimits.StatorCurrentLimit = 25.0
+        config.CurrentLimits.StatorCurrentLimit = 30.0
         config.CurrentLimits.StatorCurrentLimitEnable = true
         motor.configurator.apply(config)
     }
@@ -25,8 +25,8 @@ class FRCFeederHardwareIO(
         motor.setControl(voltageRequest.withOutput(volts))
     }
 
-    override val isBeamBroken: Boolean
-        get() = false
+    override val velocityRps: Double
+        get() = motor.velocity.valueAsDouble
 
     override val currentAmps: Double
         get() = motor.statorCurrent.valueAsDouble

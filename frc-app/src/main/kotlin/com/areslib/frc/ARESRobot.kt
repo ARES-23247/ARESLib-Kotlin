@@ -3,8 +3,12 @@ package com.areslib.frc
 import com.areslib.action.RobotAction
 import com.areslib.control.HolonomicDriveController
 import com.areslib.control.PIDController
+import com.areslib.control.ShotResult
+import com.areslib.control.ShotSetup
+import com.areslib.math.ChassisSpeeds
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
+import com.areslib.math.Translation2d
 import com.areslib.pathing.Path
 import com.areslib.reducer.rootReducer
 
@@ -31,6 +35,14 @@ class ARESRobot : TimedRobot() {
     private var prevLB = false
     private var intakeDeployed = false
 
+    // Slamtake state tracking
+    private var slamtakeActive = false
+    private var slamtakeStartTime = 0.0
+
+    // Pre-allocated ShotResult for SOTM (zero-allocation)
+    private val shotResult = ShotResult()
+    private val speakerTranslation = Translation2d(0.0, 5.54)
+
     // Simulation timing
     private var lastSimTime = 0.0
 
@@ -50,21 +62,26 @@ class ARESRobot : TimedRobot() {
         val isReal = RobotBase.isReal()
         robot = if (isReal) {
             try {
-                val leaderFX = com.ctre.phoenix6.hardware.TalonFX(10)
-                val followerFX = com.ctre.phoenix6.hardware.TalonFX(11)
-                val cowlFX = com.ctre.phoenix6.hardware.TalonFX(12)
-                val pivotFX = com.ctre.phoenix6.hardware.TalonFX(13)
-                val rollerFX = com.ctre.phoenix6.hardware.TalonFX(14)
-                val encoder = com.ctre.phoenix6.hardware.CANcoder(15)
-                val feederFX = com.ctre.phoenix6.hardware.TalonFX(16)
-                val beamBreak = edu.wpi.first.wpilibj.DigitalInput(0)
+                // Marvin 19 Physical Hardware on "CAN2" high-speed bus
+                val leftMasterFX = com.ctre.phoenix6.hardware.TalonFX(9, "CAN2")
+                val leftFollowerFX = com.ctre.phoenix6.hardware.TalonFX(10, "CAN2")
+                val rightMasterFX = com.ctre.phoenix6.hardware.TalonFX(11, "CAN2")
+                val rightFollowerFX = com.ctre.phoenix6.hardware.TalonFX(12, "CAN2")
+                val cowlFX = com.ctre.phoenix6.hardware.TalonFX(13, "CAN2")
+                val pivotFX = com.ctre.phoenix6.hardware.TalonFX(14, "CAN2")
+                val rollerFX = com.ctre.phoenix6.hardware.TalonFX(15, "CAN2")
+                val floorFX = com.ctre.phoenix6.hardware.TalonFX(16, "CAN2")
+                val climberFX = com.ctre.phoenix6.hardware.TalonFX(19, "CAN2")
+                val feederFX = com.ctre.phoenix6.hardware.TalonFX(20, "CAN2")
 
                 FrcSwerveRobot(
                     swerveIO = null, // swerveIO = FRCSwerveHardwareIO(TunerConstants.DriveTrain)
-                    flywheelIO = FRCFlywheelHardwareIO(leaderFX, followerFX),
+                    flywheelIO = FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX),
                     cowlIO = FRCCowlHardwareIO(cowlFX),
-                    intakeIO = FRCIntakeHardwareIO(pivotFX, rollerFX, encoder),
-                    feederIO = FRCFeederHardwareIO(feederFX, beamBreak),
+                    intakeIO = FRCIntakeHardwareIO(pivotFX, rollerFX),
+                    feederIO = FRCFeederHardwareIO(feederFX),
+                    floorIO = FRCFloorHardwareIO(floorFX),
+                    climberIO = FRCClimberHardwareIO(climberFX),
                     isSimulation = false
                 )
             } catch (e: Exception) {
@@ -111,36 +128,134 @@ class ARESRobot : TimedRobot() {
         val applyDeadband = { value: Double -> if (Math.abs(value) < 0.1) 0.0 else value }
         val forward = applyDeadband(-controller.leftY) * 4.5
         val strafe = applyDeadband(-controller.leftX) * 4.5
-        val rotation = applyDeadband(-controller.rightX) * Math.PI
+        var rotation = applyDeadband(-controller.rightX) * Math.PI
 
+        val currentPose = Pose2d(
+            robot.store.state.drive.odometryX,
+            robot.store.state.drive.odometryY,
+            Rotation2d(robot.store.state.drive.odometryHeading)
+        )
+
+        // ── Right Trigger: Shoot-on-the-Move (SOTM) ──
+        val rtPressed = controller.rightTriggerAxis > 0.5
+        if (rtPressed) {
+            // Compute field-centric velocity from robot-centric state velocities
+            val rx = robot.store.state.drive.xVelocityMetersPerSecond
+            val ry = robot.store.state.drive.yVelocityMetersPerSecond
+            val omega = robot.store.state.drive.angularVelocityRadiansPerSecond
+            
+            val cos = currentPose.heading.cos
+            val sin = currentPose.heading.sin
+            val fieldVx = rx * cos - ry * sin
+            val fieldVy = rx * sin + ry * cos
+            
+            val fieldSpeeds = ChassisSpeeds(fieldVx, fieldVy, omega)
+            
+            // Execute lookahead math
+            ShotSetup.calculate(currentPose, fieldSpeeds, speakerTranslation, shotResult)
+            
+            // Dispatch shooter parameters
+            robot.store.dispatch(RobotAction.SetFlywheelSpeed(shotResult.targetFlywheelRpm))
+            robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
+            robot.store.dispatch(RobotAction.SetCowlAngle(shotResult.targetCowlAngleDegrees))
+            
+            // Steer drivetrain using P controller + direct feedforward
+            val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
+            var wrappedError = headingError
+            while (wrappedError > Math.PI) wrappedError -= 2.0 * Math.PI
+            while (wrappedError < -Math.PI) wrappedError += 2.0 * Math.PI
+            
+            val kp = 4.0
+            rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec
+            
+            // Intelligent SOTM feeder auto-trigger
+            val headingAligned = Math.abs(wrappedError) < 0.05
+            val rpmAligned = Math.abs(robot.store.state.superstructure.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
+            if (headingAligned && rpmAligned) {
+                robot.store.dispatch(RobotAction.SetFeederSpeed(10.0))
+            } else {
+                robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+            }
+        } else {
+            // Standard flywheel / feeder stop if not shooting/intaking
+            robot.store.dispatch(RobotAction.SetFlywheelActive(false, com.areslib.util.RobotClock.currentTimeMillis()))
+            // Feeder speed is handled below (dependent on LT/LB)
+        }
+
+        // Apply drive command
         robot.drive.joystickDrive(forward, strafe, rotation)
 
-        // RB: Flywheel
-        if (controller.rightBumper) {
-            robot.shooter.spinUp(4000.0)
-        } else {
-            robot.shooter.stop()
+        // ── A Button: Slamtake Sequence ──
+        val aPressed = controller.aButton
+        if (aPressed && !slamtakeActive) {
+            slamtakeActive = true
+            slamtakeStartTime = Timer.getFPGATimestamp()
         }
 
-        // RT: Transfer/Shoot
-        val rtPressed = controller.rightTriggerAxis > 0.5
-        if (rtPressed) robot.shooter.shoot()
+        // ── Left Bumper: Unjam ──
+        val lbPressed = controller.leftBumper
 
-        // LB: Toggle intake deploy
-        val currLB = controller.leftBumper
-        if (currLB && !prevLB) {
-            intakeDeployed = !intakeDeployed
-            if (intakeDeployed) robot.intake.deploy() else robot.intake.retract()
-        }
-        prevLB = currLB
-
-        // LT: Intake rollers
+        // ── Left Trigger: Intake/Feeder active run ──
         val ltPressed = controller.leftTriggerAxis > 0.5
-        robot.intake.setRollerSpeed(if (ltPressed) 10.0 else 0.0)
 
-        // DPad: Cowl angle
-        if (controller.pov == 0) robot.shooter.setCowlAngle(45.0)
-        else if (controller.pov == 180) robot.shooter.setCowlAngle(15.0)
+        // Dispatch states according to pilot control priorities
+        when {
+            lbPressed -> {
+                // Unjam sequence takes top priority
+                slamtakeActive = false
+                robot.store.dispatch(RobotAction.SetIntakePivot(deployed = true))
+                robot.store.dispatch(RobotAction.SetIntakeRollers(-5.0))
+                robot.store.dispatch(RobotAction.SetFloorSpeed(-5.0))
+                robot.store.dispatch(RobotAction.SetFeederSpeed(-5.0))
+            }
+            slamtakeActive -> {
+                val elapsed = Timer.getFPGATimestamp() - slamtakeStartTime
+                if (elapsed < 0.5) {
+                    robot.store.dispatch(RobotAction.SetIntakePivot(deployed = true))
+                    robot.store.dispatch(RobotAction.SetIntakeRollers(10.0))
+                    robot.store.dispatch(RobotAction.SetFloorSpeed(10.0))
+                    robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                } else if (elapsed < 1.5) {
+                    robot.store.dispatch(RobotAction.SetIntakePivot(deployed = false))
+                    robot.store.dispatch(RobotAction.SetIntakeRollers(10.0))
+                    robot.store.dispatch(RobotAction.SetFloorSpeed(10.0))
+                    robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                } else {
+                    slamtakeActive = false
+                    robot.store.dispatch(RobotAction.SetIntakePivot(deployed = false))
+                    robot.store.dispatch(RobotAction.SetIntakeRollers(0.0))
+                    robot.store.dispatch(RobotAction.SetFloorSpeed(0.0))
+                    if (!rtPressed) {
+                        robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                    }
+                }
+            }
+            ltPressed -> {
+                // Active manual intake
+                robot.store.dispatch(RobotAction.SetIntakePivot(deployed = true))
+                robot.store.dispatch(RobotAction.SetIntakeRollers(10.0))
+                robot.store.dispatch(RobotAction.SetFloorSpeed(10.0))
+                robot.store.dispatch(RobotAction.SetFeederSpeed(10.0))
+            }
+            else -> {
+                // Default stop everything
+                robot.store.dispatch(RobotAction.SetIntakePivot(deployed = false))
+                robot.store.dispatch(RobotAction.SetIntakeRollers(0.0))
+                robot.store.dispatch(RobotAction.SetFloorSpeed(0.0))
+                if (!rtPressed) {
+                    robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                }
+            }
+        }
+
+        // ── POV Up/Down: Climber Voltage ──
+        if (controller.pov == 0) {
+            robot.store.dispatch(RobotAction.SetClimberVoltage(6.0))
+        } else if (controller.pov == 180) {
+            robot.store.dispatch(RobotAction.SetClimberVoltage(-6.0))
+        } else {
+            robot.store.dispatch(RobotAction.SetClimberVoltage(0.0))
+        }
     }
 
     // ── Autonomous ──

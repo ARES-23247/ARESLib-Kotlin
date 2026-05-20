@@ -118,12 +118,24 @@ object SuperstructureReducer {
                     feeder = state.feeder.copy(targetVelocityRps = action.speedRps)
                 )
             }
+            is RobotAction.SetFloorSpeed -> {
+                state.copy(
+                    floor = state.floor.copy(targetVelocityRps = action.speedRps)
+                )
+            }
+            is RobotAction.SetClimberVoltage -> {
+                state.copy(
+                    climber = state.climber.copy(targetVoltage = action.volts)
+                )
+            }
             is RobotAction.SuperstructureSensorUpdate -> {
                 state.copy(
                     flywheel = state.flywheel.copy(velocityRpm = action.flywheelRpm),
                     cowl = state.cowl.copy(angleDegrees = action.cowlAngle),
                     intake = state.intake.copy(pivotAngleDegrees = action.intakeAngle),
-                    feeder = state.feeder.copy(gamePieceDetected = action.pieceDetected)
+                    feeder = state.feeder.copy(gamePieceDetected = action.pieceDetected),
+                    floor = state.floor.copy(velocityRps = action.floorVelocityRps),
+                    climber = state.climber.copy(extensionMeters = action.climberExtensionMeters)
                 )
             }
             else -> state
