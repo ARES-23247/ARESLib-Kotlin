@@ -67,7 +67,7 @@ object CostmapReducer {
                 }
 
                 state.copy(
-                    obstacles = currentObstacles,
+                    obstacles = currentObstacles.toList(),
                     lastUpdateTimestampMs = action.timestampMs
                 )
             }

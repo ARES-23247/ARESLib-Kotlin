@@ -5,15 +5,34 @@ package com.areslib.math
  * Used primarily for 3-DOF Pose2d covariance in Kalman Filters.
  */
 data class Matrix3x3(
-    val m00: Double = 0.0, val m01: Double = 0.0, val m02: Double = 0.0,
-    val m10: Double = 0.0, val m11: Double = 0.0, val m12: Double = 0.0,
-    val m20: Double = 0.0, val m21: Double = 0.0, val m22: Double = 0.0
+    var m00: Double = 0.0, var m01: Double = 0.0, var m02: Double = 0.0,
+    var m10: Double = 0.0, var m11: Double = 0.0, var m12: Double = 0.0,
+    var m20: Double = 0.0, var m21: Double = 0.0, var m22: Double = 0.0
 ) {
     operator fun plus(other: Matrix3x3) = Matrix3x3(
         m00 + other.m00, m01 + other.m01, m02 + other.m02,
         m10 + other.m10, m11 + other.m11, m12 + other.m12,
         m20 + other.m20, m21 + other.m21, m22 + other.m22
     )
+
+    fun setTo(other: Matrix3x3) {
+        m00 = other.m00; m01 = other.m01; m02 = other.m02
+        m10 = other.m10; m11 = other.m11; m12 = other.m12
+        m20 = other.m20; m21 = other.m21; m22 = other.m22
+    }
+
+    fun addInPlace(other: Matrix3x3) {
+        m00 += other.m00; m01 += other.m01; m02 += other.m02
+        m10 += other.m10; m11 += other.m11; m12 += other.m12
+        m20 += other.m20; m21 += other.m21; m22 += other.m22
+    }
+
+    fun multiplyInPlace(scalar: Double) {
+        m00 *= scalar; m01 *= scalar; m02 *= scalar
+        m10 *= scalar; m11 *= scalar; m12 *= scalar
+        m20 *= scalar; m21 *= scalar; m22 *= scalar
+    }
+
 
     operator fun minus(other: Matrix3x3) = Matrix3x3(
         m00 - other.m00, m01 - other.m01, m02 - other.m02,
@@ -63,7 +82,7 @@ data class Matrix3x3(
                   m01 * (m10 * m22 - m12 * m20) +
                   m02 * (m10 * m21 - m11 * m20)
 
-        if (det == 0.0) return Matrix3x3() // Return zero matrix if non-invertible
+        if (kotlin.math.abs(det) < 1e-9) return Matrix3x3() // Return zero matrix if non-invertible
 
         val invDet = 1.0 / det
 

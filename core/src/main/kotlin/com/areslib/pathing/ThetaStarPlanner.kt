@@ -1,7 +1,6 @@
 package com.areslib.pathing
 
 import com.areslib.math.Translation2d
-import java.util.PriorityQueue
 import kotlin.math.roundToInt
 
 /**
@@ -16,28 +15,71 @@ import kotlin.math.roundToInt
  */
 object ThetaStarPlanner {
 
-    private class Node(
-        val x: Int,
-        val y: Int,
-        var g: Double = Double.POSITIVE_INFINITY,
-        var h: Double = 0.0,
-        var parent: Node? = null
-    ) : Comparable<Node> {
-        val f: Double get() = g + h
+    private class LongHeap(capacity: Int) {
+        var data = LongArray(capacity)
+        var size = 0
 
-        override fun compareTo(other: Node): Int {
-            return f.compareTo(other.f)
+        fun add(value: Long) {
+            if (size == data.size) {
+                data = data.copyOf(data.size * 2)
+            }
+            var i = size
+            size++
+            while (i > 0) {
+                val p = (i - 1) ushr 1
+                if (data[p] <= value) break
+                data[i] = data[p]
+                i = p
+            }
+            data[i] = value
         }
 
-        override fun equals(other: Any?): Boolean {
-            if (other !is Node) return false
-            return x == other.x && y == other.y
+        fun poll(): Long {
+            val result = data[0]
+            size--
+            if (size > 0) {
+                val value = data[size]
+                var i = 0
+                while ((i shl 1) + 1 < size) {
+                    var child = (i shl 1) + 1
+                    if (child + 1 < size && data[child + 1] < data[child]) {
+                        child++
+                    }
+                    if (value <= data[child]) break
+                    data[i] = data[child]
+                    i = child
+                }
+                data[i] = value
+            }
+            return result
         }
 
-        override fun hashCode(): Int {
-            return x * 31 + y
+        fun clear() { size = 0 }
+        
+        fun isNotEmpty(): Boolean = size > 0
+    }
+
+    private class PlannerState(capacity: Int) {
+        var gCosts = DoubleArray(capacity) { Double.POSITIVE_INFINITY }
+        var parents = IntArray(capacity) { -1 }
+        var closedSet = BooleanArray(capacity)
+        var openQueue = LongHeap(capacity)
+
+        fun ensureCapacity(capacity: Int) {
+            if (gCosts.size < capacity) {
+                gCosts = DoubleArray(capacity) { Double.POSITIVE_INFINITY }
+                parents = IntArray(capacity) { -1 }
+                closedSet = BooleanArray(capacity)
+            } else {
+                gCosts.fill(Double.POSITIVE_INFINITY, 0, capacity)
+                parents.fill(-1, 0, capacity)
+                closedSet.fill(false, 0, capacity)
+            }
+            openQueue.clear()
         }
     }
+
+    private val threadLocalState = ThreadLocal.withInitial { PlannerState(10000) }
 
     /**
      * Plans a globally safe path from start to end coordinates.
@@ -48,6 +90,9 @@ object ThetaStarPlanner {
         start: Translation2d,
         end: Translation2d
     ): List<Translation2d> {
+        require(costmap.resolutionMeters > 0.0 && !costmap.resolutionMeters.isInfinite()) { "Costmap resolution must be positive finite" }
+        require(start.x.isFinite() && start.y.isFinite() && end.x.isFinite() && end.y.isFinite()) { "Start and end coordinates must be finite" }
+
         val startX = ((start.x - costmap.origin.x) / costmap.resolutionMeters).roundToInt()
         val startY = ((start.y - costmap.origin.y) / costmap.resolutionMeters).roundToInt()
         val endX = ((end.x - costmap.origin.x) / costmap.resolutionMeters).roundToInt()
@@ -58,49 +103,61 @@ object ThetaStarPlanner {
             return listOf(start, end)
         }
 
-        // Closed set and Node Cache to prevent object re-allocations
-        val openSet = PriorityQueue<Node>()
-        val closedSet = HashSet<Int>()
-        val nodeMap = HashMap<Int, Node>()
+        // Out of bounds check
+        if (startX !in 0 until costmap.widthCells || startY !in 0 until costmap.heightCells) return emptyList()
+        if (endX !in 0 until costmap.widthCells || endY !in 0 until costmap.heightCells) return emptyList()
 
-        fun getNode(x: Int, y: Int): Node {
-            val key = y * costmap.widthCells + x
-            return nodeMap.getOrPut(key) { Node(x, y) }
-        }
+        val capacity = costmap.widthCells * costmap.heightCells
+        val state = threadLocalState.get()
+        state.ensureCapacity(capacity)
 
-        val startNode = getNode(startX, startY)
-        startNode.g = 0.0
-        startNode.h = heuristic(startX, startY, endX, endY)
-        startNode.parent = startNode
-        openSet.add(startNode)
+        val gCosts = state.gCosts
+        val parents = state.parents
+        val closedSet = state.closedSet
+        val openQueue = state.openQueue
 
-        while (openSet.isNotEmpty()) {
-            val curr = openSet.poll()
+        val startKey = startY * costmap.widthCells + startX
+        val endKey = endY * costmap.widthCells + endX
 
-            if (curr.x == endX && curr.y == endY) {
+        gCosts[startKey] = 0.0
+        parents[startKey] = startKey
+        
+        val startH = heuristic(startX, startY, endX, endY)
+        val startFloatBits = startH.toFloat().toBits().toLong() and 0xFFFFFFFFL
+        val startHeapVal = (startFloatBits shl 32) or (startKey.toLong() and 0xFFFFFFFFL)
+        openQueue.add(startHeapVal)
+
+        while (openQueue.isNotEmpty()) {
+            val heapVal = openQueue.poll()
+            val currKey = (heapVal and 0xFFFFFFFFL).toInt()
+
+            if (closedSet[currKey]) continue
+
+            val currX = currKey % costmap.widthCells
+            val currY = currKey / costmap.widthCells
+
+            if (currX == endX && currY == endY) {
                 // Path found! Reconstruct waypoints
-                return reconstructPath(curr, costmap, start, end)
+                return reconstructPath(currKey, costmap, start, end, parents)
             }
 
-            val key = curr.y * costmap.widthCells + curr.x
-            closedSet.add(key)
+            closedSet[currKey] = true
 
             // Explore 8-way neighbors
             for (dy in -1..1) {
                 for (dx in -1..1) {
                     if (dx == 0 && dy == 0) continue
 
-                    val nx = curr.x + dx
-                    val ny = curr.y + dy
+                    val nx = currX + dx
+                    val ny = currY + dy
 
                     // Ensure cell is bounds and traversable
                     if (!costmap.isCellTraversable(nx, ny)) continue
 
                     val nKey = ny * costmap.widthCells + nx
-                    if (closedSet.contains(nKey)) continue
+                    if (closedSet[nKey]) continue
 
-                    val neighbor = getNode(nx, ny)
-                    updateVertex(curr, neighbor, openSet, costmap, endX, endY)
+                    updateVertex(currKey, currX, currY, nKey, nx, ny, costmap, endX, endY, state)
                 }
             }
         }
@@ -109,36 +166,52 @@ object ThetaStarPlanner {
     }
 
     private fun updateVertex(
-        curr: Node,
-        neighbor: Node,
-        openSet: PriorityQueue<Node>,
+        currKey: Int,
+        currX: Int,
+        currY: Int,
+        nKey: Int,
+        nx: Int,
+        ny: Int,
         costmap: Costmap,
         endX: Int,
-        endY: Int
+        endY: Int,
+        state: PlannerState
     ) {
-        val parent = curr.parent ?: curr
+        val gCosts = state.gCosts
+        val parents = state.parents
+        val openQueue = state.openQueue
+
+        var parentKey = parents[currKey]
+        if (parentKey == -1) parentKey = currKey
+
+        val parentX = parentKey % costmap.widthCells
+        val parentY = parentKey / costmap.widthCells
 
         // Theta* Line of Sight Check:
         // If there is line of sight from the parent to the neighbor, 
         // bypass the current node to allow any-angle straight pathing.
-        if (lineOfSight(costmap, parent.x, parent.y, neighbor.x, neighbor.y)) {
-            val newG = parent.g + distance(parent.x, parent.y, neighbor.x, neighbor.y)
-            if (newG < neighbor.g) {
-                openSet.remove(neighbor)
-                neighbor.g = newG
-                neighbor.h = heuristic(neighbor.x, neighbor.y, endX, endY)
-                neighbor.parent = parent
-                openSet.add(neighbor)
+        if (lineOfSight(costmap, parentX, parentY, nx, ny)) {
+            val newG = gCosts[parentKey] + distance(parentX, parentY, nx, ny)
+            if (newG < gCosts[nKey]) {
+                gCosts[nKey] = newG
+                parents[nKey] = parentKey
+                
+                val f = newG + heuristic(nx, ny, endX, endY)
+                val floatBits = f.toFloat().toBits().toLong() and 0xFFFFFFFFL
+                val heapVal = (floatBits shl 32) or (nKey.toLong() and 0xFFFFFFFFL)
+                openQueue.add(heapVal)
             }
         } else {
             // Fall back to standard A* update
-            val newG = curr.g + distance(curr.x, curr.y, neighbor.x, neighbor.y)
-            if (newG < neighbor.g) {
-                openSet.remove(neighbor)
-                neighbor.g = newG
-                neighbor.h = heuristic(neighbor.x, neighbor.y, endX, endY)
-                neighbor.parent = curr
-                openSet.add(neighbor)
+            val newG = gCosts[currKey] + distance(currX, currY, nx, ny)
+            if (newG < gCosts[nKey]) {
+                gCosts[nKey] = newG
+                parents[nKey] = currKey
+                
+                val f = newG + heuristic(nx, ny, endX, endY)
+                val floatBits = f.toFloat().toBits().toLong() and 0xFFFFFFFFL
+                val heapVal = (floatBits shl 32) or (nKey.toLong() and 0xFFFFFFFFL)
+                openQueue.add(heapVal)
             }
         }
     }
@@ -193,21 +266,26 @@ object ThetaStarPlanner {
     }
 
     private fun reconstructPath(
-        endNode: Node,
+        endKey: Int,
         costmap: Costmap,
         start: Translation2d,
-        end: Translation2d
+        end: Translation2d,
+        parents: IntArray
     ): List<Translation2d> {
         val path = mutableListOf<Translation2d>()
-        var curr: Node? = endNode
+        var currKey = endKey
 
-        while (curr != null) {
-            val fx = curr.x * costmap.resolutionMeters + costmap.origin.x
-            val fy = curr.y * costmap.resolutionMeters + costmap.origin.y
+        while (true) {
+            val currX = currKey % costmap.widthCells
+            val currY = currKey / costmap.widthCells
+
+            val fx = currX * costmap.resolutionMeters + costmap.origin.x
+            val fy = currY * costmap.resolutionMeters + costmap.origin.y
             path.add(Translation2d(fx, fy))
 
-            if (curr.parent == curr) break
-            curr = curr.parent
+            val parentKey = parents[currKey]
+            if (parentKey == currKey || parentKey == -1) break
+            currKey = parentKey
         }
 
         path.reverse()

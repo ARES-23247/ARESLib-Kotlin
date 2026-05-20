@@ -23,18 +23,45 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
     }
 
     private var targetPower: Double = 0.0
+    private var stallStartTimeMs = 0L
+    private var isStalled = false
 
     override var powerScale: Double = 1.0
         set(value) {
             field = value.coerceIn(0.0, 1.0)
-            motor.power = targetPower * field
+            if (!isStalled) motor.power = targetPower * field
         }
 
     override var power: Double
         get() = targetPower
         set(value) {
             targetPower = value
-            motor.power = value * powerScale
+            val timeMs = com.areslib.util.RobotClock.currentTimeMillis()
+            val currentVel = this.velocity
+
+            // Automated stall detection: comparing encoder velocities against applied voltage
+            if (kotlin.math.abs(value) > 0.5 && kotlin.math.abs(currentVel) < 10.0) {
+                if (stallStartTimeMs == 0L) {
+                    stallStartTimeMs = timeMs
+                } else if (timeMs - stallStartTimeMs > 500) {
+                    isStalled = true
+                }
+            } else {
+                stallStartTimeMs = 0L
+                isStalled = false
+            }
+
+            // Current spike limit (9.2A FTC breaker threshold)
+            val amps = this.currentAmps
+            if (amps > 9.2) {
+                isStalled = true // Trip virtual breaker
+            }
+
+            if (isStalled) {
+                motor.power = 0.0
+            } else {
+                motor.power = value * powerScale
+            }
         }
 
     override val velocity: Double
@@ -187,14 +214,18 @@ class FtcImu(private val imu: IMU) : ImuIO {
     }
 
     override fun updateInputs(inputs: com.areslib.hardware.ImuInputs) {
-        val yawPitchRoll = imu.getRobotYawPitchRollAngles()
-        inputs.headingRadians = yawPitchRoll.getYaw(AngleUnit.RADIANS) - headingOffset
-        inputs.pitchRadians = yawPitchRoll.getPitch(AngleUnit.RADIANS)
-        inputs.rollRadians = yawPitchRoll.getRoll(AngleUnit.RADIANS)
-        
-        val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
-        inputs.yawVelocityRadPerSec = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        try {
+            val yawPitchRoll = imu.getRobotYawPitchRollAngles()
+            inputs.headingRadians = yawPitchRoll.getYaw(AngleUnit.RADIANS) - headingOffset
+            inputs.pitchRadians = yawPitchRoll.getPitch(AngleUnit.RADIANS)
+            inputs.rollRadians = yawPitchRoll.getRoll(AngleUnit.RADIANS)
+            
+            val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
+            inputs.yawVelocityRadPerSec = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+            inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        } catch (e: Exception) {
+            // Read timeout / fallback: gracefully swallow exception to prevent loop hangs
+        }
     }
 
     override fun resetHeading() {

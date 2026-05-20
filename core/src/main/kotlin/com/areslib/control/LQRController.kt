@@ -36,7 +36,23 @@ class LQRController(
     // Safety and physical limits
     var minU = -12.0 // Min control effort (typically motor voltage)
     var maxU = 12.0  // Max control effort
-    var maxUChangePerSec: Double? = null // Optional slew-rate limit
+    var maxUChangePerSec: Double = Double.NaN // Optional slew-rate limit
+
+    // Pre-allocated buffers for zero-allocation calculate()
+    private val yMat = Matrix(numOutputs, 1)
+    private val xRefMat = Matrix(numStates, 1)
+    private val stateError = Matrix(numStates, 1)
+    private val kTimesError = Matrix(numInputs, 1)
+    private val rawU = Matrix(numInputs, 1)
+    private val saturatedU = Matrix(numInputs, 1)
+    private val aTimesXHat = Matrix(numStates, 1)
+    private val bTimesU = Matrix(numStates, 1)
+    private val prediction = Matrix(numStates, 1)
+    private val cTimesXHat = Matrix(numOutputs, 1)
+    private val measuredDiff = Matrix(numOutputs, 1)
+    private val correction = Matrix(numStates, 1)
+    private val nextXHat = Matrix(numStates, 1)
+    private val outU = DoubleArray(numInputs)
 
     /**
      * Initializes state space matrices.
@@ -108,6 +124,8 @@ class LQRController(
      * Calculates the optimal control input voltage.
      * Updates the discrete Kalman observer state under the hood.
      *
+     * WARNING: Returns a pre-allocated array. Do not store the reference or use across threads.
+     *
      * @param y Measured sensor outputs from the system.
      * @param xRef Desired reference target state.
      * @param dtSeconds Elapsed time since last update.
@@ -119,40 +137,53 @@ class LQRController(
     ): DoubleArray {
         require(y.size == numOutputs) { "Measurement dimensions mismatch" }
         require(xRef.size == numStates) { "Reference state dimensions mismatch" }
+        require(y.all { it.isFinite() } && xRef.all { it.isFinite() } && dtSeconds > 0) {
+            "Inputs must be finite and dtSeconds must be positive"
+        }
 
-        val yMat = Matrix(numOutputs, 1, y)
-        val xRefMat = Matrix(numStates, 1, xRef)
+        yMat.copyFrom(y)
+        xRefMat.copyFrom(xRef)
 
         // 1. Calculate control input: u = -K * (xHat - xRef)
-        val stateError = xHat.subtract(xRefMat)
-        val rawU = K.multiply(stateError).multiplyScalar(-1.0)
+        xHat.subtractInto(xRefMat, stateError)
+        K.multiplyInto(stateError, kTimesError)
+        kTimesError.multiplyScalarInto(-1.0, rawU)
 
         // 2. Apply motor saturation constraints
-        val saturatedU = Matrix(numInputs, 1)
         for (i in 0 until numInputs) {
             var inputVal = rawU.get(i, 0)
             
             // Apply slew rate limits
-            maxUChangePerSec?.let { limit ->
-                val maxChange = limit * dtSeconds
+            if (!maxUChangePerSec.isNaN()) {
+                val maxChange = maxUChangePerSec * dtSeconds
                 val lastVal = u.get(i, 0)
                 val change = (inputVal - lastVal).coerceIn(-maxChange, maxChange)
                 inputVal = lastVal + change
             }
 
-            // Apply voltage clipping
-            saturatedU.set(i, 0, inputVal.coerceIn(minU, maxU))
+            // Apply voltage clipping and NaN protection
+            inputVal = inputVal.coerceIn(minU, maxU)
+            if (inputVal.isNaN() || inputVal.isInfinite()) inputVal = 0.0
+
+            saturatedU.set(i, 0, inputVal)
+            outU[i] = inputVal
         }
 
         // 3. Update Discrete Kalman Filter Observer:
         // xHat_next = A * xHat + B * u + L * (y - C * xHat)
-        val prediction = A.multiply(xHat).add(B.multiply(saturatedU))
-        val measuredDiff = yMat.subtract(C.multiply(xHat))
-        val correction = L.multiply(measuredDiff)
-        xHat = prediction.add(correction)
+        A.multiplyInto(xHat, aTimesXHat)
+        B.multiplyInto(saturatedU, bTimesU)
+        aTimesXHat.addInto(bTimesU, prediction)
+        
+        C.multiplyInto(xHat, cTimesXHat)
+        yMat.subtractInto(cTimesXHat, measuredDiff)
+        L.multiplyInto(measuredDiff, correction)
+        
+        prediction.addInto(correction, nextXHat)
+        xHat.copyFrom(nextXHat)
 
-        u = saturatedU
-        return saturatedU.getColumn(0)
+        u.copyFrom(saturatedU)
+        return outU
     }
 
     /**
@@ -164,6 +195,38 @@ class LQRController(
         fun get(r: Int, c: Int): Double = data[r * cols + c]
         fun set(r: Int, c: Int, v: Double) { data[r * cols + c] = v }
 
+        fun copyFrom(other: Matrix) {
+            System.arraycopy(other.data, 0, this.data, 0, this.data.size)
+        }
+
+        fun copyFrom(arr: DoubleArray) {
+            System.arraycopy(arr, 0, this.data, 0, this.data.size)
+        }
+
+        fun subtractInto(other: Matrix, out: Matrix) {
+            for (i in data.indices) out.data[i] = this.data[i] - other.data[i]
+        }
+
+        fun addInto(other: Matrix, out: Matrix) {
+            for (i in data.indices) out.data[i] = this.data[i] + other.data[i]
+        }
+
+        fun multiplyScalarInto(s: Double, out: Matrix) {
+            for (i in data.indices) out.data[i] = this.data[i] * s
+        }
+
+        fun multiplyInto(other: Matrix, out: Matrix) {
+            for (r in 0 until rows) {
+                for (c in 0 until other.cols) {
+                    var sum = 0.0
+                    for (k in 0 until cols) {
+                        sum += this.get(r, k) * other.get(k, c)
+                    }
+                    out.set(r, c, sum)
+                }
+            }
+        }
+
         fun copy(): Matrix = Matrix(rows, cols, data.clone())
 
         fun getColumn(col: Int): DoubleArray {
@@ -172,6 +235,12 @@ class LQRController(
                 colData[r] = get(r, col)
             }
             return colData
+        }
+
+        fun getColumnInto(col: Int, out: DoubleArray) {
+            for (r in 0 until rows) {
+                out[r] = get(r, col)
+            }
         }
 
         fun add(other: Matrix): Matrix {

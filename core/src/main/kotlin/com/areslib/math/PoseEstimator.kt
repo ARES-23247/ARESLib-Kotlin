@@ -3,10 +3,51 @@ package com.areslib.math
 import com.areslib.state.VisionMeasurement
 
 data class PoseHistoryEntry(
-    val timestampMs: Long = 0L,
-    val pose: Pose2d = Pose2d(),
-    val covariance: Matrix3x3 = Matrix3x3.IDENTITY
+    var timestampMs: Long = 0L,
+    var pose: Pose2d = Pose2d(),
+    var covariance: Matrix3x3 = Matrix3x3.IDENTITY
 )
+
+class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEntry>() {
+    private val entries = Array(capacity) { PoseHistoryEntry() }
+    private var head = 0
+    private var count = 0
+
+    override val size: Int get() = count
+
+    override fun get(index: Int): PoseHistoryEntry {
+        if (index < 0 || index >= count) throw IndexOutOfBoundsException("Index: $index, Size: $count")
+        val physicalIndex = if (count == capacity) (head + index) % capacity else index
+        return entries[physicalIndex]
+    }
+
+    fun addEntry(timestampMs: Long, pose: Pose2d, covariance: Matrix3x3) {
+        val entry = entries[head]
+        entry.timestampMs = timestampMs
+        entry.pose = pose
+        entry.covariance = covariance
+        head = (head + 1) % capacity
+        if (count < capacity) count++
+    }
+
+    fun deepCopy(): HistoryBuffer {
+        val newBuf = HistoryBuffer(capacity)
+        for (i in 0 until capacity) {
+            newBuf.entries[i] = entries[i].copy()
+        }
+        newBuf.head = head
+        newBuf.count = count
+        return newBuf
+    }
+    
+    // allow setting existing entry to avoid object creation
+    fun updateEntry(index: Int, timestampMs: Long, pose: Pose2d, covariance: Matrix3x3) {
+        val entry = get(index)
+        entry.timestampMs = timestampMs
+        entry.pose = pose
+        entry.covariance = covariance
+    }
+}
 
 /**
  * Immutable chronological state representation of the Pose Estimator.
@@ -21,7 +62,7 @@ data class PoseHistoryEntry(
 data class PoseEstimatorState(
     val estimatedPose: Pose2d = Pose2d(),
     val covariance: Matrix3x3 = Matrix3x3.IDENTITY,
-    val history: List<PoseHistoryEntry> = emptyList(), // Max size typically ~50
+    val history: HistoryBuffer = HistoryBuffer(50), // Max size typically ~50
     val isBeached: Boolean = false,
     val lastUnbeachedTimeMs: Long = 0L
 )
@@ -82,6 +123,13 @@ object PoseEstimator {
         gyroRateRadPerSec: Double = 0.0,
         dtSeconds: Double = 0.02
     ): PoseEstimatorState {
+        val args = doubleArrayOf(
+            deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
+            pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
+            gyroRateRadPerSec, dtSeconds
+        )
+        if (args.any { it.isNaN() || it.isInfinite() }) return state
+
         val tiltDegrees = kotlin.math.sqrt(pitchDegrees * pitchDegrees + rollDegrees * rollDegrees)
         val tiltVelocity = kotlin.math.sqrt(pitchVelocityDegPerSec * pitchVelocityDegPerSec + rollVelocityDegPerSec * rollVelocityDegPerSec)
 
@@ -98,8 +146,8 @@ object PoseEstimator {
 
         // Catastrophic tilt / beaching check: Freeze odometry updates
         if (currentlyBeached) {
-            val newEntry = PoseHistoryEntry(timestampMs, state.estimatedPose, state.covariance)
-            val newHistory = (state.history + newEntry).takeLast(MAX_HISTORY_SIZE)
+            val newHistory = state.history.deepCopy()
+            newHistory.addEntry(timestampMs, state.estimatedPose, state.covariance)
             return state.copy(history = newHistory, isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
         }
 
@@ -144,8 +192,8 @@ object PoseEstimator {
         // Simple propagation: P = P + dynamic Q
         val newCovariance = state.covariance + currentQ
 
-        val newEntry = PoseHistoryEntry(timestampMs, newPose, newCovariance)
-        val newHistory = (state.history + newEntry).takeLast(MAX_HISTORY_SIZE)
+        val newHistory = state.history.deepCopy()
+        newHistory.addEntry(timestampMs, newPose, newCovariance)
 
         return state.copy(
             estimatedPose = newPose,
@@ -184,6 +232,12 @@ object PoseEstimator {
         mahalanobisThreshold: Double = 12.0
     ): PoseEstimatorState {
         if (state.history.isEmpty()) return state
+        
+        if (numTags <= 0) return state
+        if (visionStdDevs.x.isNaN() || visionStdDevs.x.isInfinite() || 
+            visionStdDevs.y.isNaN() || visionStdDevs.y.isInfinite() || 
+            visionStdDevs.z.isNaN() || visionStdDevs.z.isInfinite()) return state
+        if (mahalanobisThreshold.isNaN() || mahalanobisThreshold.isInfinite() || mahalanobisThreshold <= 0.0) return state
 
         // Find the index of the closest history entry before the vision measurement
         var closestIndex = -1
@@ -278,9 +332,9 @@ object PoseEstimator {
         // Now we must replay all odometry deltas from closestIndex + 1 to the end
         var currentPose = updatedPose
         var currentCov = updatedCovariance
-        val newHistory = state.history.toMutableList()
+        val newHistory = state.history.deepCopy()
         
-        newHistory[closestIndex] = PoseHistoryEntry(baseEntry.timestampMs, currentPose, currentCov)
+        newHistory.updateEntry(closestIndex, baseEntry.timestampMs, currentPose, currentCov)
 
         for (i in (closestIndex + 1) until state.history.size) {
             val prevRaw = state.history[i - 1].pose
@@ -299,13 +353,13 @@ object PoseEstimator {
             )
             currentCov = currentCov + Q
             
-            newHistory[i] = PoseHistoryEntry(state.history[i].timestampMs, currentPose, currentCov)
+            newHistory.updateEntry(i, state.history[i].timestampMs, currentPose, currentCov)
         }
 
         return state.copy(
             estimatedPose = currentPose,
             covariance = currentCov,
-            history = newHistory.toList()
+            history = newHistory
         )
     }
 }

@@ -15,6 +15,11 @@ import com.qualcomm.robotcore.hardware.ElapsedTime
 @Autonomous(name = "ARES Mecanum Auto", group = "ARES")
 open class ARESMecanumAuto : LinearOpMode() {
 
+    companion object {
+        /** Threshold above which we log a loop overrun warning (50 Hz = 20ms) */
+        private const val OVERRUN_THRESHOLD_MS = 30L
+    }
+
     override fun runOpMode() {
         // --- 1. Initialization ---
         val robot = FtcMecanumRobot(hardwareMap)
@@ -45,56 +50,82 @@ open class ARESMecanumAuto : LinearOpMode() {
             val timer = ElapsedTime()
             var lastTime = 0.0
             val totalLength = if (path.points.isNotEmpty()) path.points.last().distanceMeters else 0.0
+            var loopCount = 0L
+            var overrunCount = 0L
 
             // --- 2. Autonomous Loop ---
             while (opModeIsActive()) {
-                val currentTime = timer.seconds()
-                val dt = if (currentTime > lastTime) currentTime - lastTime else 0.02
-                lastTime = currentTime
+                val loopStartMs = com.areslib.util.RobotClock.currentTimeMillis()
 
-                // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
-                robot.update()
+                try {
+                    val currentTime = timer.seconds()
+                    val dt = if (currentTime > lastTime) currentTime - lastTime else 0.02
+                    lastTime = currentTime
 
-                // Fetch current fused EKF pose estimate via clean facade
-                val currentPose = robot.drive.odometryPose
-                val currentDistance = currentTime * 0.5 // Progress at 0.5 m/s
+                    // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
+                    robot.update()
 
-                if (currentDistance >= totalLength) {
-                    break
+                    // Fetch current fused EKF pose estimate via clean facade
+                    val currentPose = robot.drive.odometryPose
+                    val currentDistance = currentTime * 0.5 // Progress at 0.5 m/s
+
+                    if (currentDistance >= totalLength) {
+                        break
+                    }
+
+                    // Get nominal target pose from Path spline
+                    val targetState = path.sampleAtDistance(currentDistance)
+
+                    // B. Calculate path follower speeds relative to EKF pose
+                    val chassisSpeeds = driveController.calculate(
+                        currentPose = currentPose,
+                        targetPose = targetState.pose,
+                        targetVelocityMps = targetState.velocityMps,
+                        targetHeading = targetState.pose.heading,
+                        dtSeconds = dt
+                    )
+
+                    // C. Command drive facade relative to the calculated velocities
+                    // scaling factor 2.0 maps max nominal velocity
+                    robot.drive.joystickDrive(
+                        x = chassisSpeeds.vxMetersPerSecond / 2.0,
+                        y = chassisSpeeds.vyMetersPerSecond / 2.0,
+                        rot = chassisSpeeds.omegaRadiansPerSecond / 2.0
+                    )
+                } catch (e: Exception) {
+                    // Per-iteration failsafe: disable outputs if a single iteration fails
+                    try {
+                        robot.drive.joystickDrive(0.0, 0.0, 0.0)
+                    } catch (_: Exception) { /* best-effort */ }
+                    telemetry.addData("LOOP_ERROR", e.message ?: "Unknown error")
                 }
 
-                // Get nominal target pose from Path spline
-                val targetState = path.sampleAtDistance(currentDistance)
+                // Loop time watchdog
+                val loopElapsedMs = com.areslib.util.RobotClock.currentTimeMillis() - loopStartMs
+                loopCount++
+                if (loopElapsedMs > OVERRUN_THRESHOLD_MS) {
+                    overrunCount++
+                }
 
-                // B. Calculate path follower speeds relative to EKF pose
-                val chassisSpeeds = driveController.calculate(
-                    currentPose = currentPose,
-                    targetPose = targetState.pose,
-                    targetVelocityMps = targetState.velocityMps,
-                    targetHeading = targetState.pose.heading,
-                    dtSeconds = dt
-                )
-
-                // C. Command drive facade relative to the calculated velocities
-                // scaling factor 2.0 maps max nominal velocity
-                robot.drive.joystickDrive(
-                    x = chassisSpeeds.vxMetersPerSecond / 2.0,
-                    y = chassisSpeeds.vyMetersPerSecond / 2.0,
-                    rot = chassisSpeeds.omegaRadiansPerSecond / 2.0
-                )
-
-                telemetry.addData("EKF Pose X", currentPose.x)
-                telemetry.addData("EKF Pose Y", currentPose.y)
-                telemetry.addData("Heading Deg", Math.toDegrees(currentPose.heading.radians))
-                telemetry.addData("Target X", targetState.pose.x)
-                telemetry.addData("Target Y", targetState.pose.y)
+                telemetry.addData("EKF Pose X", robot.drive.odometryPose.x)
+                telemetry.addData("EKF Pose Y", robot.drive.odometryPose.y)
+                telemetry.addData("Loop ms", loopElapsedMs)
+                telemetry.addData("Overruns", "$overrunCount / $loopCount")
                 telemetry.update()
             }
 
             // Clean stop at target
             robot.drive.joystickDrive(0.0, 0.0, 0.0)
+        } catch (e: Exception) {
+            // Top-level failsafe: disable all outputs and log
+            try {
+                robot.drive.joystickDrive(0.0, 0.0, 0.0)
+            } catch (_: Exception) { /* best-effort shutoff */ }
+            telemetry.addData("CRASH", e.message ?: "Unknown error")
+            telemetry.update()
         } finally {
             robot.close()
         }
     }
 }
+

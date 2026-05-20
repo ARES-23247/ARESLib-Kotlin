@@ -17,6 +17,11 @@ class PIDController(
     private var continuousMin: Double = 0.0
     private var continuousMax: Double = 0.0
 
+    private var minOutput: Double = Double.NaN
+    private var maxOutput: Double = Double.NaN
+    private var minIntegral: Double = Double.NaN
+    private var maxIntegral: Double = Double.NaN
+
     /**
      * Enables continuous input (e.g. for circular values like angles).
      */
@@ -24,6 +29,22 @@ class PIDController(
         isContinuous = true
         continuousMin = minimumInput
         continuousMax = maximumInput
+    }
+
+    /**
+     * Sets the minimum and maximum output clamping limits.
+     */
+    fun setOutputLimits(min: Double, max: Double) {
+        minOutput = min
+        maxOutput = max
+    }
+
+    /**
+     * Sets the absolute bounds on the integral accumulator to prevent windup.
+     */
+    fun setIntegratorRange(min: Double, max: Double) {
+        minIntegral = min
+        maxIntegral = max
     }
 
     /**
@@ -53,6 +74,10 @@ class PIDController(
      * Calculates the control output given the current measurement and a timestep dt.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
+        require(measurement.isFinite() && setpoint.isFinite() && dtSeconds > 0.0) {
+            "Invalid inputs: measurement=$measurement, setpoint=$setpoint, dtSeconds=$dtSeconds"
+        }
+
         var error = setpoint - measurement
 
         if (isContinuous) {
@@ -60,14 +85,20 @@ class PIDController(
             error = inputModulus(error, -errorBound, errorBound)
         }
 
-        if (dtSeconds > 0) {
-            totalError += error * dtSeconds
-        }
+        totalError += error * dtSeconds
+        // Anti-windup
+        if (!minIntegral.isNaN()) { totalError = kotlin.math.max(totalError, minIntegral) }
+        if (!maxIntegral.isNaN()) { totalError = kotlin.math.min(totalError, maxIntegral) }
         
-        val velocityError = if (dtSeconds > 0) (error - prevError) / dtSeconds else 0.0
+        val velocityError = (error - prevError) / dtSeconds
         prevError = error
 
-        return p * error + i * totalError + d * velocityError
+        var output = p * error + i * totalError + d * velocityError
+        
+        if (!minOutput.isNaN()) { output = kotlin.math.max(output, minOutput) }
+        if (!maxOutput.isNaN()) { output = kotlin.math.min(output, maxOutput) }
+        
+        return output
     }
     
     private fun inputModulus(input: Double, minimumInput: Double, maximumInput: Double): Double {

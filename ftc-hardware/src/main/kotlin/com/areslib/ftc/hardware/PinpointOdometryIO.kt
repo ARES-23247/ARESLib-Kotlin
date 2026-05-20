@@ -25,13 +25,17 @@ class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO {
     }
 
     override fun updateInputs(inputs: OdometryInputs) {
-        driver.update()
-        inputs.posX = driver.posX
-        inputs.posY = driver.posY
-        inputs.heading = driver.heading
-        inputs.velX = driver.velX
-        inputs.velY = driver.velY
-        inputs.headingVelocity = driver.headingVelocity
-        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        try {
+            driver.update()
+            inputs.posX = driver.posX
+            inputs.posY = driver.posY
+            inputs.heading = driver.heading
+            inputs.velX = driver.velX
+            inputs.velY = driver.velY
+            inputs.headingVelocity = driver.headingVelocity
+            inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        } catch (e: Exception) {
+            // Read timeout / UART failure fallback: silently retain previous cached inputs
+        }
     }
 }
