@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
 import com.areslib.hardware.MotorIO
+import com.areslib.math.SlewRateLimiter
 
 class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     hardwareMap: HardwareMap,
@@ -25,6 +26,31 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val blIO = EstimateMotorIO(backLeft)
     val brIO = EstimateMotorIO(backRight)
 
+    private var flLimiter: SlewRateLimiter? = null
+    private var frLimiter: SlewRateLimiter? = null
+    private var blLimiter: SlewRateLimiter? = null
+    private var brLimiter: SlewRateLimiter? = null
+
+    /**
+     * The active slew rate limit in power units per second (e.g. 5.0 means full acceleration takes 0.2s).
+     * Set to null to disable rate limiting (default).
+     */
+    var slewRateLimit: Double? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                flLimiter = SlewRateLimiter(value)
+                frLimiter = SlewRateLimiter(value)
+                blLimiter = SlewRateLimiter(value)
+                brLimiter = SlewRateLimiter(value)
+            } else {
+                flLimiter = null
+                frLimiter = null
+                blLimiter = null
+                brLimiter = null
+            }
+        }
+
     init {
         // Typical mecanum configuration requires right side to be reversed
         frontLeft.direction = DcMotorSimple.Direction.FORWARD
@@ -37,16 +63,24 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      * Applies the calculated wheel speeds to the physical motors using voltage compensation.
      * @param speeds The wheel speeds (in meters per second).
      * @param batteryVolts The current battery voltage to compensate for sag.
+     * @param dtSeconds The time step elapsed since the last update in seconds.
      */
-    fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0) {
+    @kotlin.jvm.JvmOverloads
+    fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02) {
         val maxVolts = 12.0
         val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
         val voltageCompensationFactor = maxVolts / actualVolts
         
-        val flPower = ((speeds.frontLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        val frPower = ((speeds.frontRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        val blPower = ((speeds.backLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        val brPower = ((speeds.backRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        var flPower = ((speeds.frontLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        var frPower = ((speeds.frontRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        var blPower = ((speeds.backLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        var brPower = ((speeds.backRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+
+        // Apply slew rate limiters if configured
+        flLimiter?.let { flPower = it.calculate(flPower, dtSeconds) }
+        frLimiter?.let { frPower = it.calculate(frPower, dtSeconds) }
+        blLimiter?.let { blPower = it.calculate(blPower, dtSeconds) }
+        brLimiter?.let { brPower = it.calculate(brPower, dtSeconds) }
 
         // Normalize meters per second speed into [-1.0, 1.0] range and apply compensation
         frontLeft.power = flPower

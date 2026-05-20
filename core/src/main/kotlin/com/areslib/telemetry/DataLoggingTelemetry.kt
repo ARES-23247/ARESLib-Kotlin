@@ -50,8 +50,10 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         // Inject current timestamp for chronological analysis
         currentFrame["TimestampMs"] = com.areslib.util.RobotClock.currentTimeMillis()
         
-        // Log the complete frame asynchronously
-        logger.logFrame(HashMap(currentFrame))
+        // Log the complete frame asynchronously using the GC-free map pool
+        val map = logger.obtainMap()
+        map.putAll(currentFrame)
+        logger.logFrame(map)
         
         // Forward the update trigger to live streaming network tables
         ntTelemetry?.update()

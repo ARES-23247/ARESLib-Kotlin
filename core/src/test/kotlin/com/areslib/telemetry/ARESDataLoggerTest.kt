@@ -3,6 +3,7 @@ package com.areslib.telemetry
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlin.test.assertSame
 
 class ARESDataLoggerTest {
 
@@ -42,5 +43,35 @@ class ARESDataLoggerTest {
 
         // Cleanup the test log file so we don't litter
         latestLog.delete()
+    }
+
+    @Test
+    fun testMapPoolingAndZeroAllocations() {
+        val logger = ARESDataLogger()
+        
+        // 1. Exhaust the pre-populated pool of 16 maps to test behavior when empty
+        val exhaustedMaps = mutableListOf<HashMap<String, Any>>()
+        for (i in 0 until 16) {
+            exhaustedMaps.add(logger.obtainMap())
+        }
+
+        // 2. Obtain a map when the pool is empty - this allocates a new map
+        val map1 = logger.obtainMap()
+        assertTrue(map1.isEmpty(), "Obtained map should be clean and empty")
+        
+        // 3. Put some dummy data and recycle it
+        map1["Key1"] = 1.0
+        logger.recycleMap(map1)
+        assertTrue(map1.isEmpty(), "Recycled map must be cleared upon recycling")
+
+        // 4. Obtain a map again - should return the exact same instance because it is the only one in the pool now
+        val map2 = logger.obtainMap()
+        assertSame(map1, map2, "The pool must return the recycled map instance to achieve zero allocations")
+
+        // 5. Recycle everything to cleanup and ensure proper behavior
+        exhaustedMaps.forEach { logger.recycleMap(it) }
+        logger.recycleMap(map2)
+        
+        logger.stop()
     }
 }

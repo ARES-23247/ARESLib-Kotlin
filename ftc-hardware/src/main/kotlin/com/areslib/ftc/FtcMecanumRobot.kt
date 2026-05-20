@@ -44,6 +44,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val limelightIO = FtcLimelightIO(limelightDriver)
     private val visionInputs = VisionIOInputs()
     
+    private var lastUpdateTime = 0L
+    
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
 
     /** Brownout protection guard — auto-scales motor power on voltage sag */
@@ -78,8 +80,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param gamepad1 Optional driver gamepad state (use `gamepad1.toState()`)
      * @param gamepad2 Optional operator gamepad state (use `gamepad2.toState()`)
      */
-    fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
+    fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        val dtSeconds = if (lastUpdateTime == 0L) 0.02 else (timestamp - lastUpdateTime) / 1000.0
+        lastUpdateTime = timestamp
 
         // 1. Read pinpoint sensors and update the EKF state store
         val poseUpdate = pinpointIO.getPoseUpdate()
@@ -114,7 +118,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         }
 
         // Apply battery-compensated voltage vectors
-        mecanumIO.apply(wheelSpeeds.normalize(1.0), batteryVoltage)
+        mecanumIO.apply(wheelSpeeds.normalize(1.0), batteryVoltage, dtSeconds)
 
         // 4b. Brownout protection — graduated power scaling on voltage sag
         brownoutGuard.update(batteryVoltage)

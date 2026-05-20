@@ -24,7 +24,10 @@ class ARESDataLogger {
     private var writer: BufferedWriter? = null
     private var isHeaderWritten = false
     private var isRunning = false
-    
+
+    // GC-Free Map Pool to eliminate allocations during telemetry updates
+    private val mapPool = LinkedBlockingQueue<HashMap<String, Any>>()
+
     // Executor that processes the queue sequentially using daemon threads to prevent JVM hanging
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -33,8 +36,12 @@ class ARESDataLogger {
     )
 
     init {
+        // Pre-populate the map pool with 16 instances
+        for (i in 0 until 16) {
+            mapPool.offer(HashMap())
+        }
+
         try {
-            val osName = System.getProperty("os.name") ?: ""
             val javaVendor = System.getProperty("java.vendor") ?: ""
             val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
 
@@ -58,6 +65,21 @@ class ARESDataLogger {
             System.err.println("ARESDataLogger: Failed to initialize log file! ${e.message}")
             isRunning = false
         }
+    }
+
+    /**
+     * Obtains a cleared HashMap from the reusable pool, or instantiates a new one if pool is depleted.
+     */
+    fun obtainMap(): HashMap<String, Any> {
+        return mapPool.poll() ?: HashMap()
+    }
+
+    /**
+     * Clears and returns a HashMap to the pool for future reuse.
+     */
+    fun recycleMap(map: HashMap<String, Any>) {
+        map.clear()
+        mapPool.offer(map)
     }
 
     /**
@@ -88,39 +110,46 @@ class ARESDataLogger {
     private fun writeFrame(frame: Map<String, Any>) {
         val w = writer ?: return
 
-        // 1. Write the CSV header on the first frame
-        if (!isHeaderWritten) {
-            activeKeys.clear()
-            // Always place timestamp first for easier plotting
-            activeKeys.add("TimestampMs")
-            
-            // Add all other keys alphabetically
-            frame.keys.sorted().forEach { key ->
-                if (key != "TimestampMs") {
-                    activeKeys.add(key)
+        try {
+            // 1. Write the CSV header on the first frame
+            if (!isHeaderWritten) {
+                activeKeys.clear()
+                // Always place timestamp first for easier plotting
+                activeKeys.add("TimestampMs")
+                
+                // Add all other keys alphabetically
+                frame.keys.sorted().forEach { key ->
+                    if (key != "TimestampMs") {
+                        activeKeys.add(key)
+                    }
+                }
+
+                try {
+                    w.write(activeKeys.joinToString(","))
+                    w.newLine()
+                    isHeaderWritten = true
+                } catch (e: IOException) {
+                    System.err.println("ARESDataLogger: Failed to write CSV header: ${e.message}")
                 }
             }
 
-            try {
-                w.write(activeKeys.joinToString(","))
-                w.newLine()
-                isHeaderWritten = true
-            } catch (e: IOException) {
-                System.err.println("ARESDataLogger: Failed to write CSV header: ${e.message}")
+            // 2. Write values corresponding to the configured headers
+            val row = activeKeys.map { key ->
+                frame[key]?.toString() ?: ""
             }
-        }
 
-        // 2. Write values corresponding to the configured headers
-        val row = activeKeys.map { key ->
-            frame[key]?.toString() ?: ""
-        }
-
-        try {
-            w.write(row.joinToString(","))
-            w.newLine()
-            w.flush()
-        } catch (e: IOException) {
-            System.err.println("ARESDataLogger: Failed to write CSV row: ${e.message}")
+            try {
+                w.write(row.joinToString(","))
+                w.newLine()
+                w.flush()
+            } catch (e: IOException) {
+                System.err.println("ARESDataLogger: Failed to write CSV row: ${e.message}")
+            }
+        } finally {
+            // Recycle the map if it was obtained from the map pool to eliminate GC pressure
+            if (frame is HashMap<String, Any>) {
+                recycleMap(frame)
+            }
         }
     }
 
