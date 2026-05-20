@@ -437,12 +437,29 @@ class Dyn4jSimulation(seed: Long = 42L) {
         val width = 16.541
         val height = 8.069
 
+        // Outer bounds
         addWall(width / 2.0, height, width, 0.1)   // Top
         addWall(width / 2.0, 0.0, width, 0.1)      // Bottom
         addWall(0.0, height / 2.0, 0.1, height)     // Left
         addWall(width, height / 2.0, 0.1, height)   // Right
+
+        // Hubs (Static scoring centers)
         addWall(4.135, 4.0345, 1.1938, 1.1938)      // Blue Hub
         addWall(width - 4.135, 4.0345, 1.1938, 1.1938) // Red Hub
+
+        // Towers (Climbing truss frames or shield generator columns)
+        addWall(width / 2.0 - 1.8, height / 2.0 - 1.8, 0.3, 0.3) // bottom-left tower
+        addWall(width / 2.0 - 1.8, height / 2.0 + 1.8, 0.3, 0.3) // top-left tower
+        addWall(width / 2.0 + 1.8, height / 2.0 - 1.8, 0.3, 0.3) // bottom-right tower
+        addWall(width / 2.0 + 1.8, height / 2.0 + 1.8, 0.3, 0.3) // top-right tower
+
+        // Trench Barriers (Long horizontal boundaries parallel to side walls forming high-speed driving lanes)
+        addWall(width / 2.0, 1.45, 3.2, 0.15)      // Bottom Trench Wall
+        addWall(width / 2.0, height - 1.45, 3.2, 0.15) // Top Trench Wall
+
+        // Climb Ramps / Stations (Raised climb base blocks at side ends)
+        addWall(2.5, height / 2.0, 0.6, 1.4)       // Blue Climb Base
+        addWall(width - 2.5, height / 2.0, 0.6, 1.4) // Red Climb Base
     }
 
     private fun addWall(x: Double, y: Double, w: Double, h: Double) {
@@ -453,33 +470,66 @@ class Dyn4jSimulation(seed: Long = 42L) {
         world.addBody(wall)
     }
 
-    private fun spawnFuel(seed: Long) {
-        val random = java.util.Random(seed)
-        var spawned = 0
-        while (spawned < 100) {
-            val x = 1.0 + random.nextDouble() * 14.0
-            val y = 1.0 + random.nextDouble() * 6.0
+    private fun spawnFuel(@Suppress("UNUSED_PARAMETER") seed: Long) {
+        val width = 16.541
+        val height = 8.069
+        val ballRadius = 0.0635 // 5in diameter -> 0.0635m radius
 
-            // Exclusion zones
-            val dxBlue = x - 4.135; val dyBlue = y - 4.0345
-            if (dxBlue * dxBlue + dyBlue * dyBlue < 0.9) continue
-            val dxRed = x - 12.406; val dyRed = y - 4.0345
-            if (dxRed * dxRed + dyRed * dyRed < 0.9) continue
-            val dxRobot = x - 2.0; val dyRobot = y - 2.0
-            if (dxRobot * dxRobot + dyRobot * dyRobot < 0.7) continue
+        // Let's hold coordinates for exactly 24 balls
+        val spawnPoints = mutableListOf<Vector2>()
 
+        // 1. Tarmac Rings around Hubs (4 diagonal positions around Blue Hub, 4 around Red Hub)
+        val rHub = 1.6
+        val angles = doubleArrayOf(Math.PI / 4.0, 3.0 * Math.PI / 4.0, 5.0 * Math.PI / 4.0, 7.0 * Math.PI / 4.0)
+        
+        // Around Blue Hub
+        val blueHubX = 4.135
+        val blueHubY = 4.0345
+        for (angle in angles) {
+            spawnPoints.add(Vector2(blueHubX + rHub * Math.cos(angle), blueHubY + rHub * Math.sin(angle)))
+        }
+
+        // Around Red Hub
+        val redHubX = width - 4.135
+        val redHubY = 4.0345
+        for (angle in angles) {
+            spawnPoints.add(Vector2(redHubX + rHub * Math.cos(angle), redHubY + rHub * Math.sin(angle)))
+        }
+
+        // 2. Trench Run Cargo (4 in Bottom Trench, 4 in Top Trench)
+        val bottomTrenchY = 0.7
+        val bottomTrenchX = doubleArrayOf(5.5, 7.0, 8.5, 10.0)
+        for (x in bottomTrenchX) {
+            spawnPoints.add(Vector2(x, bottomTrenchY))
+        }
+
+        val topTrenchY = height - 0.7
+        val topTrenchX = doubleArrayOf(6.5, 8.0, 9.5, 11.0)
+        for (x in topTrenchX) {
+            spawnPoints.add(Vector2(x, topTrenchY))
+        }
+
+        // 3. Autonomous Center Line Cargo (8 pieces along central loading region/auto line)
+        val centerX = width / 2.0
+        val centerYs = doubleArrayOf(1.8, 2.4, 3.0, 3.6, 4.4, 5.0, 5.6, 6.2)
+        for (y in centerYs) {
+            spawnPoints.add(Vector2(centerX, y))
+        }
+
+        // Now spawn the structured balls in the dyn4j world
+        for (point in spawnPoints) {
             val ball = Body()
-            val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+            val fixture = ball.addFixture(Geometry.createCircle(ballRadius))
             fixture.friction = 0.6
             fixture.restitution = 0.4
             fixture.density = 5.92
             ball.setMass(MassType.NORMAL)
             ball.linearDamping = 2.0
             ball.angularDamping = 2.0
-            ball.translate(x, y)
+            ball.translate(point.x, point.y)
             world.addBody(ball)
             balls.add(ball)
-            spawned++
         }
+        println("Spawned exactly ${balls.size} structured cargo/fuel pieces.")
     }
 }
