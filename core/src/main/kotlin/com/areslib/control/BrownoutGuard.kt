@@ -27,10 +27,10 @@ package com.areslib.control
  * Zero allocations in the hot path.
  */
 class BrownoutGuard(
-    /** Voltage below which graduated power reduction begins (FTC: 11.0V, FRC: 7.5V) */
-    val warningVoltage: Double = 11.0,
-    /** Voltage below which ALL motor output is disabled (FTC: 9.0V, FRC: 6.3V) */
-    val criticalVoltage: Double = 9.0,
+    /** Voltage below which graduated power reduction begins (FTC: 10.0V, FRC: 8.5V) */
+    val warningVoltage: Double = 10.0,
+    /** Voltage below which ALL motor output is disabled (FTC: 7.5V, FRC: 6.8V) */
+    val criticalVoltage: Double = 7.5,
     /** Minimum power scale at the warning→critical boundary before full cutoff */
     val minPowerScale: Double = 0.3,
     /** Hysteresis band in volts to prevent oscillation at zone boundaries */
@@ -135,12 +135,12 @@ class BrownoutGuard(
     }
 
     companion object {
-        /** Pre-configured for FTC (12V system, 20A fuse, REV hubs) */
+        /** Pre-configured for FTC (12V system, 20A fuse, REV hubs brownout ~7V) */
         fun ftcDefaults(): BrownoutGuard = BrownoutGuard(
-            warningVoltage = 11.0,
-            criticalVoltage = 9.0,
+            warningVoltage = 10.0,
+            criticalVoltage = 7.5,
             minPowerScale = 0.3,
-            hysteresisVoltage = 0.3,
+            hysteresisVoltage = 0.4,
             nominalVoltage = 13.0
         )
 

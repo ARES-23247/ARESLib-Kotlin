@@ -9,6 +9,9 @@ import com.areslib.ftc.hardware.FtcImu
 import com.areslib.hardware.ImuInputs
 import com.areslib.action.RobotAction
 import com.areslib.control.BrownoutGuard
+import com.areslib.control.CurrentBudgetManager
+import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
+import com.qualcomm.robotcore.hardware.AnalogInput
 
 class FtcAresRobot(private val hardwareMap: HardwareMap) : AresRobot() {
     
@@ -20,6 +23,23 @@ class FtcAresRobot(private val hardwareMap: HardwareMap) : AresRobot() {
 
     /** Brownout protection guard — auto-scales motor power on voltage sag */
     val brownoutGuard = BrownoutGuard.ftcDefaults()
+
+    /** Floodgate V2 current sensor — null if no Floodgate is connected */
+    val floodgate: FtcFloodgateCurrentSensor? = try {
+        val analogInput = hardwareMap.get(AnalogInput::class.java, "floodgate")
+        FtcFloodgateCurrentSensor(analogInput)
+    } catch (_: Exception) {
+        null
+    }
+
+    /** Software current budget manager — used as a fallback if no Floodgate sensor is found */
+    val currentBudgetManager: CurrentBudgetManager? = if (floodgate == null) {
+        CurrentBudgetManager.ftcDefaults().apply {
+            register(motor)
+        }
+    } else {
+        null
+    }
 
     /**
      * Coordinated update frame:
@@ -63,8 +83,21 @@ class FtcAresRobot(private val hardwareMap: HardwareMap) : AresRobot() {
         val voltageSensors = hardwareMap.getAll(com.qualcomm.robotcore.hardware.VoltageSensor::class.java)
         val batteryVoltage = if (voltageSensors.isNotEmpty()) voltageSensors[0].voltage else 12.0
         brownoutGuard.update(batteryVoltage)
-        motor.powerScale = brownoutGuard.powerScale
+        var effectiveScale = brownoutGuard.powerScale
 
+        // 3c. Floodgate current protection (or software fallback)
+        floodgate?.let { fg ->
+            fg.update()
+            if (fg.isOverloadWarning()) {
+                val fuseScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
+                effectiveScale = minOf(effectiveScale, fuseScale)
+            }
+        } ?: currentBudgetManager?.let { cbm ->
+            cbm.update(batteryVoltage, enableCalibration = true)
+            effectiveScale = minOf(effectiveScale, cbm.powerScale)
+        }
+
+        motor.powerScale = effectiveScale
         motor.power = targetPower
     }
 }

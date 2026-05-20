@@ -15,6 +15,9 @@ import com.areslib.telemetry.NT4Telemetry
 import com.areslib.telemetry.DataLoggingTelemetry
 import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.control.BrownoutGuard
+import com.areslib.control.CurrentBudgetManager
+import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
+import com.qualcomm.robotcore.hardware.AnalogInput
 
 class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
@@ -45,6 +48,26 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /** Brownout protection guard — auto-scales motor power on voltage sag */
     val brownoutGuard = BrownoutGuard.ftcDefaults()
+
+    /** Floodgate V2 current sensor — null if no Floodgate is connected */
+    val floodgate: FtcFloodgateCurrentSensor? = try {
+        val analogInput = hardwareMap.get(AnalogInput::class.java, "floodgate")
+        FtcFloodgateCurrentSensor(analogInput)
+    } catch (_: Exception) {
+        null // No Floodgate connected — current protection fallback active
+    }
+
+    /** Software current budget manager — used as a fallback if no Floodgate sensor is found */
+    val currentBudgetManager: CurrentBudgetManager? = if (floodgate == null) {
+        CurrentBudgetManager.ftcDefaults().apply {
+            register(mecanumIO.flIO)
+            register(mecanumIO.frIO)
+            register(mecanumIO.blIO)
+            register(mecanumIO.brIO)
+        }
+    } else {
+        null
+    }
 
     /**
      * Coordinated frame update for Mecanum Drivetrain.
@@ -95,7 +118,22 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
         // 4b. Brownout protection — graduated power scaling on voltage sag
         brownoutGuard.update(batteryVoltage)
-        mecanumIO.applyPowerScale(brownoutGuard.powerScale)
+        var effectiveScale = brownoutGuard.powerScale
+
+        // 4c. Floodgate current protection — throttle on overload (or software fallback)
+        floodgate?.let { fg ->
+            fg.update()
+            if (fg.isOverloadWarning()) {
+                // Graduated: scale inversely with fuse thermal load
+                val fuseScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
+                effectiveScale = minOf(effectiveScale, fuseScale)
+            }
+        } ?: currentBudgetManager?.let { cbm ->
+            cbm.update(batteryVoltage, enableCalibration = true)
+            effectiveScale = minOf(effectiveScale, cbm.powerScale)
+        }
+
+        mecanumIO.applyPowerScale(effectiveScale)
 
         // 5. Publish EVERYTHING to NT4 + CSV automatically
         publisher.publish(store.state, gamepad1, gamepad2)
