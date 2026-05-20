@@ -21,7 +21,9 @@ data class PoseHistoryEntry(
 data class PoseEstimatorState(
     val estimatedPose: Pose2d = Pose2d(),
     val covariance: Matrix3x3 = Matrix3x3.IDENTITY,
-    val history: List<PoseHistoryEntry> = emptyList() // Max size typically ~50
+    val history: List<PoseHistoryEntry> = emptyList(), // Max size typically ~50
+    val isBeached: Boolean = false,
+    val lastUnbeachedTimeMs: Long = 0L
 )
 
 /**
@@ -75,16 +77,51 @@ object PoseEstimator {
         deltaHeading: Rotation2d,
         pitchDegrees: Double = 0.0,
         rollDegrees: Double = 0.0,
+        pitchVelocityDegPerSec: Double = 0.0,
+        rollVelocityDegPerSec: Double = 0.0,
         gyroRateRadPerSec: Double = 0.0,
         dtSeconds: Double = 0.02
     ): PoseEstimatorState {
         val tiltDegrees = kotlin.math.sqrt(pitchDegrees * pitchDegrees + rollDegrees * rollDegrees)
+        val tiltVelocity = kotlin.math.sqrt(pitchVelocityDegPerSec * pitchVelocityDegPerSec + rollVelocityDegPerSec * rollVelocityDegPerSec)
+
+        var currentlyBeached = state.isBeached
+        var unbeachedTime = state.lastUnbeachedTimeMs
+
+        // Hysteresis logic
+        if (!currentlyBeached && tiltDegrees > 15.0) {
+            currentlyBeached = true
+        } else if (currentlyBeached && tiltDegrees < 12.0) {
+            currentlyBeached = false
+            unbeachedTime = timestampMs
+        }
 
         // Catastrophic tilt / beaching check: Freeze odometry updates
-        if (tiltDegrees > 15.0) {
+        if (currentlyBeached) {
             val newEntry = PoseHistoryEntry(timestampMs, state.estimatedPose, state.covariance)
             val newHistory = (state.history + newEntry).takeLast(MAX_HISTORY_SIZE)
-            return state.copy(history = newHistory)
+            return state.copy(history = newHistory, isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
+        }
+
+        val timeSinceUnbeachedMs = timestampMs - unbeachedTime
+        val inRecovery = timeSinceUnbeachedMs < 500 && unbeachedTime != 0L
+
+        // Continuous covariance scaling
+        var tiltScale = 1.0
+        if (tiltDegrees > 5.0) {
+            val normalized = (tiltDegrees - 5.0) / 10.0 // 0.0 to 1.0
+            val clamped = normalized.coerceIn(0.0, 1.0)
+            tiltScale = 1.0 + 99.0 * (clamped * clamped)
+        }
+
+        // Impact prediction
+        if (tiltVelocity > 20.0) {
+            tiltScale = kotlin.math.max(tiltScale, 50.0)
+        }
+
+        // Post-beaching recovery forces max scale
+        if (inRecovery) {
+            tiltScale = 100.0
         }
 
         // Gyro rate mismatch check for wheel slippage detection
@@ -95,9 +132,7 @@ object PoseEstimator {
             1.0
         }
 
-        // High tilt / wheel slippage check: Scale odometry covariance by 100x
-        var currentQ = if (tiltDegrees > 8.0) Q * 100.0 else Q
-        currentQ = currentQ * slipScale
+        var currentQ = Q * tiltScale * slipScale
 
         val newHeading = Rotation2d(state.estimatedPose.heading.radians + deltaHeading.radians)
         val newPose = Pose2d(
@@ -115,7 +150,9 @@ object PoseEstimator {
         return state.copy(
             estimatedPose = newPose,
             covariance = newCovariance,
-            history = newHistory
+            history = newHistory,
+            isBeached = currentlyBeached,
+            lastUnbeachedTimeMs = unbeachedTime
         )
     }
 

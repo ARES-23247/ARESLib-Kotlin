@@ -95,12 +95,12 @@ class PoseEstimatorTest {
         )
 
         // Flat state covariance: base Q added (e.g. m00 = 1.0 + 0.01 = 1.01)
-        // Tilted state covariance: 100x Q added (e.g. m00 = 1.0 + 1.0 = 2.0)
+        // Tilted state covariance: continuous scaled Q added (25.75x Q for 10 degrees)
         val flatCovDiff = flatState.covariance.m00 - 1.0
         val tiltedCovDiff = tiltedState.covariance.m00 - 1.0
 
         assertEquals(0.01, flatCovDiff, 1e-6)
-        assertEquals(1.0, tiltedCovDiff, 1e-6)
+        assertEquals(0.2575, tiltedCovDiff, 1e-6)
     }
 
     @Test
@@ -266,6 +266,75 @@ class PoseEstimatorTest {
 
         // Estimated pose should be corrected towards the outlier (accepted)
         assertTrue(acceptedState.estimatedPose.x > 1.0, "State should be corrected when rejection is disabled")
+    }
+
+    @Test
+    fun testHysteresisAndRecovery() {
+        var state = PoseEstimatorState()
+        
+        // 1. Tilt to 14.0 - not beached yet, but high covariance
+        state = PoseEstimator.addOdometryObservation(
+            state, 100L, Translation2d(0.1, 0.0), Rotation2d(0.0),
+            pitchDegrees = 14.0, rollDegrees = 0.0
+        )
+        assertEquals(false, state.isBeached)
+        
+        // 2. Tilt to 16.0 - beached!
+        state = PoseEstimator.addOdometryObservation(
+            state, 200L, Translation2d(0.1, 0.0), Rotation2d(0.0),
+            pitchDegrees = 16.0, rollDegrees = 0.0
+        )
+        assertEquals(true, state.isBeached)
+        
+        // 3. Tilt drops to 13.0 - STILL beached due to hysteresis (must drop < 12.0)
+        state = PoseEstimator.addOdometryObservation(
+            state, 300L, Translation2d(0.1, 0.0), Rotation2d(0.0),
+            pitchDegrees = 13.0, rollDegrees = 0.0
+        )
+        assertEquals(true, state.isBeached)
+        
+        // 4. Tilt drops to 10.0 - UNBEACHED
+        state = PoseEstimator.addOdometryObservation(
+            state, 400L, Translation2d(0.1, 0.0), Rotation2d(0.0),
+            pitchDegrees = 10.0, rollDegrees = 0.0
+        )
+        assertEquals(false, state.isBeached)
+        assertEquals(400L, state.lastUnbeachedTimeMs)
+        
+        // 5. In recovery period (t=450, dt=50ms since unbeached) -> forced 100x covariance
+        val preRecovCov = state.covariance.m00
+        state = PoseEstimator.addOdometryObservation(
+            state, 450L, Translation2d(0.1, 0.0), Rotation2d(0.0),
+            pitchDegrees = 0.0, rollDegrees = 0.0
+        )
+        val recovDiff = state.covariance.m00 - preRecovCov
+        assertEquals(1.0, recovDiff, 1e-6) // 100 * Q (0.01) = 1.0
+        
+        // 6. Out of recovery period (t=1000) -> normal covariance
+        val preNormCov = state.covariance.m00
+        state = PoseEstimator.addOdometryObservation(
+            state, 1000L, Translation2d(0.1, 0.0), Rotation2d(0.0),
+            pitchDegrees = 0.0, rollDegrees = 0.0
+        )
+        val normDiff = state.covariance.m00 - preNormCov
+        assertEquals(0.01, normDiff, 1e-6)
+    }
+
+    @Test
+    fun testImpactVelocityScaling() {
+        val flatState = PoseEstimator.addOdometryObservation(
+            PoseEstimatorState(),
+            100L,
+            Translation2d(1.0, 0.0),
+            Rotation2d(0.0),
+            pitchDegrees = 0.0,
+            rollDegrees = 0.0,
+            pitchVelocityDegPerSec = 30.0 // Violent impact
+        )
+
+        val flatCovDiff = flatState.covariance.m00 - 1.0
+        // Expected scale = 50.0 due to high pitch velocity
+        assertEquals(0.5, flatCovDiff, 1e-6)
     }
 }
 
