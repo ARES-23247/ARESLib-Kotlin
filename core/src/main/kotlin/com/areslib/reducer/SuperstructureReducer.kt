@@ -3,6 +3,8 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.SuperstructureState
 import com.areslib.state.SuperstructureMode
+import com.areslib.control.ControlBarrierFunction
+import com.areslib.control.CBFFilteredOutput
 
 object SuperstructureReducer {
     /**
@@ -147,30 +149,46 @@ object SuperstructureReducer {
         }.let { enforceSafetyInterlocks(it) }
     }
 
-    private fun enforceSafetyInterlocks(state: SuperstructureState): SuperstructureState {
-        // 1. If intake is physically stowed (pivotAngleDegrees < 45.0), the climber MUST be stowed (targetExtensionMeters clamped to 0.0)
-        var finalClimber = state.climber
-        if (state.intake.pivotAngleDegrees < 45.0) {
-            if (finalClimber.targetExtensionMeters > 0.0) {
-                finalClimber = finalClimber.copy(targetExtensionMeters = 0.0)
-            }
-        }
+    private val cbf = ControlBarrierFunction(
+        m = 180.0, // 180 degrees per meter of extension (90 deg / 0.25 m max extension coerced to slope + clearance)
+        c = 45.0,  // Minimum 45.0 deg deployment for any climber extension
+        alpha = 5.0
+    )
+    private val cbfOutput = CBFFilteredOutput()
 
-        // 2. If the climber is physically extended (extensionMeters > 0.02) or commanded to extend (targetExtensionMeters > 0.02),
-        // the intake pivot target angle MUST be deployed to at least 45.0 degrees to clear collision path.
-        var finalIntake = state.intake
-        if (finalClimber.extensionMeters > 0.02 || finalClimber.targetExtensionMeters > 0.02) {
-            if (finalIntake.targetAngleDegrees < 45.0) {
+    private fun enforceSafetyInterlocks(state: SuperstructureState): SuperstructureState {
+        synchronized(cbfOutput) {
+            val activeC = if (state.climber.extensionMeters > 0.005 || state.climber.targetExtensionMeters > 0.005) 45.0 else 0.0
+            cbf.filter(
+                x1Target = state.intake.targetAngleDegrees,
+                x2Target = state.climber.targetExtensionMeters,
+                x1Current = state.intake.pivotAngleDegrees,
+                x2Current = state.climber.extensionMeters,
+                dtSeconds = 1.0 / cbf.alpha, // Bypass velocity-rate-limiting for static setpoint actions while strictly maintaining safe invariant set boundaries
+                cOverride = activeC,
+                outBuffer = cbfOutput
+            )
+
+            var finalIntake = state.intake
+            var finalClimber = state.climber
+
+            if (cbfOutput.x1Filtered != state.intake.targetAngleDegrees) {
                 finalIntake = finalIntake.copy(
-                    targetAngleDegrees = 45.0,
-                    isDeployed = true
+                    targetAngleDegrees = cbfOutput.x1Filtered,
+                    isDeployed = cbfOutput.x1Filtered >= 45.0
                 )
             }
-        }
 
-        if (finalClimber === state.climber && finalIntake === state.intake) {
-            return state
+            if (cbfOutput.x2Filtered != state.climber.targetExtensionMeters) {
+                finalClimber = finalClimber.copy(
+                    targetExtensionMeters = cbfOutput.x2Filtered
+                )
+            }
+
+            if (finalIntake === state.intake && finalClimber === state.climber) {
+                return state
+            }
+            return state.copy(intake = finalIntake, climber = finalClimber)
         }
-        return state.copy(climber = finalClimber, intake = finalIntake)
     }
 }

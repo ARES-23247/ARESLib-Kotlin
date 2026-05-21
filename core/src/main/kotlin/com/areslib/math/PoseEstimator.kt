@@ -308,11 +308,16 @@ object PoseEstimator {
 
         val baseEntry = state.history[closestIndex]
 
-        // 1. Calculate physical distance to AprilTag
+        // 1. Calculate physical distance to AprilTag and incidence angle
         val tagPose = TAGS[measurement.tagId]
+        var incidenceScale = 1.0
         val distance = if (tagPose != null) {
             val dx = tagPose.x - baseEntry.pose.x
             val dy = tagPose.y - baseEntry.pose.y
+            val losHeading = kotlin.math.atan2(dy, dx)
+            val phi = InputMath.wrapAngle(losHeading - tagPose.rotation.z)
+            val cosPhi = kotlin.math.cos(phi)
+            incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 10.0)
             kotlin.math.sqrt(dx * dx + dy * dy)
         } else {
             // Fallback to measurement pose distance from robot base
@@ -322,12 +327,15 @@ object PoseEstimator {
             kotlin.math.sqrt(dx * dx + dy * dy)
         }
 
-        // 2. Dynamic EKF vision noise scaling (multi-tag division & quadratic distance growth)
+        // 2. Dynamic EKF vision noise scaling (multi-tag division, quadratic distance growth, incidence angle, and ambiguity)
+        val ambiguityScale = 1.0 + 10.0 * (measurement.ambiguity * measurement.ambiguity)
+        val finalScale = incidenceScale * ambiguityScale
+
         val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
-        val scaledStdDevsX = visionStdDevs.x * (multiTagFactor * distFactor)
-        val scaledStdDevsY = visionStdDevs.y * (multiTagFactor * distFactor)
-        val scaledStdDevsZ = visionStdDevs.z * (multiTagFactor * distFactor)
+        val scaledStdDevsX = visionStdDevs.x * (multiTagFactor * distFactor * finalScale)
+        val scaledStdDevsY = visionStdDevs.y * (multiTagFactor * distFactor * finalScale)
+        val scaledStdDevsZ = visionStdDevs.z * (multiTagFactor * distFactor * finalScale)
 
         // Extended Kalman Filter Update at the historical timestamp
         scratchR.m00 = scaledStdDevsX * scaledStdDevsX; scratchR.m01 = 0.0; scratchR.m02 = 0.0
