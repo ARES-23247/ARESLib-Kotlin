@@ -84,9 +84,13 @@ class CurrentBudgetManager(
         freeSpeedTps: Double = 2786.0,
         nominalVoltage: Double = 12.0
     ) {
-        val resistance = nominalVoltage / stallCurrentAmps
-        val kv = nominalVoltage / freeSpeedTps
-        slots.add(MotorSlot(motor, resistance, kv, nominalVoltage))
+        val stall = if (stallCurrentAmps > 0.0 && stallCurrentAmps.isFinite()) stallCurrentAmps else 9.2
+        val speed = if (freeSpeedTps > 0.0 && freeSpeedTps.isFinite()) freeSpeedTps else 2786.0
+        val volt = if (nominalVoltage > 0.0 && nominalVoltage.isFinite()) nominalVoltage else 12.0
+
+        val resistance = volt / stall
+        val kv = volt / speed
+        slots.add(MotorSlot(motor, resistance, kv, volt))
     }
 
     /**

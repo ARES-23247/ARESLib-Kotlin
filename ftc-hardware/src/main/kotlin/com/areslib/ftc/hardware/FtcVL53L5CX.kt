@@ -33,19 +33,25 @@ interface VL53L5CXDriverProxy {
  */
 class FtcVL53L5CX(private val driver: VL53L5CXDriverProxy) : MultizoneDistanceSensorIO {
     override val rows: Int
-        get() = driver.rows
+        get() = try { driver.rows } catch (_: Exception) { 0 }
 
     override val columns: Int
-        get() = driver.columns
+        get() = try { driver.columns } catch (_: Exception) { 0 }
+
+    private var lastDistances = DoubleArray(0)
 
     override val distancesMeters: DoubleArray
         get() {
-            driver.update()
-            val raw = driver.distancesMillimeters
-            val converted = DoubleArray(raw.size)
-            for (i in raw.indices) {
-                converted[i] = raw[i] / 1000.0 // Convert mm to meters
-            }
-            return converted
+            try {
+                driver.update()
+                val raw = driver.distancesMillimeters
+                if (raw.size != lastDistances.size) {
+                    lastDistances = DoubleArray(raw.size)
+                }
+                for (i in raw.indices) {
+                    lastDistances[i] = raw[i] / 1000.0 // Convert mm to meters
+                }
+            } catch (_: Exception) {}
+            return lastDistances
         }
 }

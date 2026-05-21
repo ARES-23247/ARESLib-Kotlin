@@ -66,12 +66,7 @@ class PidClampingTier1Test {
     fun testSetpointValidation_isFinite() {
         val pid = PIDController(1.0, 0.0, 0.0)
         
-        assertThrows(IllegalArgumentException::class.java) {
-            pid.calculate(Double.NaN, 0.02)
-        }
-        
-        assertThrows(IllegalArgumentException::class.java) {
-            pid.calculate(0.0, Double.POSITIVE_INFINITY, 0.02)
-        }
+        assertEquals(0.0, pid.calculate(Double.NaN, 0.02), 1e-6)
+        assertEquals(0.0, pid.calculate(0.0, Double.POSITIVE_INFINITY, 0.02), 1e-6)
     }
 }

@@ -14,7 +14,7 @@ object GravityFeedforward {
      * @return Gravity compensation feedforward value.
      */
     fun calculateElevator(kG: Double): Double {
-        require(kG.isFinite()) { "kG must be finite" }
+        if (!kG.isFinite()) return 0.0
         return kG
     }
 
@@ -25,8 +25,7 @@ object GravityFeedforward {
      * @return Gravity compensation feedforward value.
      */
     fun calculateArm(angleRadians: Double, kG: Double): Double {
-        require(angleRadians.isFinite()) { "angleRadians must be finite" }
-        require(kG.isFinite()) { "kG must be finite" }
+        if (!angleRadians.isFinite() || !kG.isFinite()) return 0.0
         return kG * cos(angleRadians)
     }
 }

@@ -53,6 +53,7 @@ class LQRController(
     private val correction = Matrix(numStates, 1)
     private val nextXHat = Matrix(numStates, 1)
     private val outU = DoubleArray(numInputs)
+    private var lastWarningTime: Long = 0L
 
     /**
      * Initializes state space matrices.
@@ -137,8 +138,13 @@ class LQRController(
     ): DoubleArray {
         require(y.size == numOutputs) { "Measurement dimensions mismatch" }
         require(xRef.size == numStates) { "Reference state dimensions mismatch" }
-        require(y.all { it.isFinite() } && xRef.all { it.isFinite() } && dtSeconds > 0) {
-            "Inputs must be finite and dtSeconds must be positive"
+        if (!y.all { it.isFinite() } || !xRef.all { it.isFinite() } || dtSeconds <= 0.0) {
+            val now = System.currentTimeMillis()
+            if (now - lastWarningTime > 2000L) {
+                System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
+                lastWarningTime = now
+            }
+            return outU
         }
 
         yMat.copyFrom(y)
@@ -155,14 +161,16 @@ class LQRController(
             
             // Apply slew rate limits
             if (!maxUChangePerSec.isNaN()) {
-                val maxChange = maxUChangePerSec * dtSeconds
+                val maxChange = kotlin.math.abs(maxUChangePerSec) * dtSeconds
                 val lastVal = u.get(i, 0)
                 val change = (inputVal - lastVal).coerceIn(-maxChange, maxChange)
                 inputVal = lastVal + change
             }
 
             // Apply voltage clipping and NaN protection
-            inputVal = inputVal.coerceIn(minU, maxU)
+            val lowLimit = kotlin.math.min(minU, maxU)
+            val highLimit = kotlin.math.max(minU, maxU)
+            inputVal = inputVal.coerceIn(lowLimit, highLimit)
             if (inputVal.isNaN() || inputVal.isInfinite()) inputVal = 0.0
 
             saturatedU.set(i, 0, inputVal)

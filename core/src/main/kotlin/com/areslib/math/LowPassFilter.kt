@@ -20,6 +20,10 @@ class LowPassFilter(
      * @return The smoothed/filtered estimate.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
+        if (!measurement.isFinite() || !timeConstantSeconds.isFinite()) {
+            return lastEstimate
+        }
+
         if (!hasFirstValue) {
             lastEstimate = measurement
             hasFirstValue = true

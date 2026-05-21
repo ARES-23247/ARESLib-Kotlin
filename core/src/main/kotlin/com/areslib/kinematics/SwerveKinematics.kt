@@ -19,6 +19,20 @@ class SwerveKinematics(
     constructor(vararg moduleTranslations: Translation2d) : this(moduleTranslations.toList())
 
     fun toSwerveModuleStates(chassisSpeeds: ChassisSpeeds, dtSeconds: Double = 0.02): Array<SwerveModuleState> {
+        if (!dtSeconds.isFinite() || dtSeconds <= 0.0) {
+            val stopped = Array(numModules) { SwerveModuleState() }
+            previousStates = stopped
+            return stopped
+        }
+
+        if (!chassisSpeeds.vxMetersPerSecond.isFinite() ||
+            !chassisSpeeds.vyMetersPerSecond.isFinite() ||
+            !chassisSpeeds.omegaRadiansPerSecond.isFinite()) {
+            val stopped = Array(numModules) { SwerveModuleState() }
+            previousStates = stopped
+            return stopped
+        }
+
         if (chassisSpeeds.vxMetersPerSecond == 0.0 && 
             chassisSpeeds.vyMetersPerSecond == 0.0 && 
             chassisSpeeds.omegaRadiansPerSecond == 0.0) {
@@ -45,10 +59,11 @@ class SwerveKinematics(
                 val tState = targetStates[i]
 
                 // Limit drive wheel acceleration
-                val maxSpeedChange = maxDriveAccelMps2 * dtSeconds
+                val rawMaxSpeedChange = maxDriveAccelMps2 * dtSeconds
+                val maxSpeedChange = kotlin.math.abs(rawMaxSpeedChange)
                 val speedChange = tState.speedMetersPerSecond - pState.speedMetersPerSecond
                 val limitedSpeed = pState.speedMetersPerSecond + 
-                    speedChange.coerceIn(-maxSpeedChange, maxSpeedChange)
+                    if (maxSpeedChange.isFinite()) speedChange.coerceIn(-maxSpeedChange, maxSpeedChange) else speedChange
 
                 // Limit steering velocity and acceleration
                 val targetAngleRad = tState.angle.radians
@@ -60,13 +75,20 @@ class SwerveKinematics(
                 // Target steering velocity
                 val targetSteerVel = angleDiff / dtSeconds
                 // Clamp steering velocity
-                val limitedSteerVel = targetSteerVel.coerceIn(-maxSteerVelRadPerSec, maxSteerVelRadPerSec)
+                val limitSteerVelVal = kotlin.math.abs(maxSteerVelRadPerSec)
+                val limitedSteerVel = if (limitSteerVelVal.isFinite()) {
+                    targetSteerVel.coerceIn(-limitSteerVelVal, limitSteerVelVal)
+                } else {
+                    targetSteerVel
+                }
 
                 // Clamp steering acceleration
                 val prevSteerVel = previousSteerVels[i]
                 val steerVelChange = limitedSteerVel - prevSteerVel
-                val maxSteerVelChange = maxSteerAccelRadPerSec2 * dtSeconds
-                val finalSteerVel = prevSteerVel + steerVelChange.coerceIn(-maxSteerVelChange, maxSteerVelChange)
+                val rawMaxSteerVelChange = maxSteerAccelRadPerSec2 * dtSeconds
+                val maxSteerVelChange = kotlin.math.abs(rawMaxSteerVelChange)
+                val finalSteerVel = prevSteerVel + 
+                    if (maxSteerVelChange.isFinite()) steerVelChange.coerceIn(-maxSteerVelChange, maxSteerVelChange) else steerVelChange
 
                 previousSteerVels[i] = finalSteerVel
 

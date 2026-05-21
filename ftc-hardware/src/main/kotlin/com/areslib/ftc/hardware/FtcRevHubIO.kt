@@ -21,8 +21,10 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
     private var cachedAmps = 0.0
 
     init {
-        motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
-        motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+        try {
+            motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
+            motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+        } catch (_: Exception) {}
     }
 
     private var targetPower: Double = 0.0
@@ -32,7 +34,11 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
     override var powerScale: Double = 1.0
         set(value) {
             field = value.coerceIn(0.0, 1.0)
-            if (!isStalled) motor.power = targetPower * field
+            if (!isStalled) {
+                try {
+                    motor.power = targetPower * field
+                } catch (_: Exception) {}
+            }
         }
 
     override var power: Double
@@ -60,17 +66,25 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
                 isStalled = true // Trip virtual breaker
             }
 
-            if (isStalled) {
-                motor.power = 0.0
-            } else {
-                motor.power = value * powerScale
-            }
+            try {
+                if (isStalled) {
+                    motor.power = 0.0
+                } else {
+                    motor.power = value * powerScale
+                }
+            } catch (_: Exception) {}
         }
 
     fun updateInputs() {
-        cachedPosition = motor.currentPosition.toDouble() - encoderOffset
-        cachedVelocity = motor.velocity
-        cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+        try {
+            cachedPosition = motor.currentPosition.toDouble() - encoderOffset
+        } catch (_: Exception) {}
+        try {
+            cachedVelocity = motor.velocity
+        } catch (_: Exception) {}
+        try {
+            cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+        } catch (_: Exception) {}
     }
 
     override val velocity: Double
@@ -83,8 +97,10 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
         get() = cachedAmps
 
     override fun resetEncoder() {
-        encoderOffset = motor.currentPosition.toDouble()
-        cachedPosition = 0.0
+        try {
+            encoderOffset = motor.currentPosition.toDouble()
+            cachedPosition = 0.0
+        } catch (_: Exception) {}
     }
 }
 
@@ -102,14 +118,18 @@ class FtcCRServo(
     override var powerScale: Double = 1.0
         set(value) {
             field = value.coerceIn(0.0, 1.0)
-            crServo.power = targetPower * field
+            try {
+                crServo.power = targetPower * field
+            } catch (_: Exception) {}
         }
 
     override var power: Double
         get() = targetPower
         set(value) {
             targetPower = value
-            crServo.power = value * powerScale
+            try {
+                crServo.power = value * powerScale
+            } catch (_: Exception) {}
         }
 
     override val velocity: Double
@@ -138,8 +158,12 @@ class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
         set(value) {}
 
     fun updateInputs() {
-        cachedPosition = motor.currentPosition.toDouble() - encoderOffset
-        cachedVelocity = motor.velocity
+        try {
+            cachedPosition = motor.currentPosition.toDouble() - encoderOffset
+        } catch (_: Exception) {}
+        try {
+            cachedVelocity = motor.velocity
+        } catch (_: Exception) {}
     }
 
     override val velocity: Double
@@ -149,8 +173,10 @@ class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
         get() = cachedPosition
 
     override fun resetEncoder() {
-        encoderOffset = motor.currentPosition.toDouble()
-        cachedPosition = 0.0
+        try {
+            encoderOffset = motor.currentPosition.toDouble()
+            cachedPosition = 0.0
+        } catch (_: Exception) {}
     }
 }
 
@@ -199,8 +225,10 @@ class FtcAbsoluteAnalogEncoder(
         set(value) {}
 
     fun updateInputs() {
-        val normalized = analogInput.voltage / version.maxVoltage
-        cachedPosition = (normalized * ticksPerRev) - offset
+        try {
+            val normalized = analogInput.voltage / version.maxVoltage
+            cachedPosition = (normalized * ticksPerRev) - offset
+        } catch (_: Exception) {}
     }
 
     override val velocity: Double
@@ -210,16 +238,24 @@ class FtcAbsoluteAnalogEncoder(
         get() = cachedPosition
 
     override fun resetEncoder() {
-        offset = (analogInput.voltage / version.maxVoltage) * ticksPerRev
-        cachedPosition = 0.0
+        try {
+            offset = (analogInput.voltage / version.maxVoltage) * ticksPerRev
+            cachedPosition = 0.0
+        } catch (_: Exception) {}
     }
 }
 
 class FtcServo(private val servo: Servo) : ServoIO {
     override var position: Double
-        get() = servo.position
+        get() = try {
+            servo.position
+        } catch (_: Exception) {
+            0.0
+        }
         set(value) {
-            servo.position = value
+            try {
+                servo.position = value
+            } catch (_: Exception) {}
         }
 }
 
@@ -227,12 +263,14 @@ class FtcImu(private val imu: IMU) : ImuIO {
     private var headingOffset = 0.0
 
     init {
-        val orientation = RevHubOrientationOnRobot(
-            RevHubOrientationOnRobot.LogoFacingDirection.UP,
-            RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
-        )
-        val parameters = IMU.Parameters(orientation)
-        imu.initialize(parameters)
+        try {
+            val orientation = RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+            )
+            val parameters = IMU.Parameters(orientation)
+            imu.initialize(parameters)
+        } catch (_: Exception) {}
     }
 
     override fun updateInputs(inputs: com.areslib.hardware.ImuInputs) {
@@ -251,23 +289,35 @@ class FtcImu(private val imu: IMU) : ImuIO {
     }
 
     override fun resetHeading() {
-        val yawPitchRoll = imu.getRobotYawPitchRollAngles()
-        headingOffset = yawPitchRoll.getYaw(AngleUnit.RADIANS)
+        try {
+            val yawPitchRoll = imu.getRobotYawPitchRollAngles()
+            headingOffset = yawPitchRoll.getYaw(AngleUnit.RADIANS)
+        } catch (_: Exception) {}
     }
 }
 
 class FtcAnalogSensor(private val analogInput: AnalogInput) {
     fun getVoltage(): Double {
-        return analogInput.voltage
+        return try {
+            analogInput.voltage
+        } catch (_: Exception) {
+            0.0
+        }
     }
 }
 
 class FtcDigitalSensor(private val digitalChannel: DigitalChannel) {
     init {
-        digitalChannel.mode = DigitalChannel.Mode.INPUT
+        try {
+            digitalChannel.mode = DigitalChannel.Mode.INPUT
+        } catch (_: Exception) {}
     }
 
     fun getState(): Boolean {
-        return digitalChannel.state
+        return try {
+            digitalChannel.state
+        } catch (_: Exception) {
+            false
+        }
     }
 }

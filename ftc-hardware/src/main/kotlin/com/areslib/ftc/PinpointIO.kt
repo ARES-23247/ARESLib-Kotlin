@@ -4,17 +4,32 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.action.RobotAction
 
 class PinpointIO(private val driver: GoBildaPinpointDriver) {
+    private var lastX = 0.0
+    private var lastY = 0.0
+    private var lastHeading = 0.0
+    private var lastWarningTime = 0L
+
     /**
      * Updates the pinpoint driver and returns the current pose as a pure action.
      */
     fun getPoseUpdate(): RobotAction.PoseUpdate {
-        driver.update()
-        // Assuming the driver provides data in mm or similar, we scale it to meters here
-        // For the mock, we assume it provides meters natively.
+        try {
+            driver.update()
+            lastX = driver.posX
+            lastY = driver.posY
+            lastHeading = driver.heading
+        } catch (e: Exception) {
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
+            if (now - lastWarningTime > 2000L) {
+                System.err.println("PinpointIO: Communication failure with GoBildaPinpointDriver. Using last known coordinates. Error: ${e.message}")
+                lastWarningTime = now
+            }
+        }
+        
         return RobotAction.PoseUpdate(
-            xMeters = driver.posX,
-            yMeters = driver.posY,
-            headingRadians = driver.heading,
+            xMeters = lastX,
+            yMeters = lastY,
+            headingRadians = lastHeading,
             timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         )
     }

@@ -104,10 +104,10 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         brLimiter?.let { brPower = it.calculate(brPower, dtSeconds) }
 
         // Normalize meters per second speed into [-1.0, 1.0] range and apply compensation
-        frontLeft.power = flPower
-        frontRight.power = frPower
-        backLeft.power = blPower
-        backRight.power = brPower
+        safeSetPower(frontLeft, flPower, "frontLeft")
+        safeSetPower(frontRight, frPower, "frontRight")
+        safeSetPower(backLeft, blPower, "backLeft")
+        safeSetPower(backRight, brPower, "backRight")
 
         // Update tracking values for current estimation (no I2C overhead)
         flIO.power = flPower
@@ -123,15 +123,37 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      */
     fun applyPowerScale(scale: Double) {
         val s = scale.coerceIn(0.0, 1.0)
-        frontLeft.power = frontLeft.power * s
-        frontRight.power = frontRight.power * s
-        backLeft.power = backLeft.power * s
-        backRight.power = backRight.power * s
+        safeSetPower(frontLeft, safeGetPower(frontLeft) * s, "frontLeft")
+        safeSetPower(frontRight, safeGetPower(frontRight) * s, "frontRight")
+        safeSetPower(backLeft, safeGetPower(backLeft) * s, "backLeft")
+        safeSetPower(backRight, safeGetPower(backRight) * s, "backRight")
 
         flIO.powerScale = s
         frIO.powerScale = s
         blIO.powerScale = s
         brIO.powerScale = s
+    }
+
+    private var lastWarningTime = 0L
+
+    private fun safeSetPower(motor: DcMotorEx, power: Double, name: String) {
+        try {
+            motor.power = power
+        } catch (e: Exception) {
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
+            if (now - lastWarningTime > 2000L) {
+                System.err.println("MecanumHardwareIO: Failed to set $name power. Error: ${e.message}")
+                lastWarningTime = now
+            }
+        }
+    }
+
+    private fun safeGetPower(motor: DcMotorEx): Double {
+        return try {
+            motor.power
+        } catch (_: Exception) {
+            0.0
+        }
     }
 }
 

@@ -27,6 +27,10 @@ class KalmanFilter(
      * @return The optimal state estimate.
      */
     fun calculate(measurement: Double): Double {
+        if (!measurement.isFinite() || !processNoise.isFinite() || !measurementNoise.isFinite()) {
+            return x
+        }
+
         if (!hasFirstValue) {
             x = measurement
             p = 1.0 // Initialize with unit covariance
@@ -39,8 +43,14 @@ class KalmanFilter(
         p += processNoise
 
         // 2. Correct (Measurement Update)
-        val k = p / (p + measurementNoise) // Kalman Gain
-        x += k * (measurement - x)         // Update estimate with measurement
+        val denominator = p + measurementNoise
+        val k = if (kotlin.math.abs(denominator) > 1e-12) p / denominator else 0.0 // Kalman Gain with div-by-zero protection
+        
+        val delta = measurement - x
+        if (delta.isFinite()) {
+            x += k * delta
+        }
+        
         p *= (1.0 - k)                     // Update error covariance
 
         return x

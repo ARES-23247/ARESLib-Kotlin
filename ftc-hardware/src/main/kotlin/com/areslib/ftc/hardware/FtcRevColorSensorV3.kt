@@ -20,33 +20,43 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     private val distanceSensor = device as? DistanceSensor
 
     override val red: Int
-        get() = device.red()
+        get() = try { device.red() } catch (_: Exception) { 0 }
     override val green: Int
-        get() = device.green()
+        get() = try { device.green() } catch (_: Exception) { 0 }
     override val blue: Int
-        get() = device.blue()
+        get() = try { device.blue() } catch (_: Exception) { 0 }
     override val alpha: Int
-        get() = device.alpha()
+        get() = try { device.alpha() } catch (_: Exception) { 0 }
 
     override val normalizedRgb: DoubleArray
         get() {
-            val colors = normalizedSensor?.normalizedColors
-            if (colors != null) {
-                return doubleArrayOf(
-                    colors.red.toDouble(),
-                    colors.green.toDouble(),
-                    colors.blue.toDouble(),
-                    colors.alpha.toDouble()
-                )
-            }
-            val sum = (red + green + blue + alpha).toDouble()
+            try {
+                val colors = normalizedSensor?.normalizedColors
+                if (colors != null) {
+                    return doubleArrayOf(
+                        colors.red.toDouble(),
+                        colors.green.toDouble(),
+                        colors.blue.toDouble(),
+                        colors.alpha.toDouble()
+                    )
+                }
+            } catch (_: Exception) {}
+            val r = red
+            val g = green
+            val b = blue
+            val a = alpha
+            val sum = (r + g + b + a).toDouble()
             if (sum < 0.1) return doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-            return doubleArrayOf(red / sum, green / sum, blue / sum, alpha / sum)
+            return doubleArrayOf(r / sum, g / sum, b / sum, a / sum)
         }
 
     /**
      * Reads the integrated proximity rangefinder distance in meters.
      */
     override val distanceMeters: Double
-        get() = distanceSensor?.getDistance(Distance.METER) ?: Double.NaN
+        get() = try {
+            distanceSensor?.getDistance(Distance.METER) ?: Double.NaN
+        } catch (_: Exception) {
+            Double.NaN
+        }
 }

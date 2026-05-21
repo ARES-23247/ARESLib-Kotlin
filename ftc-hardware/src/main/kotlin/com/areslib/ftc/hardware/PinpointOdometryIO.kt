@@ -21,7 +21,9 @@ interface PinpointDriverProxy {
 
 class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO {
     override fun initialize(startPose: Pose2d) {
-        driver.resetPosAndIMU()
+        try {
+            driver.resetPosAndIMU()
+        } catch (_: Exception) {}
     }
 
     override fun updateInputs(inputs: OdometryInputs) {

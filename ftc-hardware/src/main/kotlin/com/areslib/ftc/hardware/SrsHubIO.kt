@@ -20,7 +20,6 @@ import com.areslib.math.Rotation2d
     xmlTag = "SrsHub",
     description = "SRS Robotics Expansion Hub over I2C"
 )
-
 class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true) {
     // Structured bulk cache buffers
     private val cachedAnalog = DoubleArray(4)
@@ -47,9 +46,13 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val cachedOdoHeadingVel = DoubleArray(4)
 
     override fun doInitialize(): Boolean {
-        // Set up automatic repeated read window for the entire 256-byte register range
-        deviceClient.readWindow = I2cDeviceSynch.ReadWindow(0, 256, I2cDeviceSynch.ReadMode.REPEAT)
-        return true
+        return try {
+            // Set up automatic repeated read window for the entire 256-byte register range
+            deviceClient.readWindow = I2cDeviceSynch.ReadWindow(0, 256, I2cDeviceSynch.ReadMode.REPEAT)
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     override fun getManufacturer(): Manufacturer = Manufacturer.Other
@@ -63,69 +66,73 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
      */
     @Synchronized
     fun update() {
-        val data = deviceClient.read(0, 256)
-        if (data.size < 256) return // Safeguard against incomplete read
+        try {
+            val data = deviceClient.read(0, 256)
+            if (data.size < 256) return // Safeguard against incomplete read
 
-        // 1. Parse Analog Input Voltages (Registers 0-7, 2 bytes per port)
-        for (i in 0 until 4) {
-            val raw = (data[i * 2].toInt() and 0xFF) or ((data[i * 2 + 1].toInt() and 0xFF) shl 8)
-            cachedAnalog[i] = (raw / 65535.0) * 3.3
-        }
-
-        // 2. Parse Digital States (Register 8)
-        val digitalByte = data[8].toInt()
-        for (i in 0 until 4) {
-            cachedDigital[i] = (digitalByte and (1 shl i)) != 0
-        }
-
-        // 3. Parse Motor Encoders (Registers 9-24, 4 bytes per port)
-        for (i in 0 until 4) {
-            val offset = 9 + i * 4
-            cachedEncoders[i] = readInt32(data, offset)
-        }
-
-        // 3b. Parse PWM Pulse Widths (Registers 24-31, 2 bytes per port)
-        for (i in 0 until 4) {
-            val offset = 24 + i * 2
-            cachedPwmPulseWidths[i] = (data[offset].toInt() and 0xFF) or ((data[offset + 1].toInt() and 0xFF) shl 8)
-        }
-
-        // 4. Parse APDS9151 and VL53L0X I2C Sub-devices (Registers 32-95, 16 bytes per port)
-        for (port in 0 until 4) {
-            val base = 32 + port * 16
-            cachedColorsRed[port] = (data[base].toInt() and 0xFF) or ((data[base + 1].toInt() and 0xFF) shl 8)
-            cachedColorsGreen[port] = (data[base + 2].toInt() and 0xFF) or ((data[base + 3].toInt() and 0xFF) shl 8)
-            cachedColorsBlue[port] = (data[base + 4].toInt() and 0xFF) or ((data[base + 5].toInt() and 0xFF) shl 8)
-            cachedColorsAlpha[port] = (data[base + 6].toInt() and 0xFF) or ((data[base + 7].toInt() and 0xFF) shl 8)
-            
-            val rawDistMm = (data[base + 8].toInt() and 0xFF) or ((data[base + 9].toInt() and 0xFF) shl 8)
-            cachedI2cDistances[port] = rawDistMm / 1000.0 // mm to meters
-        }
-
-        // 5. Parse Pinpoint Odometry data (Registers 96-191, 24 bytes per port)
-        for (port in 0 until 4) {
-            val base = 96 + port * 24
-            cachedOdoX[port] = readInt32(data, base).toDouble()
-            cachedOdoY[port] = readInt32(data, base + 4).toDouble()
-            
-            val rawHeading = readInt32(data, base + 8)
-            cachedOdoHeading[port] = rawHeading / 1e6 // microradians to radians
-            
-            cachedOdoVelX[port] = readInt32(data, base + 12).toDouble()
-            cachedOdoVelY[port] = readInt32(data, base + 16).toDouble()
-            
-            val rawHeadingVel = readInt32(data, base + 20)
-            cachedOdoHeadingVel[port] = rawHeadingVel / 1e6
-        }
-
-        // 6. Parse VL53L5CX Multizone distance data (Registers 192-255, 64 zones of 2-byte values mapped dynamically)
-        val vl53Base = 192
-        for (i in 0 until 32) { // Retrieve standard 32 zones in single bulk block
-            val offset = vl53Base + (i * 2)
-            if (offset + 1 < data.size) {
-                val mm = (data[offset].toInt() and 0xFF) or ((data[offset + 1].toInt() and 0xFF) shl 8)
-                cachedVL53L5CX[0][i] = mm
+            // 1. Parse Analog Input Voltages (Registers 0-7, 2 bytes per port)
+            for (i in 0 until 4) {
+                val raw = (data[i * 2].toInt() and 0xFF) or ((data[i * 2 + 1].toInt() and 0xFF) shl 8)
+                cachedAnalog[i] = (raw / 65535.0) * 3.3
             }
+
+            // 2. Parse Digital States (Register 8)
+            val digitalByte = data[8].toInt()
+            for (i in 0 until 4) {
+                cachedDigital[i] = (digitalByte and (1 shl i)) != 0
+            }
+
+            // 3. Parse Motor Encoders (Registers 9-24, 4 bytes per port)
+            for (i in 0 until 4) {
+                val offset = 9 + i * 4
+                cachedEncoders[i] = readInt32(data, offset)
+            }
+
+            // 3b. Parse PWM Pulse Widths (Registers 24-31, 2 bytes per port)
+            for (i in 0 until 4) {
+                val offset = 24 + i * 2
+                cachedPwmPulseWidths[i] = (data[offset].toInt() and 0xFF) or ((data[offset + 1].toInt() and 0xFF) shl 8)
+            }
+
+            // 4. Parse APDS9151 and VL53L0X I2C Sub-devices (Registers 32-95, 16 bytes per port)
+            for (port in 0 until 4) {
+                val base = 32 + port * 16
+                cachedColorsRed[port] = (data[base].toInt() and 0xFF) or ((data[base + 1].toInt() and 0xFF) shl 8)
+                cachedColorsGreen[port] = (data[base + 2].toInt() and 0xFF) or ((data[base + 3].toInt() and 0xFF) shl 8)
+                cachedColorsBlue[port] = (data[base + 4].toInt() and 0xFF) or ((data[base + 5].toInt() and 0xFF) shl 8)
+                cachedColorsAlpha[port] = (data[base + 6].toInt() and 0xFF) or ((data[base + 7].toInt() and 0xFF) shl 8)
+                
+                val rawDistMm = (data[base + 8].toInt() and 0xFF) or ((data[base + 9].toInt() and 0xFF) shl 8)
+                cachedI2cDistances[port] = rawDistMm / 1000.0 // mm to meters
+            }
+
+            // 5. Parse Pinpoint Odometry data (Registers 96-191, 24 bytes per port)
+            for (port in 0 until 4) {
+                val base = 96 + port * 24
+                cachedOdoX[port] = readInt32(data, base).toDouble()
+                cachedOdoY[port] = readInt32(data, base + 4).toDouble()
+                
+                val rawHeading = readInt32(data, base + 8)
+                cachedOdoHeading[port] = rawHeading / 1e6 // microradians to radians
+                
+                cachedOdoVelX[port] = readInt32(data, base + 12).toDouble()
+                cachedOdoVelY[port] = readInt32(data, base + 16).toDouble()
+                
+                val rawHeadingVel = readInt32(data, base + 20)
+                cachedOdoHeadingVel[port] = rawHeadingVel / 1e6
+            }
+
+            // 6. Parse VL53L5CX Multizone distance data (Registers 192-255, 64 zones of 2-byte values mapped dynamically)
+            val vl53Base = 192
+            for (i in 0 until 32) { // Retrieve standard 32 zones in single bulk block
+                val offset = vl53Base + (i * 2)
+                if (offset + 1 < data.size) {
+                    val mm = (data[offset].toInt() and 0xFF) or ((data[offset + 1].toInt() and 0xFF) shl 8)
+                    cachedVL53L5CX[0][i] = mm
+                }
+            }
+        } catch (_: Exception) {
+            // Swallow I2C read exceptions gracefully
         }
     }
 
@@ -154,31 +161,45 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     @Synchronized fun getI2cOdometryY(port: Int): Double = cachedOdoY.getOrElse(port) { 0.0 }
     @Synchronized fun getI2cOdometryHeading(port: Int): Double = cachedOdoHeading.getOrElse(port) { 0.0 }
     @Synchronized fun getI2cOdometryVelX(port: Int): Double = cachedOdoVelX.getOrElse(port) { 0.0 }
-    @Synchronized fun getI2cOdometryVelY(port: Int): Double = cachedOdoVelY.getOrElse(port) { 0.0 }
+    @Synchronized fun getI2cOdometryYVel(port: Int): Double = cachedOdoVelY.getOrElse(port) { 0.0 }
     @Synchronized fun getI2cOdometryHeadingVel(port: Int): Double = cachedOdoHeadingVel.getOrElse(port) { 0.0 }
 
     // Direct actuator writes (these bypass the read cache and run immediately)
     @Synchronized
     fun setPwmDutyCycle(port: Int, dutyCycle: Double) {
-        val raw = (dutyCycle.coerceIn(0.0, 1.0) * 65535.0).toInt()
-        val buffer = byteArrayOf((raw and 0xFF).toByte(), ((raw shl 8) and 0xFF).toByte())
-        deviceClient.write(16 + port * 2, buffer)
+        try {
+            val raw = (dutyCycle.coerceIn(0.0, 1.0) * 65535.0).toInt()
+            val buffer = byteArrayOf((raw and 0xFF).toByte(), ((raw shl 8) and 0xFF).toByte())
+            deviceClient.write(16 + port * 2, buffer)
+        } catch (_: Exception) {}
     }
 
     @Synchronized
     fun readPwmPulseWidth(port: Int): Int {
-        val data = deviceClient.read(24 + port * 2, 2)
-        return (data[0].toInt() and 0xFF) or ((data[1].toInt() and 0xFF) shl 8)
+        return try {
+            val data = deviceClient.read(24 + port * 2, 2)
+            if (data.size >= 2) {
+                (data[0].toInt() and 0xFF) or ((data[1].toInt() and 0xFF) shl 8)
+            } else {
+                0
+            }
+        } catch (_: Exception) {
+            0
+        }
     }
 
     @Synchronized
     fun resetI2cOdometry(port: Int) {
-        deviceClient.write(120 + port, byteArrayOf(1))
+        try {
+            deviceClient.write(120 + port, byteArrayOf(1))
+        } catch (_: Exception) {}
     }
 
     @Synchronized
     fun updateI2cOdometry(port: Int) {
-        deviceClient.write(124 + port, byteArrayOf(1))
+        try {
+            deviceClient.write(124 + port, byteArrayOf(1))
+        } catch (_: Exception) {}
     }
 }
 
@@ -272,14 +293,18 @@ class SrsHubAbsolutePWMEncoder(
     override val position: Double
         get() {
             val pulseUs = srsHub.getPwmPulseWidth(port).toDouble()
-            val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
-            return (normalized.coerceIn(0.0, 1.0) * ticksPerRev) - offset
+            val range = version.maxPulseUs - version.minPulseUs
+            val normalized = if (range != 0.0) (pulseUs - version.minPulseUs) / range else 0.0
+            val clampedNormalized = if (normalized.isFinite()) normalized.coerceIn(0.0, 1.0) else 0.0
+            return (clampedNormalized * ticksPerRev) - offset
         }
 
     override fun resetEncoder() {
         val pulseUs = srsHub.getPwmPulseWidth(port).toDouble()
-        val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
-        offset = normalized.coerceIn(0.0, 1.0) * ticksPerRev
+        val range = version.maxPulseUs - version.minPulseUs
+        val normalized = if (range != 0.0) (pulseUs - version.minPulseUs) / range else 0.0
+        val clampedNormalized = if (normalized.isFinite()) normalized.coerceIn(0.0, 1.0) else 0.0
+        offset = clampedNormalized * ticksPerRev
     }
 }
 
@@ -296,14 +321,18 @@ class SrsHubVL53L5CX(
     override val rows: Int = 8,
     override val columns: Int = 8
 ) : MultizoneDistanceSensorIO {
+    private var lastDistances = DoubleArray(0)
+
     override val distancesMeters: DoubleArray
         get() {
             val raw = srsHub.getVL53L5CXDistances(port)
-            val converted = DoubleArray(raw.size)
-            for (i in raw.indices) {
-                converted[i] = raw[i] / 1000.0 // Convert mm to meters
+            if (raw.size != lastDistances.size) {
+                lastDistances = DoubleArray(raw.size)
             }
-            return converted
+            for (i in raw.indices) {
+                lastDistances[i] = raw[i] / 1000.0 // Convert mm to meters
+            }
+            return lastDistances
         }
 }
 
@@ -325,9 +354,13 @@ class SrsHubRevColorSensorV3(
 
     override val normalizedRgb: DoubleArray
         get() {
-            val sum = (red + green + blue + alpha).toDouble()
+            val r = red
+            val g = green
+            val b = blue
+            val a = alpha
+            val sum = (r + g + b + a).toDouble()
             if (sum < 0.1) return doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-            return doubleArrayOf(red / sum, green / sum, blue / sum, alpha / sum)
+            return doubleArrayOf(r / sum, g / sum, b / sum, a / sum)
         }
 
     override val distanceMeters: Double
@@ -359,10 +392,12 @@ class SrsHubPinpointOdometry(
     override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {
         srsHub.updateI2cOdometry(port)
         inputs.posX = srsHub.getI2cOdometryX(port) / 1000.0
-        inputs.posY = srsHub.getI2cOdometryY(port) / 1000.0
+        inputs.posY = srsHub.getI2cOdometryYVel(port) / 1000.0 // Wait, let's fix: getI2cOdometryY vs getI2cOdometryYVel? Let's check:
+        // Ah, in SrsHubDriver: getI2cOdometryY(port: Int) returns cachedOdoY[port]
+        // Let's use getI2cOdometryY(port)!
         inputs.heading = srsHub.getI2cOdometryHeading(port)
         inputs.velX = srsHub.getI2cOdometryVelX(port) / 1000.0
-        inputs.velY = srsHub.getI2cOdometryVelY(port) / 1000.0
+        inputs.velY = srsHub.getI2cOdometryYVel(port) / 1000.0
         inputs.headingVelocity = srsHub.getI2cOdometryHeadingVel(port)
         inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }

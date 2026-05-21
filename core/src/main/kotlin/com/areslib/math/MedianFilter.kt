@@ -27,6 +27,8 @@ class MedianFilter(
      * @return The filtered median estimate.
      */
     fun calculate(measurement: Double): Double {
+        if (!measurement.isFinite()) return value
+
         if (size < windowSize) {
             buffer[size] = measurement
             size++

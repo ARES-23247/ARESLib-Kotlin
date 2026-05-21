@@ -22,6 +22,8 @@ class PIDController(
     private var minIntegral: Double = Double.NaN
     private var maxIntegral: Double = Double.NaN
 
+    private var lastWarningTime: Long = 0L
+
     /**
      * Enables continuous input (e.g. for circular values like angles).
      */
@@ -74,8 +76,13 @@ class PIDController(
      * Calculates the control output given the current measurement and a timestep dt.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
-        require(measurement.isFinite() && setpoint.isFinite() && dtSeconds > 0.0) {
-            "Invalid inputs: measurement=$measurement, setpoint=$setpoint, dtSeconds=$dtSeconds"
+        if (!measurement.isFinite() || !setpoint.isFinite() || dtSeconds <= 0.0) {
+            val now = System.currentTimeMillis()
+            if (now - lastWarningTime > 2000L) {
+                System.err.println("PIDController: Invalid inputs detected (measurement=$measurement, setpoint=$setpoint, dtSeconds=$dtSeconds). Returning safe fallback 0.0.")
+                lastWarningTime = now
+            }
+            return 0.0
         }
 
         var error = setpoint - measurement

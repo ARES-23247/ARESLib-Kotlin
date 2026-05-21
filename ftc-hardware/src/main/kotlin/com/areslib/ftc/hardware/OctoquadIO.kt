@@ -56,20 +56,20 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val cachedPulseWidths = IntArray(8)
 
     override fun doInitialize(): Boolean {
-        deviceClient.i2cAddress = com.qualcomm.robotcore.hardware.I2cAddr.create7bit(OCTOQUAD_I2C_ADDRESS)
-        val chipId = deviceClient.read8(REG_CHIP_ID)
-        val fwMaj = deviceClient.read8(REG_FW_MAJ)
-        
-        if (chipId != OCTOQUAD_CHIP_ID) {
-            return false // Invalid device
+        return try {
+            deviceClient.i2cAddress = com.qualcomm.robotcore.hardware.I2cAddr.create7bit(OCTOQUAD_I2C_ADDRESS)
+            val chipId = deviceClient.read8(REG_CHIP_ID)
+            val fwMaj = deviceClient.read8(REG_FW_MAJ)
+            
+            if (chipId != OCTOQUAD_CHIP_ID) {
+                false
+            } else {
+                isInitialized = true
+                true
+            }
+        } catch (_: Exception) {
+            false
         }
-        
-        if (fwMaj.toInt() != SUPPORTED_FW_VERSION_MAJ) {
-            // Firmware mismatch
-        }
-        
-        isInitialized = true
-        return true
     }
 
     override fun getManufacturer(): Manufacturer = Manufacturer.Other
@@ -131,37 +131,49 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
      * Reads a single encoder position (legacy, non-cached fallback)
      */
     fun readEncoderPosition(channel: Int): Int {
-        val bytes = deviceClient.read(REG_ENC_0 + (channel * 4), 4)
-        val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-        return buf.int
+        return try {
+            val bytes = deviceClient.read(REG_ENC_0 + (channel * 4), 4)
+            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
+            buf.int
+        } catch (_: Exception) {
+            0
+        }
     }
 
     /**
      * Reads a single encoder velocity (legacy, non-cached fallback)
      */
     fun readEncoderVelocity(channel: Int): Int {
-        val bytes = deviceClient.read(REG_VEL_0 + (channel * 4), 4)
-        val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-        return buf.int
+        return try {
+            val bytes = deviceClient.read(REG_VEL_0 + (channel * 4), 4)
+            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
+            buf.int
+        } catch (_: Exception) {
+            0
+        }
     }
 
     /**
      * Reads the pulse width of a channel in microseconds (legacy, non-cached fallback)
      */
     fun readChannelPulseWidth(channel: Int): Int {
-        val bytes = deviceClient.read(REG_PULSE_WIDTH_0 + (channel * 2), 2)
-        val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-        return buf.short.toInt() and 0xFFFF
+        return try {
+            val bytes = deviceClient.read(REG_PULSE_WIDTH_0 + (channel * 2), 2)
+            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
+            buf.short.toInt() and 0xFFFF
+        } catch (_: Exception) {
+            0
+        }
     }
 
     /**
      * Resets a single encoder
      */
     fun resetEncoder(channel: Int) {
-        // Implementation for resetting encoder via command register
-        // Command 0x01 is Reset Single Encoder (Dat0 = channel)
-        val cmdBytes = byteArrayOf(0x01, channel.toByte())
-        deviceClient.write(0x10, cmdBytes) // 0x10 is COMMAND register
+        try {
+            val cmdBytes = byteArrayOf(0x01, channel.toByte())
+            deviceClient.write(0x10, cmdBytes) // 0x10 is COMMAND register
+        } catch (_: Exception) {}
     }
 
     data class LocalizerDataBlock(
@@ -174,17 +186,21 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     )
 
     fun readLocalizerData(): LocalizerDataBlock {
-        val bytes = deviceClient.read(REG_LOC_X, 12)
-        val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-        
-        val block = LocalizerDataBlock()
-        block.posX_mm = buf.short
-        block.posY_mm = buf.short
-        block.velX_mmS = buf.short
-        block.velY_mmS = buf.short
-        block.heading_rad = buf.short * SCALAR_LOCALIZER_HEADING
-        block.velHeading_radS = buf.short * SCALAR_LOCALIZER_HEADING_VELOCITY
-        return block
+        return try {
+            val bytes = deviceClient.read(REG_LOC_X, 12)
+            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
+            
+            val block = LocalizerDataBlock()
+            block.posX_mm = buf.short
+            block.posY_mm = buf.short
+            block.velX_mmS = buf.short
+            block.velY_mmS = buf.short
+            block.heading_rad = buf.short * SCALAR_LOCALIZER_HEADING
+            block.velHeading_radS = buf.short * SCALAR_LOCALIZER_HEADING_VELOCITY
+            block
+        } catch (_: Exception) {
+            LocalizerDataBlock()
+        }
     }
 }
 
@@ -245,15 +261,19 @@ class OctoQuadAbsolutePWMEncoder(
         get() {
             octoQuad.update()
             val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
-            val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
-            return (normalized.coerceIn(0.0, 1.0) * ticksPerRev) - offset
+            val range = version.maxPulseUs - version.minPulseUs
+            val normalized = if (range != 0.0) (pulseUs - version.minPulseUs) / range else 0.0
+            val clampedNormalized = if (normalized.isFinite()) normalized.coerceIn(0.0, 1.0) else 0.0
+            return (clampedNormalized * ticksPerRev) - offset
         }
 
     override fun resetEncoder() {
         octoQuad.update()
         val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
-        val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
-        offset = normalized.coerceIn(0.0, 1.0) * ticksPerRev
+        val range = version.maxPulseUs - version.minPulseUs
+        val normalized = if (range != 0.0) (pulseUs - version.minPulseUs) / range else 0.0
+        val clampedNormalized = if (normalized.isFinite()) normalized.coerceIn(0.0, 1.0) else 0.0
+        offset = clampedNormalized * ticksPerRev
     }
 }
 

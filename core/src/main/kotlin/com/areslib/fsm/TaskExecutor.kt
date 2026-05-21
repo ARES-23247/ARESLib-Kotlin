@@ -71,35 +71,46 @@ class TaskExecutor {
         val actions = mutableListOf<RobotAction>()
 
         var task = activeTask
-        if (task == null) {
-            if (preemptedStack.isNotEmpty()) {
-                // Resume a previously preempted task
-                val (resumedTask, priorElapsed) = preemptedStack.pop()
-                activeTask = resumedTask
-                activeTaskStartTimeMs = currentTimestampMs - priorElapsed
-                task = resumedTask
-            } else if (queue.isNotEmpty()) {
-                // Dequeue the next task
-                val nextTask = queue.poll()
-                activeTask = nextTask
-                activeTaskStartTimeMs = currentTimestampMs
-                actions.addAll(nextTask.initialize(state))
-                task = nextTask
+        var loopCount = 0
+        val maxLoopCount = 100 // Prevent infinite loop stack overflows
+        
+        while (loopCount < maxLoopCount) {
+            loopCount++
+            if (task == null) {
+                if (preemptedStack.isNotEmpty()) {
+                    // Resume a previously preempted task
+                    val (resumedTask, priorElapsed) = preemptedStack.pop()
+                    activeTask = resumedTask
+                    activeTaskStartTimeMs = currentTimestampMs - priorElapsed
+                    task = resumedTask
+                } else if (queue.isNotEmpty()) {
+                    // Dequeue the next task
+                    val nextTask = queue.poll()
+                    activeTask = nextTask
+                    activeTaskStartTimeMs = currentTimestampMs
+                    actions.addAll(nextTask.initialize(state))
+                    task = nextTask
+                } else {
+                    break
+                }
+            }
+
+            if (task != null) {
+                val elapsed = currentTimestampMs - activeTaskStartTimeMs
+                if (task.isCompleted(state, elapsed)) {
+                    // Finalize active task
+                    actions.addAll(task.end(state, interrupted = false))
+                    activeTask = null
+                    task = null // Continue loop to dequeue/resume instantly
+                } else {
+                    actions.addAll(task.execute(state, elapsed))
+                    break // Stop frame update as active task is currently running
+                }
             }
         }
 
-        if (task != null) {
-            val elapsed = currentTimestampMs - activeTaskStartTimeMs
-            if (task.isCompleted(state, elapsed)) {
-                // Finalize active task
-                actions.addAll(task.end(state, interrupted = false))
-                activeTask = null
-                
-                // Instantly try executing the next task in the sequence to avoid single-frame latency
-                actions.addAll(update(state, currentTimestampMs))
-            } else {
-                actions.addAll(task.execute(state, elapsed))
-            }
+        if (loopCount >= maxLoopCount) {
+            System.err.println("TaskExecutor: Loop transition threshold reached ($maxLoopCount). Aborting update to prevent lockup.")
         }
 
         return actions

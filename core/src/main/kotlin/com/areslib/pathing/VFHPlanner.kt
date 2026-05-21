@@ -13,6 +13,10 @@ class VFHPlanner(
     val wideValleySectors: Int = 6,
     val safetyMarginSectors: Int = 3
 ) {
+    init {
+        require(numSectors > 1) { "Number of sectors must be greater than 1" }
+    }
+
     private val sectorWidthRad = 2.0 * PI / numSectors
     private var lastDetourSign = 0.0 // 1.0 = left (pos Y), -1.0 = right (neg Y), 0.0 = none
 
@@ -70,7 +74,7 @@ class VFHPlanner(
                 obstacleAngleRad += 2.0 * PI
             }
 
-            val sectorIndex = (obstacleAngleRad / sectorWidthRad).toInt().coerceIn(0, numSectors - 1)
+            val sectorIndex = (obstacleAngleRad / sectorWidthRad).toInt().coerceIn(0, maxOf(0, numSectors - 1))
             val weight = max(0.0, (aConstant - bConstant * distance) / distance)
             sectors[sectorIndex] += weight
         }
@@ -158,7 +162,7 @@ class VFHPlanner(
         for (vIdx in 0 until valleyCount) {
             val valley = valleyPool[vIdx]
             var candidateCount = 0
-            val targetSector = (normalizedTargetRad / sectorWidthRad).toInt().coerceIn(0, numSectors - 1)
+            val targetSector = (normalizedTargetRad / sectorWidthRad).toInt().coerceIn(0, maxOf(0, numSectors - 1))
             if (valley.contains(targetSector)) {
                 candidatesBuffer[candidateCount++] = normalizedTargetRad
             }

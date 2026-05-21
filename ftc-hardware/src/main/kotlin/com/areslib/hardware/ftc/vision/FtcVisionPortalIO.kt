@@ -8,41 +8,53 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
 
 class FtcVisionPortalIO(private val aprilTagProcessor: AprilTagProcessor) : VisionIO {
 
+    private var lastWarningTime = 0L
+
     override fun updateInputs(inputs: VisionIOInputs) {
-        val detections = aprilTagProcessor.freshDetections
-        
-        if (detections != null && detections.isNotEmpty()) {
-            inputs.isConnected = true
+        try {
+            val detections = aprilTagProcessor.freshDetections
             
-            val measurements = detections.map { detection ->
-                val pose = detection.ftcPose
-                // VisionPortal returns position in inches and rotation in degrees
-                // We convert inches to meters (1 inch = 0.0254 meters)
-                val poseMeters = Pose3d(
-                    translation = com.areslib.math.Translation3d(
-                        x = pose.x * 0.0254,
-                        y = pose.y * 0.0254,
-                        z = pose.z * 0.0254
-                    ),
-                    rotation = com.areslib.math.Rotation3d(
-                        roll = Math.toRadians(pose.roll),
-                        pitch = Math.toRadians(pose.pitch),
-                        yaw = Math.toRadians(pose.yaw)
-                    )
-                )
+            if (detections != null && detections.isNotEmpty()) {
+                inputs.isConnected = true
                 
-                VisionMeasurement(
-                    timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-                    targetPose = poseMeters,
-                    tagId = detection.id,
-                    ambiguity = 0.0
-                )
+                val measurements = detections.map { detection ->
+                    val pose = detection.ftcPose
+                    // VisionPortal returns position in inches and rotation in degrees
+                    // We convert inches to meters (1 inch = 0.0254 meters)
+                    val poseMeters = Pose3d(
+                        translation = com.areslib.math.Translation3d(
+                            x = pose.x * 0.0254,
+                            y = pose.y * 0.0254,
+                            z = pose.z * 0.0254
+                        ),
+                        rotation = com.areslib.math.Rotation3d(
+                            roll = Math.toRadians(pose.roll),
+                            pitch = Math.toRadians(pose.pitch),
+                            yaw = Math.toRadians(pose.yaw)
+                        )
+                    )
+                    
+                    VisionMeasurement(
+                        timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+                        targetPose = poseMeters,
+                        tagId = detection.id,
+                        ambiguity = 0.0
+                    )
+                }
+                
+                inputs.measurements = measurements
+            } else {
+                inputs.isConnected = detections != null
+                inputs.measurements = emptyList()
             }
-            
-            inputs.measurements = measurements
-        } else {
-            inputs.isConnected = detections != null
+        } catch (e: Exception) {
+            inputs.isConnected = false
             inputs.measurements = emptyList()
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
+            if (now - lastWarningTime > 2000L) {
+                System.err.println("FtcVisionPortalIO: Error reading fresh AprilTag detections from hardware. Error: ${e.message}")
+                lastWarningTime = now
+            }
         }
     }
 }

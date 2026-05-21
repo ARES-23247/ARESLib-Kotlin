@@ -90,8 +90,11 @@ object ThetaStarPlanner {
         start: Translation2d,
         end: Translation2d
     ): List<Translation2d> {
-        require(costmap.resolutionMeters > 0.0 && !costmap.resolutionMeters.isInfinite()) { "Costmap resolution must be positive finite" }
-        require(start.x.isFinite() && start.y.isFinite() && end.x.isFinite() && end.y.isFinite()) { "Start and end coordinates must be finite" }
+        if (costmap.resolutionMeters <= 0.0 || costmap.resolutionMeters.isInfinite() ||
+            !start.x.isFinite() || !start.y.isFinite() || !end.x.isFinite() || !end.y.isFinite()) {
+            System.err.println("ThetaStarPlanner: Invalid planning parameters (resolution=${costmap.resolutionMeters}, start=$start, end=$end). Returning empty path.")
+            return emptyList()
+        }
 
         val startX = ((start.x - costmap.origin.x) / costmap.resolutionMeters).roundToInt()
         val startY = ((start.y - costmap.origin.y) / costmap.resolutionMeters).roundToInt()

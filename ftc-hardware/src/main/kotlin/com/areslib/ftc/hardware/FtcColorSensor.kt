@@ -13,28 +13,34 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO {
     private val normalizedSensor = sensor as? NormalizedColorSensor
 
     override val red: Int
-        get() = sensor.red()
+        get() = try { sensor.red() } catch (_: Exception) { 0 }
     override val green: Int
-        get() = sensor.green()
+        get() = try { sensor.green() } catch (_: Exception) { 0 }
     override val blue: Int
-        get() = sensor.blue()
+        get() = try { sensor.blue() } catch (_: Exception) { 0 }
     override val alpha: Int
-        get() = sensor.alpha()
+        get() = try { sensor.alpha() } catch (_: Exception) { 0 }
 
     override val normalizedRgb: DoubleArray
         get() {
-            val colors = normalizedSensor?.normalizedColors
-            if (colors != null) {
-                return doubleArrayOf(
-                    colors.red.toDouble(),
-                    colors.green.toDouble(),
-                    colors.blue.toDouble(),
-                    colors.alpha.toDouble()
-                )
-            }
+            try {
+                val colors = normalizedSensor?.normalizedColors
+                if (colors != null) {
+                    return doubleArrayOf(
+                        colors.red.toDouble(),
+                        colors.green.toDouble(),
+                        colors.blue.toDouble(),
+                        colors.alpha.toDouble()
+                    )
+                }
+            } catch (_: Exception) {}
             // Math fallback for legacy/mock sensors lacking the normalized interface
-            val sum = (red + green + blue + alpha).toDouble()
+            val r = red
+            val g = green
+            val b = blue
+            val a = alpha
+            val sum = (r + g + b + a).toDouble()
             if (sum < 0.1) return doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-            return doubleArrayOf(red / sum, green / sum, blue / sum, alpha / sum)
+            return doubleArrayOf(r / sum, g / sum, b / sum, a / sum)
         }
 }
