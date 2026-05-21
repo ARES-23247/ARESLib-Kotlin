@@ -32,6 +32,12 @@ data class RobotState(
     val timestampMs: Long = 0L
 )
 
+enum class DriveMode {
+    TELEOP,
+    HEADING_HOLD,
+    X_BRAKE
+}
+
 data class DriveState(
     val xVelocityMetersPerSecond: Double = 0.0,
     val yVelocityMetersPerSecond: Double = 0.0,
@@ -44,7 +50,9 @@ data class DriveState(
     val rollDegrees: Double = 0.0,
     val xAccelerationG: Double = 0.0,
     val yAccelerationG: Double = 0.0,
-    val zAccelerationG: Double = 0.0
+    val zAccelerationG: Double = 0.0,
+    val driveMode: DriveMode = DriveMode.TELEOP,
+    val headingLockTargetRadians: Double? = null
 )
 
 /**

@@ -80,7 +80,8 @@ data class PoseEstimatorState(
     val covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
     val history: HistoryBuffer = HistoryBuffer(50), // Max size typically ~50
     val isBeached: Boolean = false,
-    val lastUnbeachedTimeMs: Long = 0L
+    val lastUnbeachedTimeMs: Long = 0L,
+    val gyroBiasRadPerSec: Double = 0.0
 )
 
 /**
@@ -203,9 +204,25 @@ object PoseEstimator {
             tiltScale = 100.0
         }
 
+        // Online Gyro Bias Estimation & Bias Correction
+        val isStationary = deltaTranslation.x == 0.0 && deltaTranslation.y == 0.0 && deltaHeading.radians == 0.0
+        val alpha = 0.01 * dtSeconds
+        val newBias = if (isStationary && gyroRateRadPerSec != 0.0) {
+            state.gyroBiasRadPerSec * (1.0 - alpha) + gyroRateRadPerSec * alpha
+        } else {
+            state.gyroBiasRadPerSec
+        }
+
+        val correctedGyroRate = gyroRateRadPerSec - newBias
+        val correctedDeltaHeading = if (isStationary) {
+            0.0
+        } else {
+            deltaHeading.radians - newBias * dtSeconds
+        }
+
         // Gyro rate mismatch check for wheel slippage detection
         val expectedHeadingVel = deltaHeading.radians / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
-        val slipScale = if (gyroRateRadPerSec != 0.0 && kotlin.math.abs(expectedHeadingVel - gyroRateRadPerSec) > 0.5) {
+        val slipScale = if (correctedGyroRate != 0.0 && kotlin.math.abs(expectedHeadingVel - correctedGyroRate) > 0.5) {
             10.0 // Dynamic wheel slippage covariance expansion
         } else {
             1.0
@@ -214,7 +231,7 @@ object PoseEstimator {
         scratchQ.setTo(Q)
         scratchQ.multiplyInPlace(tiltScale * slipScale)
 
-        val newHeading = Rotation2d(state.estimatedPose.heading.radians + deltaHeading.radians)
+        val newHeading = Rotation2d(state.estimatedPose.heading.radians + correctedDeltaHeading)
         val newPose = Pose2d(
             state.estimatedPose.x + deltaTranslation.x,
             state.estimatedPose.y + deltaTranslation.y,
@@ -235,7 +252,8 @@ object PoseEstimator {
             estimatedPose = newPose,
             covariance = newCovariance,
             isBeached = currentlyBeached,
-            lastUnbeachedTimeMs = unbeachedTime
+            lastUnbeachedTimeMs = unbeachedTime,
+            gyroBiasRadPerSec = newBias
         )
     }
 

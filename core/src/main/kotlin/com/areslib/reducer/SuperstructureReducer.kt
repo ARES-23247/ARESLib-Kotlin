@@ -128,6 +128,11 @@ object SuperstructureReducer {
                     climber = state.climber.copy(targetVoltage = action.volts)
                 )
             }
+            is RobotAction.SetClimberExtension -> {
+                state.copy(
+                    climber = state.climber.copy(targetExtensionMeters = action.meters)
+                )
+            }
             is RobotAction.SuperstructureSensorUpdate -> {
                 state.copy(
                     flywheel = state.flywheel.copy(velocityRpm = action.flywheelRpm),
@@ -139,6 +144,33 @@ object SuperstructureReducer {
                 )
             }
             else -> state
+        }.let { enforceSafetyInterlocks(it) }
+    }
+
+    private fun enforceSafetyInterlocks(state: SuperstructureState): SuperstructureState {
+        // 1. If intake is physically stowed (pivotAngleDegrees < 45.0), the climber MUST be stowed (targetExtensionMeters clamped to 0.0)
+        var finalClimber = state.climber
+        if (state.intake.pivotAngleDegrees < 45.0) {
+            if (finalClimber.targetExtensionMeters > 0.0) {
+                finalClimber = finalClimber.copy(targetExtensionMeters = 0.0)
+            }
         }
+
+        // 2. If the climber is physically extended (extensionMeters > 0.02) or commanded to extend (targetExtensionMeters > 0.02),
+        // the intake pivot target angle MUST be deployed to at least 45.0 degrees to clear collision path.
+        var finalIntake = state.intake
+        if (finalClimber.extensionMeters > 0.02 || finalClimber.targetExtensionMeters > 0.02) {
+            if (finalIntake.targetAngleDegrees < 45.0) {
+                finalIntake = finalIntake.copy(
+                    targetAngleDegrees = 45.0,
+                    isDeployed = true
+                )
+            }
+        }
+
+        if (finalClimber === state.climber && finalIntake === state.intake) {
+            return state
+        }
+        return state.copy(climber = finalClimber, intake = finalIntake)
     }
 }

@@ -48,6 +48,16 @@ sealed class RobotAction {
         val zAccelerationG: Double = 0.0
     ) : RobotAction()
 
+    data class SetDriveMode(
+        val mode: com.areslib.state.DriveMode,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SetHeadingLockTarget(
+        val targetRadians: Double?,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction()
+
     // Human Intent
     data class JoystickDriveIntent(
         val targetXVelocity: Double,
@@ -155,6 +165,11 @@ sealed class RobotAction {
 
     data class SetClimberVoltage(
         val volts: Double,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction()
+
+    data class SetClimberExtension(
+        val meters: Double,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction()
 

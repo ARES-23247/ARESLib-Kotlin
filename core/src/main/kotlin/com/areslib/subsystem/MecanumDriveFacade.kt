@@ -66,6 +66,11 @@ class MecanumDriveFacade(private val store: Store) {
     val odometryHeading: Double
         get() = store.state.drive.odometryHeading
 
+    private val headingPID = com.areslib.control.PIDController(4.5, 0.0, 0.25).apply {
+        enableContinuousInput(-Math.PI, Math.PI)
+        setOutputLimits(-2.0, 2.0)
+    }
+
     /**
      * Executes robot-relative drivetrain movement effort.
      *
@@ -99,8 +104,9 @@ class MecanumDriveFacade(private val store: Store) {
      * @param vx Field-centric X-axis velocity effort scaled between [-1.0, 1.0].
      * @param vy Field-centric Y-axis velocity effort scaled between [-1.0, 1.0].
      * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
+     * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
      */
-    fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double) {
+    fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false) {
         val headingRad = pose.heading.radians
         val cos = kotlin.math.cos(headingRad)
         val sin = kotlin.math.sin(headingRad)
@@ -109,7 +115,32 @@ class MecanumDriveFacade(private val store: Store) {
         val robotVx = vx * cos + vy * sin
         val robotVy = -vx * sin + vy * cos
         
-        robotRelativeDrive(robotVx, robotVy, omega)
+        var finalOmega = omega
+        if (useHeadingLock) {
+            if (kotlin.math.abs(omega) > 0.05) {
+                // If driver is actively rotating, release lock target and disable heading hold mode
+                if (store.state.drive.headingLockTargetRadians != null || store.state.drive.driveMode != com.areslib.state.DriveMode.TELEOP) {
+                    store.dispatch(RobotAction.SetHeadingLockTarget(null))
+                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
+                }
+            } else {
+                val target = store.state.drive.headingLockTargetRadians
+                if (target == null) {
+                    // Set lock target to current heading if first frame
+                    store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
+                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
+                } else {
+                    // Calculate closed-loop PID feedback to hold orientation
+                    finalOmega = headingPID.calculate(headingRad, target, 0.02)
+                }
+            }
+        } else {
+            if (store.state.drive.headingLockTargetRadians != null) {
+                store.dispatch(RobotAction.SetHeadingLockTarget(null))
+            }
+        }
+
+        robotRelativeDrive(robotVx, robotVy, finalOmega)
     }
 
     /**

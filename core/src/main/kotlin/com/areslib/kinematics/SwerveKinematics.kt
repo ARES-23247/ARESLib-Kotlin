@@ -102,5 +102,20 @@ class SwerveKinematics(
         previousStates = limitedStates
         return limitedStates
     }
+
+    /**
+     * Computes static steering angles pointing each module towards the center of the robot
+     * (forming an "X" layout) with exactly 0.0 velocity. This locked state provides maximum
+     * physical resistance against external defensive pushing from other robots.
+     */
+    fun toXLockStates(): Array<SwerveModuleState> {
+        val states = Array(numModules) { i ->
+            val module = moduleTranslations[i]
+            val angle = atan2(module.y, module.x)
+            SwerveModuleState(0.0, Rotation2d(angle))
+        }
+        previousStates = states
+        return states
+    }
 }
 

@@ -61,8 +61,10 @@ class SwerveDriveFacade(private val store: Store) {
     val odometryHeading: Double
         get() = store.state.drive.odometryHeading
 
-    private var headingLockTarget: Double? = null
-    private val kPHeadingLock = 4.0 // heading lock proportional constant
+    private val headingPID = com.areslib.control.PIDController(4.5, 0.0, 0.25).apply {
+        enableContinuousInput(-Math.PI, Math.PI)
+        setOutputLimits(-2.0, 2.0)
+    }
 
     /**
      * Executes robot-relative drivetrain movement effort.
@@ -94,7 +96,7 @@ class SwerveDriveFacade(private val store: Store) {
      * @param vx Field-centric X-axis velocity effort scaled between [-1.0, 1.0].
      * @param vy Field-centric Y-axis velocity effort scaled between [-1.0, 1.0].
      * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
-     * @param useHeadingLock Enables active IMU proportional heading lock to stabilize the robot's orientation.
+     * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
      */
     fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false) {
         val headingRad = pose.heading.radians
@@ -108,20 +110,37 @@ class SwerveDriveFacade(private val store: Store) {
         var finalOmega = omega
         if (useHeadingLock) {
             if (kotlin.math.abs(omega) > 0.05) {
-                // If driver is actively rotating, release lock target
-                headingLockTarget = null
+                // If driver is actively rotating, release lock target and disable heading hold mode
+                if (store.state.drive.headingLockTargetRadians != null || store.state.drive.driveMode != com.areslib.state.DriveMode.TELEOP) {
+                    store.dispatch(RobotAction.SetHeadingLockTarget(null))
+                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
+                }
             } else {
-                // Set lock target to current heading if first frame
-                val target = headingLockTarget ?: headingRad.also { headingLockTarget = it }
-                // Calculate simple proportional feedback to hold orientation
-                val error = com.areslib.math.InputMath.wrapAngle(target - headingRad)
-                finalOmega = error * kPHeadingLock
+                val target = store.state.drive.headingLockTargetRadians
+                if (target == null) {
+                    // Set lock target to current heading if first frame
+                    store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
+                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
+                } else {
+                    // Calculate closed-loop PID feedback to hold orientation
+                    finalOmega = headingPID.calculate(headingRad, target, 0.02)
+                }
             }
         } else {
-            headingLockTarget = null
+            if (store.state.drive.headingLockTargetRadians != null) {
+                store.dispatch(RobotAction.SetHeadingLockTarget(null))
+            }
         }
 
         robotRelativeDrive(robotVx, robotVy, finalOmega)
+    }
+
+    /**
+     * Commands all swerve modules to lock into an "X" configuration (orthogonal angles)
+     * with exactly 0.0 speed. This resists pushes from opponent robots.
+     */
+    fun brake() {
+        store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.X_BRAKE))
     }
 
     /**

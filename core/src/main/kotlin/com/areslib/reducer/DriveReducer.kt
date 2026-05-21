@@ -65,11 +65,35 @@ object DriveReducer {
                     zAccelerationG = action.zAccelerationG
                 )
             }
+            is RobotAction.SetDriveMode -> {
+                state.copy(driveMode = action.mode)
+            }
+            is RobotAction.SetHeadingLockTarget -> {
+                state.copy(headingLockTargetRadians = action.targetRadians)
+            }
             is RobotAction.JoystickDriveIntent -> {
+                val hasLinearInput = kotlin.math.abs(action.targetXVelocity) > 0.05 || kotlin.math.abs(action.targetYVelocity) > 0.05
+                val hasAngularInput = kotlin.math.abs(action.targetAngularVelocity) > 0.05
+                
+                val currentMode = state.driveMode
+                val newMode = if (currentMode == com.areslib.state.DriveMode.X_BRAKE && (hasLinearInput || hasAngularInput)) {
+                    com.areslib.state.DriveMode.TELEOP
+                } else {
+                    currentMode
+                }
+
+                val newTargetHeading = if (hasAngularInput) {
+                    null
+                } else {
+                    state.headingLockTargetRadians
+                }
+
                 state.copy(
                     xVelocityMetersPerSecond = action.targetXVelocity,
                     yVelocityMetersPerSecond = action.targetYVelocity,
-                    angularVelocityRadiansPerSecond = action.targetAngularVelocity
+                    angularVelocityRadiansPerSecond = action.targetAngularVelocity,
+                    driveMode = newMode,
+                    headingLockTargetRadians = newTargetHeading
                 )
             }
             else -> state
