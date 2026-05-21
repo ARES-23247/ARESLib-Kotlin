@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
  */
 class InputLogger(customLogFile: File? = null) {
     private val gson = Gson()
-    private val queue = LinkedBlockingQueue<RobotInputsFrame>()
+    private val queue = LinkedBlockingQueue<RobotInputsFrame>(1000)
     private var writer: BufferedWriter? = null
     private var isRunning = false
     
@@ -78,7 +78,10 @@ class InputLogger(customLogFile: File? = null) {
             RobotInputsFramePool.recycle(frame)
             return
         }
-        queue.offer(frame)
+        val accepted = queue.offer(frame)
+        if (!accepted) {
+            RobotInputsFramePool.recycle(frame)
+        }
     }
 
     private fun startLoggingLoop() {

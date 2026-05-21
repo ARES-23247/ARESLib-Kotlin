@@ -65,7 +65,9 @@ object PathSafetyEvaluator {
         var sumObstacleDensity = 0.0
         var peakObstacleDensity = 0.0
 
-        val stepSize = costmap.resolutionMeters * 0.5
+        val rawStepSize = costmap.resolutionMeters * 0.5
+        val isInvalidStep = rawStepSize.isNaN() || rawStepSize.isInfinite() || rawStepSize <= 1e-4
+        val stepSize = if (isInvalidStep) 0.05 else rawStepSize
 
         // Inline evaluation function to avoid repeated lambda allocations
         fun evaluatePoint(px: Double, py: Double) {

@@ -22,8 +22,28 @@ class Costmap(
     val resolutionMeters: Double = 0.1,
     val origin: Translation2d = Translation2d(-widthMeters / 2.0, -heightMeters / 2.0)
 ) {
-    val widthCells: Int = (widthMeters / resolutionMeters).toInt()
-    val heightCells: Int = (heightMeters / resolutionMeters).toInt()
+    val widthCells: Int
+    val heightCells: Int
+
+    init {
+        require(widthMeters > 0.0) { "Width must be positive" }
+        require(heightMeters > 0.0) { "Height must be positive" }
+        val isResolutionInvalid = resolutionMeters < 0.001 || resolutionMeters.isNaN() || resolutionMeters.isInfinite()
+        if (isResolutionInvalid) {
+            throw IllegalArgumentException("Resolution must be at least 1mm (0.001 meters) and not NaN/Infinite")
+        }
+
+        val w = (widthMeters / resolutionMeters).toInt()
+        if (w <= 0 || w > 10000) throw IllegalArgumentException("Invalid width cells: $w")
+        widthCells = w
+
+        val h = (heightMeters / resolutionMeters).toInt()
+        if (h <= 0 || h > 10000) throw IllegalArgumentException("Invalid height cells: $h")
+        heightCells = h
+
+        val cells = widthCells.toLong() * heightCells.toLong()
+        require(cells > 0 && cells <= 1_000_000L) { "Grid size is too large or invalid ($cells cells). Must be under 1,000,000 cells." }
+    }
 
     // 1D backed array for cash-locality and zero-allocation updates
     private val grid = BooleanArray(widthCells * heightCells)

@@ -392,9 +392,7 @@ class SrsHubPinpointOdometry(
     override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {
         srsHub.updateI2cOdometry(port)
         inputs.posX = srsHub.getI2cOdometryX(port) / 1000.0
-        inputs.posY = srsHub.getI2cOdometryYVel(port) / 1000.0 // Wait, let's fix: getI2cOdometryY vs getI2cOdometryYVel? Let's check:
-        // Ah, in SrsHubDriver: getI2cOdometryY(port: Int) returns cachedOdoY[port]
-        // Let's use getI2cOdometryY(port)!
+        inputs.posY = srsHub.getI2cOdometryY(port) / 1000.0
         inputs.heading = srsHub.getI2cOdometryHeading(port)
         inputs.velX = srsHub.getI2cOdometryVelX(port) / 1000.0
         inputs.velY = srsHub.getI2cOdometryYVel(port) / 1000.0

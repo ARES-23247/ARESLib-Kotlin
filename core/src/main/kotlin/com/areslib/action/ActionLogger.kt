@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
  */
 class ActionLogger {
     private val gson = Gson()
-    private val queue = LinkedBlockingQueue<RobotAction>()
+    private val queue = LinkedBlockingQueue<RobotAction>(1000)
     private var writer: BufferedWriter? = null
     private var isRunning = false
     

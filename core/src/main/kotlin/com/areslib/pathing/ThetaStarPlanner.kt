@@ -278,7 +278,10 @@ object ThetaStarPlanner {
         val path = mutableListOf<Translation2d>()
         var currKey = endKey
 
-        while (true) {
+        var iterations = 0
+        val maxIterations = costmap.widthCells * costmap.heightCells
+        while (iterations < maxIterations) {
+            iterations++
             val currX = currKey % costmap.widthCells
             val currY = currKey / costmap.widthCells
 
@@ -289,6 +292,9 @@ object ThetaStarPlanner {
             val parentKey = parents[currKey]
             if (parentKey == currKey || parentKey == -1) break
             currKey = parentKey
+        }
+        if (iterations >= maxIterations) {
+            System.err.println("ThetaStarPlanner: Cyclic parents detected during path reconstruction! Breaking loop safely.")
         }
 
         path.reverse()

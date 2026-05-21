@@ -311,8 +311,12 @@ class LQRController(
             when (rows) {
                 1 -> {
                     val det = get(0, 0)
-                    require(abs(det) > 1e-12) { "Matrix is singular" }
-                    result.set(0, 0, 1.0 / det)
+                    if (abs(det) <= 1e-12 || det.isNaN() || det.isInfinite()) {
+                        System.err.println("LQRController: 1x1 Matrix is singular! Falling back to Identity to prevent crash.")
+                        result.set(0, 0, 1.0)
+                    } else {
+                        result.set(0, 0, 1.0 / det)
+                    }
                 }
                 2 -> {
                     val a = get(0, 0)
@@ -320,12 +324,19 @@ class LQRController(
                     val c = get(1, 0)
                     val d = get(1, 1)
                     val det = a * d - b * c
-                    require(abs(det) > 1e-12) { "Matrix is singular" }
-                    val invDet = 1.0 / det
-                    result.set(0, 0, d * invDet)
-                    result.set(0, 1, -b * invDet)
-                    result.set(1, 0, -c * invDet)
-                    result.set(1, 1, a * invDet)
+                    if (abs(det) <= 1e-12 || det.isNaN() || det.isInfinite()) {
+                        System.err.println("LQRController: 2x2 Matrix is singular! Falling back to Identity to prevent crash.")
+                        result.set(0, 0, 1.0)
+                        result.set(0, 1, 0.0)
+                        result.set(1, 0, 0.0)
+                        result.set(1, 1, 1.0)
+                    } else {
+                        val invDet = 1.0 / det
+                        result.set(0, 0, d * invDet)
+                        result.set(0, 1, -b * invDet)
+                        result.set(1, 0, -c * invDet)
+                        result.set(1, 1, a * invDet)
+                    }
                 }
                 3 -> {
                     val a00 = get(0, 0); val a01 = get(0, 1); val a02 = get(0, 2)
@@ -335,8 +346,15 @@ class LQRController(
                     val det = a00 * (a11 * a22 - a12 * a21) -
                               a01 * (a10 * a22 - a12 * a20) +
                               a02 * (a10 * a21 - a11 * a20)
-                    require(abs(det) > 1e-12) { "Matrix is singular" }
-                    val invDet = 1.0 / det
+                    if (abs(det) <= 1e-12 || det.isNaN() || det.isInfinite()) {
+                        System.err.println("LQRController: 3x3 Matrix is singular! Falling back to Identity to prevent crash.")
+                        for (i in 0 until 3) {
+                            for (j in 0 until 3) {
+                                result.set(i, j, if (i == j) 1.0 else 0.0)
+                            }
+                        }
+                    } else {
+                        val invDet = 1.0 / det
 
                     result.set(0, 0, (a11 * a22 - a12 * a21) * invDet)
                     result.set(0, 1, (a02 * a21 - a01 * a22) * invDet)
@@ -347,6 +365,7 @@ class LQRController(
                     result.set(2, 0, (a10 * a21 - a11 * a20) * invDet)
                     result.set(2, 1, (a01 * a20 - a00 * a21) * invDet)
                     result.set(2, 2, (a00 * a11 - a01 * a10) * invDet)
+                    }
                 }
                 else -> {
                     // Fallback using Gauss-Jordan elimination for higher dimensions
@@ -372,7 +391,15 @@ class LQRController(
                             temp[pivotRow] = tRow
                         }
                         val pivot = temp[i][i]
-                        require(abs(pivot) > 1e-12) { "Matrix is singular" }
+                        if (abs(pivot) <= 1e-12 || pivot.isNaN() || pivot.isInfinite()) {
+                            System.err.println("LQRController: Higher-dim Matrix is singular at pivot $i! Falling back to Identity to prevent crash.")
+                            for (row in 0 until n) {
+                                for (col in 0 until n) {
+                                    result.set(row, col, if (row == col) 1.0 else 0.0)
+                                }
+                            }
+                            return result
+                        }
 
                         for (j in 0 until 2 * n) {
                             temp[i][j] /= pivot

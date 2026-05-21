@@ -358,7 +358,7 @@ object PoseEstimator {
                   scratchS.m01 * (scratchS.m10 * scratchS.m22 - scratchS.m12 * scratchS.m20) +
                   scratchS.m02 * (scratchS.m10 * scratchS.m21 - scratchS.m11 * scratchS.m20)
 
-        if (kotlin.math.abs(det) < 1e-9) {
+        if (det.isNaN() || det.isInfinite() || kotlin.math.abs(det) < 1e-9) {
             scratchSInv.m00 = 0.0; scratchSInv.m01 = 0.0; scratchSInv.m02 = 0.0
             scratchSInv.m10 = 0.0; scratchSInv.m11 = 0.0; scratchSInv.m12 = 0.0
             scratchSInv.m20 = 0.0; scratchSInv.m21 = 0.0; scratchSInv.m22 = 0.0

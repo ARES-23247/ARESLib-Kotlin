@@ -19,6 +19,7 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
     private var cachedAmps = 0.0
+    private var updateCount = 0
 
     init {
         try {
@@ -83,7 +84,10 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
             cachedVelocity = motor.velocity
         } catch (_: Exception) {}
         try {
-            cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            if (updateCount % 10 == 0) {
+                cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            }
+            updateCount++
         } catch (_: Exception) {}
     }
 

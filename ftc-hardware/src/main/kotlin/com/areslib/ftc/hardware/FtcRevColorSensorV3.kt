@@ -19,44 +19,101 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     private val normalizedSensor = device as? NormalizedColorSensor
     private val distanceSensor = device as? DistanceSensor
 
+    private var lastUpdateMs = 0L
+    private var cachedRed = 0
+    private var cachedGreen = 0
+    private var cachedBlue = 0
+    private var cachedAlpha = 0
+    private var cachedNormalized = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+    private var cachedDistance = Double.NaN
+
+    @Synchronized
+    private fun updateIfStale() {
+        val now = System.currentTimeMillis()
+        if (now - lastUpdateMs < 20) return
+        lastUpdateMs = now
+
+        // Fetch color sensor data
+        try {
+            cachedRed = device.red()
+            cachedGreen = device.green()
+            cachedBlue = device.blue()
+            cachedAlpha = device.alpha()
+        } catch (_: Exception) {
+            cachedRed = 0
+            cachedGreen = 0
+            cachedBlue = 0
+            cachedAlpha = 0
+        }
+
+        // Fetch normalized RGB data
+        try {
+            val colors = normalizedSensor?.normalizedColors
+            if (colors != null) {
+                cachedNormalized = doubleArrayOf(
+                    colors.red.toDouble(),
+                    colors.green.toDouble(),
+                    colors.blue.toDouble(),
+                    colors.alpha.toDouble()
+                )
+            } else {
+                val sum = (cachedRed + cachedGreen + cachedBlue + cachedAlpha).toDouble()
+                cachedNormalized = if (sum < 0.1) {
+                    doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                } else {
+                    doubleArrayOf(cachedRed / sum, cachedGreen / sum, cachedBlue / sum, cachedAlpha / sum)
+                }
+            }
+        } catch (_: Exception) {
+            val sum = (cachedRed + cachedGreen + cachedBlue + cachedAlpha).toDouble()
+            cachedNormalized = if (sum < 0.1) {
+                doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+            } else {
+                doubleArrayOf(cachedRed / sum, cachedGreen / sum, cachedBlue / sum, cachedAlpha / sum)
+            }
+        }
+
+        // Fetch distance sensor data
+        try {
+            cachedDistance = distanceSensor?.getDistance(Distance.METER) ?: Double.NaN
+        } catch (_: Exception) {
+            cachedDistance = Double.NaN
+        }
+    }
+
     override val red: Int
-        get() = try { device.red() } catch (_: Exception) { 0 }
+        get() {
+            updateIfStale()
+            return cachedRed
+        }
     override val green: Int
-        get() = try { device.green() } catch (_: Exception) { 0 }
+        get() {
+            updateIfStale()
+            return cachedGreen
+        }
     override val blue: Int
-        get() = try { device.blue() } catch (_: Exception) { 0 }
+        get() {
+            updateIfStale()
+            return cachedBlue
+        }
     override val alpha: Int
-        get() = try { device.alpha() } catch (_: Exception) { 0 }
+        get() {
+            updateIfStale()
+            return cachedAlpha
+        }
 
     override val normalizedRgb: DoubleArray
         get() {
-            try {
-                val colors = normalizedSensor?.normalizedColors
-                if (colors != null) {
-                    return doubleArrayOf(
-                        colors.red.toDouble(),
-                        colors.green.toDouble(),
-                        colors.blue.toDouble(),
-                        colors.alpha.toDouble()
-                    )
-                }
-            } catch (_: Exception) {}
-            val r = red
-            val g = green
-            val b = blue
-            val a = alpha
-            val sum = (r + g + b + a).toDouble()
-            if (sum < 0.1) return doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-            return doubleArrayOf(r / sum, g / sum, b / sum, a / sum)
+            updateIfStale()
+            return cachedNormalized
         }
 
     /**
      * Reads the integrated proximity rangefinder distance in meters.
      */
     override val distanceMeters: Double
-        get() = try {
-            distanceSensor?.getDistance(Distance.METER) ?: Double.NaN
-        } catch (_: Exception) {
-            Double.NaN
+        get() {
+            updateIfStale()
+            return cachedDistance
         }
 }

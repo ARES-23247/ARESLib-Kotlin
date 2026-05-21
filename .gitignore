@@ -19,3 +19,7 @@ Thumbs.db
 # Ignore nested build dirs
 */build/
 */bin/
+
+# Logs and generated reports
+*.csv
+**/logs/

@@ -92,14 +92,11 @@ class SafetyFaultToleranceTest {
         )
         assertTrue(pathNaN.isEmpty())
 
-        // Invalid resolution
-        val badCostmap = Costmap(widthMeters = 1.0, heightMeters = 1.0, resolutionMeters = 0.0)
-        val pathBadRes = ThetaStarPlanner.plan(
-            costmap = badCostmap,
-            start = Translation2d(0.0, 0.0),
-            end = Translation2d(1.0, 1.0)
-        )
-        assertTrue(pathBadRes.isEmpty())
+        // Invalid resolution should throw IllegalArgumentException
+        try {
+            Costmap(widthMeters = 1.0, heightMeters = 1.0, resolutionMeters = 0.0)
+            assertTrue(false, "Expected IllegalArgumentException for 0.0 resolution")
+        } catch (_: IllegalArgumentException) {}
     }
 
     @Test

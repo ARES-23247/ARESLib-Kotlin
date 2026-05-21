@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
  */
 class ARESDataLogger {
 
-    private val logQueue = LinkedBlockingQueue<Map<String, Any>>()
+    private val logQueue = LinkedBlockingQueue<Map<String, Any>>(1000)
     private val activeKeys = mutableListOf<String>()
     private var writer: BufferedWriter? = null
     private var isHeaderWritten = false
@@ -86,8 +86,16 @@ class ARESDataLogger {
      * Queues a frame of key-value telemetry data to be logged.
      */
     fun logFrame(data: Map<String, Any>) {
-        if (!isRunning) return
-        logQueue.offer(data)
+        if (!isRunning) {
+            if (data is HashMap<String, Any>) {
+                recycleMap(data)
+            }
+            return
+        }
+        val accepted = logQueue.offer(data)
+        if (!accepted && data is HashMap<String, Any>) {
+            recycleMap(data)
+        }
     }
 
     private fun startLoggingLoop() {

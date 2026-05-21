@@ -219,16 +219,10 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
     }
 
     override val velocity: Double
-        get() {
-            octoQuad.update()
-            return octoQuad.getCachedVelocity(channel).toDouble()
-        }
+        get() = octoQuad.getCachedVelocity(channel).toDouble()
 
     override val position: Double
-        get() {
-            octoQuad.update()
-            return octoQuad.getCachedPosition(channel).toDouble()
-        }
+        get() = octoQuad.getCachedPosition(channel).toDouble()
 
     override fun resetEncoder() {
         octoQuad.resetEncoder(channel)
@@ -259,7 +253,6 @@ class OctoQuadAbsolutePWMEncoder(
 
     override val position: Double
         get() {
-            octoQuad.update()
             val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
             val range = version.maxPulseUs - version.minPulseUs
             val normalized = if (range != 0.0) (pulseUs - version.minPulseUs) / range else 0.0
