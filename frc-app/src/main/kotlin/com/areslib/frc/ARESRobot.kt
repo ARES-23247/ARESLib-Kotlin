@@ -175,9 +175,7 @@ class ARESRobot : TimedRobot() {
             
             // Steer drivetrain using P controller + direct feedforward
             val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
-            var wrappedError = headingError
-            while (wrappedError > Math.PI) wrappedError -= 2.0 * Math.PI
-            while (wrappedError < -Math.PI) wrappedError += 2.0 * Math.PI
+            val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
             
             val kp = 4.0
             rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec

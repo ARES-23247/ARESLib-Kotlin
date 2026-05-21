@@ -87,9 +87,7 @@ object SCurveTrajectoryParameterizer {
             val t = if (totalLength > 1e-6) distances[i] / totalLength else 1.0
             val deltaRad = endHeading.radians - startHeading.radians
             // Normalize delta to [-PI, PI]
-            var normDelta = deltaRad
-            while (normDelta > Math.PI) normDelta -= 2 * Math.PI
-            while (normDelta < -Math.PI) normDelta += 2 * Math.PI
+            val normDelta = com.areslib.math.InputMath.wrapAngle(deltaRad)
             headings[i] = Rotation2d(startHeading.radians + normDelta * t)
 
             // Curvature calculation using three points (i-1, i, i+1)
@@ -104,9 +102,7 @@ object SCurveTrajectoryParameterizer {
                 if (d1 > 1e-6 && d2 > 1e-6) {
                     val theta1 = atan2(pCurr.y - pPrev.y, pCurr.x - pPrev.x)
                     val theta2 = atan2(pNext.y - pCurr.y, pNext.x - pCurr.x)
-                    var dTheta = theta2 - theta1
-                    while (dTheta > Math.PI) dTheta -= 2 * Math.PI
-                    while (dTheta < -Math.PI) dTheta += 2 * Math.PI
+                    val dTheta = com.areslib.math.InputMath.wrapAngle(theta2 - theta1)
 
                     curvatures[i] = dTheta / ((d1 + d2) / 2.0)
                 } else {

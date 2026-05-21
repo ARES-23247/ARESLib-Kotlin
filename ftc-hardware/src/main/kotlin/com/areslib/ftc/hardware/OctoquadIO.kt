@@ -48,6 +48,12 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     private var isInitialized = false
+    private var lastUpdateTimeMs = 0L
+
+    // Cache buffers for registers
+    private val cachedPositions = IntArray(8)
+    private val cachedVelocities = IntArray(8)
+    private val cachedPulseWidths = IntArray(8)
 
     override fun doInitialize(): Boolean {
         deviceClient.i2cAddress = com.qualcomm.robotcore.hardware.I2cAddr.create7bit(OCTOQUAD_I2C_ADDRESS)
@@ -71,7 +77,58 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     override fun getDeviceName(): String = "OctoQuad FWv3"
 
     /**
-     * Reads a single encoder position
+     * Bulk reads positions, velocities, and pulse widths.
+     * Rate-limited to once per 3ms loop cycle to prevent duplicate I2C reads.
+     */
+    fun update() {
+        if (!isInitialized) return
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
+        if (now - lastUpdateTimeMs < 3) return
+        lastUpdateTimeMs = now
+
+        try {
+            val posBytes = deviceClient.read(REG_ENC_0, 32)
+            if (posBytes.size >= 32) {
+                val buf = ByteBuffer.wrap(posBytes).order(OCTOQUAD_ENDIAN)
+                for (i in 0 until 8) {
+                    cachedPositions[i] = buf.int
+                }
+            }
+        } catch (e: Exception) {
+            // Gracefully handle read failures
+        }
+
+        try {
+            val velBytes = deviceClient.read(REG_VEL_0, 32)
+            if (velBytes.size >= 32) {
+                val buf = ByteBuffer.wrap(velBytes).order(OCTOQUAD_ENDIAN)
+                for (i in 0 until 8) {
+                    cachedVelocities[i] = buf.int
+                }
+            }
+        } catch (e: Exception) {
+            // Gracefully handle read failures
+        }
+
+        try {
+            val pwBytes = deviceClient.read(REG_PULSE_WIDTH_0, 16)
+            if (pwBytes.size >= 16) {
+                val buf = ByteBuffer.wrap(pwBytes).order(OCTOQUAD_ENDIAN)
+                for (i in 0 until 8) {
+                    cachedPulseWidths[i] = buf.short.toInt() and 0xFFFF
+                }
+            }
+        } catch (e: Exception) {
+            // Gracefully handle read failures
+        }
+    }
+
+    fun getCachedPosition(channel: Int): Int = cachedPositions.getOrElse(channel) { 0 }
+    fun getCachedVelocity(channel: Int): Int = cachedVelocities.getOrElse(channel) { 0 }
+    fun getCachedPulseWidth(channel: Int): Int = cachedPulseWidths.getOrElse(channel) { 0 }
+
+    /**
+     * Reads a single encoder position (legacy, non-cached fallback)
      */
     fun readEncoderPosition(channel: Int): Int {
         val bytes = deviceClient.read(REG_ENC_0 + (channel * 4), 4)
@@ -80,7 +137,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     /**
-     * Reads a single encoder velocity
+     * Reads a single encoder velocity (legacy, non-cached fallback)
      */
     fun readEncoderVelocity(channel: Int): Int {
         val bytes = deviceClient.read(REG_VEL_0 + (channel * 4), 4)
@@ -89,7 +146,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     /**
-     * Reads the pulse width of a channel in microseconds
+     * Reads the pulse width of a channel in microseconds (legacy, non-cached fallback)
      */
     fun readChannelPulseWidth(channel: Int): Int {
         val bytes = deviceClient.read(REG_PULSE_WIDTH_0 + (channel * 2), 2)
@@ -141,11 +198,21 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
             // Encoders are read-only, cannot set power
         }
 
+    fun updateInputs() {
+        octoQuad.update()
+    }
+
     override val velocity: Double
-        get() = octoQuad.readEncoderVelocity(channel).toDouble()
+        get() {
+            octoQuad.update()
+            return octoQuad.getCachedVelocity(channel).toDouble()
+        }
 
     override val position: Double
-        get() = octoQuad.readEncoderPosition(channel).toDouble()
+        get() {
+            octoQuad.update()
+            return octoQuad.getCachedPosition(channel).toDouble()
+        }
 
     override fun resetEncoder() {
         octoQuad.resetEncoder(channel)
@@ -167,18 +234,24 @@ class OctoQuadAbsolutePWMEncoder(
         get() = 0.0
         set(value) {}
 
+    fun updateInputs() {
+        octoQuad.update()
+    }
+
     override val velocity: Double
         get() = 0.0
 
     override val position: Double
         get() {
-            val pulseUs = octoQuad.readChannelPulseWidth(channel).toDouble()
+            octoQuad.update()
+            val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
             val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
             return (normalized.coerceIn(0.0, 1.0) * ticksPerRev) - offset
         }
 
     override fun resetEncoder() {
-        val pulseUs = octoQuad.readChannelPulseWidth(channel).toDouble()
+        octoQuad.update()
+        val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
         val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
         offset = normalized.coerceIn(0.0, 1.0) * ticksPerRev
     }
@@ -194,6 +267,7 @@ class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
     }
 
     override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {
+        octoQuad.update()
         val lastData = octoQuad.readLocalizerData()
         inputs.posX = lastData.posX_mm / 1000.0
         inputs.posY = lastData.posY_mm / 1000.0

@@ -41,9 +41,7 @@ object DriveReducer {
             is RobotAction.PoseUpdate -> {
                 val deltaX = action.xMeters - state.odometryX
                 val deltaY = action.yMeters - state.odometryY
-                var deltaHeading = action.headingRadians - state.odometryHeading
-                while (deltaHeading > Math.PI) deltaHeading -= 2 * Math.PI
-                while (deltaHeading < -Math.PI) deltaHeading += 2 * Math.PI
+                val deltaHeading = com.areslib.math.InputMath.wrapAngle(action.headingRadians - state.odometryHeading)
 
                 val deltaTrans = Translation2d(deltaX, deltaY)
                 val updatedEstimator = PoseEstimator.addOdometryObservation(

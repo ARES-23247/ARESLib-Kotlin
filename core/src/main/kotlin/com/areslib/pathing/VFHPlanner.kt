@@ -130,10 +130,13 @@ class VFHPlanner(
             return targetHeadingRad
         }
 
-        // Target angle mapped to [0, 2pi]
-        var normalizedTargetRad = targetHeadingRad
-        while (normalizedTargetRad < 0.0) normalizedTargetRad += 2.0 * PI
-        while (normalizedTargetRad >= 2.0 * PI) normalizedTargetRad -= 2.0 * PI
+        if (targetHeadingRad.isNaN() || targetHeadingRad.isInfinite()) {
+            return 0.0
+        }
+
+        // Target angle mapped to [0, 2pi] via safe closed-form modulo
+        var normalizedTargetRad = targetHeadingRad % (2.0 * PI)
+        if (normalizedTargetRad < 0.0) normalizedTargetRad += 2.0 * PI
 
         var bestHeading = targetHeadingRad
         var minHeadingDifference = Double.MAX_VALUE
@@ -142,9 +145,14 @@ class VFHPlanner(
         val uy = sin(targetHeadingRad)
         val robotProgress = robotPose.x * ux + robotPose.y * uy
 
-        val hasUnpassedObstacles = obstacles.any { obs ->
+        var hasUnpassedObstacles = false
+        for (i in obstacles.indices) {
+            val obs = obstacles[i]
             val obsProgress = obs.x * ux + obs.y * uy
-            obsProgress + obs.radius + 0.15 > robotProgress
+            if (obsProgress + obs.radius + 0.15 > robotProgress) {
+                hasUnpassedObstacles = true
+                break
+            }
         }
 
         for (vIdx in 0 until valleyCount) {
@@ -178,8 +186,7 @@ class VFHPlanner(
 
             for (cIdx in 0 until candidateCount) {
                 val chosenHeading = candidatesBuffer[cIdx]
-                var diff = abs(chosenHeading - normalizedTargetRad)
-                while (diff > PI) diff = 2.0 * PI - diff
+                val diff = abs(com.areslib.math.InputMath.wrapAngle(chosenHeading - normalizedTargetRad))
 
                 val currentDetourSign = sign(sin(chosenHeading - targetHeadingRad))
                 var biasedDiff = diff

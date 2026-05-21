@@ -26,6 +26,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val cachedAnalog = DoubleArray(4)
     private val cachedDigital = BooleanArray(4)
     private val cachedEncoders = IntArray(4)
+    private val cachedPwmPulseWidths = IntArray(4)
     
     // I2C Sub-sensors cached data
     private val cachedVL53L5CX = Array(4) { IntArray(64) }
@@ -83,6 +84,12 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
             cachedEncoders[i] = readInt32(data, offset)
         }
 
+        // 3b. Parse PWM Pulse Widths (Registers 24-31, 2 bytes per port)
+        for (i in 0 until 4) {
+            val offset = 24 + i * 2
+            cachedPwmPulseWidths[i] = (data[offset].toInt() and 0xFF) or ((data[offset + 1].toInt() and 0xFF) shl 8)
+        }
+
         // 4. Parse APDS9151 and VL53L0X I2C Sub-devices (Registers 32-95, 16 bytes per port)
         for (port in 0 until 4) {
             val base = 32 + port * 16
@@ -134,6 +141,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     @Synchronized fun getAnalogVoltage(port: Int): Double = cachedAnalog.getOrElse(port) { 0.0 }
     @Synchronized fun getDigitalState(port: Int): Boolean = cachedDigital.getOrElse(port) { false }
     @Synchronized fun readEncoder(port: Int): Int = cachedEncoders.getOrElse(port) { 0 }
+    @Synchronized fun getPwmPulseWidth(port: Int): Int = cachedPwmPulseWidths.getOrElse(port) { 0 }
     
     @Synchronized fun getVL53L5CXDistances(port: Int): IntArray = cachedVL53L5CX.getOrElse(port) { IntArray(64) }
     @Synchronized fun getI2cColorRed(port: Int): Int = cachedColorsRed.getOrElse(port) { 0 }
@@ -254,18 +262,22 @@ class SrsHubAbsolutePWMEncoder(
         get() = 0.0
         set(value) {}
 
+    fun updateInputs() {
+        srsHub.update()
+    }
+
     override val velocity: Double
         get() = 0.0
 
     override val position: Double
         get() {
-            val pulseUs = srsHub.readPwmPulseWidth(port).toDouble()
+            val pulseUs = srsHub.getPwmPulseWidth(port).toDouble()
             val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
             return (normalized.coerceIn(0.0, 1.0) * ticksPerRev) - offset
         }
 
     override fun resetEncoder() {
-        val pulseUs = srsHub.readPwmPulseWidth(port).toDouble()
+        val pulseUs = srsHub.getPwmPulseWidth(port).toDouble()
         val normalized = (pulseUs - version.minPulseUs) / (version.maxPulseUs - version.minPulseUs)
         offset = normalized.coerceIn(0.0, 1.0) * ticksPerRev
     }

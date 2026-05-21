@@ -67,6 +67,7 @@ class HardwareFaultToleranceTier1Test {
 
         // Set power to high (> 0.5) but velocity to low (< 10)
         mockMotor.mockVelocity = 5.0
+        ftcMotor.updateInputs()
         
         // Loop time simulated
         val baseTime = 1000L
@@ -80,6 +81,7 @@ class HardwareFaultToleranceTier1Test {
         com.areslib.util.RobotClock.setMockTimeMs(baseTime + 600)
 
         // Apply power again to trigger stall check
+        ftcMotor.updateInputs()
         ftcMotor.power = 0.8
         
         // Power should be cut to 0.0 due to stall detection
@@ -93,15 +95,18 @@ class HardwareFaultToleranceTier1Test {
 
         // Force stall
         mockMotor.mockVelocity = 5.0
+        ftcMotor.updateInputs()
         val baseTime = 1000L
         com.areslib.util.RobotClock.setMockTimeMs(baseTime)
         ftcMotor.power = 0.8
         com.areslib.util.RobotClock.setMockTimeMs(baseTime + 600)
+        ftcMotor.updateInputs()
         ftcMotor.power = 0.8
         assertEquals(0.0, mockMotor.currentPower, 1e-6) // Confirmed stalled
 
         // Set velocity to high/healthy (> 10) or lower power command to auto-reset
         mockMotor.mockVelocity = 20.0
+        ftcMotor.updateInputs()
         ftcMotor.power = 0.8 // power set should clear stall
         
         // Power should be active again
@@ -115,6 +120,7 @@ class HardwareFaultToleranceTier1Test {
 
         // Set current to dangerously high (> 9.2A)
         mockMotor.mockCurrentAmps = 10.0
+        ftcMotor.updateInputs()
         
         ftcMotor.power = 0.5
         

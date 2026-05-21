@@ -16,6 +16,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 
 class FtcMotor(private val motor: DcMotorEx) : MotorIO {
     private var encoderOffset = 0.0
+    private var cachedPosition = 0.0
+    private var cachedVelocity = 0.0
+    private var cachedAmps = 0.0
 
     init {
         motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
@@ -64,17 +67,24 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
             }
         }
 
+    fun updateInputs() {
+        cachedPosition = motor.currentPosition.toDouble() - encoderOffset
+        cachedVelocity = motor.velocity
+        cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+    }
+
     override val velocity: Double
-        get() = motor.velocity
+        get() = cachedVelocity
 
     override val position: Double
-        get() = motor.currentPosition.toDouble() - encoderOffset
+        get() = cachedPosition
 
     override val currentAmps: Double
-        get() = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+        get() = cachedAmps
 
     override fun resetEncoder() {
         encoderOffset = motor.currentPosition.toDouble()
+        cachedPosition = 0.0
     }
 }
 
@@ -119,20 +129,28 @@ class FtcCRServo(
  */
 class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
     private var encoderOffset = 0.0
+    private var cachedPosition = 0.0
+    private var cachedVelocity = 0.0
 
     override var power: Double
         get() = 0.0
         @Suppress("UNUSED_PARAMETER")
         set(value) {}
 
+    fun updateInputs() {
+        cachedPosition = motor.currentPosition.toDouble() - encoderOffset
+        cachedVelocity = motor.velocity
+    }
+
     override val velocity: Double
-        get() = motor.velocity
+        get() = cachedVelocity
 
     override val position: Double
-        get() = motor.currentPosition.toDouble() - encoderOffset
+        get() = cachedPosition
 
     override fun resetEncoder() {
         encoderOffset = motor.currentPosition.toDouble()
+        cachedPosition = 0.0
     }
 }
 
@@ -173,23 +191,27 @@ class FtcAbsoluteAnalogEncoder(
     private val ticksPerRev: Double = 8192.0
 ) : MotorIO {
     private var offset = 0.0
+    private var cachedPosition = 0.0
 
     override var power: Double
         get() = 0.0
         @Suppress("UNUSED_PARAMETER")
         set(value) {}
 
+    fun updateInputs() {
+        val normalized = analogInput.voltage / version.maxVoltage
+        cachedPosition = (normalized * ticksPerRev) - offset
+    }
+
     override val velocity: Double
         get() = 0.0 // Velocity estimation from absolute analog usually requires a filter
 
     override val position: Double
-        get() {
-            val normalized = analogInput.voltage / version.maxVoltage
-            return (normalized * ticksPerRev) - offset
-        }
+        get() = cachedPosition
 
     override fun resetEncoder() {
         offset = (analogInput.voltage / version.maxVoltage) * ticksPerRev
+        cachedPosition = 0.0
     }
 }
 

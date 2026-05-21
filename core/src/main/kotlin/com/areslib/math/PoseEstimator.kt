@@ -5,7 +5,7 @@ import com.areslib.state.VisionMeasurement
 data class PoseHistoryEntry(
     var timestampMs: Long = 0L,
     var pose: Pose2d = Pose2d(),
-    var covariance: Matrix3x3 = Matrix3x3.IDENTITY
+    var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
 )
 
 class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEntry>() {
@@ -25,7 +25,7 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         val entry = entries[head]
         entry.timestampMs = timestampMs
         entry.pose = pose
-        entry.covariance = covariance
+        entry.covariance.setTo(covariance)
         head = (head + 1) % capacity
         if (count < capacity) count++
     }
@@ -33,11 +33,27 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
     fun deepCopy(): HistoryBuffer {
         val newBuf = HistoryBuffer(capacity)
         for (i in 0 until capacity) {
-            newBuf.entries[i] = entries[i].copy()
+            val src = entries[i]
+            val dest = newBuf.entries[i]
+            dest.timestampMs = src.timestampMs
+            dest.pose = src.pose
+            dest.covariance.setTo(src.covariance)
         }
         newBuf.head = head
         newBuf.count = count
         return newBuf
+    }
+
+    fun copyInto(destination: HistoryBuffer) {
+        destination.head = this.head
+        destination.count = this.count
+        for (i in 0 until capacity) {
+            val src = this.entries[i]
+            val dest = destination.entries[i]
+            dest.timestampMs = src.timestampMs
+            dest.pose = src.pose
+            dest.covariance.setTo(src.covariance)
+        }
     }
     
     // allow setting existing entry to avoid object creation
@@ -45,7 +61,7 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         val entry = get(index)
         entry.timestampMs = timestampMs
         entry.pose = pose
-        entry.covariance = covariance
+        entry.covariance.setTo(covariance)
     }
 }
 
@@ -61,7 +77,7 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
  */
 data class PoseEstimatorState(
     val estimatedPose: Pose2d = Pose2d(),
-    val covariance: Matrix3x3 = Matrix3x3.IDENTITY,
+    val covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
     val history: HistoryBuffer = HistoryBuffer(50), // Max size typically ~50
     val isBeached: Boolean = false,
     val lastUnbeachedTimeMs: Long = 0L
@@ -85,6 +101,15 @@ object PoseEstimator {
         0.0,  0.01, 0.0,
         0.0,  0.0,  0.01
     )
+
+    private val scratchQ = Matrix3x3()
+    private val scratchR = Matrix3x3()
+    private val scratchS = Matrix3x3()
+    private val scratchSInv = Matrix3x3()
+    private val scratchK = Matrix3x3()
+    private val scratchCov = Matrix3x3()
+    private val scratchCov2 = Matrix3x3()
+    private val scratchHistory = HistoryBuffer(MAX_HISTORY_SIZE)
 
     // Known AprilTag coordinates for distance calculations
     private val TAGS = mapOf(
@@ -123,12 +148,18 @@ object PoseEstimator {
         gyroRateRadPerSec: Double = 0.0,
         dtSeconds: Double = 0.02
     ): PoseEstimatorState {
-        val args = doubleArrayOf(
-            deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
-            pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
-            gyroRateRadPerSec, dtSeconds
-        )
-        if (args.any { it.isNaN() || it.isInfinite() }) return state
+        if (deltaTranslation.x.isNaN() || deltaTranslation.x.isInfinite() ||
+            deltaTranslation.y.isNaN() || deltaTranslation.y.isInfinite() ||
+            deltaHeading.radians.isNaN() || deltaHeading.radians.isInfinite() ||
+            pitchDegrees.isNaN() || pitchDegrees.isInfinite() ||
+            rollDegrees.isNaN() || rollDegrees.isInfinite() ||
+            pitchVelocityDegPerSec.isNaN() || pitchVelocityDegPerSec.isInfinite() ||
+            rollVelocityDegPerSec.isNaN() || rollVelocityDegPerSec.isInfinite() ||
+            gyroRateRadPerSec.isNaN() || gyroRateRadPerSec.isInfinite() ||
+            dtSeconds.isNaN() || dtSeconds.isInfinite()
+        ) {
+            return state
+        }
 
         val tiltDegrees = kotlin.math.sqrt(pitchDegrees * pitchDegrees + rollDegrees * rollDegrees)
         val tiltVelocity = kotlin.math.sqrt(pitchVelocityDegPerSec * pitchVelocityDegPerSec + rollVelocityDegPerSec * rollVelocityDegPerSec)
@@ -146,9 +177,9 @@ object PoseEstimator {
 
         // Catastrophic tilt / beaching check: Freeze odometry updates
         if (currentlyBeached) {
-            val newHistory = state.history.deepCopy()
-            newHistory.addEntry(timestampMs, state.estimatedPose, state.covariance)
-            return state.copy(history = newHistory, isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
+            val history = state.history
+            history.addEntry(timestampMs, state.estimatedPose, state.covariance)
+            return state.copy(isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
         }
 
         val timeSinceUnbeachedMs = timestampMs - unbeachedTime
@@ -180,7 +211,8 @@ object PoseEstimator {
             1.0
         }
 
-        var currentQ = Q * tiltScale * slipScale
+        scratchQ.setTo(Q)
+        scratchQ.multiplyInPlace(tiltScale * slipScale)
 
         val newHeading = Rotation2d(state.estimatedPose.heading.radians + deltaHeading.radians)
         val newPose = Pose2d(
@@ -190,15 +222,18 @@ object PoseEstimator {
         )
         
         // Simple propagation: P = P + dynamic Q
-        val newCovariance = state.covariance + currentQ
+        val newCovariance = Matrix3x3(
+            state.covariance.m00 + scratchQ.m00, state.covariance.m01 + scratchQ.m01, state.covariance.m02 + scratchQ.m02,
+            state.covariance.m10 + scratchQ.m10, state.covariance.m11 + scratchQ.m11, state.covariance.m12 + scratchQ.m12,
+            state.covariance.m20 + scratchQ.m20, state.covariance.m21 + scratchQ.m21, state.covariance.m22 + scratchQ.m22
+        )
 
-        val newHistory = state.history.deepCopy()
-        newHistory.addEntry(timestampMs, newPose, newCovariance)
+        val history = state.history
+        history.addEntry(timestampMs, newPose, newCovariance)
 
         return state.copy(
             estimatedPose = newPose,
             covariance = newCovariance,
-            history = newHistory,
             isBeached = currentlyBeached,
             lastUnbeachedTimeMs = unbeachedTime
         )
@@ -272,69 +307,129 @@ object PoseEstimator {
         // 2. Dynamic EKF vision noise scaling (multi-tag division & quadratic distance growth)
         val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
-        val scaledStdDevs = visionStdDevs * (multiTagFactor * distFactor)
+        val scaledStdDevsX = visionStdDevs.x * (multiTagFactor * distFactor)
+        val scaledStdDevsY = visionStdDevs.y * (multiTagFactor * distFactor)
+        val scaledStdDevsZ = visionStdDevs.z * (multiTagFactor * distFactor)
 
         // Extended Kalman Filter Update at the historical timestamp
-        val R = Vector3(
-            scaledStdDevs.x * scaledStdDevs.x,
-            scaledStdDevs.y * scaledStdDevs.y,
-            scaledStdDevs.z * scaledStdDevs.z
-        ).let { v -> 
-            Matrix3x3(
-                v.x, 0.0, 0.0,
-                0.0, v.y, 0.0,
-                0.0, 0.0, v.z
-            )
+        scratchR.m00 = scaledStdDevsX * scaledStdDevsX; scratchR.m01 = 0.0; scratchR.m02 = 0.0
+        scratchR.m10 = 0.0; scratchR.m11 = scaledStdDevsY * scaledStdDevsY; scratchR.m12 = 0.0
+        scratchR.m20 = 0.0; scratchR.m21 = 0.0; scratchR.m22 = scaledStdDevsZ * scaledStdDevsZ
+
+        // S = P + R (where H is Identity)
+        scratchS.m00 = baseEntry.covariance.m00 + scratchR.m00
+        scratchS.m01 = baseEntry.covariance.m01
+        scratchS.m02 = baseEntry.covariance.m02
+        scratchS.m10 = baseEntry.covariance.m10
+        scratchS.m11 = baseEntry.covariance.m11 + scratchR.m11
+        scratchS.m12 = baseEntry.covariance.m12
+        scratchS.m20 = baseEntry.covariance.m20
+        scratchS.m21 = baseEntry.covariance.m21
+        scratchS.m22 = baseEntry.covariance.m22 + scratchR.m22
+
+        // S_inv inversion
+        val det = scratchS.m00 * (scratchS.m11 * scratchS.m22 - scratchS.m12 * scratchS.m21) -
+                  scratchS.m01 * (scratchS.m10 * scratchS.m22 - scratchS.m12 * scratchS.m20) +
+                  scratchS.m02 * (scratchS.m10 * scratchS.m21 - scratchS.m11 * scratchS.m20)
+
+        if (kotlin.math.abs(det) < 1e-9) {
+            scratchSInv.m00 = 0.0; scratchSInv.m01 = 0.0; scratchSInv.m02 = 0.0
+            scratchSInv.m10 = 0.0; scratchSInv.m11 = 0.0; scratchSInv.m12 = 0.0
+            scratchSInv.m20 = 0.0; scratchSInv.m21 = 0.0; scratchSInv.m22 = 0.0
+        } else {
+            val invDet = 1.0 / det
+            scratchSInv.m00 =  (scratchS.m11 * scratchS.m22 - scratchS.m12 * scratchS.m21) * invDet
+            scratchSInv.m01 = -(scratchS.m01 * scratchS.m22 - scratchS.m02 * scratchS.m21) * invDet
+            scratchSInv.m02 =  (scratchS.m01 * scratchS.m12 - scratchS.m02 * scratchS.m11) * invDet
+            
+            scratchSInv.m10 = -(scratchS.m10 * scratchS.m22 - scratchS.m12 * scratchS.m20) * invDet
+            scratchSInv.m11 =  (scratchS.m00 * scratchS.m22 - scratchS.m02 * scratchS.m20) * invDet
+            scratchSInv.m12 = -(scratchS.m00 * scratchS.m12 - scratchS.m02 * scratchS.m10) * invDet
+            
+            scratchSInv.m20 =  (scratchS.m10 * scratchS.m21 - scratchS.m11 * scratchS.m20) * invDet
+            scratchSInv.m21 = -(scratchS.m00 * scratchS.m21 - scratchS.m01 * scratchS.m20) * invDet
+            scratchSInv.m22 =  (scratchS.m00 * scratchS.m11 - scratchS.m01 * scratchS.m10) * invDet
         }
 
         // Innovation residual y = z - Hx (where H is identity since we directly measure pose)
         val measurementPose2d = measurement.targetPose.toPose2d()
-        var headingDiff = measurementPose2d.heading.radians - baseEntry.pose.heading.radians
-        // normalize heading difference
-        while (headingDiff > Math.PI) headingDiff -= 2 * Math.PI
-        while (headingDiff < -Math.PI) headingDiff += 2 * Math.PI
+        val headingDiff = InputMath.wrapAngle(measurementPose2d.heading.radians - baseEntry.pose.heading.radians)
 
-        val y = Vector3(
-            measurementPose2d.x - baseEntry.pose.x,
-            measurementPose2d.y - baseEntry.pose.y,
-            headingDiff
-        )
-
-        // S = P + R (where H is Identity)
-        val S = baseEntry.covariance + R
-        val S_inv = S.inverse()
+        val yX = measurementPose2d.x - baseEntry.pose.x
+        val yY = measurementPose2d.y - baseEntry.pose.y
+        val yZ = headingDiff
 
         // 3. Statistical Mahalanobis Distance Outlier Rejection
+        val sInvYX = scratchSInv.m00 * yX + scratchSInv.m01 * yY + scratchSInv.m02 * yZ
+        val sInvYY = scratchSInv.m10 * yX + scratchSInv.m11 * yY + scratchSInv.m12 * yZ
+        val sInvYZ = scratchSInv.m20 * yX + scratchSInv.m21 * yY + scratchSInv.m22 * yZ
+
         if (useMahalanobisRejection) {
-            val S_inv_y = S_inv * y
-            val dMSquared = y.x * S_inv_y.x + y.y * S_inv_y.y + y.z * S_inv_y.z
+            val dMSquared = yX * sInvYX + yY * sInvYY + yZ * sInvYZ
             if (dMSquared > mahalanobisThreshold) {
                 return state // Outlier rejected autonomously!
             }
         }
 
         // K = P * S^-1
-        val K = baseEntry.covariance * S_inv
+        scratchK.m00 = baseEntry.covariance.m00 * scratchSInv.m00 + baseEntry.covariance.m01 * scratchSInv.m10 + baseEntry.covariance.m02 * scratchSInv.m20
+        scratchK.m01 = baseEntry.covariance.m00 * scratchSInv.m01 + baseEntry.covariance.m01 * scratchSInv.m11 + baseEntry.covariance.m02 * scratchSInv.m21
+        scratchK.m02 = baseEntry.covariance.m00 * scratchSInv.m02 + baseEntry.covariance.m01 * scratchSInv.m12 + baseEntry.covariance.m02 * scratchSInv.m22
+        
+        scratchK.m10 = baseEntry.covariance.m10 * scratchSInv.m00 + baseEntry.covariance.m11 * scratchSInv.m10 + baseEntry.covariance.m12 * scratchSInv.m20
+        scratchK.m11 = baseEntry.covariance.m10 * scratchSInv.m01 + baseEntry.covariance.m11 * scratchSInv.m11 + baseEntry.covariance.m12 * scratchSInv.m21
+        scratchK.m12 = baseEntry.covariance.m10 * scratchSInv.m02 + baseEntry.covariance.m11 * scratchSInv.m12 + baseEntry.covariance.m12 * scratchSInv.m22
+        
+        scratchK.m20 = baseEntry.covariance.m20 * scratchSInv.m00 + baseEntry.covariance.m21 * scratchSInv.m10 + baseEntry.covariance.m22 * scratchSInv.m20
+        scratchK.m21 = baseEntry.covariance.m20 * scratchSInv.m01 + baseEntry.covariance.m21 * scratchSInv.m11 + baseEntry.covariance.m22 * scratchSInv.m21
+        scratchK.m22 = baseEntry.covariance.m20 * scratchSInv.m02 + baseEntry.covariance.m21 * scratchSInv.m12 + baseEntry.covariance.m22 * scratchSInv.m22
 
         // Updated state delta: dx = K * y
-        val dx = K * y
+        val dxX = scratchK.m00 * yX + scratchK.m01 * yY + scratchK.m02 * yZ
+        val dxY = scratchK.m10 * yX + scratchK.m11 * yY + scratchK.m12 * yZ
+        val dxZ = scratchK.m20 * yX + scratchK.m21 * yY + scratchK.m22 * yZ
 
-        // Updated covariance: P = (I - K) * P
-        val I_minus_K = Matrix3x3.IDENTITY - K
-        val updatedCovariance = I_minus_K * baseEntry.covariance
+        // Updated covariance: P = (I - K) * P => scratchCov = scratchK * baseEntry.covariance
+        scratchCov.m00 = scratchK.m00 * baseEntry.covariance.m00 + scratchK.m01 * baseEntry.covariance.m10 + scratchK.m02 * baseEntry.covariance.m20
+        scratchCov.m01 = scratchK.m00 * baseEntry.covariance.m01 + scratchK.m01 * baseEntry.covariance.m11 + scratchK.m02 * baseEntry.covariance.m21
+        scratchCov.m02 = scratchK.m00 * baseEntry.covariance.m02 + scratchK.m01 * baseEntry.covariance.m12 + scratchK.m02 * baseEntry.covariance.m22
+        
+        scratchCov.m10 = scratchK.m10 * baseEntry.covariance.m00 + scratchK.m11 * baseEntry.covariance.m10 + scratchK.m12 * baseEntry.covariance.m20
+        scratchCov.m11 = scratchK.m10 * baseEntry.covariance.m01 + scratchK.m11 * baseEntry.covariance.m11 + scratchK.m12 * baseEntry.covariance.m21
+        scratchCov.m12 = scratchK.m10 * baseEntry.covariance.m02 + scratchK.m11 * baseEntry.covariance.m12 + scratchK.m12 * baseEntry.covariance.m22
+        
+        scratchCov.m20 = scratchK.m20 * baseEntry.covariance.m00 + scratchK.m21 * baseEntry.covariance.m10 + scratchK.m22 * baseEntry.covariance.m20
+        scratchCov.m21 = scratchK.m20 * baseEntry.covariance.m01 + scratchK.m21 * baseEntry.covariance.m11 + scratchK.m22 * baseEntry.covariance.m21
+        scratchCov.m22 = scratchK.m20 * baseEntry.covariance.m02 + scratchK.m21 * baseEntry.covariance.m12 + scratchK.m22 * baseEntry.covariance.m22
+
+        val cov00 = baseEntry.covariance.m00 - scratchCov.m00
+        val cov01 = baseEntry.covariance.m01 - scratchCov.m01
+        val cov02 = baseEntry.covariance.m02 - scratchCov.m02
+        val cov10 = baseEntry.covariance.m10 - scratchCov.m10
+        val cov11 = baseEntry.covariance.m11 - scratchCov.m11
+        val cov12 = baseEntry.covariance.m12 - scratchCov.m12
+        val cov20 = baseEntry.covariance.m20 - scratchCov.m20
+        val cov21 = baseEntry.covariance.m21 - scratchCov.m21
+        val cov22 = baseEntry.covariance.m22 - scratchCov.m22
+
+        scratchCov.m00 = cov00; scratchCov.m01 = cov01; scratchCov.m02 = cov02
+        scratchCov.m10 = cov10; scratchCov.m11 = cov11; scratchCov.m12 = cov12
+        scratchCov.m20 = cov20; scratchCov.m21 = cov21; scratchCov.m22 = cov22
 
         val updatedPose = Pose2d(
-            baseEntry.pose.x + dx.x,
-            baseEntry.pose.y + dx.y,
-            Rotation2d(baseEntry.pose.heading.radians + dx.z)
+            baseEntry.pose.x + dxX,
+            baseEntry.pose.y + dxY,
+            Rotation2d(baseEntry.pose.heading.radians + dxZ)
         )
+
+        // Copy current state history to scratch history for mutating
+        state.history.copyInto(scratchHistory)
 
         // Now we must replay all odometry deltas from closestIndex + 1 to the end
         var currentPose = updatedPose
-        var currentCov = updatedCovariance
-        val newHistory = state.history.deepCopy()
-        
-        newHistory.updateEntry(closestIndex, baseEntry.timestampMs, currentPose, currentCov)
+        var currentCov = scratchCov
+
+        scratchHistory.updateEntry(closestIndex, baseEntry.timestampMs, currentPose, currentCov)
 
         for (i in (closestIndex + 1) until state.history.size) {
             val prevRaw = state.history[i - 1].pose
@@ -351,15 +446,27 @@ object PoseEstimator {
                 currentPose.y + deltaY,
                 Rotation2d(currentPose.heading.radians + deltaHeading)
             )
-            currentCov = currentCov + Q
+
+            scratchCov2.m00 = currentCov.m00 + Q.m00
+            scratchCov2.m01 = currentCov.m01 + Q.m01
+            scratchCov2.m02 = currentCov.m02 + Q.m02
+            scratchCov2.m10 = currentCov.m10 + Q.m10
+            scratchCov2.m11 = currentCov.m11 + Q.m11
+            scratchCov2.m12 = currentCov.m12 + Q.m12
+            scratchCov2.m20 = currentCov.m20 + Q.m20
+            scratchCov2.m21 = currentCov.m21 + Q.m21
+            scratchCov2.m22 = currentCov.m22 + Q.m22
             
-            newHistory.updateEntry(i, state.history[i].timestampMs, currentPose, currentCov)
+            scratchHistory.updateEntry(i, state.history[i].timestampMs, currentPose, scratchCov2)
+            currentCov = scratchCov2
         }
+
+        // Copy mutated scratch history back to state history in-place
+        scratchHistory.copyInto(state.history)
 
         return state.copy(
             estimatedPose = currentPose,
-            covariance = currentCov,
-            history = newHistory
+            covariance = Matrix3x3(currentCov.m00, currentCov.m01, currentCov.m02, currentCov.m10, currentCov.m11, currentCov.m12, currentCov.m20, currentCov.m21, currentCov.m22)
         )
     }
 }

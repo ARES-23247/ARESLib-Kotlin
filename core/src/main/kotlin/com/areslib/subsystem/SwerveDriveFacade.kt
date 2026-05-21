@@ -114,9 +114,7 @@ class SwerveDriveFacade(private val store: Store) {
                 // Set lock target to current heading if first frame
                 val target = headingLockTarget ?: headingRad.also { headingLockTarget = it }
                 // Calculate simple proportional feedback to hold orientation
-                var error = target - headingRad
-                while (error > Math.PI) error -= 2 * Math.PI
-                while (error < -Math.PI) error += 2 * Math.PI
+                val error = com.areslib.math.InputMath.wrapAngle(target - headingRad)
                 finalOmega = error * kPHeadingLock
             }
         } else {

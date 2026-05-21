@@ -55,9 +55,7 @@ class SwerveKinematics(
                 val prevAngleRad = pState.angle.radians
 
                 // Compute shortest angle difference
-                var angleDiff = targetAngleRad - prevAngleRad
-                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI
-                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI
+                val angleDiff = com.areslib.math.InputMath.wrapAngle(targetAngleRad - prevAngleRad)
 
                 // Target steering velocity
                 val targetSteerVel = angleDiff / dtSeconds

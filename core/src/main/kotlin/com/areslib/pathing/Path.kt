@@ -42,9 +42,7 @@ data class Path(
                 // For simplicity, linearly interpolate heading. In a production system, use AngleMath.lerp.
                 val deltaHeading = p2.pose.heading.radians - p1.pose.heading.radians
                 // Normalize delta
-                var normDelta = deltaHeading
-                while (normDelta > Math.PI) normDelta -= 2 * Math.PI
-                while (normDelta < -Math.PI) normDelta += 2 * Math.PI
+                val normDelta = com.areslib.math.InputMath.wrapAngle(deltaHeading)
                 
                 val interpHeading = Rotation2d(p1.pose.heading.radians + normDelta * t)
                 val interpVel = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t

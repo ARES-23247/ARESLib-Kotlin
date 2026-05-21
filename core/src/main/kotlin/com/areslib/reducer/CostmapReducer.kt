@@ -51,9 +51,7 @@ object CostmapReducer {
                             val dist = kotlin.math.hypot(dx, dy)
                             val angleToObstacle = kotlin.math.atan2(dy, dx)
                             
-                            var angleDiff = angleToObstacle - sensorFieldAngle
-                            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI
-                            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI
+                            val angleDiff = com.areslib.math.InputMath.wrapAngle(angleToObstacle - sensorFieldAngle)
                             
                             dist < obs.maxRangeMeters && kotlin.math.abs(angleDiff) < Math.toRadians(15.0)
                         }

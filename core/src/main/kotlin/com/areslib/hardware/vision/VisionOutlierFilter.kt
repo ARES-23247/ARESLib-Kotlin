@@ -94,9 +94,6 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
      * Normalizes an angle in radians to the range (-PI, PI].
      */
     private fun normalizeAngle(angle: Double): Double {
-        var a = angle
-        while (a <= -Math.PI) a += 2 * Math.PI
-        while (a > Math.PI) a -= 2 * Math.PI
-        return a
+        return com.areslib.math.InputMath.wrapAngle(angle)
     }
 }

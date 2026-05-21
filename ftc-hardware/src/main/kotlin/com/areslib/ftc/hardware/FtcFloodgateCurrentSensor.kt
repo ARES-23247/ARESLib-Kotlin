@@ -2,6 +2,7 @@ package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.ElapsedTime
+import com.areslib.util.RobotClock
 
 /**
  * Driver for the goBILDA Floodgate V2 Power Switch.
@@ -18,7 +19,7 @@ class FtcFloodgateCurrentSensor(
     private val filterAlpha: Double = 0.15,    // Low-pass filter smoothing coefficient (0.0 to 1.0)
     private val fuseRatingAmps: Double = 20.0  // Standard FTC main battery fuse rating
 ) {
-    private var lastUpdateTime = System.nanoTime()
+    private var lastUpdateTime = RobotClock.currentTimeMillis()
     private var filteredCurrentAmps = 0.0
     private var totalAmpSeconds = 0.0
     private var isInitialized = false
@@ -32,9 +33,9 @@ class FtcFloodgateCurrentSensor(
      * and integrates total energy consumption. Should be called inside your main OpMode loop.
      */
     fun update() {
-        val currentTime = System.nanoTime()
+        val currentTime = RobotClock.currentTimeMillis()
         val dtSeconds = if (isInitialized) {
-            (currentTime - lastUpdateTime) / 1e9
+            (currentTime - lastUpdateTime) / 1000.0
         } else {
             isInitialized = true
             0.0
@@ -110,6 +111,6 @@ class FtcFloodgateCurrentSensor(
     fun resetTracker() {
         totalAmpSeconds = 0.0
         accumulatedThermalLoad = 0.0
-        lastUpdateTime = System.nanoTime()
+        lastUpdateTime = RobotClock.currentTimeMillis()
     }
 }

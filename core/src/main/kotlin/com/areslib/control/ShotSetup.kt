@@ -136,10 +136,7 @@ object ShotSetup {
         // Shooter is at the back facing rearward, so the robot's front is 180 degrees away
         val robotTargetHeading = aimAngle + PI
         
-        // Wrap target heading to [-PI, PI]
-        var wrappedRobotHeading = robotTargetHeading
-        while (wrappedRobotHeading > PI) wrappedRobotHeading -= 2.0 * PI
-        while (wrappedRobotHeading < -PI) wrappedRobotHeading += 2.0 * PI
+        val wrappedRobotHeading = com.areslib.math.InputMath.wrapAngle(robotTargetHeading)
 
         // 6. Direct derivative for exact heading angular velocity feedforward
         val angularVelFF = if (aimDistance > 0.05) {

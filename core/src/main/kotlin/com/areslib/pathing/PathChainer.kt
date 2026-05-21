@@ -91,9 +91,7 @@ object PathChainer {
                     val blendedVel = (1.0 - tau) * vA + tau * vB
 
                     // Angle shortest-path interpolation
-                    var diff = headingB - headingA
-                    while (diff > PI) diff -= 2 * PI
-                    while (diff < -PI) diff += 2 * PI
+                    val diff = com.areslib.math.InputMath.wrapAngle(headingB - headingA)
                     val blendedHeading = Rotation2d(headingA + diff * tau)
 
                     stitchedPoints[idx] = pt.copy(

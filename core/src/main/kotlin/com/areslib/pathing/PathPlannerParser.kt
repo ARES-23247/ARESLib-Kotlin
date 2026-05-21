@@ -95,9 +95,7 @@ object PathPlannerParser {
             
             val ds = pNext.distanceMeters - pPrev.distanceMeters
             val dTheta = pNext.pose.heading.radians - pPrev.pose.heading.radians
-            var normDTheta = dTheta
-            while (normDTheta > Math.PI) normDTheta -= 2 * Math.PI
-            while (normDTheta < -Math.PI) normDTheta += 2 * Math.PI
+            val normDTheta = com.areslib.math.InputMath.wrapAngle(dTheta)
             
             val kappa = if (ds > 1e-4) normDTheta / ds else 0.0
             
