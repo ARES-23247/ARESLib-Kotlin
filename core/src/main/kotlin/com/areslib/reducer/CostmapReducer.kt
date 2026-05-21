@@ -59,9 +59,7 @@ object CostmapReducer {
                 }
 
                 if (currentObstacles.size > 50) {
-                    while (currentObstacles.size > 50) {
-                        currentObstacles.removeAt(0)
-                    }
+                    currentObstacles.subList(0, currentObstacles.size - 50).clear()
                 }
 
                 state.copy(
