@@ -10,6 +10,7 @@ import java.nio.ByteBuffer
  */
 class RobotStateStruct : Struct<RobotState> {
     override fun getTypeClass(): Class<RobotState> = RobotState::class.java
+    override fun getTypeName(): String = "RobotState"
     override fun getTypeString(): String = "struct:RobotState"
     override fun getSize(): Int = java.lang.Double.BYTES * 10 + java.lang.Long.BYTES * 2 + java.lang.Integer.BYTES * 2 + 4 // 10 doubles, 2 longs, 2 ints, 4 bools
 

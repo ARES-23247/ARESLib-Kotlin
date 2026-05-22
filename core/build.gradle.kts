@@ -19,11 +19,11 @@ dependencies {
     implementation("com.github.FRC-For-FTC-Tools:nt-self-impl:0.0.2")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
     testImplementation(kotlin("test"))
-    compileOnly("edu.wpi.first.wpilibj:wpilibj-java:2024.3.2")
-    compileOnly("edu.wpi.first.hal:hal-java:2024.3.2")
-    compileOnly("edu.wpi.first.wpimath:wpimath-java:2024.3.2")
-    compileOnly("edu.wpi.first.wpiutil:wpiutil-java:2024.3.2")
-    compileOnly("com.ctre.phoenix6:wpiapi-java:24.1.0")
+    compileOnly("edu.wpi.first.wpilibj:wpilibj-java:2026.2.1")
+    compileOnly("edu.wpi.first.hal:hal-java:2026.2.1")
+    compileOnly("edu.wpi.first.wpimath:wpimath-java:2026.2.1")
+    compileOnly("edu.wpi.first.wpiutil:wpiutil-java:2026.2.1")
+    compileOnly("com.ctre.phoenix6:wpiapi-java:26.1.1")
 }
 
 tasks.test {
