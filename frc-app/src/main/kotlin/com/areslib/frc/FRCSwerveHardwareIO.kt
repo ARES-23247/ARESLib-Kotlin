@@ -1,8 +1,8 @@
 package com.areslib.frc
 
 import com.areslib.state.DriveState
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain
-import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest
+import com.ctre.phoenix6.swerve.SwerveDrivetrain
+import com.ctre.phoenix6.swerve.SwerveRequest
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 
 /**
@@ -11,10 +11,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
  * This class abstracts the highly-optimized CTRE SwerveDrivetrain (which runs internally
  * at 250Hz on the CAN FD bus) into the pure mathematical ARESLib Redux architecture.
  */
-class FRCSwerveHardwareIO<T : SwerveDrivetrain>(private val drivetrain: T) {
+class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
 
     // CTRE Swerve request object we will mutate every loop
-    private val chassisSpeedsRequest = SwerveRequest.ApplyChassisSpeeds()
+    private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
 
     /**
      * Reads the 250Hz synchronized pose from the CTRE drivetrain and maps it
@@ -26,9 +26,9 @@ class FRCSwerveHardwareIO<T : SwerveDrivetrain>(private val drivetrain: T) {
 
         return DriveState(
             // We read the actual measured velocities from the drivetrain state
-            xVelocityMetersPerSecond = driveStateObj.speeds.vxMetersPerSecond,
-            yVelocityMetersPerSecond = driveStateObj.speeds.vyMetersPerSecond,
-            angularVelocityRadiansPerSecond = driveStateObj.speeds.omegaRadiansPerSecond,
+            xVelocityMetersPerSecond = driveStateObj.Speeds.vxMetersPerSecond,
+            yVelocityMetersPerSecond = driveStateObj.Speeds.vyMetersPerSecond,
+            angularVelocityRadiansPerSecond = driveStateObj.Speeds.omegaRadiansPerSecond,
             
             // Map the internal 250Hz odometry to the Redux state
             odometryX = pose.x,
@@ -50,6 +50,6 @@ class FRCSwerveHardwareIO<T : SwerveDrivetrain>(private val drivetrain: T) {
         )
         
         // Pass the speeds to the CTRE API
-        drivetrain.setControl(chassisSpeedsRequest.withSpeeds(speeds))
+        drivetrain.setControl(robotSpeedsRequest.withSpeeds(speeds))
     }
 }

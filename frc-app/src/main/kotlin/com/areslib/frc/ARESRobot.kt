@@ -17,7 +17,7 @@ import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj.DriverStation
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain
+import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
 /**
  * Main Robot lifecycle for the FRC CTRE Swerve Integration.
@@ -75,8 +75,18 @@ class ARESRobot : TimedRobot() {
                 val climberFX = com.ctre.phoenix6.hardware.TalonFX(19, "CAN2")
                 val feederFX = com.ctre.phoenix6.hardware.TalonFX(20, "CAN2")
 
+                // Initialize CTRE SwerveDrivetrain using Tuner X constants
+                val ctreDrivetrain = frc.robot.generated.TunerConstants.TunerSwerveDrivetrain(
+                    frc.robot.generated.TunerConstants.DrivetrainConstants,
+                    frc.robot.generated.TunerConstants.FrontLeft,
+                    frc.robot.generated.TunerConstants.FrontRight,
+                    frc.robot.generated.TunerConstants.BackLeft,
+                    frc.robot.generated.TunerConstants.BackRight
+                )
+                val swerveIO = FRCSwerveHardwareIO(ctreDrivetrain)
+
                 FrcSwerveRobot(
-                    swerveIO = null, // swerveIO = FRCSwerveHardwareIO(TunerConstants.DriveTrain)
+                    swerveIO = swerveIO,
                     flywheelIO = FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX),
                     cowlIO = FRCCowlHardwareIO(cowlFX),
                     intakeIO = FRCIntakeHardwareIO(pivotFX, rollerFX),

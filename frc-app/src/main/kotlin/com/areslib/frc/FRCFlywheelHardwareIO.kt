@@ -22,8 +22,8 @@ class FRCFlywheelHardwareIO(
 
     init {
         // Configure followers as opposed to their respective masters
-        leftFollower.setControl(Follower(leftMaster.deviceID, true))
-        rightFollower.setControl(Follower(rightMaster.deviceID, true))
+        leftFollower.setControl(Follower(leftMaster.deviceID, com.ctre.phoenix6.signals.MotorAlignmentValue.Opposed))
+        rightFollower.setControl(Follower(rightMaster.deviceID, com.ctre.phoenix6.signals.MotorAlignmentValue.Opposed))
 
         // Enforce exact physical configurations matching SystemConstants.java
         val config = com.ctre.phoenix6.configs.TalonFXConfiguration()

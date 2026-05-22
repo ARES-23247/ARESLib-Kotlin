@@ -13,7 +13,7 @@ import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.ITelemetry
 import com.areslib.control.BrownoutGuard
 
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain
+import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
 /**
  * FRC Swerve Robot facade — the FRC mirror of FtcMecanumRobot.
@@ -29,7 +29,7 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain
  * ```
  */
 class FrcSwerveRobot(
-    private val swerveIO: FRCSwerveHardwareIO<*>? = null,
+    private val swerveIO: FRCSwerveHardwareIO? = null,
     private val flywheelIO: FlywheelIO,
     private val cowlIO: CowlIO,
     private val intakeIO: IntakeIO,
