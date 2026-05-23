@@ -31,13 +31,18 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
     private var targetPower: Double = 0.0
     private var stallStartTimeMs = 0L
     private var isStalled = false
+    private var lastSentPower = Double.NaN
 
     override var powerScale: Double = 1.0
         set(value) {
             field = value.coerceIn(0.0, 1.0)
             if (!isStalled) {
                 try {
-                    motor.power = targetPower * field
+                    val commandPower = targetPower * field
+                    if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
+                        motor.power = commandPower
+                        lastSentPower = commandPower
+                    }
                 } catch (_: Exception) {}
             }
         }
@@ -68,10 +73,10 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
             }
 
             try {
-                if (isStalled) {
-                    motor.power = 0.0
-                } else {
-                    motor.power = value * powerScale
+                val commandPower = if (isStalled) 0.0 else value * powerScale
+                if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
+                    motor.power = commandPower
+                    lastSentPower = commandPower
                 }
             } catch (_: Exception) {}
         }
@@ -118,12 +123,17 @@ class FtcCRServo(
     private val externalEncoder: MotorIO? = null
 ) : MotorIO {
     private var targetPower: Double = 0.0
+    private var lastSentPower = Double.NaN
 
     override var powerScale: Double = 1.0
         set(value) {
             field = value.coerceIn(0.0, 1.0)
             try {
-                crServo.power = targetPower * field
+                val commandPower = targetPower * field
+                if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
+                    crServo.power = commandPower
+                    lastSentPower = commandPower
+                }
             } catch (_: Exception) {}
         }
 
@@ -132,7 +142,11 @@ class FtcCRServo(
         set(value) {
             targetPower = value
             try {
-                crServo.power = value * powerScale
+                val commandPower = value * powerScale
+                if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
+                    crServo.power = commandPower
+                    lastSentPower = commandPower
+                }
             } catch (_: Exception) {}
         }
 
@@ -250,6 +264,8 @@ class FtcAbsoluteAnalogEncoder(
 }
 
 class FtcServo(private val servo: Servo) : ServoIO {
+    private var lastSentPosition = Double.NaN
+
     override var position: Double
         get() = try {
             servo.position
@@ -258,7 +274,10 @@ class FtcServo(private val servo: Servo) : ServoIO {
         }
         set(value) {
             try {
-                servo.position = value
+                if (lastSentPosition.isNaN() || kotlin.math.abs(value - lastSentPosition) > 0.001) {
+                    servo.position = value
+                    lastSentPosition = value
+                }
             } catch (_: Exception) {}
         }
 }
