@@ -20,6 +20,8 @@ class FtcAresRobot(private val hardwareMap: HardwareMap) : AresRobot() {
     val imu = FtcImu(hardwareMap.get(IMU::class.java, "imu"))
     
     private val imuInputs = ImuInputs()
+    private var lastVoltageReadTime = 0L
+    private var cachedBatteryVoltage = 12.0
 
     /** Brownout protection guard — auto-scales motor power on voltage sag */
     val brownoutGuard = BrownoutGuard.ftcDefaults()
@@ -79,9 +81,13 @@ class FtcAresRobot(private val hardwareMap: HardwareMap) : AresRobot() {
         // (Use odometry X target voltage compensation as simple loop feedback)
         val targetPower = store.state.drive.odometryX * 0.1
 
-        // 3b. Read battery voltage and apply brownout protection
-        val voltageSensors = hardwareMap.getAll(com.qualcomm.robotcore.hardware.VoltageSensor::class.java)
-        val batteryVoltage = if (voltageSensors.isNotEmpty()) voltageSensors[0].voltage else 12.0
+        // 3b. Read battery voltage and apply brownout protection (rate-limited to 10Hz/100ms to eliminate blocking JNI overhead)
+        if (timestamp - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
+            lastVoltageReadTime = timestamp
+            val voltageSensors = hardwareMap.getAll(com.qualcomm.robotcore.hardware.VoltageSensor::class.java)
+            cachedBatteryVoltage = if (voltageSensors.isNotEmpty()) voltageSensors[0].voltage else 12.0
+        }
+        val batteryVoltage = cachedBatteryVoltage
         brownoutGuard.update(batteryVoltage)
         var effectiveScale = brownoutGuard.powerScale
 

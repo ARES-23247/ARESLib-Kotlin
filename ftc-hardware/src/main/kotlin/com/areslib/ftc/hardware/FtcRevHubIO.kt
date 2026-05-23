@@ -285,6 +285,13 @@ class FtcServo(private val servo: Servo) : ServoIO {
 class FtcImu(private val imu: IMU) : ImuIO {
     private var headingOffset = 0.0
 
+    @Volatile private var latestYaw = 0.0
+    @Volatile private var latestPitch = 0.0
+    @Volatile private var latestRoll = 0.0
+    @Volatile private var latestYawVel = 0.0
+    @Volatile private var latestTimestamp = 0L
+    @Volatile private var running = true
+
     init {
         try {
             val orientation = RevHubOrientationOnRobot(
@@ -294,28 +301,61 @@ class FtcImu(private val imu: IMU) : ImuIO {
             val parameters = IMU.Parameters(orientation)
             imu.initialize(parameters)
         } catch (_: Exception) {}
+
+        // Populate initial values synchronously to prevent race conditions during startup/tests
+        try {
+            val yawPitchRoll = imu.getRobotYawPitchRollAngles()
+            latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
+            latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
+            latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
+            
+            val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
+            latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+            latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        } catch (_: Exception) {}
+
+        // Launch low-priority daemon background thread to poll IMU asynchronously
+        val imuThread = Thread {
+            while (running) {
+                try {
+                    val yawPitchRoll = imu.getRobotYawPitchRollAngles()
+                    latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
+                    latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
+                    latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
+                    
+                    val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
+                    latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+                    latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+                } catch (_: Exception) {}
+                
+                try {
+                    Thread.sleep(5) // Poll at ~200Hz
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
+            }
+        }
+        imuThread.isDaemon = true
+        imuThread.priority = Thread.MIN_PRIORITY
+        imuThread.name = "ARES-Asynchronous-IMU-Thread"
+        imuThread.start()
     }
 
     override fun updateInputs(inputs: com.areslib.hardware.ImuInputs) {
-        try {
-            val yawPitchRoll = imu.getRobotYawPitchRollAngles()
-            inputs.headingRadians = yawPitchRoll.getYaw(AngleUnit.RADIANS) - headingOffset
-            inputs.pitchRadians = yawPitchRoll.getPitch(AngleUnit.RADIANS)
-            inputs.rollRadians = yawPitchRoll.getRoll(AngleUnit.RADIANS)
-            
-            val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
-            inputs.yawVelocityRadPerSec = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-            inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-        } catch (e: Exception) {
-            // Read timeout / fallback: gracefully swallow exception to prevent loop hangs
-        }
+        inputs.headingRadians = latestYaw - headingOffset
+        inputs.pitchRadians = latestPitch
+        inputs.rollRadians = latestRoll
+        inputs.yawVelocityRadPerSec = latestYawVel
+        inputs.timestampMs = latestTimestamp
     }
 
     override fun resetHeading() {
-        try {
-            val yawPitchRoll = imu.getRobotYawPitchRollAngles()
-            headingOffset = yawPitchRoll.getYaw(AngleUnit.RADIANS)
-        } catch (_: Exception) {}
+        headingOffset = latestYaw
+    }
+
+    fun close() {
+        running = false
     }
 }
 

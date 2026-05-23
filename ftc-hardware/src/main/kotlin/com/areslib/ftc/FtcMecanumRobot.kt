@@ -45,6 +45,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val visionInputs = VisionIOInputs()
     
     private var lastUpdateTime = 0L
+    private var lastVoltageReadTime = 0L
+    private var cachedBatteryVoltage = 12.0
     
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
 
@@ -109,13 +111,17 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, omega, robotHeading)
         val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
 
-        // 4. Fetch voltage sensor for sag compensation
-        val voltageSensors = hardwareMap.getAll(com.qualcomm.robotcore.hardware.VoltageSensor::class.java)
-        val batteryVoltage = if (voltageSensors.isNotEmpty()) {
-            voltageSensors[0].voltage
-        } else {
-            12.0
+        // 4. Fetch voltage sensor for sag compensation (rate-limited to 10Hz/100ms to eliminate blocking JNI overhead)
+        if (timestamp - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
+            lastVoltageReadTime = timestamp
+            val voltageSensors = hardwareMap.getAll(com.qualcomm.robotcore.hardware.VoltageSensor::class.java)
+            cachedBatteryVoltage = if (voltageSensors.isNotEmpty()) {
+                voltageSensors[0].voltage
+            } else {
+                12.0
+            }
         }
+        val batteryVoltage = cachedBatteryVoltage
 
         // Apply battery-compensated voltage vectors
         mecanumIO.apply(wheelSpeeds.normalize(1.0), batteryVoltage, dtSeconds)
