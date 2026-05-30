@@ -6,4 +6,5 @@ open class GoBildaPinpointDriver {
     var heading: Double = 0.0
     
     fun update() {}
+    fun resetPosAndIMU() {}
 }

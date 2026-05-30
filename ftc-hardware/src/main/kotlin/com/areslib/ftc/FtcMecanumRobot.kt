@@ -38,10 +38,14 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     // 1. Physical Hardware IO & Kinematics Controllers
     private val mecanumIO = MecanumHardwareIO(hardwareMap, flName, frName, blName, brName)
     private val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, pinpointName)
-    private val pinpointIO = PinpointIO(pinpointDriver)
+    val pinpointIO = PinpointIO(pinpointDriver)
     
-    private val limelightDriver = hardwareMap.get(Limelight3A::class.java, limelightName)
-    private val limelightIO = FtcLimelightIO(limelightDriver)
+    private val limelightIO: FtcLimelightIO? = try {
+        val limelightDriver = hardwareMap.get(Limelight3A::class.java, limelightName)
+        FtcLimelightIO(limelightDriver)
+    } catch (_: Exception) {
+        null
+    }
     private val visionInputs = VisionIOInputs()
     
     private var lastUpdateTime = 0L
@@ -92,13 +96,15 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         store.dispatch(poseUpdate)
 
         // 2. Update visual AprilTag observations
-        limelightIO.updateInputs(visionInputs)
-        if (visionInputs.measurements.isNotEmpty()) {
-            store.dispatch(RobotAction.VisionMeasurementsReceived(
-                visionInputs.measurements,
-                timestamp,
-                null
-            ))
+        limelightIO?.let { io ->
+            io.updateInputs(visionInputs)
+            if (visionInputs.measurements.isNotEmpty()) {
+                store.dispatch(RobotAction.VisionMeasurementsReceived(
+                    visionInputs.measurements,
+                    timestamp,
+                    null
+                ))
+            }
         }
 
         // 3. Process kinematics using current State targets

@@ -33,4 +33,18 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) {
             timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         )
     }
+
+    /**
+     * Resets the pinpoint computer and recalibrates the orientation.
+     * Optionally configures starting pose tracking values.
+     */
+    @kotlin.jvm.JvmOverloads
+    fun initialize(pose: com.areslib.math.Pose2d = com.areslib.math.Pose2d()) {
+        try {
+            driver.resetPosAndIMU()
+            lastX = pose.x
+            lastY = pose.y
+            lastHeading = pose.heading.radians
+        } catch (_: Exception) {}
+    }
 }
