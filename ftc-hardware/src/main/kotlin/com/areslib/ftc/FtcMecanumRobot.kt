@@ -25,7 +25,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     frName: String = "fr",
     blName: String = "bl",
     brName: String = "br",
-    pinpointName: String = "pinpoint",
+    pinpointName: String? = "pinpoint",
     limelightName: String? = "limelight",
     private val localTelemetry: Any? = null
 ) : AresRobot() {
@@ -38,8 +38,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     // 1. Physical Hardware IO & Kinematics Controllers
     private val mecanumIO = MecanumHardwareIO(hardwareMap, flName, frName, blName, brName)
     val pinpointIO: PinpointIO? = try {
-        val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, pinpointName)
-        PinpointIO(pinpointDriver)
+        pinpointName?.let { name ->
+            val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, name)
+            PinpointIO(pinpointDriver)
+        }
     } catch (_: Exception) {
         null
     }

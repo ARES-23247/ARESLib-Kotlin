@@ -27,9 +27,9 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
     var backRightMotorName: String = "br"
     
     /**
-     * Hardware map name for the Pinpoint odometry computer. Defaults to `"pinpoint"`.
+     * Hardware map name for the Pinpoint odometry computer. Defaults to `"pinpoint"`. Can be null if no Pinpoint is used.
      */
-    var pinpointName: String = "pinpoint"
+    var pinpointName: String? = "pinpoint"
     
     /**
      * Hardware map name for the Limelight camera. Defaults to `"limelight"`. Can be null if no Limelight is used.

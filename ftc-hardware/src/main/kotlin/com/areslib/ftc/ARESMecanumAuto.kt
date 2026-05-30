@@ -22,7 +22,11 @@ open class ARESMecanumAuto : LinearOpMode() {
 
     override fun runOpMode() {
         // --- 1. Initialization ---
-        val robot = FtcMecanumRobot(hardwareMap)
+        val robot = FtcMecanumRobot(
+            hardwareMap = hardwareMap,
+            pinpointName = null,
+            limelightName = null
+        )
 
         // Setup controllers for path following
         val xController = PIDController(p = 1.0, i = 0.0, d = 0.1)
