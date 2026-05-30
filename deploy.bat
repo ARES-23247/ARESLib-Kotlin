@@ -4,6 +4,9 @@ echo ARESLib-Kotlin Deploy Script
 echo ==============================================
 echo.
 
+:: Add local Android SDK platform-tools to path
+set PATH=%PATH%;%LOCALAPPDATA%\Android\Sdk\platform-tools
+
 echo Checking ADB device connectivity...
 adb devices > temp_adb.txt
 findstr /c:"	device" temp_adb.txt > nul

@@ -203,7 +203,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 }
 
-class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) : AnalogInput {
+class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) : AnalogVoltageInput {
     override val voltage: Double
         get() = srsHub.getAnalogVoltage(port)
 }

@@ -4,6 +4,10 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.ElapsedTime
 import com.areslib.util.RobotClock
 
+interface AnalogVoltageInput {
+    val voltage: Double
+}
+
 /**
  * Driver for the goBILDA Floodgate V2 Power Switch.
  * 
@@ -13,12 +17,43 @@ import com.areslib.util.RobotClock
  * 
  * Connect the Floodgate's analog telemetry port to any analog input port on your REV Control or Expansion Hub.
  */
-class FtcFloodgateCurrentSensor(
-    private val analogInput: AnalogInput,
+class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
+    private val analogInput: AnalogVoltageInput,
     private val maxCurrentAmps: Double = 80.0, // Scale: 3.3V corresponds to max current (default 80A for V2)
     private val filterAlpha: Double = 0.15,    // Low-pass filter smoothing coefficient (0.0 to 1.0)
     private val fuseRatingAmps: Double = 20.0  // Standard FTC main battery fuse rating
 ) {
+    // Secondary constructors for backward compatibility with Qualcomm's concrete AnalogInput class
+    constructor(analogInput: AnalogInput) : this(
+        object : AnalogVoltageInput {
+            override val voltage: Double get() = analogInput.voltage
+        }
+    )
+
+    constructor(analogInput: AnalogInput, maxCurrentAmps: Double) : this(
+        object : AnalogVoltageInput {
+            override val voltage: Double get() = analogInput.voltage
+        },
+        maxCurrentAmps
+    )
+
+    constructor(analogInput: AnalogInput, maxCurrentAmps: Double, filterAlpha: Double) : this(
+        object : AnalogVoltageInput {
+            override val voltage: Double get() = analogInput.voltage
+        },
+        maxCurrentAmps,
+        filterAlpha
+    )
+
+    constructor(analogInput: AnalogInput, maxCurrentAmps: Double, filterAlpha: Double, fuseRatingAmps: Double) : this(
+        object : AnalogVoltageInput {
+            override val voltage: Double get() = analogInput.voltage
+        },
+        maxCurrentAmps,
+        filterAlpha,
+        fuseRatingAmps
+    )
+
     private var lastUpdateTime = RobotClock.currentTimeMillis()
     private var filteredCurrentAmps = 0.0
     private var totalAmpSeconds = 0.0
