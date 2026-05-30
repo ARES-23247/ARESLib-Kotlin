@@ -8,17 +8,21 @@ import com.areslib.hardware.MotorIO
 import com.areslib.math.SlewRateLimiter
 
 class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
-    hardwareMap: HardwareMap,
-    flName: String = "fl",
-    frName: String = "fr",
-    blName: String = "bl",
-    brName: String = "br",
-    private val maxWheelSpeedMetersPerSecond: Double = 3.5
+    val hardwareMap: HardwareMap,
+    val flName: String = "fl",
+    val frName: String = "fr",
+    val blName: String = "bl",
+    val brName: String = "br",
+    private val maxWheelSpeedMetersPerSecond: Double = 3.5,
+    val flDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
+    val frDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE,
+    val blDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
+    val brDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE
 ) {
-    private val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, flName)
-    private val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
-    private val backLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, blName)
-    private val backRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, brName)
+    val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, flName)
+    val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
+    val backLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, blName)
+    val backRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, brName)
 
     /** Lightweight MotorIO wrappers for software estimation (CurrentBudgetManager) */
     val flIO = EstimateMotorIO(frontLeft)
@@ -58,11 +62,10 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     var enableVoltageCompensatedSlew: Boolean = false
 
     init {
-        // Typical mecanum configuration requires right side to be reversed
-        frontLeft.direction = DcMotorSimple.Direction.FORWARD
-        backLeft.direction = DcMotorSimple.Direction.FORWARD
-        frontRight.direction = DcMotorSimple.Direction.REVERSE
-        backRight.direction = DcMotorSimple.Direction.REVERSE
+        frontLeft.direction = flDirection
+        frontRight.direction = frDirection
+        backLeft.direction = blDirection
+        backRight.direction = brDirection
     }
 
     /**

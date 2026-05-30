@@ -27,7 +27,9 @@ open class ARESMecanumAuto : LinearOpMode() {
             blName = "rl",
             brName = "rr",
             pinpointName = null,
-            limelightName = null
+            limelightName = null,
+            flDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+            brDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD
         )
 
         // Setup controllers for path following

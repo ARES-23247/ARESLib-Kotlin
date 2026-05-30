@@ -27,7 +27,11 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     brName: String = "br",
     pinpointName: String? = "pinpoint",
     limelightName: String? = "limelight",
-    private val localTelemetry: Any? = null
+    private val localTelemetry: Any? = null,
+    flDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
+    frDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+    blDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
+    brDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
 ) : AresRobot() {
 
     // Telemetry & Network Tables State Publisher
@@ -36,7 +40,13 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
 
     // 1. Physical Hardware IO & Kinematics Controllers
-    private val mecanumIO = MecanumHardwareIO(hardwareMap, flName, frName, blName, brName)
+    val mecanumIO = MecanumHardwareIO(
+        hardwareMap, flName, frName, blName, brName,
+        flDirection = flDirection,
+        frDirection = frDirection,
+        blDirection = blDirection,
+        brDirection = brDirection
+    )
     val pinpointIO: PinpointIO? = try {
         pinpointName?.let { name ->
             val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, name)

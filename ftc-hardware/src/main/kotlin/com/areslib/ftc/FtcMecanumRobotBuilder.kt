@@ -42,6 +42,26 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
     var telemetry: Any? = null
 
     /**
+     * Motor direction for the Front Left drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD].
+     */
+    var frontLeftMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD
+
+    /**
+     * Motor direction for the Front Right drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE].
+     */
+    var frontRightMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
+
+    /**
+     * Motor direction for the Back Left drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD].
+     */
+    var backLeftMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD
+
+    /**
+     * Motor direction for the Back Right drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE].
+     */
+    var backRightMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
+
+    /**
      * Constructs and returns the fully configured [FtcMecanumRobot] instance.
      */
     fun build(): FtcMecanumRobot {
@@ -53,7 +73,11 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
             brName = backRightMotorName,
             pinpointName = pinpointName,
             limelightName = limelightName,
-            localTelemetry = telemetry
+            localTelemetry = telemetry,
+            flDirection = frontLeftMotorDirection,
+            frDirection = frontRightMotorDirection,
+            blDirection = backLeftMotorDirection,
+            brDirection = backRightMotorDirection
         )
     }
 }
