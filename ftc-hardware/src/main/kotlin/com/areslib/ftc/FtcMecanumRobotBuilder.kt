@@ -32,9 +32,9 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
     var pinpointName: String = "pinpoint"
     
     /**
-     * Hardware map name for the Limelight camera. Defaults to `"limelight"`.
+     * Hardware map name for the Limelight camera. Defaults to `"limelight"`. Can be null if no Limelight is used.
      */
-    var limelightName: String = "limelight"
+    var limelightName: String? = "limelight"
     
     /**
      * Optional local telemetry channel (e.g. FTC dashboard or driver station telemetry).

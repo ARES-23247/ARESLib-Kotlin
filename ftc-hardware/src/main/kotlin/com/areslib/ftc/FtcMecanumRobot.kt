@@ -26,7 +26,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     blName: String = "bl",
     brName: String = "br",
     pinpointName: String = "pinpoint",
-    limelightName: String = "limelight",
+    limelightName: String? = "limelight",
     private val localTelemetry: Any? = null
 ) : AresRobot() {
 
@@ -41,8 +41,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val pinpointIO = PinpointIO(pinpointDriver)
     
     private val limelightIO: FtcLimelightIO? = try {
-        val limelightDriver = hardwareMap.get(Limelight3A::class.java, limelightName)
-        FtcLimelightIO(limelightDriver)
+        limelightName?.let { name ->
+            val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
+            FtcLimelightIO(limelightDriver)
+        }
     } catch (_: Exception) {
         null
     }
