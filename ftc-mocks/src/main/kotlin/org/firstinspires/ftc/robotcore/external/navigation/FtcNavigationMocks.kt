@@ -7,6 +7,28 @@ enum class Distance {
     METER, CM, MM, INCH
 }
 
+enum class DistanceUnit {
+    METER, CM, MM, INCH
+}
+
+enum class UnnormalizedAngleUnit {
+    DEGREES, RADIANS
+}
+
+class Pose2D(
+    val distanceUnit: DistanceUnit,
+    val x: Double,
+    val y: Double,
+    val angleUnit: AngleUnit,
+    val heading: Double
+) {
+    constructor() : this(DistanceUnit.METER, 0.0, 0.0, AngleUnit.RADIANS, 0.0)
+    
+    fun getX(unit: DistanceUnit): Double = x
+    fun getY(unit: DistanceUnit): Double = y
+    fun getHeading(unit: AngleUnit): Double = heading
+}
+
 class Orientation(val firstAngle: Float = 0f, val secondAngle: Float = 0f, val thirdAngle: Float = 0f)
 
 enum class CurrentUnit { AMPS, MILLIAMPS }

@@ -2,6 +2,8 @@ package com.areslib.ftc
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.action.RobotAction
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 
 class PinpointIO(private val driver: GoBildaPinpointDriver) {
     private var lastX = 0.0
@@ -15,9 +17,9 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) {
     fun getPoseUpdate(): RobotAction.PoseUpdate {
         try {
             driver.update()
-            lastX = driver.posX
-            lastY = driver.posY
-            lastHeading = driver.heading
+            lastX = driver.getPosX(DistanceUnit.METER)
+            lastY = driver.getPosY(DistanceUnit.METER)
+            lastHeading = driver.getHeading(AngleUnit.RADIANS)
         } catch (e: Exception) {
             val now = com.areslib.util.RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
