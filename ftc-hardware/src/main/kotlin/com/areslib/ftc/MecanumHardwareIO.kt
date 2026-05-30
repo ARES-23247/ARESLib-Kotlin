@@ -23,6 +23,9 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
     val backLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, blName)
     val backRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, brName)
+    
+    /** Static friction feedforward coefficient (power needed to overcome static drivetrain friction) */
+    var kS: Double = 0.0
 
     /** Lightweight MotorIO wrappers for software estimation (CurrentBudgetManager) */
     val flIO = EstimateMotorIO(frontLeft)
@@ -80,10 +83,18 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
         val voltageCompensationFactor = maxVolts / actualVolts
         
-        var flPower = ((speeds.frontLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        var frPower = ((speeds.frontRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        var blPower = ((speeds.backLeftMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        var brPower = ((speeds.backRightMetersPerSecond / maxWheelSpeedMetersPerSecond) * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        fun applyFeedforward(speedMetersPerSecond: Double): Double {
+            if (kotlin.math.abs(speedMetersPerSecond) < 1e-4) return 0.0
+            val sign = kotlin.math.sign(speedMetersPerSecond)
+            val velocityFF = speedMetersPerSecond / maxWheelSpeedMetersPerSecond
+            val staticFF = sign * kS
+            return (velocityFF + staticFF) * voltageCompensationFactor
+        }
+        
+        var flPower = applyFeedforward(speeds.frontLeftMetersPerSecond).coerceIn(-1.0, 1.0)
+        var frPower = applyFeedforward(speeds.frontRightMetersPerSecond).coerceIn(-1.0, 1.0)
+        var blPower = applyFeedforward(speeds.backLeftMetersPerSecond).coerceIn(-1.0, 1.0)
+        var brPower = applyFeedforward(speeds.backRightMetersPerSecond).coerceIn(-1.0, 1.0)
 
         // Adjust positive slew rate limits based on battery voltage if enabled
         val baseLimit = slewRateLimit

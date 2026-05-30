@@ -36,6 +36,9 @@ open class ARESMecanumAuto : LinearOpMode() {
             brDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
         )
 
+        // Calibrate static friction feedforward (kS) to overcome physical drivetrain deadband
+        robot.mecanumIO.kS = 0.05
+
         // Setup controllers for path following
         val xController = PIDController(p = 1.0, i = 0.0, d = 0.1)
         val yController = PIDController(p = 1.0, i = 0.0, d = 0.1)
