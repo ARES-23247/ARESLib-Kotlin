@@ -52,7 +52,8 @@ data class DriveState(
     val yAccelerationG: Double = 0.0,
     val zAccelerationG: Double = 0.0,
     val driveMode: DriveMode = DriveMode.TELEOP,
-    val headingLockTargetRadians: Double? = null
+    val headingLockTargetRadians: Double? = null,
+    val isFieldCentric: Boolean = true
 )
 
 /**

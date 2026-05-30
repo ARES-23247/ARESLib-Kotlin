@@ -136,8 +136,15 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val vy = store.state.drive.yVelocityMetersPerSecond * maxSpeed
         val omega = store.state.drive.angularVelocityRadiansPerSecond * maxSpeed
         
-        val robotHeading = store.state.drive.poseEstimator.estimatedPose.heading
-        val chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, omega, robotHeading)
+        // Field-centric vs Robot-centric coordinate transformation
+        val chassisSpeeds = if (store.state.drive.isFieldCentric) {
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                vx, vy, omega,
+                com.areslib.math.Rotation2d(store.state.drive.poseEstimator.estimatedPose.heading.radians)
+            )
+        } else {
+            ChassisSpeeds(vx, vy, omega)
+        }
         val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
 
         // 4. Fetch voltage sensor for sag compensation (rate-limited to 10Hz/100ms to eliminate blocking JNI overhead)

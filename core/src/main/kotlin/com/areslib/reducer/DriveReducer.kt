@@ -93,7 +93,8 @@ object DriveReducer {
                     yVelocityMetersPerSecond = action.targetYVelocity,
                     angularVelocityRadiansPerSecond = action.targetAngularVelocity,
                     driveMode = newMode,
-                    headingLockTargetRadians = newTargetHeading
+                    headingLockTargetRadians = newTargetHeading,
+                    isFieldCentric = action.isFieldCentric
                 )
             }
             else -> state

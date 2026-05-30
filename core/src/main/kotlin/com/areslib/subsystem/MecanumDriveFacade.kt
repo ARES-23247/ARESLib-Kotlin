@@ -88,6 +88,7 @@ class MecanumDriveFacade(private val store: Store) {
             targetXVelocity = vx,
             targetYVelocity = vy,
             targetAngularVelocity = omega,
+            isFieldCentric = false,
             timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         ))
     }

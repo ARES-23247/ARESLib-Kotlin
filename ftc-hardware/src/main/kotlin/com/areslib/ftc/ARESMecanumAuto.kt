@@ -30,10 +30,10 @@ open class ARESMecanumAuto : LinearOpMode() {
             brName = "rr",
             pinpointName = "pinpoint",
             limelightName = null,
-            flDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
-            blDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
-            frDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
-            brDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD
+            flDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
+            blDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
+            frDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+            brDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
         )
 
         // Setup controllers for path following
@@ -102,12 +102,13 @@ open class ARESMecanumAuto : LinearOpMode() {
                     robot.drive.joystickDrive(
                         x = chassisSpeeds.vxMetersPerSecond / 2.0,
                         y = chassisSpeeds.vyMetersPerSecond / 2.0,
-                        rot = chassisSpeeds.omegaRadiansPerSecond / 2.0
+                        rot = chassisSpeeds.omegaRadiansPerSecond / 2.0,
+                        isFieldCentric = false
                     )
                 } catch (e: Exception) {
                     // Per-iteration failsafe: disable outputs if a single iteration fails
                     try {
-                        robot.drive.joystickDrive(0.0, 0.0, 0.0)
+                        robot.drive.joystickDrive(0.0, 0.0, 0.0, false)
                     } catch (_: Exception) { /* best-effort */ }
                     telemetry.addData("LOOP_ERROR", e.message ?: "Unknown error")
                 }
@@ -127,11 +128,11 @@ open class ARESMecanumAuto : LinearOpMode() {
             }
 
             // Clean stop at target
-            robot.drive.joystickDrive(0.0, 0.0, 0.0)
+            robot.drive.joystickDrive(0.0, 0.0, 0.0, false)
         } catch (e: Exception) {
             // Top-level failsafe: disable all outputs and log
             try {
-                robot.drive.joystickDrive(0.0, 0.0, 0.0)
+                robot.drive.joystickDrive(0.0, 0.0, 0.0, false)
             } catch (_: Exception) { /* best-effort shutoff */ }
             telemetry.addData("CRASH", e.message ?: "Unknown error")
             telemetry.update()

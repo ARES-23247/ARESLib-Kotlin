@@ -59,11 +59,12 @@ sealed class RobotAction {
     ) : RobotAction()
 
     // Human Intent
-    data class JoystickDriveIntent(
+    data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
         val targetXVelocity: Double,
         val targetYVelocity: Double,
         val targetAngularVelocity: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
+        val isFieldCentric: Boolean = true
     ) : RobotAction()
 
     // Autonomous Events
