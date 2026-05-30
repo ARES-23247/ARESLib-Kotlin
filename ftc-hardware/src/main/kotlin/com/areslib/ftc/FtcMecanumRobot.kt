@@ -183,13 +183,40 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 val addDataMethod = localTelemetry.javaClass.getMethod("addData", String::class.java, Any::class.java)
                 val updateMethod = localTelemetry.javaClass.getMethod("update")
 
-                addDataMethod.invoke(localTelemetry, "Mode", store.state.superstructure.mode.name)
-                addDataMethod.invoke(localTelemetry, "Flywheel", "${store.state.superstructure.flywheelRPM.toInt()} RPM")
-                addDataMethod.invoke(localTelemetry, "Intake", if (store.state.superstructure.intakeActive) "DEPLOYED" else "RETRACTED")
-                addDataMethod.invoke(localTelemetry, "Pose", String.format("(%.2f, %.2f) %.1f°",
+                // A. Pinpoint Pose
+                addDataMethod.invoke(localTelemetry, "Pose (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
                     store.state.drive.poseEstimator.estimatedPose.x,
                     store.state.drive.poseEstimator.estimatedPose.y,
                     Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians)
+                ))
+
+                // B. Motor Power values
+                addDataMethod.invoke(localTelemetry, "Motor Powers", String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
+                    mecanumIO.flIO.power * mecanumIO.flIO.powerScale,
+                    mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
+                    mecanumIO.blIO.power * mecanumIO.blIO.powerScale,
+                    mecanumIO.brIO.power * mecanumIO.brIO.powerScale
+                ))
+
+                // C. Current Draw
+                val currentStr = if (floodgate != null) {
+                    String.format("%.1f A (Physical)", floodgate.current)
+                } else {
+                    val estTotal = mecanumIO.flIO.currentAmps + mecanumIO.frIO.currentAmps + mecanumIO.blIO.currentAmps + mecanumIO.brIO.currentAmps
+                    String.format("%.1f A (Estimated)", estTotal)
+                }
+                addDataMethod.invoke(localTelemetry, "Current Draw", currentStr)
+
+                // D. Battery and Timing Metrics
+                addDataMethod.invoke(localTelemetry, "System Health", String.format("Battery: %.2fV | Loop: %.1fms", 
+                    batteryVoltage, 
+                    dtSeconds * 1000.0
+                ))
+
+                // E. Hardware Status
+                addDataMethod.invoke(localTelemetry, "Sensors", String.format("Pinpoint: %s | Limelight: %s",
+                    if (pinpointIO != null) "ONLINE" else "OFFLINE",
+                    if (limelightIO != null) "ONLINE" else "OFFLINE"
                 ))
 
                 updateMethod.invoke(localTelemetry)
