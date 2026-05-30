@@ -13,7 +13,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val frName: String = "fr",
     val blName: String = "bl",
     val brName: String = "br",
-    private val maxWheelSpeedMetersPerSecond: Double = 3.5,
+    val maxWheelSpeedMetersPerSecond: Double = 3.5,
     val flDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
     val frDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE,
     val blDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,

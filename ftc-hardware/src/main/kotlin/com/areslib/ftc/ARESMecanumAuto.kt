@@ -29,6 +29,8 @@ open class ARESMecanumAuto : LinearOpMode() {
             pinpointName = null,
             limelightName = null,
             flDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+            blDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+            frDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
             brDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD
         )
 

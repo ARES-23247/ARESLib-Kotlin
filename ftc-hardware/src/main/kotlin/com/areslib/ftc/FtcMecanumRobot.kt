@@ -131,7 +131,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         }
 
         // 3. Process kinematics using current State targets
-        val maxSpeed = 2.0
+        val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
         val vx = store.state.drive.xVelocityMetersPerSecond * maxSpeed
         val vy = store.state.drive.yVelocityMetersPerSecond * maxSpeed
         val omega = store.state.drive.angularVelocityRadiansPerSecond * maxSpeed
@@ -153,7 +153,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val batteryVoltage = cachedBatteryVoltage
 
         // Apply battery-compensated voltage vectors
-        mecanumIO.apply(wheelSpeeds.normalize(1.0), batteryVoltage, dtSeconds)
+        mecanumIO.apply(wheelSpeeds.normalize(mecanumIO.maxWheelSpeedMetersPerSecond), batteryVoltage, dtSeconds)
 
         // 4b. Brownout protection — graduated power scaling on voltage sag
         brownoutGuard.update(batteryVoltage)
