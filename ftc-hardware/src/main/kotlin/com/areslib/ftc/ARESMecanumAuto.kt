@@ -24,10 +24,10 @@ open class ARESMecanumAuto : LinearOpMode() {
         // --- 1. Initialization ---
         val robot = FtcMecanumRobot(
             hardwareMap = hardwareMap,
-            flName = "rr",
+            flName = "fl",
             frName = "fr",
             blName = "rl",
-            brName = "fl",
+            brName = "rr",
             pinpointName = "pinpoint",
             limelightName = null,
             flDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
