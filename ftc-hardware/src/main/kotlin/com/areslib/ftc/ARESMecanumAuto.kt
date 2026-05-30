@@ -24,7 +24,9 @@ open class ARESMecanumAuto : LinearOpMode() {
         // --- 1. Initialization ---
         val robot = FtcMecanumRobot(
             hardwareMap = hardwareMap,
-            blName = "rl",
+            flName = "fl",
+            frName = "rl",
+            blName = "fr",
             brName = "rr",
             pinpointName = "pinpoint",
             limelightName = null,
