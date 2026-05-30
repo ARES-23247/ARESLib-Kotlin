@@ -37,8 +37,12 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     // 1. Physical Hardware IO & Kinematics Controllers
     private val mecanumIO = MecanumHardwareIO(hardwareMap, flName, frName, blName, brName)
-    private val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, pinpointName)
-    val pinpointIO = PinpointIO(pinpointDriver)
+    val pinpointIO: PinpointIO? = try {
+        val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, pinpointName)
+        PinpointIO(pinpointDriver)
+    } catch (_: Exception) {
+        null
+    }
     
     private val limelightIO: FtcLimelightIO? = try {
         limelightName?.let { name ->
@@ -94,7 +98,12 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         lastUpdateTime = timestamp
 
         // 1. Read pinpoint sensors and update the EKF state store
-        val poseUpdate = pinpointIO.getPoseUpdate()
+        val poseUpdate = pinpointIO?.getPoseUpdate() ?: RobotAction.PoseUpdate(
+            xMeters = 0.0,
+            yMeters = 0.0,
+            headingRadians = 0.0,
+            timestampMs = timestamp
+        )
         store.dispatch(poseUpdate)
 
         // 2. Update visual AprilTag observations
