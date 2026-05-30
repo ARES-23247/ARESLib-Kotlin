@@ -1,9 +1,13 @@
 package com.qualcomm.robotcore.hardware
 
 
-interface HardwareMap {
-    fun <T> get(classOrType: Class<out T>, deviceName: String): T
-    fun <T> getAll(classOrType: Class<out T>): List<T>
+open class HardwareMap {
+    open fun <T> get(classOrType: Class<out T>, deviceName: String): T {
+        throw NotImplementedError("Mock HardwareMap.get() not overridden")
+    }
+    open fun <T> getAll(classOrType: Class<out T>): List<T> {
+        throw NotImplementedError("Mock HardwareMap.getAll() not overridden")
+    }
 }
 
 interface VoltageSensor {
@@ -24,8 +28,8 @@ interface DcMotorEx : DcMotor {
     fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double
 }
 
-interface AnalogInput {
-    val voltage: Double
+open class AnalogInput {
+    open val voltage: Double = 0.0
 }
 
 open class Gamepad {

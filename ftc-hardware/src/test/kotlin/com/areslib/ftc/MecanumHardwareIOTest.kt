@@ -34,7 +34,7 @@ class MecanumHardwareIOTest {
         val bl = MockDcMotorEx()
         val br = MockDcMotorEx()
         
-        val hardwareMap = object : HardwareMap {
+        val hardwareMap = object : HardwareMap() {
             @Suppress("UNCHECKED_CAST")
             override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
                 return when(deviceName) {
@@ -73,7 +73,7 @@ class MecanumHardwareIOTest {
         val bl = MockDcMotorEx()
         val br = MockDcMotorEx()
         
-        val hardwareMap = object : HardwareMap {
+        val hardwareMap = object : HardwareMap() {
             @Suppress("UNCHECKED_CAST")
             override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
                 return when(deviceName) {

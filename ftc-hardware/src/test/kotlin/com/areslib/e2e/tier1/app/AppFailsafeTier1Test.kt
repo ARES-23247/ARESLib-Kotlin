@@ -20,7 +20,7 @@ class AppFailsafeTier1Test {
         val pinpoint = GoBildaPinpointDriver()
         val limelight = Limelight3A()
 
-        val hardwareMap = object : HardwareMap {
+        val hardwareMap = object : HardwareMap() {
             @Suppress("UNCHECKED_CAST")
             override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
                 return when (deviceName) {
@@ -83,7 +83,7 @@ class AppFailsafeTier1Test {
         val pinpoint = GoBildaPinpointDriver()
         val limelight = Limelight3A()
 
-        val hardwareMap = object : HardwareMap {
+        val hardwareMap = object : HardwareMap() {
             @Suppress("UNCHECKED_CAST")
             override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
                 return when (deviceName) {

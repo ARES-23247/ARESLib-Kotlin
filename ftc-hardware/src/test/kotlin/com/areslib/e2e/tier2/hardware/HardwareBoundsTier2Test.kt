@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-class MockAnalogInput : AnalogInput {
+class MockAnalogInput : AnalogInput() {
     var mockVoltage: Double = 0.0
     override val voltage: Double
         get() = mockVoltage
