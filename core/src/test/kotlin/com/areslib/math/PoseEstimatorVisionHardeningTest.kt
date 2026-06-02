@@ -131,7 +131,8 @@ class PoseEstimatorVisionHardeningTest {
             measurementHighAmbiguity,
             visionStdDevs,
             numTags = 1,
-            useMahalanobisRejection = false
+            useMahalanobisRejection = false,
+            maxAmbiguity = 0.6
         )
         
         val pullLow = finalStateLowAmbiguity.estimatedPose.x - (-2.8)
@@ -172,7 +173,8 @@ class PoseEstimatorVisionHardeningTest {
             measurementCombined,
             visionStdDevs,
             numTags = 1,
-            useMahalanobisRejection = false
+            useMahalanobisRejection = false,
+            maxAmbiguity = 0.6
         )
         
         val pullCombined = finalStateCombined.estimatedPose.x - (-2.3)

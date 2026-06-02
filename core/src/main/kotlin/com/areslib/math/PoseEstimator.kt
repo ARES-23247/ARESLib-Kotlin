@@ -282,9 +282,13 @@ object PoseEstimator {
         visionStdDevs: Vector3, // Vector3(x, y, heading)
         numTags: Int = 1,
         useMahalanobisRejection: Boolean = true,
-        mahalanobisThreshold: Double = 12.0
+        mahalanobisThreshold: Double = 12.0,
+        maxAmbiguity: Double = 0.2
     ): PoseEstimatorState {
         if (state.history.isEmpty()) return state
+        
+        // Outlier rejection: Reject high-ambiguity decodes instantly to prevent "pose-flipping"
+        if (measurement.ambiguity > maxAmbiguity) return state
         
         if (numTags <= 0) return state
         if (visionStdDevs.x.isNaN() || visionStdDevs.x.isInfinite() || 
