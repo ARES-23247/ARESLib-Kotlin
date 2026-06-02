@@ -15,9 +15,10 @@ class FtcLimelightIO(private val limelight: Limelight3A) : VisionIO {
     init {
         try {
             limelight.start()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             val now = com.areslib.util.RobotClock.currentTimeMillis()
             System.err.println("FtcLimelightIO: Failed to start Limelight during initialization. Error: ${e.message}")
+            e.printStackTrace()
             lastWarningTime = now
         }
     }
@@ -60,12 +61,13 @@ class FtcLimelightIO(private val limelight: Limelight3A) : VisionIO {
             } else {
                 inputs.measurements = emptyList()
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             inputs.isConnected = false
             inputs.measurements = emptyList()
             val now = com.areslib.util.RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("FtcLimelightIO: Error reading from Limelight hardware. Error: ${e.message}")
+                e.printStackTrace()
                 lastWarningTime = now
             }
         }

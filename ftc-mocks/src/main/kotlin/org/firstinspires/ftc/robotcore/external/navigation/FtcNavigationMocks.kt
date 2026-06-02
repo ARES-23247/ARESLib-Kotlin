@@ -58,11 +58,11 @@ class AngularVelocity(
 }
 
 class Position(
-    val unit: DistanceUnit = DistanceUnit.METER,
-    val x: Double = 0.0,
-    val y: Double = 0.0,
-    val z: Double = 0.0,
-    val acquisitionTime: Long = 0
+    @JvmField val unit: DistanceUnit = DistanceUnit.METER,
+    @JvmField val x: Double = 0.0,
+    @JvmField val y: Double = 0.0,
+    @JvmField val z: Double = 0.0,
+    @JvmField val acquisitionTime: Long = 0
 ) {
     constructor() : this(DistanceUnit.METER, 0.0, 0.0, 0.0, 0)
     fun toUnit(targetUnit: DistanceUnit): Position = this
