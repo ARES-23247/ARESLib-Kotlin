@@ -56,3 +56,21 @@ class AngularVelocity(
     fun getYRotationRate(unit: AngleUnit): Float = if (unit == this.unit) yRotationRate else Math.toRadians(yRotationRate.toDouble()).toFloat()
     fun getZRotationRate(unit: AngleUnit): Float = if (unit == this.unit) zRotationRate else Math.toRadians(zRotationRate.toDouble()).toFloat()
 }
+
+class Position(
+    val unit: DistanceUnit = DistanceUnit.METER,
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val z: Double = 0.0,
+    val acquisitionTime: Long = 0
+) {
+    constructor() : this(DistanceUnit.METER, 0.0, 0.0, 0.0, 0)
+    fun toUnit(targetUnit: DistanceUnit): Position = this
+}
+
+class Pose3D(
+    val position: Position = Position(),
+    val orientation: YawPitchRollAngles = YawPitchRollAngles()
+)
+
+
