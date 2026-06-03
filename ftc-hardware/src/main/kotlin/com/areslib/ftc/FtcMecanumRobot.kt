@@ -65,6 +65,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         null
     }
     private val visionInputs = VisionIOInputs()
+    private var lastLimelightPose: com.areslib.math.Pose2d? = null
+    private var lastLimelightTimeMs = 0L
     
     private var lastUpdateTime = 0L
     private var lastVoltageReadTime = 0L
@@ -122,6 +124,9 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         limelightIO?.let { io ->
             io.updateInputs(visionInputs)
             if (visionInputs.measurements.isNotEmpty()) {
+                val measurement = visionInputs.measurements[0]
+                lastLimelightPose = measurement.targetPose.toPose2d()
+                lastLimelightTimeMs = timestamp
                 store.dispatch(RobotAction.VisionMeasurementsReceived(
                     visionInputs.measurements,
                     timestamp,
@@ -201,6 +206,18 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     store.state.drive.odometryY,
                     Math.toDegrees(store.state.drive.odometryHeading)
                 ))
+
+                // Limelight Pose
+                val llStr = lastLimelightPose?.let { pose ->
+                    val ageSec = (timestamp - lastLimelightTimeMs) / 1000.0
+                    String.format("(%.2f, %.2f) %.1f° (%.1fs ago)",
+                        pose.x,
+                        pose.y,
+                        Math.toDegrees(pose.heading.radians),
+                        ageSec
+                    )
+                } ?: "NO TARGET"
+                addDataMethod.invoke(localTelemetry, "Limelight Pose (X, Y, Deg)", llStr)
 
                 // B. Motor Power values
                 addDataMethod.invoke(localTelemetry, "Motor Powers", String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
