@@ -190,11 +190,16 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 val addDataMethod = localTelemetry.javaClass.getMethod("addData", String::class.java, Any::class.java)
                 val updateMethod = localTelemetry.javaClass.getMethod("update")
 
-                // A. Pinpoint Pose
-                addDataMethod.invoke(localTelemetry, "Pose (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
+                // A. Pinpoint vs EKF Pose
+                addDataMethod.invoke(localTelemetry, "EKF Pose (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
                     store.state.drive.poseEstimator.estimatedPose.x,
                     store.state.drive.poseEstimator.estimatedPose.y,
                     Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians)
+                ))
+                addDataMethod.invoke(localTelemetry, "Raw Pinpoint (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
+                    store.state.drive.odometryX,
+                    store.state.drive.odometryY,
+                    Math.toDegrees(store.state.drive.odometryHeading)
                 ))
 
                 // B. Motor Power values

@@ -125,6 +125,8 @@ open class ARESMecanumAuto : LinearOpMode() {
 
                 telemetry.addData("EKF Pose X", robot.drive.odometryPose.x)
                 telemetry.addData("EKF Pose Y", robot.drive.odometryPose.y)
+                telemetry.addData("Pinpoint X", robot.drive.odometryX)
+                telemetry.addData("Pinpoint Y", robot.drive.odometryY)
                 telemetry.addData("Loop ms", loopElapsedMs)
                 telemetry.addData("Overruns", "$overrunCount / $loopCount")
                 telemetry.update()

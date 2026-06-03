@@ -15,17 +15,32 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         gamepad2: GamepadState? = null
     ) {
         // ── Drive ──
+        // Raw Pinpoint Odometry
         telemetry.putNumber("Drive/Odom_X", state.drive.odometryX)
         telemetry.putNumber("Drive/Odom_Y", state.drive.odometryY)
         telemetry.putNumber("Drive/Odom_Heading", state.drive.odometryHeading)
+
+        // Fused EKF Estimated Pose
+        telemetry.putNumber("Drive/Pose_X", state.drive.poseEstimator.estimatedPose.x)
+        telemetry.putNumber("Drive/Pose_Y", state.drive.poseEstimator.estimatedPose.y)
+        telemetry.putNumber("Drive/Drive_Heading", state.drive.poseEstimator.estimatedPose.heading.radians)
+
         telemetry.putNumber("Drive/Velocity_X", state.drive.xVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Y", state.drive.yVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Omega", state.drive.angularVelocityRadiansPerSecond)
 
         // Pose2d for AdvantageScope 3D visualization
         if (telemetry is NT4Telemetry) {
+            // Main robot pose tracks the EKF-fused pose (used by robot pathing/aiming)
             telemetry.putPose2d(
                 "AdvantageScope/RobotPose",
+                state.drive.poseEstimator.estimatedPose.x,
+                state.drive.poseEstimator.estimatedPose.y,
+                state.drive.poseEstimator.estimatedPose.heading.radians
+            )
+            // Raw pinpoint odometry is published separately to allow comparing drift
+            telemetry.putPose2d(
+                "AdvantageScope/RawOdomPose",
                 state.drive.odometryX,
                 state.drive.odometryY,
                 state.drive.odometryHeading
