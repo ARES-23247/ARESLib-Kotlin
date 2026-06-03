@@ -7,12 +7,12 @@ open class LLResult {
     val tx: Double = 0.0
     val ty: Double = 0.0
     
-    fun isValid(): Boolean = false
-    fun getBotpose(): Pose3D? = null
+    open fun isValid(): Boolean = false
+    open fun getBotpose(): Pose3D? = null
 }
 
 open class Limelight3A {
-    fun start() {}
-    fun getLatestResult(): LLResult? = null
+    open fun start() {}
+    open fun getLatestResult(): LLResult? = null
 }
 
