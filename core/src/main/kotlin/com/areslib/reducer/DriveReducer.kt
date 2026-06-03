@@ -68,6 +68,9 @@ object DriveReducer {
             is RobotAction.SetDriveMode -> {
                 state.copy(driveMode = action.mode)
             }
+            is RobotAction.SetAlliance -> {
+                state.copy(alliance = action.alliance)
+            }
             is RobotAction.SetHeadingLockTarget -> {
                 state.copy(headingLockTargetRadians = action.targetRadians)
             }

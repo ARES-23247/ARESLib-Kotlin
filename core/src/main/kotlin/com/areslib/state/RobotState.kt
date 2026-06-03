@@ -53,7 +53,8 @@ data class DriveState(
     val zAccelerationG: Double = 0.0,
     val driveMode: DriveMode = DriveMode.TELEOP,
     val headingLockTargetRadians: Double? = null,
-    val isFieldCentric: Boolean = true
+    val isFieldCentric: Boolean = true,
+    val alliance: Alliance = Alliance.BLUE
 )
 
 /**
@@ -109,3 +110,8 @@ data class VisionState(
     val hasTarget: Boolean = false,
     val measurements: List<VisionMeasurement> = emptyList()
 )
+
+enum class Alliance {
+    RED, BLUE
+}
+

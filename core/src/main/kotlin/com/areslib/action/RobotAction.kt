@@ -48,6 +48,11 @@ sealed class RobotAction {
         val zAccelerationG: Double = 0.0
     ) : RobotAction()
 
+    data class SetAlliance(
+        val alliance: com.areslib.state.Alliance,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction()
+
     data class SetDriveMode(
         val mode: com.areslib.state.DriveMode,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
