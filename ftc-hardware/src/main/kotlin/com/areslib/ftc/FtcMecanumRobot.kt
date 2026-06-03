@@ -67,6 +67,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val visionInputs = VisionIOInputs()
     private var lastLimelightPose: com.areslib.math.Pose2d? = null
     private var lastLimelightTimeMs = 0L
+    private val visionFilter = com.areslib.hardware.vision.VisionOutlierFilter()
+    private var lastVisionStatus = "OFFLINE"
     
     private var lastUpdateTime = 0L
     private var lastVoltageReadTime = 0L
@@ -127,11 +129,85 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 val measurement = visionInputs.measurements[0]
                 lastLimelightPose = measurement.targetPose.toPose2d()
                 lastLimelightTimeMs = timestamp
+
+                // Diagnose why EKF might reject the measurement
+                val robotPose = store.state.drive.poseEstimator.estimatedPose
+                val robotHeading = robotPose.heading.radians
+                val tagPose3d = measurement.targetPose
+                val tagPose2d = tagPose3d.toPose2d()
+                val dx = tagPose2d.x - robotPose.x
+                val dy = tagPose2d.y - robotPose.y
+                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                val tagYaw = tagPose3d.rotation.z
+                val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeading)
+
+                lastVisionStatus = when {
+                    measurement.ambiguity > visionFilter.config.maxAmbiguity -> {
+                        String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, visionFilter.config.maxAmbiguity)
+                    }
+                    tagPose3d.x < visionFilter.config.minFieldX || tagPose3d.x > visionFilter.config.maxFieldX ||
+                    tagPose3d.y < visionFilter.config.minFieldY || tagPose3d.y > visionFilter.config.maxFieldY ||
+                    tagPose3d.z < visionFilter.config.minFieldZ || tagPose3d.z > visionFilter.config.maxFieldZ -> {
+                        String.format("REJ_BOUNDS (Z: %.2f)", tagPose3d.z)
+                    }
+                    distance > visionFilter.config.maxDistanceMeters -> {
+                        String.format("REJ_DIST (%.2fm > %.2fm)", distance, visionFilter.config.maxDistanceMeters)
+                    }
+                    kotlin.math.abs(headingDiff) > visionFilter.config.maxRotationDeviationRad -> {
+                        String.format("REJ_YAW (%.1f° > %.1f°)", Math.toDegrees(headingDiff), Math.toDegrees(visionFilter.config.maxRotationDeviationRad))
+                    }
+                    else -> {
+                        // Run a dry run of the EKF Mahalanobis rejection to see if that fails
+                        val currentEstimator = store.state.drive.poseEstimator
+                        if (currentEstimator.history.isNotEmpty()) {
+                            val closestIndex = currentEstimator.history.indices.reversed().firstOrNull {
+                                currentEstimator.history[it].timestampMs <= measurement.timestampMs
+                            } ?: -1
+                            if (closestIndex != -1) {
+                                val baseEntry = currentEstimator.history[closestIndex]
+                                val stdDevs = com.areslib.math.Vector3(0.05, 0.05, 0.1)
+                                val numTags = visionInputs.measurements.size
+                                val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
+                                val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
+                                
+                                val scaledStdDevsX = stdDevs.x * (multiTagFactor * distFactor)
+                                val scaledStdDevsY = stdDevs.y * (multiTagFactor * distFactor)
+                                val scaledStdDevsZ = stdDevs.z * (multiTagFactor * distFactor)
+                                
+                                val rXX = scaledStdDevsX * scaledStdDevsX
+                                val rYY = scaledStdDevsY * scaledStdDevsY
+                                val rZZ = scaledStdDevsZ * scaledStdDevsZ
+                                
+                                val sXX = baseEntry.covariance.m00 + rXX
+                                val sYY = baseEntry.covariance.m11 + rYY
+                                val sZZ = baseEntry.covariance.m22 + rZZ
+                                
+                                val yX = tagPose2d.x - baseEntry.pose.x
+                                val yY = tagPose2d.y - baseEntry.pose.y
+                                val yZ = com.areslib.math.InputMath.wrapAngle(tagPose2d.heading.radians - baseEntry.pose.heading.radians)
+                                
+                                val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
+                                if (dMSquared > 12.0) {
+                                    String.format("REJ_MAHALANOBIS (%.2f > 12.0)", dMSquared)
+                                } else {
+                                    "ACCEPTED"
+                                }
+                            } else {
+                                "ACCEPTED (NO_HIST)"
+                            }
+                        } else {
+                            "ACCEPTED"
+                        }
+                    }
+                }
+
                 store.dispatch(RobotAction.VisionMeasurementsReceived(
                     visionInputs.measurements,
                     timestamp,
                     null
                 ))
+            } else {
+                lastVisionStatus = "NO TARGET"
             }
         }
 
@@ -218,6 +294,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     )
                 } ?: "NO TARGET"
                 addDataMethod.invoke(localTelemetry, "Limelight Pose (X, Y, Deg)", llStr)
+                addDataMethod.invoke(localTelemetry, "Vision Status", lastVisionStatus)
 
                 // B. Motor Power values
                 addDataMethod.invoke(localTelemetry, "Motor Powers", String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
