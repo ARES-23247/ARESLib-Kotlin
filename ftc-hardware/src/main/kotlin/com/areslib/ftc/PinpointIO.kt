@@ -6,6 +6,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 
 class PinpointIO(private val driver: GoBildaPinpointDriver) {
+    private var offsetX = 0.0
+    private var offsetY = 0.0
+    private var offsetHeading = 0.0
+
     private var lastX = 0.0
     private var lastY = 0.0
     private var lastHeading = 0.0
@@ -17,9 +21,15 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) {
     fun getPoseUpdate(): RobotAction.PoseUpdate {
         try {
             driver.update()
-            lastX = driver.getPosX(DistanceUnit.METER)
-            lastY = driver.getPosY(DistanceUnit.METER)
-            lastHeading = driver.getHeading(AngleUnit.RADIANS)
+            val rawX = driver.getPosX(DistanceUnit.METER)
+            val rawY = driver.getPosY(DistanceUnit.METER)
+            val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+
+            val cosH = kotlin.math.cos(offsetHeading)
+            val sinH = kotlin.math.sin(offsetHeading)
+            lastX = rawX * cosH - rawY * sinH + offsetX
+            lastY = rawX * sinH + rawY * cosH + offsetY
+            lastHeading = com.areslib.math.InputMath.wrapAngle(rawHeading + offsetHeading)
         } catch (e: Exception) {
             val now = com.areslib.util.RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
@@ -44,6 +54,9 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) {
     fun initialize(pose: com.areslib.math.Pose2d = com.areslib.math.Pose2d()) {
         try {
             driver.resetPosAndIMU()
+            offsetX = pose.x
+            offsetY = pose.y
+            offsetHeading = pose.heading.radians
             lastX = pose.x
             lastY = pose.y
             lastHeading = pose.heading.radians
