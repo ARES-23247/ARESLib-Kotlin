@@ -72,13 +72,14 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Applies the calculated wheel speeds to the physical motors using voltage compensation.
+     * Applies the calculated wheel speeds to the physical motors using voltage compensation and power scaling.
      * @param speeds The wheel speeds (in meters per second).
      * @param batteryVolts The current battery voltage to compensate for sag.
      * @param dtSeconds The time step elapsed since the last update in seconds.
+     * @param powerScale The power multiplier (0.0 to 1.0) for safety/brownout throttling.
      */
     @kotlin.jvm.JvmOverloads
-    fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02) {
+    fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
         val maxVolts = 12.0
         val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
         val voltageCompensationFactor = maxVolts / actualVolts
@@ -91,10 +92,10 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             return (velocityFF + staticFF) * voltageCompensationFactor
         }
         
-        var flPower = applyFeedforward(speeds.frontLeftMetersPerSecond).coerceIn(-1.0, 1.0)
-        var frPower = applyFeedforward(speeds.frontRightMetersPerSecond).coerceIn(-1.0, 1.0)
-        var blPower = applyFeedforward(speeds.backLeftMetersPerSecond).coerceIn(-1.0, 1.0)
-        var brPower = applyFeedforward(speeds.backRightMetersPerSecond).coerceIn(-1.0, 1.0)
+        var flPower = (applyFeedforward(speeds.frontLeftMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
+        var frPower = (applyFeedforward(speeds.frontRightMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
+        var blPower = (applyFeedforward(speeds.backLeftMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
+        var brPower = (applyFeedforward(speeds.backRightMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
 
         // Adjust positive slew rate limits based on battery voltage if enabled
         val baseLimit = slewRateLimit
@@ -131,21 +132,26 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Applies a global power scale factor to all 4 drive motors.
-     * Used by the BrownoutGuard to reduce output during voltage sag.
+     * Applies a global power scale factor to all 4 drive motor estimation wrappers.
      * @param scale Power multiplier (0.0 = disabled, 1.0 = full power)
      */
     fun applyPowerScale(scale: Double) {
         val s = scale.coerceIn(0.0, 1.0)
-        safeSetPower(frontLeft, safeGetPower(frontLeft) * s, "frontLeft")
-        safeSetPower(frontRight, safeGetPower(frontRight) * s, "frontRight")
-        safeSetPower(backLeft, safeGetPower(backLeft) * s, "backLeft")
-        safeSetPower(backRight, safeGetPower(backRight) * s, "backRight")
-
         flIO.powerScale = s
         frIO.powerScale = s
         blIO.powerScale = s
         brIO.powerScale = s
+    }
+
+    /**
+     * Updates cached motor sensor readings from the hardware bulk read caches.
+     * Call this at the start of every loop iteration to ensure fresh, zero-overhead sensor access.
+     */
+    fun updateInputs() {
+        flIO.updateInputs()
+        frIO.updateInputs()
+        blIO.updateInputs()
+        brIO.updateInputs()
     }
 
     private var lastWarningTime = 0L
@@ -178,27 +184,36 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
 class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO {
     override var power: Double = 0.0
     override var powerScale: Double = 1.0
+    private var cachedPosition = 0.0
+    private var cachedVelocity = 0.0
+    private var cachedAmps = 0.0
+    private var updateCount = 0
+
+    /** Updates local caches from the bulk-cached register maps */
+    fun updateInputs() {
+        try {
+            cachedPosition = motor.currentPosition.toDouble()
+        } catch (_: Exception) {}
+        try {
+            cachedVelocity = motor.velocity
+        } catch (_: Exception) {}
+        try {
+            // Read current draw at 10Hz/100ms rate to further minimize serial packet congestion
+            if (updateCount % 10 == 0) {
+                cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            }
+            updateCount++
+        } catch (_: Exception) {}
+    }
 
     override val velocity: Double
-        get() = try {
-            motor.velocity
-        } catch (_: Exception) {
-            0.0
-        }
+        get() = cachedVelocity
 
     override val position: Double
-        get() = try {
-            motor.currentPosition.toDouble()
-        } catch (_: Exception) {
-            0.0
-        }
+        get() = cachedPosition
 
     override val currentAmps: Double
-        get() = try {
-            motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
-        } catch (_: Exception) {
-            0.0
-        }
+        get() = cachedAmps
 
     override fun resetEncoder() {
         // No-op to avoid side-effects in estimation wrapper

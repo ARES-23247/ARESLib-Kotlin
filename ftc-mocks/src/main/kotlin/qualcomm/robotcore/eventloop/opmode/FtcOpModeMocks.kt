@@ -2,7 +2,7 @@ package com.qualcomm.robotcore.eventloop.opmode
 
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Gamepad
-import com.qualcomm.robotcore.hardware.Telemetry
+import org.firstinspires.ftc.robotcore.external.Telemetry
 
 annotation class TeleOp(val name: String = "", val group: String = "")
 annotation class Autonomous(val name: String = "", val group: String = "")

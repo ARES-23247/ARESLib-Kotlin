@@ -1,6 +1,7 @@
 package com.areslib.ftc
 
 import com.qualcomm.robotcore.hardware.HardwareMap
+import org.firstinspires.ftc.robotcore.external.Telemetry
 
 /**
  * A builder class implementing a fluent Kotlin DSL for configuring an [FtcMecanumRobot] instance.
@@ -39,7 +40,8 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
     /**
      * Optional local telemetry channel (e.g. FTC dashboard or driver station telemetry).
      */
-    var telemetry: Any? = null
+    var telemetry: Telemetry? = null
+
 
     /**
      * Motor direction for the Front Left drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD].
