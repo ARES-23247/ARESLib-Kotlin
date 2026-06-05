@@ -112,13 +112,9 @@ object PoseEstimator {
     private val scratchCov2 = Matrix3x3()
     private val scratchHistory = HistoryBuffer(MAX_HISTORY_SIZE)
 
-    // Known AprilTag coordinates for distance calculations
-    private val TAGS = mapOf(
-        1 to Pose3d(Translation3d(1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
-        2 to Pose3d(Translation3d(1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
-        3 to Pose3d(Translation3d(-1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, 0.0)),
-        4 to Pose3d(Translation3d(-1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, 0.0))
-    )
+    // Known AprilTag coordinates for distance calculations (configurable via FieldLayouts)
+    @JvmField
+    var activeTags: Map<Int, Pose3d> = FieldLayouts.SQUARE_STANDARD_TAGS
 
     /**
      * Integrates a new high-frequency wheel odometry observation delta into the state estimator.
@@ -313,7 +309,7 @@ object PoseEstimator {
         val baseEntry = state.history[closestIndex]
 
         // 1. Calculate physical distance to AprilTag and incidence angle
-        val tagPose = TAGS[measurement.tagId]
+        val tagPose = activeTags[measurement.tagId]
         var incidenceScale = 1.0
         val distance = if (tagPose != null) {
             val dx = tagPose.x - baseEntry.pose.x

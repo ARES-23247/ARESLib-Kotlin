@@ -68,7 +68,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private var lastLimelightPose: com.areslib.math.Pose2d? = null
     private var lastLimelightTimeMs = 0L
     private val visionFilter = com.areslib.hardware.vision.VisionOutlierFilter()
-    private var lastVisionStatus = "OFFLINE"
+    var lastVisionStatus = "OFFLINE"
+    private var consecutiveVisionRejections = 0
     
     private var lastUpdateTime = 0L
     private var lastVoltageReadTime = 0L
@@ -199,6 +200,24 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                             "ACCEPTED"
                         }
                     }
+                }
+
+                val isRejected = lastVisionStatus.startsWith("REJ_")
+                val isHighConfidence = measurement.ambiguity < 0.05
+                val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
+                                   store.state.drive.yVelocityMetersPerSecond == 0.0 &&
+                                   store.state.drive.angularVelocityRadiansPerSecond == 0.0
+
+                if (isRejected && isHighConfidence && isStationary) {
+                    consecutiveVisionRejections++
+                    if (consecutiveVisionRejections >= 10) {
+                        val snapPose = measurement.targetPose.toPose2d()
+                        pinpointIO?.initialize(snapPose)
+                        consecutiveVisionRejections = 0
+                        lastVisionStatus = "RESEED_SNAP"
+                    }
+                } else {
+                    consecutiveVisionRejections = 0
                 }
 
                 store.dispatch(RobotAction.VisionMeasurementsReceived(
