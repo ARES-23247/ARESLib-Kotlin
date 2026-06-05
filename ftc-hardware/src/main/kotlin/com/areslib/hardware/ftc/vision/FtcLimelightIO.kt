@@ -4,11 +4,16 @@ import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
 import com.areslib.math.Pose3d
+import com.areslib.math.Translation3d
+import com.areslib.math.Rotation3d
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 
-class FtcLimelightIO(private val limelight: Limelight3A) : VisionIO {
+class FtcLimelightIO(
+    private val limelight: Limelight3A,
+    override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
+) : VisionIO {
     
     private var lastWarningTime = 0L
 
@@ -24,6 +29,7 @@ class FtcLimelightIO(private val limelight: Limelight3A) : VisionIO {
     }
 
     override fun updateInputs(inputs: VisionIOInputs) {
+        inputs.cameraPoses = cameraPoses
         try {
             val result = limelight.getLatestResult()
             

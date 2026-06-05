@@ -13,7 +13,8 @@ import java.io.FileReader
 data class ReplayStepResult(
     val timestampMs: Long,
     val realPose: Pose2d,
-    val ghostPose: Pose2d
+    val ghostPose: Pose2d,
+    val cameraPoses: List<com.areslib.math.Pose3d> = emptyList()
 )
 
 data class ReplaySummary(
@@ -114,7 +115,8 @@ object SensoryReplayRunner {
                         ReplayStepResult(
                             timestampMs = frame.timestampMs,
                             realPose = realState.drive.poseEstimator.estimatedPose,
-                            ghostPose = ghostState.drive.poseEstimator.estimatedPose
+                            ghostPose = ghostState.drive.poseEstimator.estimatedPose,
+                            cameraPoses = frame.visionInputs.cameraPoses
                         )
                     )
 

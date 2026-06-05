@@ -23,6 +23,9 @@ import com.areslib.logging.SensoryReplayRunner
 import com.areslib.logging.ReplaySummary
 import com.areslib.telemetry.ReplayPublisher
 import com.areslib.math.Vector3
+import com.areslib.math.Pose3d
+import com.areslib.math.Translation3d
+import com.areslib.math.Rotation3d
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -57,7 +60,6 @@ fun ReplayDashboardContent() {
     var visionStdDevHeading by remember { mutableStateOf(0.10f) }
 
     var showFov by remember { mutableStateOf(true) }
-    var cameraConfig by remember { mutableStateOf("single_front") }
 
     // Recalculated state
     val replaySummary by remember(logLines, visionStdDevX, visionStdDevY, visionStdDevHeading) {
@@ -190,7 +192,7 @@ fun ReplayDashboardContent() {
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "CAMERA FOV CONFIGURATION",
+                        text = "CAMERA FOV VISUALIZER",
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp
@@ -207,47 +209,6 @@ fun ReplayDashboardContent() {
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Show FOV Outlines", color = Color.LightGray, fontSize = 12.sp)
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Active Profile:", color = Color.LightGray, fontSize = 12.sp)
-                        
-                        var expanded by remember { mutableStateOf(false) }
-                        val configLabel = when (cameraConfig) {
-                            "single_front" -> "Single Front"
-                            "dual_front_back" -> "Dual Front/Back"
-                            "triple_cam" -> "Triple Cam"
-                            else -> "Single Front"
-                        }
-                        
-                        Box {
-                            Button(
-                                onClick = { expanded = true },
-                                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E293B)),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(configLabel, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false },
-                                modifier = Modifier.background(MaterialTheme.colors.surface)
-                            ) {
-                                DropdownMenuItem(onClick = { cameraConfig = "single_front"; expanded = false }) {
-                                    Text("Single Front (0°)", color = Color.White, fontSize = 12.sp)
-                                }
-                                DropdownMenuItem(onClick = { cameraConfig = "dual_front_back"; expanded = false }) {
-                                    Text("Dual Front/Back (0°/180°)", color = Color.White, fontSize = 12.sp)
-                                }
-                                DropdownMenuItem(onClick = { cameraConfig = "triple_cam"; expanded = false }) {
-                                    Text("Triple Cam (Front/L/R)", color = Color.White, fontSize = 12.sp)
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -459,24 +420,14 @@ fun ReplayDashboardContent() {
 
                         // Draw camera FOV outlines first (so they are under the robot body)
                         if (showFov) {
-                            val cameras = when (cameraConfig) {
-                                "single_front" -> listOf(Triple(0.18, 0.0, 0.0))
-                                "dual_front_back" -> listOf(
-                                    Triple(0.18, 0.0, 0.0),
-                                    Triple(-0.18, 0.0, Math.PI)
-                                )
-                                "triple_cam" -> listOf(
-                                    Triple(0.18, 0.0, 0.0),
-                                    Triple(0.0, 0.18, Math.PI / 2),
-                                    Triple(0.0, -0.18, -Math.PI / 2)
-                                )
-                                else -> listOf(Triple(0.18, 0.0, 0.0))
-                            }
+                            val activeStep = replaySummary.steps.lastOrNull()
+                            val cameras = activeStep?.cameraPoses?.takeIf { it.isNotEmpty() }
+                                ?: listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
 
                             cameras.forEach { cam ->
-                                val cx = robotPose.x + cam.first * kotlin.math.cos(robotHeading) - cam.second * kotlin.math.sin(robotHeading)
-                                val cy = robotPose.y + cam.first * kotlin.math.sin(robotHeading) + cam.second * kotlin.math.cos(robotHeading)
-                                val camHeading = robotHeading + cam.third
+                                val cx = robotPose.x + cam.translation.x * kotlin.math.cos(robotHeading) - cam.translation.y * kotlin.math.sin(robotHeading)
+                                val cy = robotPose.y + cam.translation.x * kotlin.math.sin(robotHeading) + cam.translation.y * kotlin.math.cos(robotHeading)
+                                val camHeading = robotHeading + cam.rotation.z
                                 val cameraPixel = mapToPixel(cx, cy)
                                 
                                 val range = 4.0f * pixelsPerMeter
@@ -614,6 +565,15 @@ private fun generateSyntheticLog(): List<String> {
             imuInputs.apply {
                 headingRadians = 0.0
                 timestampMs = timeMs
+            }
+
+            visionInputs.apply {
+                cameraPoses = listOf(
+                    com.areslib.math.Pose3d(
+                        com.areslib.math.Translation3d(0.18, 0.0, 0.0),
+                        com.areslib.math.Rotation3d(0.0, 0.0, 0.0)
+                    )
+                )
             }
 
             // Simulate one camera update frame at step 25 (tag target is at x=8.0, y=4.0 in FRC scale)

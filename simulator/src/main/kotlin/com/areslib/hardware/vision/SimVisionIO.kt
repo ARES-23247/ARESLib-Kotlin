@@ -5,8 +5,11 @@ import com.areslib.math.Rotation3d
 import com.areslib.math.Translation3d
 import com.areslib.state.VisionMeasurement
 
-class SimVisionIO : VisionIO {
+class SimVisionIO(
+    override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
+) : VisionIO {
     override fun updateInputs(inputs: VisionIOInputs) {
+        inputs.cameraPoses = cameraPoses
         inputs.isConnected = true
         
         // In a real simulation, we would calculate intersections with field tags.
