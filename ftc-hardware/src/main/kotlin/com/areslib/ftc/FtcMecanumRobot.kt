@@ -19,6 +19,30 @@ import com.areslib.control.CurrentBudgetManager
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
 import com.qualcomm.robotcore.hardware.AnalogInput
 
+/**
+ * A hardware facade and coordinator for FTC Mecanum Robots.
+ *
+ * This class abstracts the motor controller interactions, kinematics, odometry sensors (such as the GoBilda Pinpoint),
+ * and vision sensors (such as the Limelight 3A). It implements a unified, low-overhead robot state update loop that:
+ * - Integrates high-frequency wheel odometry / Pinpoint measurements into the central Redux state store EKF.
+ * - Handles retroactive vision measurements from Limelight with latency compensation and Mahalanobis rejection.
+ * - Executes stationary "Kidnapped Robot Recovery" to automatically reseed localization in case of severe drift.
+ * - Implements battery-compensated motor voltage scaling, brownout protection, and current budget management.
+ * - Publishes telemetry automatically to NetworkTables (NT4) and local Driver Station screens.
+ *
+ * @property hardwareMap The FTC HardwareMap containing motor and sensor references.
+ * @property flName HardwareMap name for the Front-Left motor.
+ * @property frName HardwareMap name for the Front-Right motor.
+ * @property blName HardwareMap name for the Back-Left motor.
+ * @property brName HardwareMap name for the Back-Right motor.
+ * @property pinpointName Optional HardwareMap name for the GoBilda Pinpoint driver.
+ * @property limelightName Optional HardwareMap name for the Limelight 3A vision sensor.
+ * @property localTelemetry Optional telemetry object for local Driver Station output (invoked via reflection).
+ * @property flDirection Direction configuration for the Front-Left motor.
+ * @property frDirection Direction configuration for the Front-Right motor.
+ * @property blDirection Direction configuration for the Back-Left motor.
+ * @property brDirection Direction configuration for the Back-Right motor.
+ */
 class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
     flName: String = "fl",
