@@ -202,6 +202,11 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     }
                 }
 
+                // Kidnapped Robot Recovery:
+                // If the EKF is rejecting our vision inputs (large drift/mismatch), but the Limelight is
+                // reporting a high-confidence pose (low ambiguity) while the robot is stationary (commanded 0.0),
+                // we track consecutive rejections. If rejected for 10 frames (~200ms), we force-reseed EKF/Pinpoint
+                // to the Limelight pose.
                 val isRejected = lastVisionStatus.startsWith("REJ_")
                 val isHighConfidence = measurement.ambiguity < 0.05
                 val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
@@ -212,6 +217,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     consecutiveVisionRejections++
                     if (consecutiveVisionRejections >= 10) {
                         val snapPose = measurement.targetPose.toPose2d()
+                        // Reset pinpoint computer hardware and set its internal offsets to the snap pose.
+                        // This causes the next EKF propagation delta to snap the EKF estimated pose to the snap pose.
                         pinpointIO?.initialize(snapPose)
                         consecutiveVisionRejections = 0
                         lastVisionStatus = "RESEED_SNAP"
