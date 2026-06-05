@@ -106,6 +106,16 @@ object DesktopSimLauncher {
         // Add walls (static bodies)
         createWalls(world)
 
+        // Load DECODE season obstacles if available as resources
+        val decodeJson = DesktopSimLauncher::class.java.getResource("/decode_obstacles.json")?.readText()
+        if (decodeJson != null) {
+            println("Loading DECODE season obstacles into physics world...")
+            val obstacles = FieldObstacleLoader.loadObstacles(world, decodeJson)
+            println("Loaded ${obstacles.size} obstacles successfully.")
+        } else {
+            println("No decode_obstacles.json resource found, skipping field obstacle generation.")
+        }
+
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
         // 4. DIGITAL TWIN WIRING (Mock Hardware Layer)
