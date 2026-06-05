@@ -39,13 +39,8 @@ open class ARESMecanumAuto : LinearOpMode() {
         // Calibrate static friction feedforward (kS) to overcome physical drivetrain deadband
         robot.mecanumIO.kS = 0.05
 
-        // Setup controllers for path following
-        val xController = PIDController(p = 1.0, i = 0.0, d = 0.1)
-        val yController = PIDController(p = 1.0, i = 0.0, d = 0.1)
-        val thetaController = PIDController(p = 2.0, i = 0.0, d = 0.0).apply {
-            enableContinuousInput(-Math.PI, Math.PI)
-        }
-        val driveController = HolonomicDriveController(xController, yController, thetaController)
+        // Setup unified path follower helper
+        val pathFollower = com.areslib.ftc.control.FtcMecanumPathFollower(robot)
 
         // Parse trajectory spline path
         val path: Path = try {
@@ -80,8 +75,6 @@ open class ARESMecanumAuto : LinearOpMode() {
                     // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
                     robot.update()
 
-                    // Fetch current fused EKF pose estimate via clean facade
-                    val currentPose = robot.drive.odometryPose
                     val currentDistance = currentTime * 0.5 // Progress at 0.5 m/s
 
                     if (currentDistance >= totalLength) {
@@ -91,27 +84,12 @@ open class ARESMecanumAuto : LinearOpMode() {
                     // Get nominal target pose from Path spline
                     val targetState = path.sampleAtDistance(currentDistance)
 
-                    // B. Calculate path follower speeds relative to EKF pose
-                    val chassisSpeeds = driveController.calculate(
-                        currentPose = currentPose,
-                        targetPose = targetState.pose,
-                        targetVelocityMps = targetState.velocityMps,
-                        targetHeading = targetState.pose.heading,
-                        dtSeconds = dt
-                    )
-
-                    // C. Command drive facade relative to the calculated velocities
-                    // scaling factor 2.0 maps max nominal velocity
-                    robot.drive.joystickDrive(
-                        x = chassisSpeeds.vxMetersPerSecond / 2.0,
-                        y = chassisSpeeds.vyMetersPerSecond / 2.0,
-                        rot = chassisSpeeds.omegaRadiansPerSecond / 2.0,
-                        isFieldCentric = false
-                    )
+                    // B. Calculate speeds and update motor commands via the follower
+                    pathFollower.update(targetState, dt)
                 } catch (e: Exception) {
                     // Per-iteration failsafe: disable outputs if a single iteration fails
                     try {
-                        robot.drive.joystickDrive(0.0, 0.0, 0.0, false)
+                        pathFollower.stop()
                     } catch (_: Exception) { /* best-effort */ }
                     telemetry.addData("LOOP_ERROR", e.message ?: "Unknown error")
                 }
@@ -133,17 +111,18 @@ open class ARESMecanumAuto : LinearOpMode() {
             }
 
             // Clean stop at target
-            robot.drive.joystickDrive(0.0, 0.0, 0.0, false)
+            pathFollower.stop()
         } catch (e: Exception) {
             // Top-level failsafe: disable all outputs and log
             try {
-                robot.drive.joystickDrive(0.0, 0.0, 0.0, false)
+                pathFollower.stop()
             } catch (_: Exception) { /* best-effort shutoff */ }
             telemetry.addData("CRASH", e.message ?: "Unknown error")
             telemetry.update()
         } finally {
             robot.close()
         }
+
     }
 }
 

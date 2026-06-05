@@ -284,12 +284,13 @@ class FtcServo(private val servo: Servo) : ServoIO {
 
 class FtcImu(private val imu: IMU) : ImuIO {
     private var headingOffset = 0.0
+    private val lock = Any()
 
-    @Volatile private var latestYaw = 0.0
-    @Volatile private var latestPitch = 0.0
-    @Volatile private var latestRoll = 0.0
-    @Volatile private var latestYawVel = 0.0
-    @Volatile private var latestTimestamp = 0L
+    private var latestYaw = 0.0
+    private var latestPitch = 0.0
+    private var latestRoll = 0.0
+    private var latestYawVel = 0.0
+    private var latestTimestamp = 0L
     @Volatile private var running = true
 
     init {
@@ -305,13 +306,14 @@ class FtcImu(private val imu: IMU) : ImuIO {
         // Populate initial values synchronously to prevent race conditions during startup/tests
         try {
             val yawPitchRoll = imu.getRobotYawPitchRollAngles()
-            latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
-            latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
-            latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
-            
             val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
-            latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-            latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+            synchronized(lock) {
+                latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
+                latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
+                latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
+                latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+                latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+            }
         } catch (_: Exception) {}
 
         // Launch low-priority daemon background thread to poll IMU asynchronously
@@ -319,13 +321,14 @@ class FtcImu(private val imu: IMU) : ImuIO {
             while (running) {
                 try {
                     val yawPitchRoll = imu.getRobotYawPitchRollAngles()
-                    latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
-                    latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
-                    latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
-                    
                     val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
-                    latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-                    latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+                    synchronized(lock) {
+                        latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
+                        latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
+                        latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
+                        latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+                        latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+                    }
                 } catch (_: Exception) {}
                 
                 try {
@@ -343,21 +346,26 @@ class FtcImu(private val imu: IMU) : ImuIO {
     }
 
     override fun updateInputs(inputs: com.areslib.hardware.ImuInputs) {
-        inputs.headingRadians = latestYaw - headingOffset
-        inputs.pitchRadians = latestPitch
-        inputs.rollRadians = latestRoll
-        inputs.yawVelocityRadPerSec = latestYawVel
-        inputs.timestampMs = latestTimestamp
+        synchronized(lock) {
+            inputs.headingRadians = latestYaw - headingOffset
+            inputs.pitchRadians = latestPitch
+            inputs.rollRadians = latestRoll
+            inputs.yawVelocityRadPerSec = latestYawVel
+            inputs.timestampMs = latestTimestamp
+        }
     }
 
     override fun resetHeading() {
-        headingOffset = latestYaw
+        synchronized(lock) {
+            headingOffset = latestYaw
+        }
     }
 
     fun close() {
         running = false
     }
 }
+
 
 class FtcAnalogSensor(private val analogInput: AnalogInput) {
     fun getVoltage(): Double {
