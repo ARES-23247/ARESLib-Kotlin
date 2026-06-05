@@ -25,6 +25,26 @@ object DesktopSimLauncher {
     fun main(args: Array<String>) {
         println("Starting ARESLib Desktop Simulation...")
 
+        // Read EKF config overrides if present
+        var customVisionStdDevs: com.areslib.math.Vector3? = null
+        val configFile = java.io.File("config_override.json")
+        if (configFile.exists()) {
+            try {
+                val configContent = configFile.readText()
+                val gson = com.google.gson.Gson()
+                val configMap = gson.fromJson(configContent, Map::class.java)
+                val overrideX = (configMap["visionStdDevX"] as? Number)?.toDouble()
+                val overrideY = (configMap["visionStdDevY"] as? Number)?.toDouble()
+                val overrideTheta = (configMap["visionStdDevTheta"] as? Number)?.toDouble()
+                if (overrideX != null && overrideY != null && overrideTheta != null) {
+                    customVisionStdDevs = com.areslib.math.Vector3(overrideX, overrideY, overrideTheta)
+                    println("[Simulator Config] Loaded EKF Standard Deviation overrides: X=$overrideX, Y=$overrideY, Theta=$overrideTheta")
+                }
+            } catch (e: Exception) {
+                println("[Simulator Config] Failed to parse config_override.json: ${e.message}")
+            }
+        }
+
         // 1. Initialize WPILib Telemetry
         println("Initializing Telemetry (NT4 & DataLog)...")
         // Trigger init block
@@ -443,7 +463,8 @@ object DesktopSimLauncher {
                     state,
                     com.areslib.action.RobotAction.VisionMeasurementsReceived(
                         measurements = measurements,
-                        timestampMs = currentTimeMs
+                        timestampMs = currentTimeMs,
+                        customVisionStdDevs = customVisionStdDevs
                     )
                 )
             }

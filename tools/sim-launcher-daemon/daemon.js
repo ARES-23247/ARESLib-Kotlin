@@ -185,6 +185,22 @@ wss.on("connection", (ws) => {
           return;
         }
 
+        // Handle EKF overrides config if provided
+        const configOverridePath = path.join(REPO_ROOT, "config_override.json");
+        if (msg.params) {
+          try {
+            fs.writeFileSync(configOverridePath, JSON.stringify(msg.params, null, 2));
+            ws.send(JSON.stringify({ type: "log", line: `[Daemon] Wrote EKF overrides config: ${JSON.stringify(msg.params)}` }));
+          } catch (e) {
+            ws.send(JSON.stringify({ type: "log", line: `[Daemon Warning] Failed to write config_override.json: ${e.message}` }));
+          }
+        } else {
+          // Clean up any stale override files
+          if (fs.existsSync(configOverridePath)) {
+            try { fs.unlinkSync(configOverridePath); } catch (e) {}
+          }
+        }
+
         ws.send(JSON.stringify({ type: "log", line: "[Daemon] Spawning Gradle simulator task..." }));
 
         const gradlewCmd = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
@@ -216,6 +232,11 @@ wss.on("connection", (ws) => {
           activeProcess.on("exit", (code) => {
             console.log(`[Daemon] Simulator exited with code ${code}`);
             activeProcess = null;
+            // Clean up config_override.json
+            const configOverridePath = path.join(REPO_ROOT, "config_override.json");
+            if (fs.existsSync(configOverridePath)) {
+              try { fs.unlinkSync(configOverridePath); } catch (e) {}
+            }
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({
                 type: "exit",
@@ -272,6 +293,11 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     console.log("[Daemon] Client disconnected.");
+    // Clean up config_override.json
+    const configOverridePath = path.join(REPO_ROOT, "config_override.json");
+    if (fs.existsSync(configOverridePath)) {
+      try { fs.unlinkSync(configOverridePath); } catch (e) {}
+    }
     // Safety check: Kill simulator if connection drops to prevent headless memory leaks
     if (activeProcess) {
       console.log("[Daemon] WebSocket closed. Terminating active simulator process...");
