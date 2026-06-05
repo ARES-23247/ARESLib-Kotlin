@@ -3,6 +3,7 @@ package com.areslib.ftc.hardware
 import com.areslib.hardware.MotorIO
 import com.areslib.hardware.ServoIO
 import com.areslib.hardware.ImuIO
+import com.areslib.hardware.HardwareRegistry
 import com.areslib.math.Rotation2d
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotor
@@ -14,7 +15,10 @@ import com.qualcomm.robotcore.hardware.IMU
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 
-class FtcMotor(private val motor: DcMotorEx) : MotorIO {
+class FtcMotor(
+    private val motor: DcMotorEx,
+    val name: String? = null
+) : MotorIO {
     private var encoderOffset = 0.0
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
@@ -26,6 +30,10 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
             motor.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
             motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
         } catch (_: Exception) {}
+
+        if (name != null) {
+            HardwareRegistry.registerMotor(name, this)
+        }
     }
 
     private var targetPower: Double = 0.0
@@ -120,8 +128,14 @@ class FtcMotor(private val motor: DcMotorEx) : MotorIO {
  */
 class FtcCRServo(
     private val crServo: CRServo,
-    private val externalEncoder: MotorIO? = null
+    private val externalEncoder: MotorIO? = null,
+    val name: String? = null
 ) : MotorIO {
+    init {
+        if (name != null) {
+            HardwareRegistry.registerMotor(name, this)
+        }
+    }
     private var targetPower: Double = 0.0
     private var lastSentPower = Double.NaN
 
@@ -165,10 +179,19 @@ class FtcCRServo(
  * A read-only representation of an encoder plugged into a standard motor port.
  * Power assignments are ignored.
  */
-class FtcEncoder(private val motor: DcMotorEx) : MotorIO {
+class FtcEncoder(
+    private val motor: DcMotorEx,
+    val name: String? = null
+) : MotorIO {
     private var encoderOffset = 0.0
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
+
+    init {
+        if (name != null) {
+            HardwareRegistry.registerMotor(name, this)
+        }
+    }
 
     override var power: Double
         get() = 0.0
@@ -229,13 +252,20 @@ class CompositeMotorIO(
 /**
  * Reads an absolute encoder plugged into a standard analog port (e.g. REV Through Bore).
  */
-class FtcAbsoluteAnalogEncoder(
+class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     private val analogInput: AnalogInput,
     private val version: com.areslib.hardware.RevEncoderVersion = com.areslib.hardware.RevEncoderVersion.V1,
-    private val ticksPerRev: Double = 8192.0
+    private val ticksPerRev: Double = 8192.0,
+    val name: String? = null
 ) : MotorIO {
     private var offset = 0.0
     private var cachedPosition = 0.0
+
+    init {
+        if (name != null) {
+            HardwareRegistry.registerMotor(name, this)
+        }
+    }
 
     override var power: Double
         get() = 0.0
@@ -263,8 +293,17 @@ class FtcAbsoluteAnalogEncoder(
     }
 }
 
-class FtcServo(private val servo: Servo) : ServoIO {
+class FtcServo(
+    private val servo: Servo,
+    val name: String? = null
+) : ServoIO {
     private var lastSentPosition = Double.NaN
+
+    init {
+        if (name != null) {
+            HardwareRegistry.registerServo(name, this)
+        }
+    }
 
     override var position: Double
         get() = try {

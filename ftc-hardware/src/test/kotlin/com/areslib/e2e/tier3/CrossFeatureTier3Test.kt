@@ -166,6 +166,7 @@ class CrossFeatureTier3Test {
         // 1. Simulate motor active draw
         mockMotor.mockVelocity = 100.0 // healthy velocity
         estimateIO.power = 1.0 // full power command
+        repeat(10) { estimateIO.updateInputs() }
 
         // First update at 12V
         budgetManager.update(12.0, enableCalibration = false)
@@ -174,6 +175,7 @@ class CrossFeatureTier3Test {
 
         // 2. Calibrate error: mock motor actually draws MORE current (e.g. 5A more than estimated)
         mockMotor.mockCurrentAmps = initialEstimate + 5.0
+        repeat(10) { estimateIO.updateInputs() }
         
         // Update with calibration enabled to learn the offset round-robin style
         budgetManager.update(12.0, enableCalibration = true)

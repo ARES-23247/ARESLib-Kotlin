@@ -12,8 +12,14 @@ class Store(
         private set
 
     private val listeners = mutableListOf<(RobotState) -> Unit>()
+    
+    /**
+     * Intercepts all dispatched actions (useful for telemetry logging and sequence recorders).
+     */
+    var actionListener: ((RobotAction) -> Unit)? = null
 
     fun dispatch(action: RobotAction) {
+        actionListener?.invoke(action)
         state = reducer(state, action)
         listeners.forEach { it(state) }
     }

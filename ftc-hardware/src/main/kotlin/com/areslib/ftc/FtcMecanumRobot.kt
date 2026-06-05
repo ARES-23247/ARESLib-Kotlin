@@ -62,6 +62,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     init {
         FtcPerformanceManager.initialize(hardwareMap)
+        // Intercept and record all dispatched store actions asynchronously
+        store.actionListener = { actionLogger.logAction(it) }
     }
 
 
@@ -69,6 +71,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val nt4 = NT4Telemetry()
     private val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
     private val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
+
+    // Asynchronous JSONL recorders for offline deterministic log replay
+    private val inputLogger = com.areslib.logging.InputLogger()
+    private val actionLogger = com.areslib.action.ActionLogger()
 
     // 1. Physical Hardware IO & Kinematics Controllers
     val mecanumIO = MecanumHardwareIO(
@@ -337,6 +343,50 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         // 5. Publish EVERYTHING to NT4 + CSV automatically
         publisher.publish(store.state, gamepad1, gamepad2)
 
+        // Publish physical motor telemetry (power, encoder positions, velocities, currents)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_FL", mecanumIO.flIO.power * mecanumIO.flIO.powerScale)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_FR", mecanumIO.frIO.power * mecanumIO.frIO.powerScale)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_BL", mecanumIO.blIO.power * mecanumIO.blIO.powerScale)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_BR", mecanumIO.brIO.power * mecanumIO.brIO.powerScale)
+
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FL", mecanumIO.flIO.position)
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FR", mecanumIO.frIO.position)
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BL", mecanumIO.blIO.position)
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BR", mecanumIO.brIO.position)
+
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FL", mecanumIO.flIO.velocity)
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FR", mecanumIO.frIO.velocity)
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BL", mecanumIO.blIO.velocity)
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BR", mecanumIO.brIO.velocity)
+
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FL", mecanumIO.flIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FR", mecanumIO.frIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BL", mecanumIO.blIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BR", mecanumIO.brIO.currentAmps)
+
+        // Publish Limelight / Vision pipeline telemetry
+        dataLoggingTelemetry.putString("Vision/Status", lastVisionStatus)
+        lastLimelightPose?.let { pose ->
+            dataLoggingTelemetry.putDoubleArray(
+                "AdvantageScope/VisionPose",
+                doubleArrayOf(pose.x, pose.y, pose.heading.radians)
+            )
+            dataLoggingTelemetry.putNumber("Vision/Pose_X", pose.x)
+            dataLoggingTelemetry.putNumber("Vision/Pose_Y", pose.y)
+            dataLoggingTelemetry.putNumber("Vision/Pose_Heading", pose.heading.radians)
+        }
+        if (visionInputs.measurements.isNotEmpty()) {
+            val primaryMeasurement = visionInputs.measurements[0]
+            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
+            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
+        } else {
+            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", -1.0)
+            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
+        }
+
+        // Publish all registered custom hardware devices automatically
+        com.areslib.hardware.HardwareRegistry.publishAll(dataLoggingTelemetry)
+
         // 6. Driver Station local telemetry (human-readable summary)
         localTelemetry?.let { t ->
             // A. Pinpoint vs EKF Pose
@@ -395,6 +445,33 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
             t.update()
         }
+
+        // 7. Populate and log the raw inputs frame for deterministic simulator replay
+        val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent()
+        inputsFrame.timestampMs = timestamp
+
+        // Populate odometry inputs
+        inputsFrame.odometryInputs.posX = poseUpdate.xMeters
+        inputsFrame.odometryInputs.posY = poseUpdate.yMeters
+        inputsFrame.odometryInputs.heading = poseUpdate.headingRadians
+        inputsFrame.odometryInputs.velX = store.state.drive.xVelocityMetersPerSecond
+        inputsFrame.odometryInputs.velY = store.state.drive.yVelocityMetersPerSecond
+        inputsFrame.odometryInputs.headingVelocity = store.state.drive.angularVelocityRadiansPerSecond
+        inputsFrame.odometryInputs.timestampMs = timestamp
+
+        // Populate IMU inputs
+        inputsFrame.imuInputs.headingRadians = poseUpdate.headingRadians
+        inputsFrame.imuInputs.pitchRadians = 0.0
+        inputsFrame.imuInputs.rollRadians = 0.0
+        inputsFrame.imuInputs.yawVelocityRadPerSec = store.state.drive.angularVelocityRadiansPerSecond
+        inputsFrame.imuInputs.timestampMs = timestamp
+
+        // Populate vision inputs
+        inputsFrame.visionInputs.isConnected = limelightIO != null
+        inputsFrame.visionInputs.measurements = visionInputs.measurements
+
+        // Log the frame asynchronously
+        inputLogger.logFrame(inputsFrame)
     }
 
     /**
@@ -402,6 +479,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      */
     fun close() {
         dataLoggingTelemetry.close()
+        inputLogger.stop()
+        actionLogger.stop()
     }
 }
 
