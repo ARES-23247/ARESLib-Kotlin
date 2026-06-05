@@ -5,6 +5,8 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.areslib.subsystem.AresRobot
 import com.areslib.hardware.ftc.vision.FtcLimelightIO
+import com.areslib.hardware.vision.VisionIO
+import com.areslib.hardware.vision.CompositeVisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.kinematics.MecanumKinematics
 import com.areslib.math.ChassisSpeeds
@@ -93,10 +95,21 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         null
     }
     
-    private val limelightIO: FtcLimelightIO? = try {
-        limelightName?.let { name ->
-            val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
-            FtcLimelightIO(limelightDriver)
+    private val limelightIO: VisionIO? = try {
+        limelightName?.let { namesStr ->
+            val names = namesStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            if (names.size > 1) {
+                val ios = names.map { name ->
+                    val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
+                    FtcLimelightIO(limelightDriver)
+                }
+                CompositeVisionIO(ios)
+            } else if (names.size == 1) {
+                val limelightDriver = hardwareMap.get(Limelight3A::class.java, names[0])
+                FtcLimelightIO(limelightDriver)
+            } else {
+                null
+            }
         }
     } catch (_: Exception) {
         null

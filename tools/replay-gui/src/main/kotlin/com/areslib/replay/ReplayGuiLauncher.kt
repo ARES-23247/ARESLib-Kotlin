@@ -56,6 +56,9 @@ fun ReplayDashboardContent() {
     var visionStdDevY by remember { mutableStateOf(0.05f) }
     var visionStdDevHeading by remember { mutableStateOf(0.10f) }
 
+    var showFov by remember { mutableStateOf(true) }
+    var cameraConfig by remember { mutableStateOf("single_front") }
+
     // Recalculated state
     val replaySummary by remember(logLines, visionStdDevX, visionStdDevY, visionStdDevHeading) {
         derivedStateOf {
@@ -171,6 +174,80 @@ fun ReplayDashboardContent() {
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                }
+            }
+
+            // Camera FOV Settings Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                backgroundColor = MaterialTheme.colors.surface,
+                elevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "CAMERA FOV CONFIGURATION",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = showFov,
+                            onCheckedChange = { showFov = it },
+                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF00E5FF))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Show FOV Outlines", color = Color.LightGray, fontSize = 12.sp)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Active Profile:", color = Color.LightGray, fontSize = 12.sp)
+                        
+                        var expanded by remember { mutableStateOf(false) }
+                        val configLabel = when (cameraConfig) {
+                            "single_front" -> "Single Front"
+                            "dual_front_back" -> "Dual Front/Back"
+                            "triple_cam" -> "Triple Cam"
+                            else -> "Single Front"
+                        }
+                        
+                        Box {
+                            Button(
+                                onClick = { expanded = true },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E293B)),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(configLabel, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false },
+                                modifier = Modifier.background(MaterialTheme.colors.surface)
+                            ) {
+                                DropdownMenuItem(onClick = { cameraConfig = "single_front"; expanded = false }) {
+                                    Text("Single Front (0°)", color = Color.White, fontSize = 12.sp)
+                                }
+                                DropdownMenuItem(onClick = { cameraConfig = "dual_front_back"; expanded = false }) {
+                                    Text("Dual Front/Back (0°/180°)", color = Color.White, fontSize = 12.sp)
+                                }
+                                DropdownMenuItem(onClick = { cameraConfig = "triple_cam"; expanded = false }) {
+                                    Text("Triple Cam (Front/L/R)", color = Color.White, fontSize = 12.sp)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -368,13 +445,119 @@ fun ReplayDashboardContent() {
 
                     // 5. Draw active robot indicator at final coordinate
                     if (replaySummary.steps.isNotEmpty()) {
-                        val finalRealPixel = mapToPixel(replaySummary.finalRealPose.x, replaySummary.finalRealPose.y)
-                        val finalGhostPixel = mapToPixel(replaySummary.finalGhostPose.x, replaySummary.finalGhostPose.y)
+                        val robotPose = replaySummary.finalRealPose
+                        val finalRealPixel = mapToPixel(robotPose.x, robotPose.y)
+                        val robotHeading = robotPose.heading.radians
+                        
+                        val ghostPose = replaySummary.finalGhostPose
+                        val finalGhostPixel = mapToPixel(ghostPose.x, ghostPose.y)
+                        val ghostHeading = ghostPose.heading.radians
 
-                        // Real indicator (Neon Blue circle)
-                        drawCircle(Color(0xFF00E5FF), radius = 6f, center = finalRealPixel)
-                        // Ghost indicator (Neon Red circle)
-                        drawCircle(Color(0xFFFF1744), radius = 6f, center = finalGhostPixel)
+                        val pixelsPerMeter = ((width * 0.9) / 16.541).toFloat()
+                        val robotSizePx = 0.45f * pixelsPerMeter
+                        val halfSize = robotSizePx / 2.0f
+
+                        // Draw camera FOV outlines first (so they are under the robot body)
+                        if (showFov) {
+                            val cameras = when (cameraConfig) {
+                                "single_front" -> listOf(Triple(0.18, 0.0, 0.0))
+                                "dual_front_back" -> listOf(
+                                    Triple(0.18, 0.0, 0.0),
+                                    Triple(-0.18, 0.0, Math.PI)
+                                )
+                                "triple_cam" -> listOf(
+                                    Triple(0.18, 0.0, 0.0),
+                                    Triple(0.0, 0.18, Math.PI / 2),
+                                    Triple(0.0, -0.18, -Math.PI / 2)
+                                )
+                                else -> listOf(Triple(0.18, 0.0, 0.0))
+                            }
+
+                            cameras.forEach { cam ->
+                                val cx = robotPose.x + cam.first * kotlin.math.cos(robotHeading) - cam.second * kotlin.math.sin(robotHeading)
+                                val cy = robotPose.y + cam.first * kotlin.math.sin(robotHeading) + cam.second * kotlin.math.cos(robotHeading)
+                                val camHeading = robotHeading + cam.third
+                                val cameraPixel = mapToPixel(cx, cy)
+                                
+                                val range = 4.0f * pixelsPerMeter
+                                val halfFov = (63.0f * Math.PI / 180.0f) / 2.0f
+                                
+                                val angleStart = camHeading - halfFov
+                                val angleEnd = camHeading + halfFov
+                                
+                                val path = Path().apply {
+                                    moveTo(cameraPixel.x, cameraPixel.y)
+                                    lineTo(
+                                        (cameraPixel.x + range * kotlin.math.cos(angleStart)).toFloat(),
+                                        (cameraPixel.y - range * kotlin.math.sin(angleStart)).toFloat()
+                                    )
+                                    lineTo(
+                                        (cameraPixel.x + range * kotlin.math.cos(angleEnd)).toFloat(),
+                                        (cameraPixel.y - range * kotlin.math.sin(angleEnd)).toFloat()
+                                    )
+                                    close()
+                                }
+                                
+                                drawPath(path, color = Color(0x0A00E5FF))
+                                drawPath(path, color = Color(0x3300E5FF), style = Stroke(width = 1.5f))
+                            }
+                        }
+
+                        // Draw Physical Robot Box (Rotated)
+                        drawContext.canvas.save()
+                        drawContext.transform.rotate(
+                            degrees = -Math.toDegrees(robotHeading).toFloat(),
+                            pivot = finalRealPixel
+                        )
+                        drawRect(
+                            color = Color(0x1100E5FF),
+                            topLeft = Offset(finalRealPixel.x - halfSize, finalRealPixel.y - halfSize),
+                            size = Size(robotSizePx, robotSizePx)
+                        )
+                        drawRect(
+                            color = Color(0x5500E5FF),
+                            topLeft = Offset(finalRealPixel.x - halfSize, finalRealPixel.y - halfSize),
+                            size = Size(robotSizePx, robotSizePx),
+                            style = Stroke(width = 2f)
+                        )
+                        // Arrow pointing forward (+X direction)
+                        drawLine(
+                            color = Color(0xFF00E5FF),
+                            start = finalRealPixel,
+                            end = Offset(finalRealPixel.x + halfSize + 10f, finalRealPixel.y),
+                            strokeWidth = 3f
+                        )
+                        drawContext.canvas.restore()
+
+                        // Draw Ghost Robot Box (Rotated)
+                        drawContext.canvas.save()
+                        drawContext.transform.rotate(
+                            degrees = -Math.toDegrees(ghostHeading).toFloat(),
+                            pivot = finalGhostPixel
+                        )
+                        drawRect(
+                            color = Color(0x11FF1744),
+                            topLeft = Offset(finalGhostPixel.x - halfSize, finalGhostPixel.y - halfSize),
+                            size = Size(robotSizePx, robotSizePx)
+                        )
+                        drawRect(
+                            color = Color(0x55FF1744),
+                            topLeft = Offset(finalGhostPixel.x - halfSize, finalGhostPixel.y - halfSize),
+                            size = Size(robotSizePx, robotSizePx),
+                            style = Stroke(width = 1.5f)
+                        )
+                        // Arrow pointing forward
+                        drawLine(
+                            color = Color(0xFFFF1744),
+                            start = finalGhostPixel,
+                            end = Offset(finalGhostPixel.x + halfSize + 8f, finalGhostPixel.y),
+                            strokeWidth = 2f
+                        )
+                        drawContext.canvas.restore()
+
+                        // Draw central indicator dots
+                        drawCircle(Color(0xFF00E5FF), radius = 5f, center = finalRealPixel)
+                        drawCircle(Color(0xFFFF1744), radius = 5f, center = finalGhostPixel)
                     }
                 }
 

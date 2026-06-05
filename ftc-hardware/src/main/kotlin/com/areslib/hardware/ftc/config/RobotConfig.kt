@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
 import com.areslib.hardware.vision.VisionIO
+import com.areslib.hardware.vision.CompositeVisionIO
 import com.areslib.hardware.ftc.vision.FtcLimelightIO
 import com.areslib.hardware.ftc.vision.FtcVisionPortalIO
 
@@ -17,8 +18,18 @@ class RobotConfig(private val hardwareMap: HardwareMap) {
      * Initializes a Limelight3A vision wrapper.
      */
     fun getLimelight(deviceName: String = "limelight"): VisionIO {
-        val ll = hardwareMap.get(Limelight3A::class.java, deviceName)
-        return FtcLimelightIO(ll)
+        val names = deviceName.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        return if (names.size > 1) {
+            val ios = names.map { name ->
+                val ll = hardwareMap.get(Limelight3A::class.java, name)
+                FtcLimelightIO(ll)
+            }
+            CompositeVisionIO(ios)
+        } else {
+            val name = names.firstOrNull() ?: "limelight"
+            val ll = hardwareMap.get(Limelight3A::class.java, name)
+            FtcLimelightIO(ll)
+        }
     }
     
     /**

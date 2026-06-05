@@ -712,6 +712,25 @@
                 <button class="sim-btn secondary" onclick="resetDrift()">RESET EKF ODOMETRY DRIFT</button>
             </div>
 
+            <!-- Camera & FOV Settings -->
+            <div class="aside-card">
+                <div class="card-title">CAMERA FOV VISUALIZER</div>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-light);">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="show-fov" checked onchange="toggleFov()">
+                        <span>SHOW CAMERA FOV OUTLINES</span>
+                    </label>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                        <span>CONFIG</span>
+                        <select id="camera-config" onchange="changeCameraConfig()" style="background: var(--bg-card); color: var(--text-light); border: 1.5px solid var(--border); border-radius: 4px; padding: 2px 4px; font-family: inherit; font-size: 11px; cursor: pointer;">
+                            <option value="single_front">SINGLE FRONT (0°, +18cm)</option>
+                            <option value="dual_front_back">DUAL FRONT & BACK (0° / 180°)</option>
+                            <option value="triple_cam">TRIPLE (FRONT / LEFT / RIGHT)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Mechanism Launch Properties -->
             <div class="aside-card">
                 <div class="card-title">SHOOTER MECHANISM SETTINGS</div>
@@ -754,6 +773,37 @@
 
         // --- STATE VARIABLES ---
         let currentAlliance = 'red';
+        
+        let showFov = true;
+        let cameraConfig = "single_front";
+        let cameras = [
+            { x: 0.18, y: 0.0, yaw: 0.0, fov: 63, range: 4.0 }
+        ];
+
+        function toggleFov() {
+            showFov = document.getElementById('show-fov').checked;
+        }
+
+        function changeCameraConfig() {
+            cameraConfig = document.getElementById('camera-config').value;
+            if (cameraConfig === "single_front") {
+                cameras = [
+                    { x: 0.18, y: 0.0, yaw: 0.0, fov: 63, range: 4.0 }
+                ];
+            } else if (cameraConfig === "dual_front_back") {
+                cameras = [
+                    { x: 0.18, y: 0.0, yaw: 0.0, fov: 63, range: 4.0 },
+                    { x: -0.18, y: 0.0, yaw: Math.PI, fov: 63, range: 4.0 }
+                ];
+            } else if (cameraConfig === "triple_cam") {
+                cameras = [
+                    { x: 0.18, y: 0.0, yaw: 0.0, fov: 63, range: 4.0 },
+                    { x: 0.0, y: 0.18, yaw: Math.PI / 2, fov: 63, range: 4.0 },
+                    { x: 0.0, y: -0.18, yaw: -Math.PI / 2, fov: 63, range: 4.0 }
+                ];
+            }
+            logConsole(`CONFIG - Camera setup updated to ${cameraConfig.toUpperCase()}`);
+        }
         
         // Robot ground truth (Actual physical state)
         let robot = {
@@ -1173,17 +1223,37 @@
             if (now - ekf.lastTagUpdate > tagPeriodMs) {
                 ekf.lastTagUpdate = now;
                 
-                // Emulate camera distance bounds: snaps EKF to ground truth with high accuracy
-                // Covariance scales how hard it snaps
-                let snapPower = 1.0 - ekf.covR; // Lower covariance = stronger/faster snap
-                
-                ekf.driftX *= (1.0 - snapPower);
-                ekf.driftY *= (1.0 - snapPower);
-                ekf.driftHeading *= (1.0 - snapPower);
-                
-                // Spawn a quick cyan particle at tag locations to show camera flash
-                let randomTag = aprilTags[Math.floor(Math.random() * aprilTags.length)];
-                spawnSpark(randomTag.x, randomTag.y, varColor('neon-cyan'));
+                // Find visible tags
+                let visibleTags = [];
+                for (let tag of aprilTags) {
+                    for (let cam of cameras) {
+                        const cx_field = robot.x + cam.x * Math.cos(robot.heading) - cam.y * Math.sin(robot.heading);
+                        const cy_field = robot.y + cam.x * Math.sin(robot.heading) + cam.y * Math.cos(robot.heading);
+                        
+                        const dx = tag.x - cx_field;
+                        const dy = tag.y - cy_field;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist <= cam.range) {
+                            const angleToTag = Math.atan2(dy, dx);
+                            const camHeading = robot.heading + cam.yaw;
+                            const diffAngle = Math.abs(Math.atan2(Math.sin(angleToTag - camHeading), Math.cos(angleToTag - camHeading)));
+                            if (diffAngle <= (cam.fov * Math.PI / 180.0) / 2) {
+                                visibleTags.push(tag);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (visibleTags.length > 0) {
+                    let snapPower = 1.0 - ekf.covR;
+                    ekf.driftX *= (1.0 - snapPower);
+                    ekf.driftY *= (1.0 - snapPower);
+                    ekf.driftHeading *= (1.0 - snapPower);
+                    
+                    let randomTag = visibleTags[Math.floor(Math.random() * visibleTags.length)];
+                    spawnSpark(randomTag.x, randomTag.y, varColor('neon-cyan'));
+                }
             }
         }
 
@@ -1451,6 +1521,35 @@
             
             ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
             ctx.fillRect(-rRadius, -rRadius, rRadius*2, rRadius*2);
+
+            // Draw camera FOV outlines
+            if (showFov) {
+                cameras.forEach(cam => {
+                    const cx = toPixels(cam.x);
+                    const cy = -toPixels(cam.y);
+                    const range = toPixels(cam.range);
+                    const halfFov = (cam.fov * Math.PI / 180.0) / 2;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(-cam.yaw);
+
+                    ctx.fillStyle = "rgba(0, 229, 255, 0.025)";
+                    ctx.strokeStyle = "rgba(0, 229, 255, 0.3)";
+                    ctx.lineWidth = 1.25;
+                    ctx.setLineDash([4, 4]);
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.arc(0, 0, range, -halfFov, halfFov);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.restore();
+                });
+            }
 
             // Draw swerve modules
             ctx.strokeStyle = "#4b5563";
