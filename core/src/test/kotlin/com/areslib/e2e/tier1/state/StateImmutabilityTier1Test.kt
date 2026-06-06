@@ -16,11 +16,6 @@ class StateImmutabilityTier1Test {
             VisionState::class.java,
             CostmapState::class.java,
             PathState::class.java,
-            FlywheelState::class.java,
-            CowlState::class.java,
-            IntakeState::class.java,
-            FeederState::class.java,
-            ClimberState::class.java,
             VisionMeasurement::class.java,
             Obstacle::class.java
         )

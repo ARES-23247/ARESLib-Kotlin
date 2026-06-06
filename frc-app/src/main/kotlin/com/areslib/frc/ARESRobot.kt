@@ -13,6 +13,7 @@ import com.areslib.pathing.Path
 import com.areslib.reducer.rootReducer
 import com.areslib.frc.action.*
 import com.areslib.frc.subsystem.*
+import com.areslib.frc.state.marvinXIX
 
 import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.XboxController
@@ -194,7 +195,7 @@ class ARESRobot : TimedRobot() {
             
             // Intelligent SOTM feeder auto-trigger
             val headingAligned = Math.abs(wrappedError) < 0.05
-            val rpmAligned = Math.abs(robot.store.state.superstructure.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
+            val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
             if (headingAligned && rpmAligned) {
                 robot.store.dispatch(SetFeederSpeed(10.0))
             } else {

@@ -10,6 +10,7 @@ import com.areslib.state.DriveState
 import com.areslib.state.SuperstructureMode
 import com.areslib.action.RobotAction
 import com.areslib.frc.action.*
+import com.areslib.frc.state.marvinXIX
 import com.areslib.pathing.PathPlannerParser
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -130,9 +131,10 @@ class E2EAutonomousSimulationTest {
 
         // 5. Hard assertions on the final reduced state
         val superstructure = currentState.superstructure
-        assertEquals(4000.0, superstructure.flywheel.targetVelocityRpm, "Flywheel target RPM should be exactly 4000.0")
-        assertTrue(superstructure.intake.isDeployed, "Intake pivot should remain deployed")
-        assertEquals(15.0, superstructure.intake.targetRollerVelocityRps, "Intake roller target velocity should be 15.0 RPS")
-        assertEquals(20.0, superstructure.feeder.targetVelocityRps, "Feeder speed target should be 20.0 RPS")
+        val marvin = superstructure.marvinXIX
+        assertEquals(4000.0, marvin.flywheel.targetVelocityRpm, "Flywheel target RPM should be exactly 4000.0")
+        assertTrue(marvin.intake.isDeployed, "Intake pivot should remain deployed")
+        assertEquals(15.0, marvin.intake.targetRollerVelocityRps, "Intake roller target velocity should be 15.0 RPS")
+        assertEquals(20.0, marvin.feeder.targetVelocityRps, "Feeder speed target should be 20.0 RPS")
     }
 }

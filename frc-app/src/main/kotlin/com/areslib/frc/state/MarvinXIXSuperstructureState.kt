@@ -1,4 +1,6 @@
-package com.areslib.state
+package com.areslib.frc.state
+
+import com.areslib.state.SuperstructureState
 
 /**
  * Immutable representation of the dual-motor shooter flywheel state.
@@ -58,3 +60,20 @@ data class FloorState(
     val currentAmps: Double = 0.0
 )
 
+/**
+ * Container holding all sub-states specific to Marvin XIX superstructure.
+ */
+data class MarvinXIXSuperstructureState(
+    val flywheel: FlywheelState = FlywheelState(),
+    val cowl: CowlState = CowlState(),
+    val intake: IntakeState = IntakeState(),
+    val feeder: FeederState = FeederState(),
+    val climber: ClimberState = ClimberState(),
+    val floor: FloorState = FloorState()
+)
+
+/**
+ * Extension property to retrieve the Marvin XIX specific superstructure state.
+ */
+val SuperstructureState.marvinXIX: MarvinXIXSuperstructureState
+    get() = this.custom as? MarvinXIXSuperstructureState ?: MarvinXIXSuperstructureState()

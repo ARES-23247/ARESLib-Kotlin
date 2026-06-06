@@ -10,6 +10,7 @@ import com.areslib.control.TrapezoidProfile
 import com.areslib.control.GravityFeedforward
 import com.areslib.logging.DiagnosticRingBuffer
 import com.areslib.util.RobotClock
+import com.areslib.frc.state.marvinXIX
 
 /**
  * Production-grade example code demonstrating the usage of elite subsystem controls
@@ -62,8 +63,9 @@ class EliteSubsystemExample {
         // Subscribe to store updates to dynamically log and drive actuators
         store.subscribe { state ->
             // Reciprocal Safety Interlock verification
-            val currentPivotAngle = state.superstructure.intake.pivotAngleDegrees
-            val targetClimberExtension = state.superstructure.climber.targetExtensionMeters
+            val marvin = state.superstructure.marvinXIX
+            val currentPivotAngle = marvin.intake.pivotAngleDegrees
+            val targetClimberExtension = marvin.climber.targetExtensionMeters
 
             // Log current critical metrics to the GC-free ring buffer
             logger.log("ClimberTarget", targetClimberExtension)
@@ -130,7 +132,7 @@ class EliteSubsystemExample {
         )
 
         // Set the controller target goal
-        climberController.setGoal(currentState.superstructure.climber.targetExtensionMeters, 0.0)
+        climberController.setGoal(currentState.superstructure.marvinXIX.climber.targetExtensionMeters, 0.0)
 
         // Compute feedback effort and add the feedforward term
         val pidFeedback = climberController.calculate(measuredClimberHeightMeters, dtSeconds)

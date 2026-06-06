@@ -14,6 +14,8 @@ import com.areslib.telemetry.ITelemetry
 import com.areslib.control.BrownoutGuard
 import com.areslib.frc.action.*
 import com.areslib.frc.subsystem.*
+import com.areslib.frc.state.marvinXIX
+import com.areslib.frc.telemetry.MarvinStatePublisher
 
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
@@ -123,26 +125,30 @@ class FrcSwerveRobot(
         // Apply power scaling to all superstructure outputs
         // (Drive swerve modules have their own voltage compensation via CTRE)
         val scale = brownoutGuard.powerScale
-        flywheelIO.setVelocityRpm(store.state.superstructure.flywheel.targetVelocityRpm * scale)
-        cowlIO.setTargetAngle(store.state.superstructure.cowl.targetAngleDegrees)
+        val marvin = store.state.superstructure.marvinXIX
+        flywheelIO.setVelocityRpm(marvin.flywheel.targetVelocityRpm * scale)
+        cowlIO.setTargetAngle(marvin.cowl.targetAngleDegrees)
 
-        val pivotAngle = store.state.superstructure.intake.targetAngleDegrees
+        val pivotAngle = marvin.intake.targetAngleDegrees
         intakeIO.setPivotAngle(pivotAngle)
 
-        val targetRollerSpeed = store.state.superstructure.intake.targetRollerVelocityRps
+        val targetRollerSpeed = marvin.intake.targetRollerVelocityRps
         intakeIO.setRollerVoltage((targetRollerSpeed / 10.0) * 12.0 * scale)
 
-        val targetFeederSpeed = store.state.superstructure.feeder.targetVelocityRps
+        val targetFeederSpeed = marvin.feeder.targetVelocityRps
         feederIO.setAppliedVoltage((targetFeederSpeed / 12.0) * 12.0 * scale)
 
-        val targetFloorSpeed = store.state.superstructure.floor.targetVelocityRps
+        val targetFloorSpeed = marvin.floor.targetVelocityRps
         floorIO.setAppliedVoltage((targetFloorSpeed / 12.0) * 12.0 * scale)
 
-        val targetClimberVoltage = store.state.superstructure.climber.targetVoltage
+        val targetClimberVoltage = marvin.climber.targetVoltage
         climberIO.setAppliedVoltage(targetClimberVoltage * scale)
 
         // ── 4. PUBLISH: Everything → NT4 + CSV ──
         publisher.publish(store.state, gamepad1, gamepad2)
+
+        // Publish Marvin XIX specific sub-states
+        MarvinStatePublisher.publish(store.state, dataLoggingTelemetry)
 
         // Publish brownout telemetry
         dataLoggingTelemetry.putNumber("Robot/BatteryVoltage", batteryVoltage)

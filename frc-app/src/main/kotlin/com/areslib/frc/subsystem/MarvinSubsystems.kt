@@ -9,19 +9,20 @@ import com.areslib.frc.action.SetIntakeRollers
 import com.areslib.frc.action.SetClimberVoltage
 import com.areslib.frc.action.SetClimberExtension
 import com.areslib.action.RobotAction
+import com.areslib.frc.state.marvinXIX
 
 class MarvinShooterSubsystem(private val store: Store) {
     val mode: SuperstructureMode
         get() = store.state.superstructure.mode
 
     val flywheelRPM: Double
-        get() = store.state.superstructure.flywheel.velocityRpm
+        get() = store.state.superstructure.marvinXIX.flywheel.velocityRpm
 
     val flywheelTargetRPM: Double
-        get() = store.state.superstructure.flywheel.targetVelocityRpm
+        get() = store.state.superstructure.marvinXIX.flywheel.targetVelocityRpm
 
     val cowlAngleDegrees: Double
-        get() = store.state.superstructure.cowl.angleDegrees
+        get() = store.state.superstructure.marvinXIX.cowl.angleDegrees
 
     val transferActive: Boolean
         get() = store.state.superstructure.transferActive
@@ -51,13 +52,13 @@ class MarvinShooterSubsystem(private val store: Store) {
 
 class MarvinIntakeSubsystem(private val store: Store) {
     val isDeployed: Boolean
-        get() = store.state.superstructure.intake.isDeployed
+        get() = store.state.superstructure.marvinXIX.intake.isDeployed
 
     val pivotAngleDegrees: Double
-        get() = store.state.superstructure.intake.pivotAngleDegrees
+        get() = store.state.superstructure.marvinXIX.intake.pivotAngleDegrees
 
     val rollerSpeedRps: Double
-        get() = store.state.superstructure.intake.rollerVelocityRps
+        get() = store.state.superstructure.marvinXIX.intake.rollerVelocityRps
 
     fun deploy() {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
@@ -77,10 +78,10 @@ class MarvinIntakeSubsystem(private val store: Store) {
 
 class MarvinClimberSubsystem(private val store: Store) {
     val extensionMeters: Double
-        get() = store.state.superstructure.climber.extensionMeters
+        get() = store.state.superstructure.marvinXIX.climber.extensionMeters
 
     val targetExtensionMeters: Double
-        get() = store.state.superstructure.climber.targetExtensionMeters
+        get() = store.state.superstructure.marvinXIX.climber.targetExtensionMeters
 
     fun setTargetExtension(meters: Double) {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()

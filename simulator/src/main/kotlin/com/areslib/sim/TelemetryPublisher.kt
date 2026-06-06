@@ -4,7 +4,7 @@ import com.areslib.math.ChassisSpeeds
 import com.areslib.state.RobotState
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
-import com.areslib.frc.RobotStateStruct
+import com.areslib.sim.RobotStateStruct
 import edu.wpi.first.wpilibj.DataLogManager
 
 object TelemetryPublisher {
