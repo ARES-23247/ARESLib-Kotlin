@@ -96,4 +96,29 @@ class CoordinateTransformersTest {
         val updatedState = DriveReducer.reduce(state, RobotAction.SetAlliance(Alliance.RED))
         assertEquals(Alliance.RED, updatedState.alliance)
     }
+
+    @Test
+    fun `centerToCorner and cornerToCenter work with FRC field size`() {
+        val centerPose = Pose2d(1.0, 2.0, Rotation2d(0.5))
+        
+        val cornerPose = CoordinateTransformers.centerToCorner(
+            centerPose, 
+            CoordinateTransformers.FRC_FIELD_LENGTH, 
+            CoordinateTransformers.FRC_FIELD_WIDTH
+        )
+        
+        assertEquals(1.0 + CoordinateTransformers.FRC_FIELD_LENGTH / 2.0, cornerPose.x, 0.0001)
+        assertEquals(2.0 + CoordinateTransformers.FRC_FIELD_WIDTH / 2.0, cornerPose.y, 0.0001)
+        assertEquals(0.5, cornerPose.heading.radians, 0.0001)
+        
+        val restoredCenter = CoordinateTransformers.cornerToCenter(
+            cornerPose, 
+            CoordinateTransformers.FRC_FIELD_LENGTH, 
+            CoordinateTransformers.FRC_FIELD_WIDTH
+        )
+        
+        assertEquals(centerPose.x, restoredCenter.x, 0.0001)
+        assertEquals(centerPose.y, restoredCenter.y, 0.0001)
+        assertEquals(centerPose.heading.radians, restoredCenter.heading.radians, 0.0001)
+    }
 }

@@ -139,4 +139,42 @@ class VisionOutlierFilterTest {
         // Under 2.5G limit (e.g. 2.0G dynamic shock) should pass
         assertTrue(filter.isValid(measurement, robotHeadingRad, robotPose, linearAccelXG = 2.0, linearAccelYG = 0.0, linearAccelZG = 1.0))
     }
+
+    @Test
+    fun testFrcDefaults() {
+        val frcFilter = VisionOutlierFilter(VisionFilterConfig.frcDefaults())
+        
+        // Measurement that exceeds FTC limits (e.g. X = 8.0m, Z = 2.0m, distance = 8.24m, yaw deviation = 20 deg)
+        // but is valid within FRC presets.
+        val frcMeasurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(8.0, 2.0, 2.0), Rotation3d(0.0, 0.0, Math.toRadians(20.0))),
+            tagId = 5,
+            ambiguity = 0.05
+        )
+        
+        val robotPose = Pose2d(0.0, 0.0)
+        
+        // Verify it passes FRC filter
+        assertTrue(frcFilter.isValid(
+            frcMeasurement, 
+            robotHeadingRad = 0.0, 
+            robotPose = robotPose,
+            angularVelocityRadPerSec = 1.0,
+            linearAccelXG = 1.0,
+            linearAccelYG = 1.0,
+            linearAccelZG = 1.0
+        ))
+        
+        // Verify it fails standard (FTC) filter
+        assertFalse(filter.isValid(
+            frcMeasurement, 
+            robotHeadingRad = 0.0, 
+            robotPose = robotPose,
+            angularVelocityRadPerSec = 1.0,
+            linearAccelXG = 1.0,
+            linearAccelYG = 1.0,
+            linearAccelZG = 1.0
+        ))
+    }
 }

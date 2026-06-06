@@ -43,7 +43,13 @@ class FrcSwerveRobot(
     },
     private val isSimulation: Boolean = false,
     baseTelemetry: ITelemetry = FRCTelemetry()
-) : AresRobot() {
+) : AresRobot(
+    initialState = com.areslib.state.RobotState(
+        vision = com.areslib.state.VisionState(
+            filterConfig = com.areslib.hardware.vision.VisionFilterConfig.frcDefaults()
+        )
+    )
+) {
 
     // Unified telemetry pipeline: base telemetry → CSV wrapper → publisher
     private val dataLoggingTelemetry = DataLoggingTelemetry(baseTelemetry)

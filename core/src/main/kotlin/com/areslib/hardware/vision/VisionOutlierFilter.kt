@@ -21,7 +21,27 @@ data class VisionFilterConfig(
     val maxFieldZ: Double = 1.0,
     val maxAngularVelocityRadPerSec: Double = 2.0,
     val maxAccelerationG: Double = 2.5
-)
+) {
+    companion object {
+        @JvmStatic
+        fun ftcDefaults() = VisionFilterConfig()
+
+        @JvmStatic
+        fun frcDefaults() = VisionFilterConfig(
+            maxDistanceMeters = 10.0,
+            maxAmbiguity = 0.15,
+            maxRotationDeviationRad = Math.toRadians(30.0),
+            minFieldX = -1.0,
+            maxFieldX = 18.0,
+            minFieldY = -1.0,
+            maxFieldY = 9.0,
+            minFieldZ = -0.2,
+            maxFieldZ = 3.0,
+            maxAngularVelocityRadPerSec = 6.0,
+            maxAccelerationG = 5.0
+        )
+    }
+}
 
 /**
  * An outlier rejection filter that discards noisy, distant, or heading-deviating AprilTag vision measurements.

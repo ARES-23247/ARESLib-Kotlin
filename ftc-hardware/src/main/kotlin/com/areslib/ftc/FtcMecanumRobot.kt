@@ -117,7 +117,6 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val visionInputs = VisionIOInputs()
     private var lastLimelightPose: com.areslib.math.Pose2d? = null
     private var lastLimelightTimeMs = 0L
-    private val visionFilter = com.areslib.hardware.vision.VisionOutlierFilter()
     var lastVisionStatus = "OFFLINE"
     private var consecutiveVisionRejections = 0
     
@@ -198,20 +197,21 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 val tagYaw = tagPose3d.rotation.z
                 val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeading)
 
+                val filterConfig = store.state.vision.filterConfig
                 lastVisionStatus = when {
-                    measurement.ambiguity > visionFilter.config.maxAmbiguity -> {
-                        String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, visionFilter.config.maxAmbiguity)
+                    measurement.ambiguity > filterConfig.maxAmbiguity -> {
+                        String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, filterConfig.maxAmbiguity)
                     }
-                    tagPose3d.x < visionFilter.config.minFieldX || tagPose3d.x > visionFilter.config.maxFieldX ||
-                    tagPose3d.y < visionFilter.config.minFieldY || tagPose3d.y > visionFilter.config.maxFieldY ||
-                    tagPose3d.z < visionFilter.config.minFieldZ || tagPose3d.z > visionFilter.config.maxFieldZ -> {
+                    tagPose3d.x < filterConfig.minFieldX || tagPose3d.x > filterConfig.maxFieldX ||
+                    tagPose3d.y < filterConfig.minFieldY || tagPose3d.y > filterConfig.maxFieldY ||
+                    tagPose3d.z < filterConfig.minFieldZ || tagPose3d.z > filterConfig.maxFieldZ -> {
                         String.format("REJ_BOUNDS (Z: %.2f)", tagPose3d.z)
                     }
-                    distance > visionFilter.config.maxDistanceMeters -> {
-                        String.format("REJ_DIST (%.2fm > %.2fm)", distance, visionFilter.config.maxDistanceMeters)
+                    distance > filterConfig.maxDistanceMeters -> {
+                        String.format("REJ_DIST (%.2fm > %.2fm)", distance, filterConfig.maxDistanceMeters)
                     }
-                    kotlin.math.abs(headingDiff) > visionFilter.config.maxRotationDeviationRad -> {
-                        String.format("REJ_YAW (%.1f° > %.1f°)", Math.toDegrees(headingDiff), Math.toDegrees(visionFilter.config.maxRotationDeviationRad))
+                    kotlin.math.abs(headingDiff) > filterConfig.maxRotationDeviationRad -> {
+                        String.format("REJ_YAW (%.1f° > %.1f°)", Math.toDegrees(headingDiff), Math.toDegrees(filterConfig.maxRotationDeviationRad))
                     }
                     else -> {
                         // Run a dry run of the EKF Mahalanobis rejection to see if that fails

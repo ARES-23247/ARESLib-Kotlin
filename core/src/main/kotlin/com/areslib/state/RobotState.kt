@@ -108,7 +108,8 @@ data class VisionState(
     val targetX: Double = 0.0,
     val targetY: Double = 0.0,
     val hasTarget: Boolean = false,
-    val measurements: List<VisionMeasurement> = emptyList()
+    val measurements: List<VisionMeasurement> = emptyList(),
+    val filterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
 )
 
 enum class Alliance {

@@ -3,8 +3,6 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
 
-private val defaultVisionFilter = com.areslib.hardware.vision.VisionOutlierFilter()
-
 /**
  * A pure function that transitions the robot state based on the dispatched action.
  * Delegates domain state slices to specialized domain-focused sub-reducers to
@@ -12,13 +10,12 @@ private val defaultVisionFilter = com.areslib.hardware.vision.VisionOutlierFilte
  */
 fun rootReducer(state: RobotState, action: RobotAction): RobotState {
     return when (action) {
-        // Special cross-slice orchestration that requires reading DriveState properties
-        // to filter outlier Vision measurements before applying updates to the state slices.
         is RobotAction.VisionMeasurementsReceived -> {
             val robotPose = state.drive.poseEstimator.estimatedPose
             val robotHeading = robotPose.heading.radians
             val validMeasurements = action.measurements.filter {
-                defaultVisionFilter.isValid(
+                val visionFilter = com.areslib.hardware.vision.VisionOutlierFilter(state.vision.filterConfig)
+                visionFilter.isValid(
                     measurement = it,
                     robotHeadingRad = robotHeading,
                     robotPose = robotPose,
