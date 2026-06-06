@@ -8,6 +8,7 @@ import com.areslib.state.RobotState
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Offline deterministic replay tool.
@@ -16,10 +17,36 @@ import java.io.FileReader
 object ActionReplay {
     private val gson = Gson()
 
+    private val actionRegistry = ConcurrentHashMap<String, Class<out RobotAction>>(mapOf(
+        "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
+        "VisionUpdate" to RobotAction.VisionUpdate::class.java,
+        "VisionMeasurementsReceived" to RobotAction.VisionMeasurementsReceived::class.java,
+        "PoseUpdate" to RobotAction.PoseUpdate::class.java,
+        "JoystickDriveIntent" to RobotAction.JoystickDriveIntent::class.java,
+        "PathEventTriggered" to RobotAction.PathEventTriggered::class.java,
+        "SetIntakeActive" to RobotAction.SetIntakeActive::class.java,
+        "SetFlywheelActive" to RobotAction.SetFlywheelActive::class.java,
+        "SetTransferActive" to RobotAction.SetTransferActive::class.java,
+        "UpdateFlywheelRPM" to RobotAction.UpdateFlywheelRPM::class.java,
+        "SetInventoryCount" to RobotAction.SetInventoryCount::class.java,
+        "ObstacleCostmapUpdate" to RobotAction.ObstacleCostmapUpdate::class.java,
+        "ChainPaths" to RobotAction.ChainPaths::class.java,
+        "SwitchPath" to RobotAction.SwitchPath::class.java,
+        "UpdatePathProgress" to RobotAction.UpdatePathProgress::class.java
+    ))
+
     /**
-     * Replays a JSONL log file back through the pure rootReducer, returning a sequence of RobotState states.
+     * Registers a custom action type for deserialization during replay.
      */
-    fun replayLog(logFile: File): List<RobotState> {
+    fun registerAction(type: String, clazz: Class<out RobotAction>) {
+        actionRegistry[type] = clazz
+    }
+
+    /**
+     * Replays a JSONL log file back through the pure rootReducer (or a custom reducer), returning a sequence of RobotState states.
+     */
+    @JvmOverloads
+    fun replayLog(logFile: File, reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer): List<RobotState> {
         val states = mutableListOf<RobotState>()
         var currentState = RobotState()
         
@@ -34,7 +61,7 @@ object ActionReplay {
                 if (line.trim().isNotEmpty()) {
                     val action = deserializeAction(line)
                     if (action != null) {
-                        currentState = rootReducer(currentState, action)
+                        currentState = reducer(currentState, action)
                         states.add(currentState)
                     }
                 }
@@ -51,25 +78,7 @@ object ActionReplay {
             val type = envelope.get("type").asString
             val payload = envelope.getAsJsonObject("payload")
 
-            // Map simple name to actual action class
-            val actionClass = when (type) {
-                "DriveHardwareUpdate" -> RobotAction.DriveHardwareUpdate::class.java
-                "VisionUpdate" -> RobotAction.VisionUpdate::class.java
-                "VisionMeasurementsReceived" -> RobotAction.VisionMeasurementsReceived::class.java
-                "PoseUpdate" -> RobotAction.PoseUpdate::class.java
-                "JoystickDriveIntent" -> RobotAction.JoystickDriveIntent::class.java
-                "PathEventTriggered" -> RobotAction.PathEventTriggered::class.java
-                "SetIntakeActive" -> RobotAction.SetIntakeActive::class.java
-                "SetFlywheelActive" -> RobotAction.SetFlywheelActive::class.java
-                "SetTransferActive" -> RobotAction.SetTransferActive::class.java
-                "UpdateFlywheelRPM" -> RobotAction.UpdateFlywheelRPM::class.java
-                "SetInventoryCount" -> RobotAction.SetInventoryCount::class.java
-                "ObstacleCostmapUpdate" -> RobotAction.ObstacleCostmapUpdate::class.java
-                "ChainPaths" -> RobotAction.ChainPaths::class.java
-                "SwitchPath" -> RobotAction.SwitchPath::class.java
-                "UpdatePathProgress" -> RobotAction.UpdatePathProgress::class.java
-                else -> null
-            }
+            val actionClass = actionRegistry[type]
 
             if (actionClass != null) {
                 gson.fromJson(payload, actionClass)

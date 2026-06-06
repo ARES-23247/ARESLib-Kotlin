@@ -1,6 +1,7 @@
-package com.areslib.util
+package com.areslib.frc.util
 
 import com.areslib.action.RobotAction
+import com.areslib.frc.action.*
 import com.areslib.state.RobotState
 import com.areslib.state.DriveMode
 import com.areslib.subsystem.Store
@@ -8,6 +9,7 @@ import com.areslib.control.ProfiledPIDController
 import com.areslib.control.TrapezoidProfile
 import com.areslib.control.GravityFeedforward
 import com.areslib.logging.DiagnosticRingBuffer
+import com.areslib.util.RobotClock
 
 /**
  * Production-grade example code demonstrating the usage of elite subsystem controls
@@ -22,8 +24,8 @@ import com.areslib.logging.DiagnosticRingBuffer
  */
 class EliteSubsystemExample {
 
-    // Centralized Redux Store holding immutable robot state
-    val store = Store()
+    // Centralized Redux Store holding immutable robot state, using MarvinReducer
+    val store = Store(reducer = com.areslib.frc.reducer.MarvinReducer::reduce)
 
     // GC-Free circular telemetry recorder
     val logger = DiagnosticRingBuffer(capacity = 500)
@@ -113,7 +115,7 @@ class EliteSubsystemExample {
         }
 
         // 2. Dispatch Target Climber Extension
-        store.dispatch(RobotAction.SetClimberExtension(commandedClimberTargetMeters, now))
+        store.dispatch(SetClimberExtension(commandedClimberTargetMeters, now))
 
         // Get the current state containing safe and clamped superstructure values
         val currentState = store.state
@@ -140,7 +142,7 @@ class EliteSubsystemExample {
         logger.log("ClimberTotalDemand", totalVoltageDemand)
 
         // 4. Command Climber Actuators
-        store.dispatch(RobotAction.SetClimberVoltage(totalVoltageDemand, now))
+        store.dispatch(SetClimberVoltage(totalVoltageDemand, now))
     }
 
     /**

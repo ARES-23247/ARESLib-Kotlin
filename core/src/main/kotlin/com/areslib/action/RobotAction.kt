@@ -3,8 +3,8 @@ package com.areslib.action
 /**
  * Represents an immutable intent or hardware update event.
  */
-sealed class RobotAction {
-    abstract val timestampMs: Long
+interface RobotAction {
+    val timestampMs: Long
 
     // Hardware Updates
     data class DriveHardwareUpdate(
@@ -20,21 +20,20 @@ sealed class RobotAction {
         val xAccelerationG: Double = 0.0,
         val yAccelerationG: Double = 0.0,
         val zAccelerationG: Double = 0.0
-    ) : RobotAction()
+    ) : RobotAction
     
     data class VisionUpdate(
         val hasTarget: Boolean,
         val targetX: Double,
         val targetY: Double,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
         override val timestampMs: Long,
         val customVisionStdDevs: com.areslib.math.Vector3? = null
-    ) : RobotAction()
-
+    ) : RobotAction
 
     data class PoseUpdate(
         val xMeters: Double,
@@ -46,22 +45,22 @@ sealed class RobotAction {
         val xAccelerationG: Double = 0.0,
         val yAccelerationG: Double = 0.0,
         val zAccelerationG: Double = 0.0
-    ) : RobotAction()
+    ) : RobotAction
 
     data class SetAlliance(
         val alliance: com.areslib.state.Alliance,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
+    ) : RobotAction
 
     data class SetDriveMode(
         val mode: com.areslib.state.DriveMode,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
+    ) : RobotAction
 
     data class SetHeadingLockTarget(
         val targetRadians: Double?,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
+    ) : RobotAction
 
     // Human Intent
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
@@ -70,39 +69,39 @@ sealed class RobotAction {
         val targetAngularVelocity: Double,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
         val isFieldCentric: Boolean = true
-    ) : RobotAction()
+    ) : RobotAction
 
     // Autonomous Events
     data class PathEventTriggered(
         val eventName: String,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     // Superstructure FSM Actions
     data class SetIntakeActive(
         val active: Boolean,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     data class SetFlywheelActive(
         val active: Boolean,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     data class SetTransferActive(
         val active: Boolean,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     data class UpdateFlywheelRPM(
         val rpm: Double,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     data class SetInventoryCount(
         val count: Int,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     // Obstacle Avoidance Actions
     data class DistanceSensorObservation(
@@ -117,7 +116,7 @@ sealed class RobotAction {
     data class ObstacleCostmapUpdate(
         val observations: List<DistanceSensorObservation>,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     // Path Following and Switching Actions
     data class ChainPaths(
@@ -125,67 +124,16 @@ sealed class RobotAction {
         val maxVelocityMps: Double = 2.0,
         val maxAccelerationMps2: Double = 1.5,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     data class SwitchPath(
         val path: com.areslib.pathing.Path,
         val isDetour: Boolean = false,
         override val timestampMs: Long
-    ) : RobotAction()
+    ) : RobotAction
 
     data class UpdatePathProgress(
         val distanceProgressMeters: Double,
         override val timestampMs: Long
-    ) : RobotAction()
-
-    // FRC Marvin 19 Subsystem Actions
-    data class SetFlywheelSpeed(
-        val rpm: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SetCowlAngle(
-        val degrees: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SetIntakePivot(
-        val deployed: Boolean,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SetIntakeRollers(
-        val speedRps: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SetFeederSpeed(
-        val speedRps: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SetFloorSpeed(
-        val speedRps: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SetClimberVoltage(
-        val volts: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SetClimberExtension(
-        val meters: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
-
-    data class SuperstructureSensorUpdate(
-        val flywheelRpm: Double,
-        val cowlAngle: Double,
-        val intakeAngle: Double,
-        val pieceDetected: Boolean,
-        val floorVelocityRps: Double = 0.0,
-        val climberExtensionMeters: Double = 0.0,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction()
+    ) : RobotAction
 }

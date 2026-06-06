@@ -69,14 +69,6 @@ class FtcAresRobot(private val hardwareMap: HardwareMap) : AresRobot() {
             rollDegrees = Math.toDegrees(imuInputs.rollRadians)
         ))
 
-        store.dispatch(RobotAction.SuperstructureSensorUpdate(
-            flywheelRpm = 0.0,
-            cowlAngle = 0.0,
-            intakeAngle = 0.0,
-            pieceDetected = false,
-            timestampMs = timestamp
-        ))
-
         // 3. Write outputs to motors based on computed Redux state
         // (Use odometry X target voltage compensation as simple loop feedback)
         val targetPower = store.state.drive.odometryX * 0.1

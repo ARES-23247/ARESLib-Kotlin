@@ -11,6 +11,8 @@ import com.areslib.math.Rotation2d
 import com.areslib.math.Translation2d
 import com.areslib.pathing.Path
 import com.areslib.reducer.rootReducer
+import com.areslib.frc.action.*
+import com.areslib.frc.subsystem.*
 
 import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.XboxController
@@ -179,9 +181,9 @@ class ARESRobot : TimedRobot() {
             ShotSetup.calculate(currentPose, fieldSpeeds, speakerTranslation, shotResult)
             
             // Dispatch shooter parameters
-            robot.store.dispatch(RobotAction.SetFlywheelSpeed(shotResult.targetFlywheelRpm))
+            robot.store.dispatch(SetFlywheelSpeed(shotResult.targetFlywheelRpm))
             robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
-            robot.store.dispatch(RobotAction.SetCowlAngle(shotResult.targetCowlAngleDegrees))
+            robot.store.dispatch(SetCowlAngle(shotResult.targetCowlAngleDegrees))
             
             // Steer drivetrain using P controller + direct feedforward
             val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
@@ -194,9 +196,9 @@ class ARESRobot : TimedRobot() {
             val headingAligned = Math.abs(wrappedError) < 0.05
             val rpmAligned = Math.abs(robot.store.state.superstructure.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
             if (headingAligned && rpmAligned) {
-                robot.store.dispatch(RobotAction.SetFeederSpeed(10.0))
+                robot.store.dispatch(SetFeederSpeed(10.0))
             } else {
-                robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                robot.store.dispatch(SetFeederSpeed(0.0))
             }
         } else {
             // Standard flywheel / feeder stop if not shooting/intaking
@@ -225,58 +227,58 @@ class ARESRobot : TimedRobot() {
             lbPressed -> {
                 // Unjam sequence takes top priority
                 slamtakeActive = false
-                robot.store.dispatch(RobotAction.SetIntakePivot(deployed = true))
-                robot.store.dispatch(RobotAction.SetIntakeRollers(-5.0))
-                robot.store.dispatch(RobotAction.SetFloorSpeed(-5.0))
-                robot.store.dispatch(RobotAction.SetFeederSpeed(-5.0))
+                robot.store.dispatch(SetIntakePivot(deployed = true))
+                robot.store.dispatch(SetIntakeRollers(-5.0))
+                robot.store.dispatch(SetFloorSpeed(-5.0))
+                robot.store.dispatch(SetFeederSpeed(-5.0))
             }
             slamtakeActive -> {
                 val elapsed = Timer.getFPGATimestamp() - slamtakeStartTime
                 if (elapsed < 0.5) {
-                    robot.store.dispatch(RobotAction.SetIntakePivot(deployed = true))
-                    robot.store.dispatch(RobotAction.SetIntakeRollers(10.0))
-                    robot.store.dispatch(RobotAction.SetFloorSpeed(10.0))
-                    robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                    robot.store.dispatch(SetIntakePivot(deployed = true))
+                    robot.store.dispatch(SetIntakeRollers(10.0))
+                    robot.store.dispatch(SetFloorSpeed(10.0))
+                    robot.store.dispatch(SetFeederSpeed(0.0))
                 } else if (elapsed < 1.5) {
-                    robot.store.dispatch(RobotAction.SetIntakePivot(deployed = false))
-                    robot.store.dispatch(RobotAction.SetIntakeRollers(10.0))
-                    robot.store.dispatch(RobotAction.SetFloorSpeed(10.0))
-                    robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                    robot.store.dispatch(SetIntakePivot(deployed = false))
+                    robot.store.dispatch(SetIntakeRollers(10.0))
+                    robot.store.dispatch(SetFloorSpeed(10.0))
+                    robot.store.dispatch(SetFeederSpeed(0.0))
                 } else {
                     slamtakeActive = false
-                    robot.store.dispatch(RobotAction.SetIntakePivot(deployed = false))
-                    robot.store.dispatch(RobotAction.SetIntakeRollers(0.0))
-                    robot.store.dispatch(RobotAction.SetFloorSpeed(0.0))
+                    robot.store.dispatch(SetIntakePivot(deployed = false))
+                    robot.store.dispatch(SetIntakeRollers(0.0))
+                    robot.store.dispatch(SetFloorSpeed(0.0))
                     if (!rtPressed) {
-                        robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                        robot.store.dispatch(SetFeederSpeed(0.0))
                     }
                 }
             }
             ltPressed -> {
                 // Active manual intake
-                robot.store.dispatch(RobotAction.SetIntakePivot(deployed = true))
-                robot.store.dispatch(RobotAction.SetIntakeRollers(10.0))
-                robot.store.dispatch(RobotAction.SetFloorSpeed(10.0))
-                robot.store.dispatch(RobotAction.SetFeederSpeed(10.0))
+                robot.store.dispatch(SetIntakePivot(deployed = true))
+                robot.store.dispatch(SetIntakeRollers(10.0))
+                robot.store.dispatch(SetFloorSpeed(10.0))
+                robot.store.dispatch(SetFeederSpeed(10.0))
             }
             else -> {
                 // Default stop everything
-                robot.store.dispatch(RobotAction.SetIntakePivot(deployed = false))
-                robot.store.dispatch(RobotAction.SetIntakeRollers(0.0))
-                robot.store.dispatch(RobotAction.SetFloorSpeed(0.0))
+                robot.store.dispatch(SetIntakePivot(deployed = false))
+                robot.store.dispatch(SetIntakeRollers(0.0))
+                robot.store.dispatch(SetFloorSpeed(0.0))
                 if (!rtPressed) {
-                    robot.store.dispatch(RobotAction.SetFeederSpeed(0.0))
+                    robot.store.dispatch(SetFeederSpeed(0.0))
                 }
             }
         }
 
         // ── POV Up/Down: Climber Voltage ──
         if (controller.pov == 0) {
-            robot.store.dispatch(RobotAction.SetClimberVoltage(6.0))
+            robot.store.dispatch(SetClimberVoltage(6.0))
         } else if (controller.pov == 180) {
-            robot.store.dispatch(RobotAction.SetClimberVoltage(-6.0))
+            robot.store.dispatch(SetClimberVoltage(-6.0))
         } else {
-            robot.store.dispatch(RobotAction.SetClimberVoltage(0.0))
+            robot.store.dispatch(SetClimberVoltage(0.0))
         }
     }
 
@@ -347,12 +349,12 @@ class ARESRobot : TimedRobot() {
                 println("AUTO EVENT TRIGGERED: ${event.eventName} at ${event.triggerDistanceMeters}m")
                 robot.telemetry.putString("Robot/ActiveEvent", event.eventName)
                 when (event.eventName) {
-                    "FlywheelOn" -> robot.shooter.spinUp(4000.0)
+                    "FlywheelOn" -> robot.marvinShooter.spinUp(4000.0)
                     "IntakeDeploy" -> {
-                        robot.intake.deploy()
-                        robot.intake.setRollerSpeed(15.0)
+                        robot.marvinIntake.deploy()
+                        robot.marvinIntake.setRollerSpeed(15.0)
                     }
-                    "FeederShoot" -> robot.shooter.shoot()
+                    "FeederShoot" -> robot.marvinShooter.shoot()
                 }
             }
         }

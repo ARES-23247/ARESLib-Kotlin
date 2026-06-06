@@ -12,6 +12,8 @@ import com.areslib.telemetry.DataLoggingTelemetry
 import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.ITelemetry
 import com.areslib.control.BrownoutGuard
+import com.areslib.frc.action.*
+import com.areslib.frc.subsystem.*
 
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
@@ -48,8 +50,13 @@ class FrcSwerveRobot(
         vision = com.areslib.state.VisionState(
             filterConfig = com.areslib.hardware.vision.VisionFilterConfig.frcDefaults()
         )
-    )
+    ),
+    reducer = com.areslib.frc.reducer.MarvinReducer::reduce
 ) {
+
+    val marvinShooter = MarvinShooterSubsystem(store)
+    val marvinIntake = MarvinIntakeSubsystem(store)
+    val marvinClimber = MarvinClimberSubsystem(store)
 
     // Unified telemetry pipeline: base telemetry → CSV wrapper → publisher
     private val dataLoggingTelemetry = DataLoggingTelemetry(baseTelemetry)
@@ -94,7 +101,7 @@ class FrcSwerveRobot(
         }
 
         // Read superstructure sensors
-        store.dispatch(RobotAction.SuperstructureSensorUpdate(
+        store.dispatch(SuperstructureSensorUpdate(
             flywheelRpm = flywheelIO.velocityRpm,
             cowlAngle = cowlIO.angleDegrees,
             intakeAngle = intakeIO.pivotAngleDegrees,

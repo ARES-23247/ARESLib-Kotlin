@@ -8,20 +8,17 @@ class ShooterSubsystem(private val store: Store) {
         get() = store.state.superstructure.mode
 
     val flywheelRPM: Double
-        get() = store.state.superstructure.flywheel.velocityRpm
+        get() = store.state.superstructure.flywheelRPM
 
     val flywheelTargetRPM: Double
-        get() = store.state.superstructure.flywheel.targetVelocityRpm
-
-    val cowlAngleDegrees: Double
-        get() = store.state.superstructure.cowl.angleDegrees
+        get() = store.state.superstructure.flywheelTargetRPM
 
     val transferActive: Boolean
         get() = store.state.superstructure.transferActive
 
     fun spinUp(targetRpm: Double) {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        store.dispatch(RobotAction.SetFlywheelSpeed(targetRpm, timestamp))
+        store.dispatch(RobotAction.UpdateFlywheelRPM(targetRpm, timestamp))
         store.dispatch(RobotAction.SetFlywheelActive(true, timestamp))
     }
 
@@ -34,10 +31,5 @@ class ShooterSubsystem(private val store: Store) {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         store.dispatch(RobotAction.SetFlywheelActive(false, timestamp))
         store.dispatch(RobotAction.SetTransferActive(false, timestamp))
-    }
-
-    fun setCowlAngle(degrees: Double) {
-        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        store.dispatch(RobotAction.SetCowlAngle(degrees, timestamp))
     }
 }

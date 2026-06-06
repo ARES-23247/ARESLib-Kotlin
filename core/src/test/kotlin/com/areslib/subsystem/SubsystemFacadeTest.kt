@@ -20,7 +20,7 @@ class SubsystemFacadeTest {
         
         assertEquals(2.0, robot.drive.xVelocity)
         assertEquals(-1.0, robot.drive.yVelocity)
-        assertEquals(0.5, robot.drive.angularVelocity) // JoystickDriveIntent updates angular velocity
+        assertEquals(0.5, robot.drive.angularVelocity)
     }
 
     @Test
@@ -45,9 +45,6 @@ class SubsystemFacadeTest {
         
         robot.shooter.stop()
         assertFalse(robot.shooter.transferActive)
-        
-        robot.shooter.setCowlAngle(32.5)
-        assertEquals(32.5, robot.store.state.superstructure.cowl.targetAngleDegrees)
     }
 
     @Test
@@ -55,16 +52,13 @@ class SubsystemFacadeTest {
         val robot = AresRobot()
         
         assertFalse(robot.intake.isDeployed)
-        assertEquals(0.0, robot.intake.rollerSpeedRps)
         
         robot.intake.deploy()
-        // Reducer handles SetIntakePivot to update isDeployed in IntakeState
-        assertTrue(robot.store.state.superstructure.intake.isDeployed)
-        
-        robot.intake.setRollerSpeed(14.0)
-        assertEquals(14.0, robot.store.state.superstructure.intake.targetRollerVelocityRps)
+        assertTrue(robot.store.state.superstructure.intakeActive)
+        assertTrue(robot.intake.isDeployed)
         
         robot.intake.retract()
-        assertFalse(robot.store.state.superstructure.intake.isDeployed)
+        assertFalse(robot.store.state.superstructure.intakeActive)
+        assertFalse(robot.intake.isDeployed)
     }
 }

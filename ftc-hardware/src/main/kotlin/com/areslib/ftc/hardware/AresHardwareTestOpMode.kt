@@ -71,7 +71,6 @@ class AresHardwareTestOpMode : LinearOpMode() {
                 // 5. Stream automatically processed telemetry values
                 telemetry.addData("Robot Mode", robot.shooter.mode)
                 telemetry.addData("Flywheel RPM", robot.shooter.flywheelRPM)
-                telemetry.addData("Cowl Hood Angle", robot.shooter.cowlAngleDegrees)
                 telemetry.addData("Intake Deployed", robot.intake.isDeployed)
                 telemetry.addData("Odometry X Pose", robot.drive.odometryX)
                 telemetry.addData("Loop ms", loopElapsedMs)
