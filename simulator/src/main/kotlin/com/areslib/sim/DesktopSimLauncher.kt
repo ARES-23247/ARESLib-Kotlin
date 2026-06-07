@@ -126,14 +126,34 @@ object DesktopSimLauncher {
         // Add walls (static bodies)
         createWalls(world)
 
-        // Load DECODE season obstacles if available as resources
-        val decodeJson = DesktopSimLauncher::class.java.getResource("/decode_obstacles.json")?.readText()
-        if (decodeJson != null) {
-            println("Loading DECODE season obstacles into physics world...")
-            val obstacles = FieldObstacleLoader.loadObstacles(world, decodeJson)
-            println("Loaded ${obstacles.size} obstacles successfully.")
-        } else {
-            println("No decode_obstacles.json resource found, skipping field obstacle generation.")
+        // Load obstacles: either from config_override.json (if obstacles are defined there) or fallback to decode_obstacles.json
+        var loadedCustomObstacles = false
+        if (configFile.exists()) {
+            try {
+                val configContent = configFile.readText()
+                val gson = com.google.gson.Gson()
+                val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
+                if (root != null && root.has("obstacles") && !root.get("obstacles").isJsonNull) {
+                    println("Loading custom obstacles from config_override.json into physics world...")
+                    val obstacles = FieldObstacleLoader.loadObstacles(world, configContent)
+                    println("Loaded ${obstacles.size} custom obstacles successfully.")
+                    loadedCustomObstacles = true
+                }
+            } catch (e: Exception) {
+                println("[Simulator Config] Failed to parse custom obstacles from config_override.json: ${e.message}")
+            }
+        }
+
+        if (!loadedCustomObstacles) {
+            // Load default DECODE season obstacles if available as resources
+            val decodeJson = DesktopSimLauncher::class.java.getResource("/decode_obstacles.json")?.readText()
+            if (decodeJson != null) {
+                println("Loading DECODE season obstacles into physics world...")
+                val obstacles = FieldObstacleLoader.loadObstacles(world, decodeJson)
+                println("Loaded ${obstacles.size} obstacles successfully.")
+            } else {
+                println("No decode_obstacles.json resource found, skipping field obstacle generation.")
+            }
         }
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")

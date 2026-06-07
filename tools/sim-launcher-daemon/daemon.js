@@ -190,7 +190,11 @@ wss.on("connection", (ws) => {
         if (msg.params) {
           try {
             fs.writeFileSync(configOverridePath, JSON.stringify(msg.params, null, 2));
-            ws.send(JSON.stringify({ type: "log", line: `[Daemon] Wrote EKF overrides config: ${JSON.stringify(msg.params)}` }));
+            const logParams = { ...msg.params };
+            if (logParams.obstacles) {
+              logParams.obstacles = `[${logParams.obstacles.length} obstacles]`;
+            }
+            ws.send(JSON.stringify({ type: "log", line: `[Daemon] Wrote config overrides: ${JSON.stringify(logParams)}` }));
           } catch (e) {
             ws.send(JSON.stringify({ type: "log", line: `[Daemon Warning] Failed to write config_override.json: ${e.message}` }));
           }
