@@ -105,22 +105,45 @@ object DesktopSimLauncher {
         robotBody.translate(0.0, 0.0)
         world.addBody(robotBody)
 
-        // Add Game Pieces (Decode balls: 5in diameter -> 0.0635m radius, 0.165lbs -> 0.075kg)
         val balls = mutableListOf<Body>()
-        for (i in 0..2) {
-            val ball = Body()
-            val fixture = ball.addFixture(Geometry.createCircle(0.0635))
-            fixture.friction = 0.6
-            fixture.restitution = 0.4 // Moderate bounce
-            // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
-            fixture.density = 5.92
-            ball.setMass(MassType.NORMAL)
-            ball.linearDamping = 2.0 // Carpet friction for balls
-            ball.angularDamping = 2.0
-            // Spawn balls somewhat randomly in front of the robot
-            ball.translate(1.0, -1.0 + i * 1.0)
-            world.addBody(ball)
-            balls.add(ball)
+
+        // Load dynamic elements: either from config_override.json or fallback to hardcoded mock game pieces (balls)
+        var loadedCustomElements = false
+        if (configFile.exists()) {
+            try {
+                val configContent = configFile.readText()
+                val gson = com.google.gson.Gson()
+                val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
+                if (root != null && root.has("elements") && !root.get("elements").isJsonNull) {
+                    println("Loading custom game elements from config_override.json into physics world...")
+                    val elements = FieldElementLoader.loadElements(world, configContent)
+                    println("Loaded ${elements.size} custom game elements successfully.")
+                    balls.addAll(elements)
+                    loadedCustomElements = true
+                }
+            } catch (e: Exception) {
+                println("[Simulator Config] Failed to parse custom elements from config_override.json: ${e.message}")
+            }
+        }
+
+        if (!loadedCustomElements) {
+            // Add Default Game Pieces (Decode balls: 5in diameter -> 0.0635m radius, 0.165lbs -> 0.075kg)
+            for (i in 0..2) {
+                val ball = Body()
+                val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+                fixture.friction = 0.6
+                fixture.restitution = 0.4 // Moderate bounce
+                // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
+                fixture.density = 5.92
+                ball.setMass(MassType.NORMAL)
+                ball.linearDamping = 2.0 // Carpet friction for balls
+                ball.angularDamping = 2.0
+                // Spawn balls somewhat randomly in front of the robot
+                ball.translate(1.0, -1.0 + i * 1.0)
+                world.addBody(ball)
+                balls.add(ball)
+            }
+            println("Loaded default DECODE balls into physics world.")
         }
 
         // Add walls (static bodies)
@@ -135,7 +158,7 @@ object DesktopSimLauncher {
                 val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
                 if (root != null && root.has("obstacles") && !root.get("obstacles").isJsonNull) {
                     println("Loading custom obstacles from config_override.json into physics world...")
-                    val obstacles = FieldObstacleLoader.loadObstacles(world, configContent)
+                    val obstacles = FieldObstacleLoader.loadObstacles(world, configContent, inMeters = true)
                     println("Loaded ${obstacles.size} custom obstacles successfully.")
                     loadedCustomObstacles = true
                 }

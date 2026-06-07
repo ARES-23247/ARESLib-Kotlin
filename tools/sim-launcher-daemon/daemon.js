@@ -194,6 +194,12 @@ wss.on("connection", (ws) => {
             if (logParams.obstacles) {
               logParams.obstacles = `[${logParams.obstacles.length} obstacles]`;
             }
+            if (logParams.elements) {
+              logParams.elements = `[${logParams.elements.length} elements]`;
+            }
+            if (logParams.elementTypes) {
+              logParams.elementTypes = `[${logParams.elementTypes.length} element types]`;
+            }
             ws.send(JSON.stringify({ type: "log", line: `[Daemon] Wrote config overrides: ${JSON.stringify(logParams)}` }));
           } catch (e) {
             ws.send(JSON.stringify({ type: "log", line: `[Daemon Warning] Failed to write config_override.json: ${e.message}` }));
