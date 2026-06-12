@@ -27,6 +27,9 @@ object RobotStatusTracker {
 
     @Volatile
     var resolvedLimelightIp: String? = null
+
+    @Volatile
+    var activeLimelightIps: List<String> = emptyList()
 }
 
 /**
@@ -35,8 +38,8 @@ object RobotStatusTracker {
  */
 object RobotWebServer {
     private var server: HttpServer? = null
-    private var forwarder5800: PortForwarder? = null
-    private var forwarder5801: PortForwarder? = null
+    private var discoveryThread: Thread? = null
+    private val activeForwarders = java.util.concurrent.CopyOnWriteArrayList<PortForwarder>()
     private val executor = Executors.newSingleThreadExecutor { thread ->
         Thread(thread, "ARES-WebServer-Thread").apply { isDaemon = true }
     }
@@ -63,9 +66,50 @@ object RobotWebServer {
                 start()
             }
 
-            // Start TCP Port Forwarders for Limelight streams (5800) and configuration interface (5801)
-            forwarder5800 = PortForwarder(5800, 5800).apply { start() }
-            forwarder5801 = PortForwarder(5801, 5801).apply { start() }
+            // Start discovery thread to scan for active Limelight cameras and configure port forwards
+            discoveryThread = Thread {
+                val possibleIps = listOf("172.29.11.7", "172.22.11.2", "limelight.local", "172.29.11.2", "172.29.11.8", "172.29.11.9", "172.22.11.3")
+                var lastIps = emptyList<String>()
+
+                while (!Thread.currentThread().isInterrupted) {
+                    val currentIps = mutableListOf<String>()
+                    for (ip in possibleIps) {
+                        try {
+                            val socket = java.net.Socket()
+                            socket.connect(java.net.InetSocketAddress(ip, 5800), 150)
+                            socket.close()
+                            currentIps.add(ip)
+                        } catch (_: Exception) {}
+                    }
+
+                    if (currentIps != lastIps) {
+                        // Stop old forwarders
+                        for (f in activeForwarders) {
+                            f.stopForwarder()
+                        }
+                        activeForwarders.clear()
+
+                        // Start new forwarders
+                        for ((index, ip) in currentIps.withIndex()) {
+                            val basePort = 5800 + (index * 2)
+                            activeForwarders.add(PortForwarder(basePort, 5800, ip).apply { start() })
+                            activeForwarders.add(PortForwarder(basePort + 1, 5801, ip).apply { start() })
+                        }
+                        lastIps = currentIps
+                        RobotStatusTracker.activeLimelightIps = currentIps
+                    }
+
+                    try {
+                        Thread.sleep(5000)
+                    } catch (e: InterruptedException) {
+                        break
+                    }
+                }
+            }.apply {
+                isDaemon = true
+                name = "ARES-LimelightDiscovery-Thread"
+                start()
+            }
 
             println("ARES Robot WebServer started successfully on port $port")
         } catch (e: Exception) {
@@ -79,10 +123,12 @@ object RobotWebServer {
     fun stop() {
         server?.stop(0)
         server = null
-        forwarder5800?.stopForwarder()
-        forwarder5800 = null
-        forwarder5801?.stopForwarder()
-        forwarder5801 = null
+        discoveryThread?.interrupt()
+        discoveryThread = null
+        for (f in activeForwarders) {
+            f.stopForwarder()
+        }
+        activeForwarders.clear()
         executor.shutdown()
     }
 
@@ -95,13 +141,25 @@ object RobotWebServer {
             }
 
             val host = exchange.requestHeaders.getFirst("Host") ?: "localhost:8082"
+            val hostIp = host.split(":").firstOrNull() ?: "localhost"
+            val camerasJson = RobotStatusTracker.activeLimelightIps.mapIndexed { index, ip ->
+                val streamPort = 5800 + (index * 2)
+                val configPort = 5801 + (index * 2)
+                """{
+                    "name": "limelight-${index + 1}",
+                    "ip": "$ip",
+                    "streamUrl": "http://$hostIp:$streamPort",
+                    "configUrl": "http://$hostIp:$configPort"
+                }"""
+            }.joinToString(",")
+
             val response = """{
                 "enabled": ${RobotStatusTracker.isEnabled},
                 "opMode": "${RobotStatusTracker.activeOpMode}",
                 "vision": {
                     "connected": ${RobotStatusTracker.visionConnected},
                     "status": "${RobotStatusTracker.visionStatus}",
-                    "streamUrl": "http://$host/api/limelight/stream"
+                    "cameras": [$camerasJson]
                 }
             }""".trimIndent()
 
@@ -245,7 +303,7 @@ object RobotWebServer {
                 return
             }
 
-            val ip = RobotStatusTracker.resolvedLimelightIp ?: findActiveLimelightIp()
+            val ip = RobotStatusTracker.resolvedLimelightIp ?: RobotStatusTracker.activeLimelightIps.firstOrNull()
             if (ip == null) {
                 sendError(exchange, 502, "Bad Gateway: Limelight camera not found on USB tether subnets")
                 return
@@ -285,23 +343,9 @@ object RobotWebServer {
                 sendError(exchange, 502, "Bad Gateway: Failed to stream from Limelight at $ip:5800. Error: ${e.message}")
             }
         }
-
-        private fun findActiveLimelightIp(): String? {
-            val possibleIps = listOf("172.29.11.7", "172.22.11.2", "limelight.local", "172.29.11.2")
-            for (ip in possibleIps) {
-                try {
-                    val socket = java.net.Socket()
-                    socket.connect(java.net.InetSocketAddress(ip, 5800), 200)
-                    socket.close()
-                    RobotStatusTracker.resolvedLimelightIp = ip
-                    return ip
-                } catch (_: Exception) {}
-            }
-            return null
-        }
     }
 
-    private class PortForwarder(private val localPort: Int, private val remotePort: Int) : Thread("ARES-PortForwarder-$localPort") {
+    private class PortForwarder(private val localPort: Int, private val remotePort: Int, private val targetIp: String) : Thread("ARES-PortForwarder-$localPort") {
         private var serverSocket: java.net.ServerSocket? = null
         @Volatile private var running = true
 
@@ -311,9 +355,8 @@ object RobotWebServer {
                 while (running) {
                     val clientSocket = serverSocket?.accept() ?: break
                     Thread {
-                        val ip = RobotStatusTracker.resolvedLimelightIp ?: "172.29.11.7"
                         try {
-                            val serverSocketConnection = java.net.Socket(ip, remotePort)
+                            val serverSocketConnection = java.net.Socket(targetIp, remotePort)
                             Thread {
                                 try {
                                     clientSocket.inputStream.copyTo(serverSocketConnection.outputStream)
