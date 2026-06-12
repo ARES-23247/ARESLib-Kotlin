@@ -18,6 +18,12 @@ object RobotStatusTracker {
 
     @Volatile
     var activeOpMode: String = "Disabled"
+
+    @Volatile
+    var visionConnected: Boolean = false
+
+    @Volatile
+    var visionStatus: String = "OFFLINE"
 }
 
 /**
@@ -75,7 +81,12 @@ object RobotWebServer {
 
             val response = """{
                 "enabled": ${RobotStatusTracker.isEnabled},
-                "opMode": "${RobotStatusTracker.activeOpMode}"
+                "opMode": "${RobotStatusTracker.activeOpMode}",
+                "vision": {
+                    "connected": ${RobotStatusTracker.visionConnected},
+                    "status": "${RobotStatusTracker.visionStatus}",
+                    "streamUrl": "http://limelight.local:5800"
+                }
             }""".trimIndent()
 
             sendJson(exchange, response)

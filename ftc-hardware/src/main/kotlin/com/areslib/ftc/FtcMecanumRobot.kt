@@ -299,6 +299,11 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             } else {
                 lastVisionStatus = "NO TARGET"
             }
+            com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
+            com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
+        } ?: run {
+            com.areslib.telemetry.RobotStatusTracker.visionConnected = false
+            com.areslib.telemetry.RobotStatusTracker.visionStatus = "OFFLINE"
         }
 
         // 3. Process kinematics using current State targets
