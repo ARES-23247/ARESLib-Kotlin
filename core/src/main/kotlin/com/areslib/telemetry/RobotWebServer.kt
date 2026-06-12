@@ -35,6 +35,8 @@ object RobotStatusTracker {
  */
 object RobotWebServer {
     private var server: HttpServer? = null
+    private var forwarder5800: PortForwarder? = null
+    private var forwarder5801: PortForwarder? = null
     private val executor = Executors.newSingleThreadExecutor { thread ->
         Thread(thread, "ARES-WebServer-Thread").apply { isDaemon = true }
     }
@@ -60,6 +62,11 @@ object RobotWebServer {
                 executor = this@RobotWebServer.executor
                 start()
             }
+
+            // Start TCP Port Forwarders for Limelight streams (5800) and configuration interface (5801)
+            forwarder5800 = PortForwarder(5800, 5800).apply { start() }
+            forwarder5801 = PortForwarder(5801, 5801).apply { start() }
+
             println("ARES Robot WebServer started successfully on port $port")
         } catch (e: Exception) {
             System.err.println("ARES Robot WebServer: Failed to start on port $port! ${e.message}")
@@ -72,6 +79,10 @@ object RobotWebServer {
     fun stop() {
         server?.stop(0)
         server = null
+        forwarder5800?.stopForwarder()
+        forwarder5800 = null
+        forwarder5801?.stopForwarder()
+        forwarder5801 = null
         executor.shutdown()
     }
 
@@ -287,6 +298,47 @@ object RobotWebServer {
                 } catch (_: Exception) {}
             }
             return null
+        }
+    }
+
+    private class PortForwarder(private val localPort: Int, private val remotePort: Int) : Thread("ARES-PortForwarder-$localPort") {
+        private var serverSocket: java.net.ServerSocket? = null
+        @Volatile private var running = true
+
+        override fun run() {
+            try {
+                serverSocket = java.net.ServerSocket(localPort)
+                while (running) {
+                    val clientSocket = serverSocket?.accept() ?: break
+                    Thread {
+                        val ip = RobotStatusTracker.resolvedLimelightIp ?: "172.29.11.7"
+                        try {
+                            val serverSocketConnection = java.net.Socket(ip, remotePort)
+                            Thread {
+                                try {
+                                    clientSocket.inputStream.copyTo(serverSocketConnection.outputStream)
+                                } catch (_: Exception) {} finally {
+                                    try { serverSocketConnection.close() } catch (_: Exception) {}
+                                    try { clientSocket.close() } catch (_: Exception) {}
+                                }
+                            }.start()
+                            try {
+                                serverSocketConnection.inputStream.copyTo(clientSocket.outputStream)
+                            } catch (_: Exception) {} finally {
+                                try { serverSocketConnection.close() } catch (_: Exception) {}
+                                try { clientSocket.close() } catch (_: Exception) {}
+                            }
+                        } catch (_: Exception) {
+                            try { clientSocket.close() } catch (_: Exception) {}
+                        }
+                    }.start()
+                }
+            } catch (_: Exception) {}
+        }
+
+        fun stopForwarder() {
+            running = false
+            try { serverSocket?.close() } catch (_: Exception) {}
         }
     }
 }
