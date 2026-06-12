@@ -162,6 +162,9 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param gamepad2 Optional operator gamepad state (use `gamepad2.toState()`)
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
+        if (!com.areslib.telemetry.RobotStatusTracker.isEnabled) {
+            com.areslib.telemetry.RobotWebServer.stop()
+        }
         com.areslib.telemetry.RobotStatusTracker.isEnabled = true
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Active"
         // 0. Clear manual bulk caches at the beginning of the frame
