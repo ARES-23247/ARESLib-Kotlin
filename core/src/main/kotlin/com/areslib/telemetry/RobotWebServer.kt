@@ -24,6 +24,9 @@ object RobotStatusTracker {
 
     @Volatile
     var visionStatus: String = "OFFLINE"
+
+    @Volatile
+    var resolvedLimelightIp: String? = null
 }
 
 /**
@@ -53,6 +56,7 @@ object RobotWebServer {
                 createContext("/api/logs", LogsHandler())
                 createContext("/api/logs/download", DownloadHandler())
                 createContext("/api/logs/markSynced", MarkSyncedHandler())
+                createContext("/api/limelight/stream", LimelightStreamHandler())
                 executor = this@RobotWebServer.executor
                 start()
             }
@@ -79,13 +83,14 @@ object RobotWebServer {
                 return
             }
 
+            val host = exchange.requestHeaders.getFirst("Host") ?: "localhost:8082"
             val response = """{
                 "enabled": ${RobotStatusTracker.isEnabled},
                 "opMode": "${RobotStatusTracker.activeOpMode}",
                 "vision": {
                     "connected": ${RobotStatusTracker.visionConnected},
                     "status": "${RobotStatusTracker.visionStatus}",
-                    "streamUrl": "http://limelight.local:5800"
+                    "streamUrl": "http://$host/api/limelight/stream"
                 }
             }""".trimIndent()
 
@@ -214,5 +219,74 @@ object RobotWebServer {
         val os: OutputStream = exchange.responseBody
         os.write(bytes)
         os.close()
+    }
+
+    private class LimelightStreamHandler : HttpHandler {
+        override fun handle(exchange: HttpExchange) {
+            enableCors(exchange)
+            if ("GET" != exchange.requestMethod && "OPTIONS" != exchange.requestMethod) {
+                sendError(exchange, 405, "Method Not Allowed")
+                return
+            }
+
+            if ("OPTIONS" == exchange.requestMethod) {
+                exchange.sendResponseHeaders(204, -1)
+                return
+            }
+
+            val ip = RobotStatusTracker.resolvedLimelightIp ?: findActiveLimelightIp()
+            if (ip == null) {
+                sendError(exchange, 502, "Bad Gateway: Limelight camera not found on USB tether subnets")
+                return
+            }
+
+            val limelightUrl = java.net.URL("http://$ip:5800/stream.mjpeg")
+            try {
+                val connection = limelightUrl.openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 1000
+                connection.readTimeout = 5000
+
+                // Copy response headers
+                for ((headerKey, headerValues) in connection.headerFields) {
+                    if (headerKey != null) {
+                        for (value in headerValues) {
+                            exchange.responseHeaders.add(headerKey, value)
+                        }
+                    }
+                }
+
+                val responseCode = connection.responseCode
+                exchange.sendResponseHeaders(responseCode, 0) // Chunked streaming
+
+                val input = connection.inputStream
+                val output = exchange.responseBody
+                val buffer = ByteArray(4096)
+                var bytesRead: Int
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    output.write(buffer, 0, bytesRead)
+                    output.flush()
+                }
+                input.close()
+                output.close()
+            } catch (e: Exception) {
+                RobotStatusTracker.resolvedLimelightIp = null
+                sendError(exchange, 502, "Bad Gateway: Failed to stream from Limelight at $ip:5800. Error: ${e.message}")
+            }
+        }
+
+        private fun findActiveLimelightIp(): String? {
+            val possibleIps = listOf("172.29.11.7", "172.22.11.2", "limelight.local", "172.29.11.2")
+            for (ip in possibleIps) {
+                try {
+                    val socket = java.net.Socket()
+                    socket.connect(java.net.InetSocketAddress(ip, 5800), 200)
+                    socket.close()
+                    RobotStatusTracker.resolvedLimelightIp = ip
+                    return ip
+                } catch (_: Exception) {}
+            }
+            return null
+        }
     }
 }
