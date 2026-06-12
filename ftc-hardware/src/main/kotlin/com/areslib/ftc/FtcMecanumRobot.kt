@@ -66,6 +66,9 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         FtcPerformanceManager.initialize(hardwareMap)
         // Intercept and record all dispatched store actions asynchronously
         store.actionListener = { actionLogger.logAction(it) }
+        com.areslib.telemetry.RobotWebServer.start()
+        com.areslib.telemetry.RobotStatusTracker.isEnabled = false
+        com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
     }
 
 
@@ -159,6 +162,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param gamepad2 Optional operator gamepad state (use `gamepad2.toState()`)
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
+        com.areslib.telemetry.RobotStatusTracker.isEnabled = true
+        com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Active"
         // 0. Clear manual bulk caches at the beginning of the frame
         FtcPerformanceManager.clearBulkCaches()
 
@@ -491,6 +496,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * Gracefully cleans up background logging threads and closes network telemetry.
      */
     fun close() {
+        com.areslib.telemetry.RobotStatusTracker.isEnabled = false
+        com.areslib.telemetry.RobotWebServer.stop()
         dataLoggingTelemetry.close()
         inputLogger.stop()
         actionLogger.stop()
