@@ -93,4 +93,11 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
         // Pass the speeds to the CTRE API
         drivetrain.setControl(robotSpeedsRequest.withSpeeds(speeds))
     }
+
+    /**
+     * Feeds AprilTag vision measurements into the CTRE SwerveDrivetrain's internal EKF.
+     */
+    fun addVisionMeasurement(pose: edu.wpi.first.math.geometry.Pose2d, timestampSeconds: Double) {
+        drivetrain.addVisionMeasurement(pose, timestampSeconds)
+    }
 }

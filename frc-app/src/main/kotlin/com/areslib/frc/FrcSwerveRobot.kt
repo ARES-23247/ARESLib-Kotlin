@@ -47,6 +47,7 @@ class FrcSwerveRobot(
         override fun setTargetExtension(meters: Double) {}
         override fun setAppliedVoltage(volts: Double) {}
     },
+    private val visionIO: com.areslib.hardware.vision.VisionIO? = null,
     private val isSimulation: Boolean = false,
     baseTelemetry: ITelemetry = FRCTelemetry()
 ) : AresRobot(
@@ -61,6 +62,8 @@ class FrcSwerveRobot(
     val marvinShooter = MarvinShooterSubsystem(store)
     val marvinIntake = MarvinIntakeSubsystem(store)
     val marvinClimber = MarvinClimberSubsystem(store)
+
+    private val visionInputs = com.areslib.hardware.vision.VisionIOInputs()
 
     // Unified telemetry pipeline: base telemetry → CSV wrapper → publisher
     private val dataLoggingTelemetry = DataLoggingTelemetry(baseTelemetry)
@@ -143,6 +146,35 @@ class FrcSwerveRobot(
                 headingRadians = driveState.odometryHeading,
                 timestampMs = timestamp
             ))
+        }
+
+        // ── 1.5. READ: Vision → Store ──
+        visionIO?.let { io ->
+            io.updateInputs(visionInputs)
+            if (visionInputs.measurements.isNotEmpty()) {
+                val measurement = visionInputs.measurements[0]
+                if (!isSimulation && swerveIO != null) {
+                    val wpiPose = edu.wpi.first.math.geometry.Pose2d(
+                        measurement.targetPose.translation.x,
+                        measurement.targetPose.translation.y,
+                        edu.wpi.first.math.geometry.Rotation2d.fromRadians(measurement.targetPose.rotation.z)
+                    )
+                    val timestampSec = measurement.timestampMs / 1000.0
+                    try {
+                        swerveIO.addVisionMeasurement(wpiPose, timestampSec)
+                    } catch (e: Exception) {
+                        System.err.println("FrcSwerveRobot: Failed to feed vision to SwerveDrivetrain: ${e.message}")
+                    }
+                }
+                store.dispatch(RobotAction.VisionMeasurementsReceived(
+                    visionInputs.measurements,
+                    timestamp,
+                    null
+                ))
+            }
+            RobotStatusTracker.visionConnected = visionInputs.isConnected
+        } ?: run {
+            RobotStatusTracker.visionConnected = false
         }
 
         // Read superstructure sensors
@@ -229,6 +261,22 @@ class FrcSwerveRobot(
             swerveStates[i * 2 + 1] = Math.hypot(wvx, wvy)
         }
         dataLoggingTelemetry.putDoubleArray("Robot/SwerveStates", swerveStates)
+
+        // Publish superstructure diagnostics
+        dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/CurrentAmps", flywheelIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/TempCelsius", flywheelIO.tempCelsius)
+        dataLoggingTelemetry.putNumber("Diagnostics/Cowl/CurrentAmps", cowlIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Diagnostics/Intake/PivotCurrentAmps", intakeIO.pivotCurrentAmps)
+        dataLoggingTelemetry.putNumber("Diagnostics/Intake/RollerCurrentAmps", intakeIO.rollerCurrentAmps)
+        dataLoggingTelemetry.putNumber("Diagnostics/Feeder/CurrentAmps", feederIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Diagnostics/Floor/CurrentAmps", floorIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Diagnostics/Climber/CurrentAmps", climberIO.currentAmps)
+
+        // Publish swerve diagnostics
+        if (swerveIO != null) {
+            dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/Currents", swerveIO.currents)
+            dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/EncoderPositions", swerveIO.encoderPositions)
+        }
     }
 
     companion object {

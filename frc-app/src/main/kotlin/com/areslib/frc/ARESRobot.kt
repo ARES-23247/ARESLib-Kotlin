@@ -34,6 +34,7 @@ class ARESRobot : TimedRobot() {
     private lateinit var robot: FrcSwerveRobot
     private lateinit var sim: Dyn4jSimulation
     private val controller = XboxController(0)
+    private val coPilotController = XboxController(1)
 
     // Edge detector for LB toggle
     private var prevLB = false
@@ -88,6 +89,11 @@ class ARESRobot : TimedRobot() {
                 )
                 val swerveIO = FRCSwerveHardwareIO(ctreDrivetrain)
 
+                // Initialize Limelight cameras
+                val limelightShooter = FrcLimelightIO("limelight-shooter")
+                val limelightBack = FrcLimelightIO("limelight-back")
+                val compositeVision = com.areslib.hardware.vision.CompositeVisionIO(listOf(limelightShooter, limelightBack))
+
                 FrcSwerveRobot(
                     swerveIO = swerveIO,
                     flywheelIO = FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX),
@@ -96,6 +102,7 @@ class ARESRobot : TimedRobot() {
                     feederIO = FRCFeederHardwareIO(feederFX),
                     floorIO = FRCFloorHardwareIO(floorFX),
                     climberIO = FRCClimberHardwareIO(climberFX),
+                    visionIO = compositeVision,
                     isSimulation = false
                 )
             } catch (e: Exception) {
@@ -137,7 +144,7 @@ class ARESRobot : TimedRobot() {
 
     override fun robotPeriodic() {
         // Unified update: reads sensors, writes outputs, publishes telemetry + CSV
-        robot.update(controller.toState())
+        robot.update(controller.toState(), coPilotController.toState())
     }
 
     // ── Teleop ──
@@ -163,48 +170,142 @@ class ARESRobot : TimedRobot() {
             Rotation2d(robot.store.state.drive.odometryHeading)
         )
 
-        // ── Right Trigger: Shoot-on-the-Move (SOTM) ──
+        // ── Copilot Swerve Lock Override ──
+        if (coPilotController.xButton) {
+            robot.drive.joystickDrive(0.0, 0.0, 0.0)
+            return
+        }
+
+        // ── Gyro Reset ──
+        if (controller.backButton || coPilotController.backButton) {
+            robot.store.dispatch(RobotAction.PoseUpdate(
+                xMeters = currentPose.x,
+                yMeters = currentPose.y,
+                headingRadians = 0.0,
+                timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+            ))
+        }
+
+        // ── Driver / Copilot Shooting Triggers ──
         val rtPressed = controller.rightTriggerAxis > 0.5
-        if (rtPressed) {
-            // Compute field-centric velocity from robot-centric state velocities
-            val rx = robot.store.state.drive.xVelocityMetersPerSecond
-            val ry = robot.store.state.drive.yVelocityMetersPerSecond
-            val omega = robot.store.state.drive.angularVelocityRadiansPerSecond
-            
-            val cos = currentPose.heading.cos
-            val sin = currentPose.heading.sin
-            val fieldVx = rx * cos - ry * sin
-            val fieldVy = rx * sin + ry * cos
-            
-            val fieldSpeeds = ChassisSpeeds(fieldVx, fieldVy, omega)
-            
-            // Execute lookahead math
-            ShotSetup.calculate(currentPose, fieldSpeeds, speakerTranslation, shotResult)
-            
-            // Dispatch shooter parameters
-            robot.store.dispatch(SetFlywheelSpeed(shotResult.targetFlywheelRpm))
-            robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
-            robot.store.dispatch(SetCowlAngle(shotResult.targetCowlAngleDegrees))
-            
-            // Steer drivetrain using P controller + direct feedforward
-            val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
-            val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
-            
-            val kp = 4.0
-            rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec
-            
-            // Intelligent SOTM feeder auto-trigger
-            val headingAligned = Math.abs(wrappedError) < 0.05
-            val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
-            if (headingAligned && rpmAligned) {
-                robot.store.dispatch(SetFeederSpeed(10.0))
-            } else {
-                robot.store.dispatch(SetFeederSpeed(0.0))
+        val rbPressed = controller.rightBumper
+        val bPressed = controller.bButton
+        val copilotRtPressed = coPilotController.rightTriggerAxis > 0.5
+        val copilotRbPressed = coPilotController.rightBumper
+
+        when {
+            rtPressed -> {
+                // Shoot-on-the-Move (SOTM) Speaker Aiming
+                val rx = robot.store.state.drive.xVelocityMetersPerSecond
+                val ry = robot.store.state.drive.yVelocityMetersPerSecond
+                val omega = robot.store.state.drive.angularVelocityRadiansPerSecond
+                
+                val cos = currentPose.heading.cos
+                val sin = currentPose.heading.sin
+                val fieldVx = rx * cos - ry * sin
+                val fieldVy = rx * sin + ry * cos
+                
+                val fieldSpeeds = ChassisSpeeds(fieldVx, fieldVy, omega)
+                
+                ShotSetup.calculate(currentPose, fieldSpeeds, speakerTranslation, shotResult)
+                
+                robot.store.dispatch(SetFlywheelSpeed(shotResult.targetFlywheelRpm))
+                robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
+                robot.store.dispatch(SetCowlAngle(shotResult.targetCowlAngleDegrees))
+                
+                val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
+                val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
+                val kp = 4.0
+                rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec
+                
+                val headingAligned = Math.abs(wrappedError) < 0.05
+                val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
+                if (headingAligned && rpmAligned) {
+                    robot.store.dispatch(SetFeederSpeed(10.0))
+                } else {
+                    robot.store.dispatch(SetFeederSpeed(0.0))
+                }
             }
-        } else {
-            // Standard flywheel / feeder stop if not shooting/intaking
-            robot.store.dispatch(RobotAction.SetFlywheelActive(false, com.areslib.util.RobotClock.currentTimeMillis()))
-            // Feeder speed is handled below (dependent on LT/LB)
+            rbPressed -> {
+                // Aim and Shuttle
+                val isRed = alliance.isPresent && alliance.get() == DriverStation.Alliance.Red
+                val targetPoses = if (isRed) {
+                    listOf(Translation2d(14.6, 6.0), Translation2d(14.6, 2.0))
+                } else {
+                    listOf(Translation2d(2.0, 6.0), Translation2d(2.0, 2.0))
+                }
+                val shuttleTarget = targetPoses.minByOrNull { kotlin.math.hypot(it.x - currentPose.x, it.y - currentPose.y) }
+                    ?: Translation2d(2.0, 6.0)
+
+                val rx = robot.store.state.drive.xVelocityMetersPerSecond
+                val ry = robot.store.state.drive.yVelocityMetersPerSecond
+                val omega = robot.store.state.drive.angularVelocityRadiansPerSecond
+                
+                val cos = currentPose.heading.cos
+                val sin = currentPose.heading.sin
+                val fieldVx = rx * cos - ry * sin
+                val fieldVy = rx * sin + ry * cos
+                val fieldSpeeds = ChassisSpeeds(fieldVx, fieldVy, omega)
+                
+                ShotSetup.calculate(currentPose, fieldSpeeds, shuttleTarget, shotResult)
+                
+                robot.store.dispatch(SetFlywheelSpeed(shotResult.targetFlywheelRpm))
+                robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
+                robot.store.dispatch(SetCowlAngle(shotResult.targetCowlAngleDegrees))
+                
+                val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
+                val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
+                val kp = 4.0
+                rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec
+                
+                val headingAligned = Math.abs(wrappedError) < 0.05
+                val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
+                if (headingAligned && rpmAligned) {
+                    robot.store.dispatch(SetFeederSpeed(10.0))
+                    robot.store.dispatch(SetFloorSpeed(10.0))
+                } else {
+                    robot.store.dispatch(SetFeederSpeed(0.0))
+                    robot.store.dispatch(SetFloorSpeed(0.0))
+                }
+            }
+            bPressed -> {
+                // Static Shoot (Speaker Aiming)
+                val dist = kotlin.math.hypot(currentPose.x - speakerTranslation.x, currentPose.y - speakerTranslation.y)
+                val targetRpm = ShotSetup.interpolateRpm(dist)
+                val targetCowl = ShotSetup.interpolateCowl(dist)
+                
+                robot.store.dispatch(SetFlywheelSpeed(targetRpm))
+                robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
+                robot.store.dispatch(SetCowlAngle(targetCowl))
+                
+                val headingError = Math.atan2(speakerTranslation.y - currentPose.y, speakerTranslation.x - currentPose.x) - currentPose.heading.radians + Math.PI
+                val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
+                val kp = 4.0
+                rotation = wrappedError * kp
+                
+                val headingAligned = Math.abs(wrappedError) < 0.05
+                val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - targetRpm) < 150.0
+                if (headingAligned && rpmAligned) {
+                    robot.store.dispatch(SetFeederSpeed(10.0))
+                } else {
+                    robot.store.dispatch(SetFeederSpeed(0.0))
+                }
+            }
+            copilotRtPressed -> {
+                // Copilot manual Hub shot reference
+                robot.store.dispatch(SetFlywheelSpeed(3350.0))
+                robot.store.dispatch(SetCowlAngle(0.5))
+                robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
+            }
+            copilotRbPressed -> {
+                // Copilot manual Front of Ladder shot reference
+                robot.store.dispatch(SetFlywheelSpeed(3650.0))
+                robot.store.dispatch(SetCowlAngle(1.1))
+                robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
+            }
+            else -> {
+                robot.store.dispatch(RobotAction.SetFlywheelActive(false, com.areslib.util.RobotClock.currentTimeMillis()))
+            }
         }
 
         // Apply drive command
@@ -222,6 +323,14 @@ class ARESRobot : TimedRobot() {
 
         // ── Left Trigger: Intake/Feeder active run ──
         val ltPressed = controller.leftTriggerAxis > 0.5
+        val copilotLtPressed = coPilotController.leftTriggerAxis > 0.5
+
+        // ── POV Left/Right: Manual Intake Deploy Override ──
+        if (controller.pov == 90) {
+            intakeDeployed = true
+        } else if (controller.pov == 270) {
+            intakeDeployed = false
+        }
 
         // Dispatch states according to pilot control priorities
         when {
@@ -247,10 +356,10 @@ class ARESRobot : TimedRobot() {
                     robot.store.dispatch(SetFeederSpeed(0.0))
                 } else {
                     slamtakeActive = false
-                    robot.store.dispatch(SetIntakePivot(deployed = false))
+                    robot.store.dispatch(SetIntakePivot(deployed = intakeDeployed))
                     robot.store.dispatch(SetIntakeRollers(0.0))
                     robot.store.dispatch(SetFloorSpeed(0.0))
-                    if (!rtPressed) {
+                    if (!rtPressed && !rbPressed && !bPressed) {
                         robot.store.dispatch(SetFeederSpeed(0.0))
                     }
                 }
@@ -262,21 +371,30 @@ class ARESRobot : TimedRobot() {
                 robot.store.dispatch(SetFloorSpeed(10.0))
                 robot.store.dispatch(SetFeederSpeed(10.0))
             }
+            copilotLtPressed -> {
+                // Copilot manual feed override
+                robot.store.dispatch(SetIntakePivot(deployed = intakeDeployed))
+                robot.store.dispatch(SetIntakeRollers(10.0))
+                robot.store.dispatch(SetFloorSpeed(10.0))
+                robot.store.dispatch(SetFeederSpeed(10.0))
+            }
             else -> {
                 // Default stop everything
-                robot.store.dispatch(SetIntakePivot(deployed = false))
+                robot.store.dispatch(SetIntakePivot(deployed = intakeDeployed))
                 robot.store.dispatch(SetIntakeRollers(0.0))
                 robot.store.dispatch(SetFloorSpeed(0.0))
-                if (!rtPressed) {
+                if (!rtPressed && !rbPressed && !bPressed) {
                     robot.store.dispatch(SetFeederSpeed(0.0))
                 }
             }
         }
 
-        // ── POV Up/Down: Climber Voltage ──
-        if (controller.pov == 0) {
+        // ── POV Up/Down: Climber Voltage (Driver or Copilot) ──
+        val povUp = controller.pov == 0 || coPilotController.pov == 0
+        val povDown = controller.pov == 180 || coPilotController.pov == 180
+        if (povUp) {
             robot.store.dispatch(SetClimberVoltage(6.0))
-        } else if (controller.pov == 180) {
+        } else if (povDown) {
             robot.store.dispatch(SetClimberVoltage(-6.0))
         } else {
             robot.store.dispatch(SetClimberVoltage(0.0))
