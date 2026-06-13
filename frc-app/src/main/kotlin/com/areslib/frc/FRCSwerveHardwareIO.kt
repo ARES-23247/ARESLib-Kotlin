@@ -12,7 +12,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
  * This class abstracts the highly-optimized CTRE SwerveDrivetrain (which runs internally
  * at 250Hz on the CAN FD bus) into the pure mathematical ARESLib Redux architecture.
  */
-class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
+class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
 
     // CTRE Swerve request object we will mutate every loop
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
@@ -40,7 +40,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
         rollSignal.setUpdateFrequency(20.0)
     }
 
-    fun refresh() {
+    override fun refresh() {
         BaseStatusSignal.refreshAll(
             currentDraw1, currentDraw2, currentDraw3, currentDraw4,
             absEnc1, absEnc2, absEnc3, absEnc4,
@@ -48,7 +48,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
         )
     }
 
-    val currents: DoubleArray
+    override val currents: DoubleArray
         get() = doubleArrayOf(
             currentDraw1.valueAsDouble,
             currentDraw2.valueAsDouble,
@@ -56,7 +56,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
             currentDraw4.valueAsDouble
         )
 
-    val encoderPositions: DoubleArray
+    override val encoderPositions: DoubleArray
         get() = doubleArrayOf(
             absEnc1.valueAsDouble,
             absEnc2.valueAsDouble,
@@ -64,13 +64,13 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
             absEnc4.valueAsDouble
         )
 
-    val pitchDegrees: Double
+    override val pitchDegrees: Double
         get() = pitchSignal.valueAsDouble
 
-    val rollDegrees: Double
+    override val rollDegrees: Double
         get() = rollSignal.valueAsDouble
 
-    val moduleSpeeds: DoubleArray
+    override val moduleSpeeds: DoubleArray
         get() = doubleArrayOf(
             drivetrain.state.ModuleStates[0].speedMetersPerSecond,
             drivetrain.state.ModuleStates[1].speedMetersPerSecond,
@@ -82,7 +82,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
      * Reads the 250Hz synchronized pose from the CTRE drivetrain and maps it
      * into the Redux DriveState object for the next calculation cycle.
      */
-    fun read(): DriveState {
+    override fun read(): DriveState {
         val driveStateObj = drivetrain.state
         val pose = driveStateObj.Pose
 
@@ -104,7 +104,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
      * back to the CTRE SwerveDrivetrain. The CTRE firmware handles the inverse 
      * kinematics and closed-loop motor control internally.
      */
-    fun write(driveState: DriveState) {
+    override fun write(driveState: DriveState) {
         val speeds = ChassisSpeeds(
             driveState.xVelocityMetersPerSecond,
             driveState.yVelocityMetersPerSecond,
@@ -118,7 +118,19 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
     /**
      * Feeds AprilTag vision measurements into the CTRE SwerveDrivetrain's internal EKF.
      */
-    fun addVisionMeasurement(pose: edu.wpi.first.math.geometry.Pose2d, timestampSeconds: Double) {
+    override fun addVisionMeasurement(pose: edu.wpi.first.math.geometry.Pose2d, timestampSeconds: Double) {
         drivetrain.addVisionMeasurement(pose, timestampSeconds)
+    }
+
+    /**
+     * Resets/seeds the CTRE SwerveDrivetrain internal odometry pose.
+     */
+    override fun seedPose(pose: com.areslib.math.Pose2d) {
+        val wpiPose = edu.wpi.first.math.geometry.Pose2d(
+            pose.x,
+            pose.y,
+            edu.wpi.first.math.geometry.Rotation2d.fromRadians(pose.heading.radians)
+        )
+        drivetrain.resetPose(wpiPose)
     }
 }

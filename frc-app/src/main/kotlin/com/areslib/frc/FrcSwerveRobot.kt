@@ -35,7 +35,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
  * ```
  */
 class FrcSwerveRobot(
-    private val swerveIO: FRCSwerveHardwareIO? = null,
+    private val swerveIO: SwerveHardwareIO? = null,
     private val flywheelIO: FlywheelIO,
     private val cowlIO: CowlIO,
     private val intakeIO: IntakeIO,
@@ -49,7 +49,26 @@ class FrcSwerveRobot(
     },
     private val visionIO: com.areslib.hardware.vision.VisionIO? = null,
     private val isSimulation: Boolean = false,
-    baseTelemetry: ITelemetry = FRCTelemetry()
+    baseTelemetry: ITelemetry = FRCTelemetry(),
+    private val isEnabledProvider: () -> Boolean = {
+        try {
+            edu.wpi.first.wpilibj.DriverStation.isEnabled()
+        } catch (_: Throwable) {
+            false
+        }
+    },
+    private val robotModeProvider: () -> String = {
+        try {
+            when {
+                edu.wpi.first.wpilibj.DriverStation.isAutonomous() -> "Auto"
+                edu.wpi.first.wpilibj.DriverStation.isTeleop() -> "Teleop"
+                edu.wpi.first.wpilibj.DriverStation.isTest() -> "Test"
+                else -> "Disabled"
+            }
+        } catch (_: Throwable) {
+            "Active"
+        }
+    }
 ) : AresRobot(
     initialState = com.areslib.state.RobotState(
         vision = com.areslib.state.VisionState(
@@ -76,6 +95,7 @@ class FrcSwerveRobot(
     private val covarianceDiagonals = DoubleArray(3)
     private val pose3dArray = DoubleArray(7)
     private val swerveStates = DoubleArray(8)
+    private var wasBeached = false
 
     /** Brownout protection guard — auto-scales motor power on voltage sag */
     val brownoutGuard = BrownoutGuard.frcDefaults()
@@ -108,23 +128,10 @@ class FrcSwerveRobot(
         feederIO.refresh()
         floorIO.refresh()
         climberIO.refresh()
+        val isEnabled = isEnabledProvider()
 
-        val isEnabled = try {
-            edu.wpi.first.wpilibj.DriverStation.isEnabled()
-        } catch (_: Exception) {
-            false
-        }
+        val mode = robotModeProvider()
 
-        val mode = try {
-            when {
-                edu.wpi.first.wpilibj.DriverStation.isAutonomous() -> "Auto"
-                edu.wpi.first.wpilibj.DriverStation.isTeleop() -> "Teleop"
-                edu.wpi.first.wpilibj.DriverStation.isTest() -> "Test"
-                else -> "Disabled"
-            }
-        } catch (_: Exception) {
-            "Active"
-        }
 
         if (isEnabled) {
             RobotWebServer.stop()
@@ -140,11 +147,23 @@ class FrcSwerveRobot(
         // ── 1. READ: Hardware → Store ──
         if (!isSimulation && swerveIO != null) {
             val driveState = swerveIO.read()
+            val currentlyBeached = isBeached
+            val lastPose = store.state.drive.poseEstimator.estimatedPose
+            val x = if (currentlyBeached) lastPose.x else driveState.odometryX
+            val y = if (currentlyBeached) lastPose.y else driveState.odometryY
+
+            if (wasBeached && !currentlyBeached) {
+                swerveIO.seedPose(lastPose)
+            }
+            wasBeached = currentlyBeached
+
             store.dispatch(RobotAction.PoseUpdate(
-                xMeters = driveState.odometryX,
-                yMeters = driveState.odometryY,
+                xMeters = x,
+                yMeters = y,
                 headingRadians = driveState.odometryHeading,
-                timestampMs = timestamp
+                timestampMs = timestamp,
+                pitchDegrees = swerveIO.pitchDegrees,
+                rollDegrees = swerveIO.rollDegrees
             ))
         }
 
