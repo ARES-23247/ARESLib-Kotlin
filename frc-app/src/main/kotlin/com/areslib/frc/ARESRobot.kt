@@ -399,6 +399,17 @@ class ARESRobot : TimedRobot() {
         } else {
             robot.store.dispatch(SetClimberVoltage(0.0))
         }
+
+        // ── Beach / Traction Loss detection ──
+        val beached = robot.isBeached
+        robot.telemetry.putBoolean("Diagnostics/Beached", beached)
+        if (beached) {
+            controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 1.0)
+            coPilotController.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 1.0)
+        } else {
+            controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0)
+            coPilotController.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0)
+        }
     }
 
     // ── Autonomous ──

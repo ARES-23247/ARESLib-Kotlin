@@ -280,6 +280,28 @@ class FrcSwerveRobot(
         }
     }
 
+    val isBeached: Boolean
+        get() {
+            if (isSimulation || swerveIO == null) return false
+            val pitch = swerveIO.pitchDegrees
+            val roll = swerveIO.rollDegrees
+            
+            // Tilted chassis represents climbing/riding up on a note/ball
+            val isTilted = Math.abs(pitch) > 4.0 || Math.abs(roll) > 4.0
+            
+            // Loss of traction: high speed but very low current draw
+            val speeds = swerveIO.moduleSpeeds
+            val currents = swerveIO.currents
+            var slipCount = 0
+            for (i in 0..3) {
+                if (Math.abs(speeds[i]) > 1.5 && Math.abs(currents[i]) < 8.0) {
+                    slipCount++
+                }
+            }
+            return isTilted && slipCount >= 2
+        }
+
+
     companion object {
         private val SWERVE_OFFSETS = arrayOf(
             Pair(0.35, 0.35), Pair(0.35, -0.35),

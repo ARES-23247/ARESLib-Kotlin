@@ -27,17 +27,24 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
     private val absEnc3 = (drivetrain.getModule(2).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
     private val absEnc4 = (drivetrain.getModule(3).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
 
+    private val pigeon = com.ctre.phoenix6.hardware.Pigeon2(9, "CAN2")
+    private val pitchSignal = pigeon.pitch
+    private val rollSignal = pigeon.roll
+
     init {
         for (i in 0..3) {
             drivetrain.getModule(i).driveMotor.supplyCurrent.setUpdateFrequency(20.0)
             (drivetrain.getModule(i).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition.setUpdateFrequency(50.0)
         }
+        pitchSignal.setUpdateFrequency(20.0)
+        rollSignal.setUpdateFrequency(20.0)
     }
 
     fun refresh() {
         BaseStatusSignal.refreshAll(
             currentDraw1, currentDraw2, currentDraw3, currentDraw4,
-            absEnc1, absEnc2, absEnc3, absEnc4
+            absEnc1, absEnc2, absEnc3, absEnc4,
+            pitchSignal, rollSignal
         )
     }
 
@@ -55,6 +62,20 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
             absEnc2.valueAsDouble,
             absEnc3.valueAsDouble,
             absEnc4.valueAsDouble
+        )
+
+    val pitchDegrees: Double
+        get() = pitchSignal.valueAsDouble
+
+    val rollDegrees: Double
+        get() = rollSignal.valueAsDouble
+
+    val moduleSpeeds: DoubleArray
+        get() = doubleArrayOf(
+            drivetrain.state.ModuleStates[0].speedMetersPerSecond,
+            drivetrain.state.ModuleStates[1].speedMetersPerSecond,
+            drivetrain.state.ModuleStates[2].speedMetersPerSecond,
+            drivetrain.state.ModuleStates[3].speedMetersPerSecond
         )
 
     /**
