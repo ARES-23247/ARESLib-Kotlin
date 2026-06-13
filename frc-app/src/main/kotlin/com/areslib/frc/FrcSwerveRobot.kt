@@ -11,6 +11,8 @@ import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.telemetry.DataLoggingTelemetry
 import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.RobotStatusTracker
+import com.areslib.telemetry.RobotWebServer
 import com.areslib.control.BrownoutGuard
 import com.areslib.frc.action.*
 import com.areslib.frc.subsystem.*
@@ -78,6 +80,12 @@ class FrcSwerveRobot(
     /** Battery voltage supplier — set this from the platform layer (e.g., RobotController.getBatteryVoltage()) */
     var batteryVoltageSupplier: () -> Double = { 12.6 }
 
+    init {
+        RobotWebServer.start()
+        RobotStatusTracker.isEnabled = false
+        RobotStatusTracker.activeOpMode = "Init"
+    }
+
     /**
      * Coordinated frame update for FRC Swerve Drivetrain.
      *
@@ -89,6 +97,32 @@ class FrcSwerveRobot(
      * @param gamepad2 Optional operator gamepad
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
+        val isEnabled = try {
+            edu.wpi.first.wpilibj.DriverStation.isEnabled()
+        } catch (_: Exception) {
+            false
+        }
+
+        val mode = try {
+            when {
+                edu.wpi.first.wpilibj.DriverStation.isAutonomous() -> "Auto"
+                edu.wpi.first.wpilibj.DriverStation.isTeleop() -> "Teleop"
+                edu.wpi.first.wpilibj.DriverStation.isTest() -> "Test"
+                else -> "Disabled"
+            }
+        } catch (_: Exception) {
+            "Active"
+        }
+
+        if (isEnabled) {
+            RobotWebServer.stop()
+        } else {
+            RobotWebServer.start()
+        }
+
+        RobotStatusTracker.isEnabled = isEnabled
+        RobotStatusTracker.activeOpMode = mode
+
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
 
         // ── 1. READ: Hardware → Store ──
@@ -199,6 +233,8 @@ class FrcSwerveRobot(
      * Gracefully shuts down background logging threads and telemetry.
      */
     fun close() {
+        RobotStatusTracker.isEnabled = false
+        RobotWebServer.stop()
         dataLoggingTelemetry.close()
     }
 }
