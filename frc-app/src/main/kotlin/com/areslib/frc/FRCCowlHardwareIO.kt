@@ -1,6 +1,7 @@
 package com.areslib.frc
 
 import com.areslib.hardware.CowlIO
+import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.controls.VoltageOut
@@ -22,7 +23,14 @@ class FRCCowlHardwareIO(
     private val positionRequest = PositionVoltage(0.0)
     private val voltageRequest = VoltageOut(0.0)
 
+    private val cowlPosition = motor.position
+    private val cowlCurrent = motor.statorCurrent
+
     init {
+        motor.optimizeBusUtilization()
+        cowlPosition.setUpdateFrequency(50.0)
+        cowlCurrent.setUpdateFrequency(10.0)
+
         val config = TalonFXConfiguration()
         
         // Neutral mode and inversions
@@ -53,6 +61,10 @@ class FRCCowlHardwareIO(
         motor.configurator.apply(config)
     }
 
+    override fun refresh() {
+        BaseStatusSignal.refreshAll(cowlPosition, cowlCurrent)
+    }
+
     override fun setTargetAngle(degrees: Double) {
         // We receive the target cowl angle in mechanism rotations from ARES FSM ShotSetup,
         // so we command the TalonFX directly in rotations!
@@ -65,8 +77,8 @@ class FRCCowlHardwareIO(
 
     override val angleDegrees: Double
         // Returns current position directly in mechanism rotations
-        get() = motor.position.valueAsDouble
+        get() = cowlPosition.valueAsDouble
 
     override val currentAmps: Double
-        get() = motor.statorCurrent.valueAsDouble
+        get() = cowlCurrent.valueAsDouble
 }

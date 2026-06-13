@@ -1,6 +1,7 @@
 package com.areslib.frc
 
 import com.areslib.hardware.FeederIO
+import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX
 
@@ -14,7 +15,12 @@ class FRCFeederHardwareIO(
 
     private val voltageRequest = VoltageOut(0.0)
 
+    private val feederCurrent = motor.statorCurrent
+
     init {
+        motor.optimizeBusUtilization()
+        feederCurrent.setUpdateFrequency(10.0)
+
         val config = com.ctre.phoenix6.configs.TalonFXConfiguration()
         config.Slot0.kP = 1.0
         config.Slot0.kI = 0.0
@@ -32,6 +38,10 @@ class FRCFeederHardwareIO(
         motor.configurator.apply(config)
     }
 
+    override fun refresh() {
+        BaseStatusSignal.refreshAll(feederCurrent)
+    }
+
     override fun setAppliedVoltage(volts: Double) {
         motor.setControl(voltageRequest.withOutput(volts))
     }
@@ -40,5 +50,5 @@ class FRCFeederHardwareIO(
         get() = false
 
     override val currentAmps: Double
-        get() = motor.statorCurrent.valueAsDouble
+        get() = feederCurrent.valueAsDouble
 }

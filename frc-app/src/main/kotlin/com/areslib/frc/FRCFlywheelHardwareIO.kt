@@ -1,6 +1,7 @@
 package com.areslib.frc
 
 import com.areslib.hardware.FlywheelIO
+import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.Follower
 import com.ctre.phoenix6.controls.VelocityVoltage
 import com.ctre.phoenix6.controls.VoltageOut
@@ -20,7 +21,30 @@ class FRCFlywheelHardwareIO(
     private val velocityRequest = VelocityVoltage(0.0)
     private val voltageRequest = VoltageOut(0.0)
 
+    private val leftMasterVelocity = leftMaster.velocity
+    private val rightMasterVelocity = rightMaster.velocity
+    private val leftMasterCurrent = leftMaster.statorCurrent
+    private val leftFollowerCurrent = leftFollower.statorCurrent
+    private val rightMasterCurrent = rightMaster.statorCurrent
+    private val rightFollowerCurrent = rightFollower.statorCurrent
+    private val leftMasterTemp = leftMaster.deviceTemp
+    private val rightMasterTemp = rightMaster.deviceTemp
+
     init {
+        leftMaster.optimizeBusUtilization()
+        leftFollower.optimizeBusUtilization()
+        rightMaster.optimizeBusUtilization()
+        rightFollower.optimizeBusUtilization()
+
+        leftMasterVelocity.setUpdateFrequency(50.0)
+        rightMasterVelocity.setUpdateFrequency(50.0)
+        leftMasterCurrent.setUpdateFrequency(20.0)
+        leftFollowerCurrent.setUpdateFrequency(20.0)
+        rightMasterCurrent.setUpdateFrequency(20.0)
+        rightFollowerCurrent.setUpdateFrequency(20.0)
+        leftMasterTemp.setUpdateFrequency(4.0)
+        rightMasterTemp.setUpdateFrequency(4.0)
+
         // Configure followers as opposed to their respective masters
         leftFollower.setControl(Follower(leftMaster.deviceID, com.ctre.phoenix6.signals.MotorAlignmentValue.Opposed))
         rightFollower.setControl(Follower(rightMaster.deviceID, com.ctre.phoenix6.signals.MotorAlignmentValue.Opposed))
@@ -49,6 +73,14 @@ class FRCFlywheelHardwareIO(
         rightFollower.configurator.apply(config)
     }
 
+    override fun refresh() {
+        BaseStatusSignal.refreshAll(
+            leftMasterVelocity, rightMasterVelocity,
+            leftMasterCurrent, leftFollowerCurrent, rightMasterCurrent, rightFollowerCurrent,
+            leftMasterTemp, rightMasterTemp
+        )
+    }
+
     override fun setVelocityRpm(rpm: Double) {
         val rps = rpm / 60.0
         leftMaster.setControl(velocityRequest.withVelocity(rps))
@@ -61,14 +93,14 @@ class FRCFlywheelHardwareIO(
     }
 
     override val velocityRpm: Double
-        get() = (leftMaster.velocity.valueAsDouble + rightMaster.velocity.valueAsDouble) / 2.0 * 60.0
+        get() = (leftMasterVelocity.valueAsDouble + rightMasterVelocity.valueAsDouble) / 2.0 * 60.0
 
     override val currentAmps: Double
-        get() = leftMaster.statorCurrent.valueAsDouble +
-                leftFollower.statorCurrent.valueAsDouble +
-                rightMaster.statorCurrent.valueAsDouble +
-                rightFollower.statorCurrent.valueAsDouble
+        get() = leftMasterCurrent.valueAsDouble +
+                leftFollowerCurrent.valueAsDouble +
+                rightMasterCurrent.valueAsDouble +
+                rightFollowerCurrent.valueAsDouble
 
     override val tempCelsius: Double
-        get() = Math.max(leftMaster.deviceTemp.valueAsDouble, rightMaster.deviceTemp.valueAsDouble)
+        get() = Math.max(leftMasterTemp.valueAsDouble, rightMasterTemp.valueAsDouble)
 }

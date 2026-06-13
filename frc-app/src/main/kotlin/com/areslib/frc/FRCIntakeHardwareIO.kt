@@ -1,6 +1,7 @@
 package com.areslib.frc
 
 import com.areslib.hardware.IntakeIO
+import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX
@@ -19,7 +20,18 @@ class FRCIntakeHardwareIO(
     private val positionRequest = PositionVoltage(0.0)
     private val voltageRequest = VoltageOut(0.0)
 
+    private val pivotPosition = pivotMotor.position
+    private val pivotCurrent = pivotMotor.statorCurrent
+    private val rollerCurrent = rollerMotor.statorCurrent
+
     init {
+        pivotMotor.optimizeBusUtilization()
+        rollerMotor.optimizeBusUtilization()
+
+        pivotPosition.setUpdateFrequency(50.0)
+        pivotCurrent.setUpdateFrequency(10.0)
+        rollerCurrent.setUpdateFrequency(10.0)
+
         // Configure Pivot Motor with exact specs from SystemConstants.java
         val pivotConfig = com.ctre.phoenix6.configs.TalonFXConfiguration()
         pivotConfig.Slot0.kP = 1.0
@@ -55,6 +67,10 @@ class FRCIntakeHardwareIO(
         rollerMotor.configurator.apply(rollerConfig)
     }
 
+    override fun refresh() {
+        BaseStatusSignal.refreshAll(pivotPosition, pivotCurrent, rollerCurrent)
+    }
+
     override fun setPivotAngle(degrees: Double) {
         // Convert degrees to mechanism rotations (1 degree = (1.0 / 360.0) rotations)
         // Feedback.SensorToMechanismRatio handles the internal 4:1 scaling in TalonFX
@@ -71,11 +87,11 @@ class FRCIntakeHardwareIO(
     }
 
     override val pivotAngleDegrees: Double
-        get() = pivotMotor.position.valueAsDouble * 360.0
+        get() = pivotPosition.valueAsDouble * 360.0
 
     override val pivotCurrentAmps: Double
-        get() = pivotMotor.statorCurrent.valueAsDouble
+        get() = pivotCurrent.valueAsDouble
 
     override val rollerCurrentAmps: Double
-        get() = rollerMotor.statorCurrent.valueAsDouble
+        get() = rollerCurrent.valueAsDouble
 }

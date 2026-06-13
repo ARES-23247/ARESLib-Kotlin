@@ -1,6 +1,7 @@
 package com.areslib.frc
 
 import com.areslib.hardware.FloorIO
+import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX
 
@@ -14,7 +15,14 @@ class FRCFloorHardwareIO(
 
     private val voltageRequest = VoltageOut(0.0)
 
+    private val floorVelocity = motor.velocity
+    private val floorCurrent = motor.statorCurrent
+
     init {
+        motor.optimizeBusUtilization()
+        floorVelocity.setUpdateFrequency(20.0)
+        floorCurrent.setUpdateFrequency(10.0)
+
         val config = com.ctre.phoenix6.configs.TalonFXConfiguration()
         config.Slot0.kP = 0.5
         config.Slot0.kI = 2.0
@@ -32,13 +40,17 @@ class FRCFloorHardwareIO(
         motor.configurator.apply(config)
     }
 
+    override fun refresh() {
+        BaseStatusSignal.refreshAll(floorVelocity, floorCurrent)
+    }
+
     override fun setAppliedVoltage(volts: Double) {
         motor.setControl(voltageRequest.withOutput(volts))
     }
 
     override val velocityRps: Double
-        get() = motor.velocity.valueAsDouble
+        get() = floorVelocity.valueAsDouble
 
     override val currentAmps: Double
-        get() = motor.statorCurrent.valueAsDouble
+        get() = floorCurrent.valueAsDouble
 }

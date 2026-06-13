@@ -1,6 +1,7 @@
 package com.areslib.frc
 
 import com.areslib.state.DriveState
+import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 import com.ctre.phoenix6.swerve.SwerveRequest
 import edu.wpi.first.math.kinematics.ChassisSpeeds
@@ -15,6 +16,46 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) {
 
     // CTRE Swerve request object we will mutate every loop
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
+
+    private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
+    private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent
+    private val currentDraw3 = drivetrain.getModule(2).driveMotor.supplyCurrent
+    private val currentDraw4 = drivetrain.getModule(3).driveMotor.supplyCurrent
+
+    private val absEnc1 = (drivetrain.getModule(0).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
+    private val absEnc2 = (drivetrain.getModule(1).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
+    private val absEnc3 = (drivetrain.getModule(2).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
+    private val absEnc4 = (drivetrain.getModule(3).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
+
+    init {
+        for (i in 0..3) {
+            drivetrain.getModule(i).driveMotor.supplyCurrent.setUpdateFrequency(20.0)
+            (drivetrain.getModule(i).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition.setUpdateFrequency(50.0)
+        }
+    }
+
+    fun refresh() {
+        BaseStatusSignal.refreshAll(
+            currentDraw1, currentDraw2, currentDraw3, currentDraw4,
+            absEnc1, absEnc2, absEnc3, absEnc4
+        )
+    }
+
+    val currents: DoubleArray
+        get() = doubleArrayOf(
+            currentDraw1.valueAsDouble,
+            currentDraw2.valueAsDouble,
+            currentDraw3.valueAsDouble,
+            currentDraw4.valueAsDouble
+        )
+
+    val encoderPositions: DoubleArray
+        get() = doubleArrayOf(
+            absEnc1.valueAsDouble,
+            absEnc2.valueAsDouble,
+            absEnc3.valueAsDouble,
+            absEnc4.valueAsDouble
+        )
 
     /**
      * Reads the 250Hz synchronized pose from the CTRE drivetrain and maps it

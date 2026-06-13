@@ -97,6 +97,15 @@ class FrcSwerveRobot(
      * @param gamepad2 Optional operator gamepad
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
+        // Refresh all hardware status signals from CAN bus in a batch
+        swerveIO?.refresh()
+        flywheelIO.refresh()
+        cowlIO.refresh()
+        intakeIO.refresh()
+        feederIO.refresh()
+        floorIO.refresh()
+        climberIO.refresh()
+
         val isEnabled = try {
             edu.wpi.first.wpilibj.DriverStation.isEnabled()
         } catch (_: Exception) {

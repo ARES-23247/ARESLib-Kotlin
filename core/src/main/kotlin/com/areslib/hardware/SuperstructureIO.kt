@@ -5,6 +5,9 @@ package com.areslib.hardware
  * De-couples the pure math state engine from the CTRE Phoenix 6 libraries.
  */
 interface FlywheelIO {
+    /** Refreshes cached status signals from the hardware (batch transaction) */
+    fun refresh() {}
+
     /** Sets the target velocity of the flywheel using closed-loop controller on the motor */
     fun setVelocityRpm(rpm: Double)
 
@@ -28,6 +31,9 @@ interface FlywheelIO {
  * Pure abstraction for the adjustable angle cowl/hood.
  */
 interface CowlIO {
+    /** Refreshes cached status signals from the hardware (batch transaction) */
+    fun refresh() {}
+
     /** Sets the target absolute position angle in degrees */
     fun setTargetAngle(degrees: Double)
 
@@ -47,6 +53,9 @@ interface CowlIO {
  * Pure abstraction for the deployed pivot-arm intake and active rollers.
  */
 interface IntakeIO {
+    /** Refreshes cached status signals from the hardware (batch transaction) */
+    fun refresh() {}
+
     /** Sets the target absolute angle of the pivot arm in degrees */
     fun setPivotAngle(degrees: Double)
 
@@ -73,6 +82,9 @@ interface IntakeIO {
  * Pure abstraction for the transfer/feeder rollers.
  */
 interface FeederIO {
+    /** Refreshes cached status signals from the hardware (batch transaction) */
+    fun refresh() {}
+
     /** Sets the applied voltage of the feeder motor directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
 
@@ -89,6 +101,9 @@ interface FeederIO {
  * Pure abstraction for the fast-climber vertical elevator.
  */
 interface ClimberIO {
+    /** Refreshes cached status signals from the hardware (batch transaction) */
+    fun refresh() {}
+
     /** Sets the target extension position in meters */
     fun setTargetExtension(meters: Double)
 
@@ -108,6 +123,9 @@ interface ClimberIO {
  * Pure abstraction for the floor rollers.
  */
 interface FloorIO {
+    /** Refreshes cached status signals from the hardware (batch transaction) */
+    fun refresh() {}
+
     /** Sets the applied voltage of the floor rollers directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
 
