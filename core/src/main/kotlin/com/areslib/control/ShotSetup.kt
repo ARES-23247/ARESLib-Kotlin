@@ -25,7 +25,7 @@ class ShotResult {
  */
 object ShotSetup {
     private val TOF_KEYS = doubleArrayOf(1.24, 2.0, 3.0, 4.0, 5.6)
-    private val TOF_VALUES = doubleArrayOf(1.310, 1.330, 1.335, 1.340, 1.350)
+    private val TOF_VALUES = doubleArrayOf(0.128, 0.212, 0.345, 0.481, 0.795)
 
     private val SHOT_KEYS = doubleArrayOf(
         1.24, 2.0, 2.2, 2.5, 3.0, 3.2, 3.4, 3.63, 3.80, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6

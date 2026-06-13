@@ -233,4 +233,20 @@ class Dyn4jSimulationTest {
         assertEquals(2.5, poseArray[lastIdx + 2], "Flying ball Z coordinate must be published correctly")
         assertEquals(1.0, poseArray[lastIdx + 3], "Identity quaternion qw must be 1.0")
     }
+
+    @Test
+    fun testCowlAngleUnitMapping() {
+        val sim = Dyn4jSimulation()
+        
+        // Step simulation forward for 2 seconds (100 steps of 0.02) to let closed-loop settle
+        val state = RobotState()
+        for (i in 0 until 100) {
+            sim.cowlIO.setTargetAngle(1.0)
+            sim.step(state, 0.02)
+        }
+        
+        // The simulated cowl angle should settle near 32.0 degrees (1.0 rotations * 32.0)
+        // And angleDegrees (feedback) should return 1.0 mechanism rotations.
+        assertEquals(1.0, sim.cowlIO.angleDegrees, 0.05, "Cowl feedback should match commanded rotations")
+    }
 }

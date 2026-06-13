@@ -79,13 +79,17 @@ class Dyn4jSimulation(seed: Long = 42L) {
 
     val cowlIO: CowlIO = object : CowlIO {
         override fun setTargetAngle(degrees: Double) {
-            val error = degrees - simCowlAngle
+            // CowlIO receives target angle in mechanism rotations (0.50 to 1.75).
+            // We scale rotations by 32.0 to convert to simulation degrees (16.0 to 56.0).
+            val targetDegrees = degrees * 32.0
+            val error = targetDegrees - simCowlAngle
             simCowlVoltage = (error * 0.5).coerceIn(-12.0, 12.0)
         }
         override fun setAppliedVoltage(volts: Double) {
             simCowlVoltage = volts.coerceIn(-12.0, 12.0)
         }
-        override val angleDegrees: Double get() = simCowlAngle
+        // Returns current angle in mechanism rotations to match hardware behavior
+        override val angleDegrees: Double get() = simCowlAngle / 32.0
         override val currentAmps: Double get() = Math.abs(simCowlVoltage) * 0.2
     }
 

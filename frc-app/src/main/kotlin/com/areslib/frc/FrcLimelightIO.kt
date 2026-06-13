@@ -41,8 +41,11 @@ class FrcLimelightIO(
             val latencyMs = if (botpose.size > 6) botpose[6] else 0.0
             val timestampMs = com.areslib.util.RobotClock.currentTimeMillis() - latencyMs.toLong()
             
-            // Ambiguity (we can read from index 10 or default to 0.0)
-            val ambiguity = if (botpose.size > 10) botpose[10] else 0.0
+            // Limelight's botpose_wpiblue array does not contain single-tag ambiguity.
+            // Index 10 represents Average Target Area (percent), which is typically > 0.15% 
+            // for good close-up tag readings, causing false outlier rejects. We set ambiguity 
+            // to a stable constant (0.02) as multitag pose estimations are extremely stable.
+            val ambiguity = 0.02
             
             val pose = Pose3d(
                 translation = Translation3d(x, y, z),

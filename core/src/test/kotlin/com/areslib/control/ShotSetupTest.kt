@@ -56,6 +56,11 @@ class ShotSetupTest {
         val result = ShotResult()
         ShotSetup.calculate(robotPose, speeds, target, result)
         
+        // Assert exact, physically correct SOTM lead positions and TOF values
+        assertEquals(-1.036, result.virtualTargetY, 0.01)
+        assertEquals(-0.252, result.aimAngleRad, 0.01)
+        assertEquals(2.889, result.robotTargetHeadingRad, 0.01)
+        
         // Since robot is translating +Y, the shooter's velocity is +Y (2.0 m/s).
         // During the time of flight, the projectile gets carried along +Y.
         // Therefore, we must aim in the -Y direction (aimAngleRad < 0) to compensate.
