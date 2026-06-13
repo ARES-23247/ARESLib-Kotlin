@@ -159,7 +159,8 @@ class FrcSwerveRobot(
                         measurement.targetPose.translation.y,
                         edu.wpi.first.math.geometry.Rotation2d.fromRadians(measurement.targetPose.rotation.z)
                     )
-                    val timestampSec = measurement.timestampMs / 1000.0
+                    val latencyMs = timestamp - measurement.timestampMs
+                    val timestampSec = edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - (latencyMs / 1000.0)
                     try {
                         swerveIO.addVisionMeasurement(wpiPose, timestampSec)
                     } catch (e: Exception) {
