@@ -52,4 +52,33 @@ class PinpointIOTest {
         assertEquals(-1.5, update2.yMeters, 1e-6)
         assertEquals(com.areslib.math.InputMath.wrapAngle(0.5 + Math.PI), update2.headingRadians, 1e-6)
     }
+
+    @Test
+    fun testSoftwareOnlyInitializeWithExistingRawOffsets() {
+        val rawDriver = GoBildaPinpointDriver()
+        val pinpointIO = PinpointIO(rawDriver)
+
+        // Simulate some raw movement BEFORE initialization (e.g., robot moved before vision snap)
+        rawDriver.posX = 2.0
+        rawDriver.posY = 1.0
+        rawDriver.heading = 0.5
+
+        // Initialize with a snap pose (e.g. at (3.0, 4.0, 1.5)) without resetting hardware
+        val snapPose = Pose2d(x = 3.0, y = 4.0, heading = Rotation2d(1.5))
+        pinpointIO.initialize(snapPose, resetHardware = false)
+
+        // Immediately after initialize (before raw movement changes), it should return the snapPose
+        val snapUpdate = pinpointIO.getPoseUpdate()
+        assertEquals(3.0, snapUpdate.xMeters, 1e-6)
+        assertEquals(4.0, snapUpdate.yMeters, 1e-6)
+        assertEquals(1.5, snapUpdate.headingRadians, 1e-6)
+
+        // If the robot now rotates further by +0.1 rad and moves +0.5m along raw X:
+        rawDriver.posX += 0.5
+        rawDriver.heading += 0.1
+
+        val finalUpdate = pinpointIO.getPoseUpdate()
+        // The heading should change to 1.6
+        assertEquals(1.6, finalUpdate.headingRadians, 1e-6)
+    }
 }

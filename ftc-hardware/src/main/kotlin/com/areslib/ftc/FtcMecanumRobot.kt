@@ -122,6 +122,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private var lastLimelightTimeMs = 0L
     var lastVisionStatus = "OFFLINE"
     private var consecutiveVisionRejections = 0
+    var isInInit: Boolean = true
+    private var hasInitializedPoseWithVision = false
     
     private var lastUpdateTime = 0L
     private var lastVoltageReadTime = 0L
@@ -266,29 +268,39 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     }
                 }
 
-                // Kidnapped Robot Recovery:
-                // If the EKF is rejecting our vision inputs (large drift/mismatch), but the Limelight is
-                // reporting a high-confidence pose (low ambiguity) while the robot is stationary (commanded 0.0),
-                // we track consecutive rejections. If rejected for 10 frames (~200ms), we force-reseed EKF/Pinpoint
-                // to the Limelight pose.
-                val isRejected = lastVisionStatus.startsWith("REJ_")
-                val isHighConfidence = measurement.ambiguity < 0.05
-                val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
-                                   store.state.drive.yVelocityMetersPerSecond == 0.0 &&
-                                   store.state.drive.angularVelocityRadiansPerSecond == 0.0
-
-                if (isRejected && isHighConfidence && isStationary) {
-                    consecutiveVisionRejections++
-                    if (consecutiveVisionRejections >= 10) {
+                // 1. One-time absolute snap during initialization to bypass outlier lockout
+                if (isInInit) {
+                    if (!hasInitializedPoseWithVision && measurement.ambiguity < 0.05) {
                         val snapPose = measurement.targetPose.toPose2d()
-                        // Reset pinpoint computer hardware and set its internal offsets to the snap pose.
-                        // This causes the next EKF propagation delta to snap the EKF estimated pose to the snap pose.
-                        pinpointIO?.initialize(snapPose)
-                        consecutiveVisionRejections = 0
-                        lastVisionStatus = "RESEED_SNAP"
+                        pinpointIO?.initialize(snapPose, resetHardware = false)
+                        hasInitializedPoseWithVision = true
+                        lastVisionStatus = "INIT_ALIGN_SNAP"
                     }
                 } else {
-                    consecutiveVisionRejections = 0
+                    // Kidnapped Robot Recovery (Active Play):
+                    // If the EKF is rejecting our vision inputs (large drift/mismatch), but the Limelight is
+                    // reporting a high-confidence pose (low ambiguity) while the robot is stationary (commanded 0.0),
+                    // we track consecutive rejections. If rejected for 10 frames (~200ms), we force-reseed EKF/Pinpoint
+                    // to the Limelight pose.
+                    val isRejected = lastVisionStatus.startsWith("REJ_")
+                    val isHighConfidence = measurement.ambiguity < 0.05
+                    val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
+                                       store.state.drive.yVelocityMetersPerSecond == 0.0 &&
+                                       store.state.drive.angularVelocityRadiansPerSecond == 0.0
+
+                    if (isRejected && isHighConfidence && isStationary) {
+                        consecutiveVisionRejections++
+                        if (consecutiveVisionRejections >= 10) {
+                            val snapPose = measurement.targetPose.toPose2d()
+                            // Reset pinpoint computer hardware and set its internal offsets to the snap pose.
+                            // This causes the next EKF propagation delta to snap the EKF estimated pose to the snap pose.
+                            pinpointIO?.initialize(snapPose, resetHardware = false)
+                            consecutiveVisionRejections = 0
+                            lastVisionStatus = "RESEED_SNAP"
+                        }
+                    } else {
+                        consecutiveVisionRejections = 0
+                    }
                 }
 
                 store.dispatch(RobotAction.VisionMeasurementsReceived(
