@@ -131,7 +131,7 @@ class FrcSwerveRobotTest {
         assertEquals(Math.toRadians(50.0), robot.store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
 
         // 2. Trigger beached condition (high tilt, high wheel speed, low motor current draw)
-        swerveIO.mockPitch = 5.0
+        swerveIO.mockPitch = 10.0
         swerveIO.mockSpeeds = doubleArrayOf(2.0, 2.0, 2.0, 2.0)
         swerveIO.mockCurrents = doubleArrayOf(3.0, 3.0, 3.0, 3.0) // < 8.0 A
         assertTrue(robot.isBeached, "Robot should be detected as beached")

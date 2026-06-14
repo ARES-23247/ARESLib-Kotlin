@@ -315,8 +315,9 @@ class FrcSwerveRobot(
             val pitch = swerveIO.pitchDegrees
             val roll = swerveIO.rollDegrees
             
-            // Tilted chassis represents climbing/riding up on a note/ball
-            val isTilted = Math.abs(pitch) > 4.0 || Math.abs(roll) > 4.0
+            // Tilted chassis represents climbing/riding up on a note/ball.
+            // 8.0 degrees prevents false positives from normal suspension travel (braking/acceleration).
+            val isTilted = Math.abs(pitch) > 8.0 || Math.abs(roll) > 8.0
             
             // Loss of traction: high speed but very low current draw
             val speeds = swerveIO.moduleSpeeds
