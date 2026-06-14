@@ -14,7 +14,9 @@ import edu.wpi.first.networktables.NetworkTableInstance
  */
 class FrcLimelightIO(
     val tableName: String = "limelight",
-    override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
+    override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0))),
+    val defaultPipeline: Int = 0,
+    val imuMode: Int = 4 // 4 = INTERNAL_EXTERNAL_ASSIST (recommended for LL3G/LL4), 0 = EXTERNAL_ONLY
 ) : VisionIO {
 
     private val table = NetworkTableInstance.getDefault().getTable(tableName)
@@ -26,6 +28,18 @@ class FrcLimelightIO(
 
     private var lastLinearVelocityMps = 0.0
     private var lastYawRateDegPerSec = 0.0
+
+    init {
+        // Enforce match-ready settings to NetworkTables on startup
+        try {
+            table.getIntegerTopic("pipeline").publish().set(defaultPipeline.toLong())
+            table.getIntegerTopic("ledMode").publish().set(1L) // 1 = Force Off
+            table.getIntegerTopic("stream").publish().set(0L)  // 0 = Standard Stream
+            table.getIntegerTopic("imuMode").publish().set(imuMode.toLong())
+        } catch (e: Exception) {
+            System.err.println("FrcLimelightIO: Failed to write startup configuration: ${e.message}")
+        }
+    }
 
     override fun setOrientation(
         yawDegrees: Double, yawRateDegPerSec: Double,
