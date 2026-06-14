@@ -1,13 +1,14 @@
 package com.areslib.telemetry
 
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpHandler
-import com.sun.net.httpserver.HttpServer
 import java.io.File
 import java.io.FileInputStream
 import java.io.OutputStream
+import java.net.ServerSocket
+import java.net.Socket
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Global tracker for robot runtime status, exposed to the web portal over Wi-Fi.
@@ -35,14 +36,15 @@ object RobotStatusTracker {
 /**
  * Embedded HTTP Server running on the robot (REV Control Hub or RoboRIO).
  * Listens on port 8082 by default, serving state queries and log uploads to the web app.
+ * Built using pure Java Socket and ServerSocket to run on Android (REV Control Hub)
+ * where com.sun.net.httpserver is unavailable.
  */
 object RobotWebServer {
-    private var server: HttpServer? = null
+    private var serverSocket: ServerSocket? = null
+    private var serverThread: Thread? = null
     private var discoveryThread: Thread? = null
-    private val activeForwarders = java.util.concurrent.CopyOnWriteArrayList<PortForwarder>()
-    private val executor = Executors.newSingleThreadExecutor { thread ->
-        Thread(thread, "ARES-WebServer-Thread").apply { isDaemon = true }
-    }
+    private val activeForwarders = CopyOnWriteArrayList<PortForwarder>()
+    private var executor: ExecutorService? = null
 
     private val logDir: File by lazy {
         val javaVendor = System.getProperty("java.vendor") ?: ""
@@ -53,16 +55,32 @@ object RobotWebServer {
     /**
      * Starts the web server in a background thread.
      */
+    @Synchronized
     fun start(port: Int = 8082) {
-        if (server != null) return
+        if (serverSocket != null) return
         try {
-            server = HttpServer.create(InetSocketAddress(port), 0).apply {
-                createContext("/api/status", StatusHandler())
-                createContext("/api/logs", LogsHandler())
-                createContext("/api/logs/download", DownloadHandler())
-                createContext("/api/logs/markSynced", MarkSyncedHandler())
-                createContext("/api/limelight/stream", LimelightStreamHandler())
-                executor = this@RobotWebServer.executor
+            if (executor == null || executor!!.isShutdown) {
+                executor = Executors.newCachedThreadPool { thread ->
+                    Thread(thread, "ARES-WebServer-Worker").apply { isDaemon = true }
+                }
+            }
+
+            serverSocket = ServerSocket(port)
+            val socket = serverSocket!!
+
+            serverThread = Thread({
+                while (!Thread.currentThread().isInterrupted) {
+                    try {
+                        val client = socket.accept()
+                        executor?.submit {
+                            handleClient(client)
+                        }
+                    } catch (e: Exception) {
+                        break
+                    }
+                }
+            }, "ARES-WebServer-Acceptor").apply {
+                isDaemon = true
                 start()
             }
 
@@ -75,9 +93,9 @@ object RobotWebServer {
                     val currentIps = mutableListOf<String>()
                     for (ip in possibleIps) {
                         try {
-                            val socket = java.net.Socket()
-                            socket.connect(java.net.InetSocketAddress(ip, 5800), 150)
-                            socket.close()
+                            val testSocket = Socket()
+                            testSocket.connect(InetSocketAddress(ip, 5800), 150)
+                            testSocket.close()
                             currentIps.add(ip)
                         } catch (_: Exception) {}
                     }
@@ -120,228 +138,269 @@ object RobotWebServer {
     /**
      * Stops the web server.
      */
+    @Synchronized
     fun stop() {
-        server?.stop(0)
-        server = null
+        try {
+            serverSocket?.close()
+        } catch (_: Exception) {}
+        serverSocket = null
+
+        serverThread?.interrupt()
+        serverThread = null
+
         discoveryThread?.interrupt()
         discoveryThread = null
+
         for (f in activeForwarders) {
             f.stopForwarder()
         }
         activeForwarders.clear()
-        executor.shutdown()
+
+        executor?.shutdownNow()
+        executor = null
     }
 
-    private class StatusHandler : HttpHandler {
-        override fun handle(exchange: HttpExchange) {
-            enableCors(exchange)
-            if ("GET" != exchange.requestMethod) {
-                sendError(exchange, 405, "Method Not Allowed")
+    private fun handleClient(client: Socket) {
+        try {
+            val reader = client.getInputStream().bufferedReader(Charsets.UTF_8)
+            val firstLine = reader.readLine() ?: return
+
+            val tokens = firstLine.split(" ")
+            if (tokens.size < 2) {
+                sendErrorResponse(client, 400, "Bad Request")
                 return
             }
+            val method = tokens[0]
+            val fullPath = tokens[1]
 
-            val host = exchange.requestHeaders.getFirst("Host") ?: "localhost:8082"
-            val hostIp = host.split(":").firstOrNull() ?: "localhost"
-            val camerasJson = RobotStatusTracker.activeLimelightIps.mapIndexed { index, ip ->
-                val streamPort = 5800 + (index * 2)
-                val configPort = 5801 + (index * 2)
-                """{
-                    "name": "limelight-${index + 1}",
-                    "ip": "$ip",
-                    "streamUrl": "http://$hostIp:$streamPort",
-                    "configUrl": "http://$hostIp:$configPort"
-                }"""
-            }.joinToString(",")
-
-            val response = """{
-                "enabled": ${RobotStatusTracker.isEnabled},
-                "opMode": "${RobotStatusTracker.activeOpMode}",
-                "vision": {
-                    "connected": ${RobotStatusTracker.visionConnected},
-                    "status": "${RobotStatusTracker.visionStatus}",
-                    "cameras": [$camerasJson]
+            // Read headers until blank line
+            val headers = mutableMapOf<String, String>()
+            while (true) {
+                val line = reader.readLine()
+                if (line == null || line.trim().isEmpty()) break
+                val colonIdx = line.indexOf(':')
+                if (colonIdx != -1) {
+                    val key = line.substring(0, colonIdx).trim().lowercase()
+                    val value = line.substring(colonIdx + 1).trim()
+                    headers[key] = value
                 }
-            }""".trimIndent()
+            }
 
-            sendJson(exchange, response)
+            if (method == "OPTIONS") {
+                sendOptionsResponse(client)
+                return
+            }
+
+            val questionIdx = fullPath.indexOf('?')
+            val path = if (questionIdx != -1) fullPath.substring(0, questionIdx) else fullPath
+            val query = if (questionIdx != -1) fullPath.substring(questionIdx + 1) else ""
+
+            when (path) {
+                "/api/status" -> handleStatus(client, method, headers)
+                "/api/logs" -> handleLogs(client, method)
+                "/api/logs/download" -> handleDownload(client, method, query)
+                "/api/logs/markSynced" -> handleMarkSynced(client, method, query)
+                "/api/limelight/stream" -> handleLimelightStream(client, method)
+                else -> sendErrorResponse(client, 404, "Not Found")
+            }
+        } catch (e: Exception) {
+            // Socket or parsing error
+        } finally {
+            try { client.close() } catch (_: Exception) {}
         }
     }
 
-    private class LogsHandler : HttpHandler {
-        override fun handle(exchange: HttpExchange) {
-            enableCors(exchange)
-            if ("GET" != exchange.requestMethod) {
-                sendError(exchange, 405, "Method Not Allowed")
-                return
-            }
-
-            if (!logDir.exists()) {
-                sendJson(exchange, "[]")
-                return
-            }
-
-            val files = logDir.listFiles { _, name -> name.endsWith(".csv") } ?: emptyArray()
-            val fileList = files.sortedBy { it.name }.joinToString(",") { "\"${it.name}\"" }
-            sendJson(exchange, "[$fileList]")
-        }
+    private fun writeCorsHeaders(out: OutputStream) {
+        out.write("Access-Control-Allow-Origin: *\r\n".toByteArray())
+        out.write("Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n".toByteArray())
+        out.write("Access-Control-Allow-Headers: Content-Type, Authorization\r\n".toByteArray())
     }
 
-    private class DownloadHandler : HttpHandler {
-        override fun handle(exchange: HttpExchange) {
-            enableCors(exchange)
-            if ("GET" != exchange.requestMethod) {
-                sendError(exchange, 405, "Method Not Allowed")
-                return
+    private fun sendOptionsResponse(client: Socket) {
+        val out = client.getOutputStream()
+        out.write("HTTP/1.1 204 No Content\r\n".toByteArray())
+        writeCorsHeaders(out)
+        out.write("Connection: close\r\n\r\n".toByteArray())
+        out.flush()
+    }
+
+    private fun sendJsonResponse(client: Socket, status: Int, statusText: String, json: String) {
+        val out = client.getOutputStream()
+        val bytes = json.toByteArray(Charsets.UTF_8)
+        out.write("HTTP/1.1 $status $statusText\r\n".toByteArray())
+        writeCorsHeaders(out)
+        out.write("Content-Type: application/json\r\n".toByteArray())
+        out.write("Content-Length: ${bytes.size}\r\n".toByteArray())
+        out.write("Connection: close\r\n\r\n".toByteArray())
+        out.write(bytes)
+        out.flush()
+    }
+
+    private fun sendErrorResponse(client: Socket, code: Int, message: String) {
+        sendJsonResponse(client, code, message, "{\"error\": \"$message\"}")
+    }
+
+    private fun handleStatus(client: Socket, method: String, headers: Map<String, String>) {
+        if (method != "GET") {
+            sendErrorResponse(client, 405, "Method Not Allowed")
+            return
+        }
+
+        val host = headers["host"] ?: "localhost:8082"
+        val hostIp = host.split(":").firstOrNull() ?: "localhost"
+        val camerasJson = RobotStatusTracker.activeLimelightIps.mapIndexed { index, ip ->
+            val streamPort = 5800 + (index * 2)
+            val configPort = 5801 + (index * 2)
+            """{
+                "name": "limelight-${index + 1}",
+                "ip": "$ip",
+                "streamUrl": "http://$hostIp:$streamPort",
+                "configUrl": "http://$hostIp:$configPort"
+            }"""
+        }.joinToString(",")
+
+        val response = """{
+            "enabled": ${RobotStatusTracker.isEnabled},
+            "opMode": "${RobotStatusTracker.activeOpMode}",
+            "vision": {
+                "connected": ${RobotStatusTracker.visionConnected},
+                "status": "${RobotStatusTracker.visionStatus}",
+                "cameras": [$camerasJson]
             }
+        }""".trimIndent()
 
-            val query = exchange.requestURI.query ?: ""
-            val fileName = query.split("=").getOrNull(1)
-            if (fileName == null) {
-                sendError(exchange, 400, "Bad Request: Missing 'file' parameter")
-                return
-            }
+        sendJsonResponse(client, 200, "OK", response)
+    }
 
-            val file = File(logDir, fileName)
-            if (!file.exists() || !file.name.endsWith(".csv")) {
-                sendError(exchange, 404, "Log file not found")
-                return
-            }
+    private fun handleLogs(client: Socket, method: String) {
+        if (method != "GET") {
+            sendErrorResponse(client, 405, "Method Not Allowed")
+            return
+        }
 
-            exchange.responseHeaders.set("Content-Type", "text/csv")
-            exchange.sendResponseHeaders(200, file.length())
+        if (!logDir.exists()) {
+            sendJsonResponse(client, 200, "OK", "[]")
+            return
+        }
 
-            val outputStream: OutputStream = exchange.responseBody
-            val fileInputStream = FileInputStream(file)
+        val files = logDir.listFiles { _, name -> name.endsWith(".csv") } ?: emptyArray()
+        val fileList = files.sortedBy { it.name }.joinToString(",") { "\"${it.name}\"" }
+        sendJsonResponse(client, 200, "OK", "[$fileList]")
+    }
+
+    private fun handleDownload(client: Socket, method: String, query: String) {
+        if (method != "GET") {
+            sendErrorResponse(client, 405, "Method Not Allowed")
+            return
+        }
+
+        val fileName = query.split("&").firstOrNull { it.startsWith("file=") }?.substringAfter("file=")
+        if (fileName == null) {
+            sendErrorResponse(client, 400, "Bad Request: Missing 'file' parameter")
+            return
+        }
+
+        val file = File(logDir, fileName)
+        if (!file.exists() || !file.name.endsWith(".csv")) {
+            sendErrorResponse(client, 404, "Log file not found")
+            return
+        }
+
+        val out = client.getOutputStream()
+        out.write("HTTP/1.1 200 OK\r\n".toByteArray())
+        writeCorsHeaders(out)
+        out.write("Content-Type: text/csv\r\n".toByteArray())
+        out.write("Content-Length: ${file.length()}\r\n".toByteArray())
+        out.write("Connection: close\r\n\r\n".toByteArray())
+
+        FileInputStream(file).use { fis ->
             val buffer = ByteArray(4096)
             var bytesRead: Int
-            while (fileInputStream.read(buffer).also { bytesRead = it } != -1) {
-                outputStream.write(buffer, 0, bytesRead)
+            while (fis.read(buffer).also { bytesRead = it } != -1) {
+                out.write(buffer, 0, bytesRead)
             }
-            fileInputStream.close()
-            outputStream.close()
+        }
+        out.flush()
+    }
+
+    private fun handleMarkSynced(client: Socket, method: String, query: String) {
+        if (method != "POST") {
+            sendErrorResponse(client, 405, "Method Not Allowed")
+            return
+        }
+
+        val fileName = query.split("&").firstOrNull { it.startsWith("file=") }?.substringAfter("file=")
+        if (fileName == null) {
+            sendErrorResponse(client, 400, "Bad Request: Missing 'file' parameter")
+            return
+        }
+
+        val file = File(logDir, fileName)
+        if (!file.exists() || !file.name.endsWith(".csv")) {
+            sendErrorResponse(client, 404, "Log file not found")
+            return
+        }
+
+        val syncedDir = File(logDir, "synced")
+        if (!syncedDir.exists()) {
+            syncedDir.mkdirs()
+        }
+
+        val destFile = File(syncedDir, file.name)
+        val success = file.renameTo(destFile)
+
+        if (success) {
+            sendJsonResponse(client, 200, "OK", "{\"success\": true, \"message\": \"Marked file ${file.name} as synced\"}")
+        } else {
+            sendErrorResponse(client, 500, "Failed to archive log file")
         }
     }
 
-    private class MarkSyncedHandler : HttpHandler {
-        override fun handle(exchange: HttpExchange) {
-            enableCors(exchange)
-            if ("POST" != exchange.requestMethod && "OPTIONS" != exchange.requestMethod) {
-                sendError(exchange, 405, "Method Not Allowed")
-                return
-            }
-
-            if ("OPTIONS" == exchange.requestMethod) {
-                exchange.sendResponseHeaders(204, -1)
-                return
-            }
-
-            val query = exchange.requestURI.query ?: ""
-            val fileName = query.split("=").getOrNull(1)
-            if (fileName == null) {
-                sendError(exchange, 400, "Bad Request: Missing 'file' parameter")
-                return
-            }
-
-            val file = File(logDir, fileName)
-            if (!file.exists() || !file.name.endsWith(".csv")) {
-                sendError(exchange, 404, "Log file not found")
-                return
-            }
-
-            val syncedDir = File(logDir, "synced")
-            if (!syncedDir.exists()) {
-                syncedDir.mkdirs()
-            }
-
-            val destFile = File(syncedDir, file.name)
-            val success = file.renameTo(destFile)
-
-            if (success) {
-                sendJson(exchange, "{\"success\": true, \"message\": \"Marked file ${file.name} as synced\"}")
-            } else {
-                sendError(exchange, 500, "Failed to archive log file")
-            }
+    private fun handleLimelightStream(client: Socket, method: String) {
+        if (method != "GET") {
+            sendErrorResponse(client, 405, "Method Not Allowed")
+            return
         }
-    }
 
-    private fun enableCors(exchange: HttpExchange) {
-        exchange.responseHeaders.apply {
-            set("Access-Control-Allow-Origin", "*")
-            set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        val ip = RobotStatusTracker.resolvedLimelightIp ?: RobotStatusTracker.activeLimelightIps.firstOrNull()
+        if (ip == null) {
+            sendErrorResponse(client, 502, "Bad Gateway: Limelight camera not found on USB tether subnets")
+            return
         }
-    }
 
-    private fun sendJson(exchange: HttpExchange, json: String) {
-        val bytes = json.toByteArray()
-        exchange.responseHeaders.set("Content-Type", "application/json")
-        exchange.sendResponseHeaders(200, bytes.size.toLong())
-        val os: OutputStream = exchange.responseBody
-        os.write(bytes)
-        os.close()
-    }
+        val limelightUrl = java.net.URL("http://$ip:5800/stream.mjpeg")
+        try {
+            val connection = limelightUrl.openConnection() as java.net.HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 1000
+            connection.readTimeout = 5000
 
-    private fun sendError(exchange: HttpExchange, code: Int, message: String) {
-        val bytes = "{\"error\": \"$message\"}".toByteArray()
-        exchange.responseHeaders.set("Content-Type", "application/json")
-        exchange.sendResponseHeaders(code, bytes.size.toLong())
-        val os: OutputStream = exchange.responseBody
-        os.write(bytes)
-        os.close()
-    }
+            val out = client.getOutputStream()
+            out.write("HTTP/1.1 ${connection.responseCode} OK\r\n".toByteArray())
+            writeCorsHeaders(out)
 
-    private class LimelightStreamHandler : HttpHandler {
-        override fun handle(exchange: HttpExchange) {
-            enableCors(exchange)
-            if ("GET" != exchange.requestMethod && "OPTIONS" != exchange.requestMethod) {
-                sendError(exchange, 405, "Method Not Allowed")
-                return
-            }
-
-            if ("OPTIONS" == exchange.requestMethod) {
-                exchange.sendResponseHeaders(204, -1)
-                return
-            }
-
-            val ip = RobotStatusTracker.resolvedLimelightIp ?: RobotStatusTracker.activeLimelightIps.firstOrNull()
-            if (ip == null) {
-                sendError(exchange, 502, "Bad Gateway: Limelight camera not found on USB tether subnets")
-                return
-            }
-
-            val limelightUrl = java.net.URL("http://$ip:5800/stream.mjpeg")
-            try {
-                val connection = limelightUrl.openConnection() as java.net.HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 1000
-                connection.readTimeout = 5000
-
-                // Copy response headers
-                for ((headerKey, headerValues) in connection.headerFields) {
-                    if (headerKey != null) {
-                        for (value in headerValues) {
-                            exchange.responseHeaders.add(headerKey, value)
-                        }
+            // Copy response headers
+            for ((headerKey, headerValues) in connection.headerFields) {
+                if (headerKey != null && headerKey.lowercase() != "connection") {
+                    for (value in headerValues) {
+                        out.write("$headerKey: $value\r\n".toByteArray())
                     }
                 }
-
-                val responseCode = connection.responseCode
-                exchange.sendResponseHeaders(responseCode, 0) // Chunked streaming
-
-                val input = connection.inputStream
-                val output = exchange.responseBody
-                val buffer = ByteArray(4096)
-                var bytesRead: Int
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    output.flush()
-                }
-                input.close()
-                output.close()
-            } catch (e: Exception) {
-                RobotStatusTracker.resolvedLimelightIp = null
-                sendError(exchange, 502, "Bad Gateway: Failed to stream from Limelight at $ip:5800. Error: ${e.message}")
             }
+            out.write("Connection: close\r\n\r\n".toByteArray())
+            out.flush()
+
+            val input = connection.inputStream
+            val buffer = ByteArray(4096)
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                out.write(buffer, 0, bytesRead)
+                out.flush()
+            }
+            input.close()
+        } catch (e: Exception) {
+            RobotStatusTracker.resolvedLimelightIp = null
+            sendErrorResponse(client, 502, "Bad Gateway: Failed to stream from Limelight at $ip:5800. Error: ${e.message}")
         }
     }
 
