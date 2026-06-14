@@ -13,6 +13,7 @@ object TelemetryPublisher {
     private val targetPosePublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/TargetPose").publish()
     private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/EstimatedPose").publish()
     private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/GamePieces").publish()
+    private val timestampPub = ntInst.getIntegerTopic("TimestampMs").publish()
 
     // --- AdvantageKit-level Swerve Module Telemetry ---
     private val moduleSpeedsTargetPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleSpeedsTarget").publish()
@@ -54,6 +55,7 @@ object TelemetryPublisher {
      */
     fun publish(state: RobotState) {
         statePublisher.set(state)
+        timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
 
     /**
