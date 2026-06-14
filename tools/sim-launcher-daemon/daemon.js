@@ -5,6 +5,15 @@ const https = require("https");
 const { execSync, spawn } = require("child_process");
 const readline = require("readline");
 
+// Prepend JDK 17 bin to PATH and set JAVA_HOME on Windows if available
+if (process.platform === "win32") {
+  const jdkPath = "C:\\Program Files\\Java\\jdk-17";
+  if (fs.existsSync(jdkPath)) {
+    process.env.JAVA_HOME = jdkPath;
+    process.env.PATH = path.join(jdkPath, "bin") + path.delimiter + process.env.PATH;
+  }
+}
+
 // 1. Auto-installation of dependencies if missing
 const daemonDir = __dirname;
 const nodeModulesDir = path.join(daemonDir, "node_modules");
