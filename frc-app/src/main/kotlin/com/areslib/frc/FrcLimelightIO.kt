@@ -19,13 +19,46 @@ class FrcLimelightIO(
 
     private val table = NetworkTableInstance.getDefault().getTable(tableName)
     private val botposeSub = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(DoubleArray(0))
+    private val botposeMt2Sub = table.getDoubleArrayTopic("botpose_wpiblue_mt2").subscribe(DoubleArray(0))
     private val tvSub = table.getIntegerTopic("tv").subscribe(0)
+    
+    private val orientationPub = table.getDoubleArrayTopic("orientation_megatag2").publish()
+
+    private var lastLinearVelocityMps = 0.0
+    private var lastYawRateDegPerSec = 0.0
+
+    override fun setOrientation(
+        yawDegrees: Double, yawRateDegPerSec: Double,
+        pitchDegrees: Double, pitchRateDegPerSec: Double,
+        rollDegrees: Double, rollRateDegPerSec: Double,
+        linearVelocityMps: Double
+    ) {
+        lastLinearVelocityMps = linearVelocityMps
+        lastYawRateDegPerSec = yawRateDegPerSec
+        
+        orientationPub.set(doubleArrayOf(
+            yawDegrees, yawRateDegPerSec,
+            pitchDegrees, pitchRateDegPerSec,
+            rollDegrees, rollRateDegPerSec
+        ))
+    }
 
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.cameraPoses = cameraPoses
         
-        val botpose = botposeSub.get()
         val tv = tvSub.get()
+        val isStatic = lastLinearVelocityMps < 0.15 && Math.abs(lastYawRateDegPerSec) < 10.0
+        
+        // Select topic based on robot motion state (Hybrid MegaTag strategy)
+        // - MegaTag1 (botpose_wpiblue) when static to allow EKF to correct yaw drift.
+        // - MegaTag2 (botpose_wpiblue_mt2) when moving to prevent pose-flipping.
+        val botpose = if (isStatic) {
+            val mt1 = botposeSub.get()
+            if (mt1.isNotEmpty()) mt1 else botposeMt2Sub.get()
+        } else {
+            val mt2 = botposeMt2Sub.get()
+            if (mt2.isNotEmpty()) mt2 else botposeSub.get()
+        }
         
         inputs.isConnected = tv == 1L && botpose.isNotEmpty()
         

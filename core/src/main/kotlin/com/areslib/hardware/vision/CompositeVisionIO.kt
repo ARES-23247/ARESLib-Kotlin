@@ -28,4 +28,20 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO {
         inputs.measurements = allMeasurements
         inputs.cameraPoses = cameraPoses
     }
+
+    override fun setOrientation(
+        yawDegrees: Double, yawRateDegPerSec: Double,
+        pitchDegrees: Double, pitchRateDegPerSec: Double,
+        rollDegrees: Double, rollRateDegPerSec: Double,
+        linearVelocityMps: Double
+    ) {
+        for (io in ios) {
+            io.setOrientation(
+                yawDegrees, yawRateDegPerSec,
+                pitchDegrees, pitchRateDegPerSec,
+                rollDegrees, rollRateDegPerSec,
+                linearVelocityMps
+            )
+        }
+    }
 }

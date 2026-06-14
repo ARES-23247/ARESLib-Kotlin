@@ -105,11 +105,21 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      * kinematics and closed-loop motor control internally.
      */
     override fun write(driveState: DriveState) {
-        val speeds = ChassisSpeeds(
-            driveState.xVelocityMetersPerSecond,
-            driveState.yVelocityMetersPerSecond,
-            driveState.angularVelocityRadiansPerSecond
-        )
+        val speeds = if (driveState.isFieldCentric) {
+            val heading = edu.wpi.first.math.geometry.Rotation2d.fromRadians(driveState.odometryHeading)
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                driveState.xVelocityMetersPerSecond,
+                driveState.yVelocityMetersPerSecond,
+                driveState.angularVelocityRadiansPerSecond,
+                heading
+            )
+        } else {
+            ChassisSpeeds(
+                driveState.xVelocityMetersPerSecond,
+                driveState.yVelocityMetersPerSecond,
+                driveState.angularVelocityRadiansPerSecond
+            )
+        }
         
         // Pass the speeds to the CTRE API
         drivetrain.setControl(robotSpeedsRequest.withSpeeds(speeds))

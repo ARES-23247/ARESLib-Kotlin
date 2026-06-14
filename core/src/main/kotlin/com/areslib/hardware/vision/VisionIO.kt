@@ -26,4 +26,14 @@ interface VisionIO {
      * Updates the inputs with the latest data from the hardware.
      */
     fun updateInputs(inputs: VisionIOInputs)
+
+    /**
+     * Updates the camera with orientation and motion data (used by MegaTag2).
+     */
+    fun setOrientation(
+        yawDegrees: Double, yawRateDegPerSec: Double,
+        pitchDegrees: Double, pitchRateDegPerSec: Double,
+        rollDegrees: Double, rollRateDegPerSec: Double,
+        linearVelocityMps: Double = 0.0
+    ) {}
 }

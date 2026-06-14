@@ -169,6 +169,16 @@ class FrcSwerveRobot(
 
         // ── 1.5. READ: Vision → Store ──
         visionIO?.let { io ->
+            val drive = store.state.drive
+            io.setOrientation(
+                yawDegrees = Math.toDegrees(drive.odometryHeading),
+                yawRateDegPerSec = Math.toDegrees(drive.angularVelocityRadiansPerSecond),
+                pitchDegrees = drive.pitchDegrees,
+                pitchRateDegPerSec = 0.0,
+                rollDegrees = drive.rollDegrees,
+                rollRateDegPerSec = 0.0,
+                linearVelocityMps = Math.hypot(drive.xVelocityMetersPerSecond, drive.yVelocityMetersPerSecond)
+            )
             io.updateInputs(visionInputs)
             if (visionInputs.measurements.isNotEmpty()) {
                 val measurement = visionInputs.measurements[0]

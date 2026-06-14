@@ -43,6 +43,7 @@ class ARESRobot : TimedRobot() {
     // Slamtake state tracking
     private var slamtakeActive = false
     private var slamtakeStartTime = 0.0
+    private var driverYawOffset = 0.0
 
     // Pre-allocated ShotResult for SOTM (zero-allocation)
     private val shotResult = ShotResult()
@@ -149,6 +150,10 @@ class ARESRobot : TimedRobot() {
 
     // ── Teleop ──
 
+    override fun teleopInit() {
+        driverYawOffset = 0.0
+    }
+
     override fun teleopPeriodic() {
         val alliance = DriverStation.getAlliance()
         if (alliance.isPresent) {
@@ -160,8 +165,15 @@ class ARESRobot : TimedRobot() {
         }
 
         val applyDeadband = { value: Double -> if (Math.abs(value) < 0.1) 0.0 else value }
-        val forward = applyDeadband(-controller.leftY) * 4.5
-        val strafe = applyDeadband(-controller.leftX) * 4.5
+        val rawForward = applyDeadband(-controller.leftY) * 4.5
+        val rawStrafe = applyDeadband(-controller.leftX) * 4.5
+        
+        // Rotate joystick translation inputs by driverYawOffset to make controls relative to the driver's reset heading
+        val cosOffset = Math.cos(driverYawOffset)
+        val sinOffset = Math.sin(driverYawOffset)
+        val forward = rawForward * cosOffset - rawStrafe * sinOffset
+        val strafe = rawForward * sinOffset + rawStrafe * cosOffset
+        
         var rotation = applyDeadband(-controller.rightX) * Math.PI
 
         val currentPose = Pose2d(
@@ -176,14 +188,9 @@ class ARESRobot : TimedRobot() {
             return
         }
 
-        // ── Gyro Reset ──
+        // ── Gyro Reset (Driver Coordinate Alignment) ──
         if (controller.backButton || coPilotController.backButton) {
-            robot.store.dispatch(RobotAction.PoseUpdate(
-                xMeters = currentPose.x,
-                yMeters = currentPose.y,
-                headingRadians = 0.0,
-                timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-            ))
+            driverYawOffset = robot.store.state.drive.odometryHeading
         }
 
         // ── Driver / Copilot Shooting Triggers ──
