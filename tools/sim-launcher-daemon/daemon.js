@@ -173,7 +173,7 @@ if (hasSSL) {
   wssProxy.on("connection", (clientWs) => {
     console.log("[Proxy] Browser client connected.");
     const targetUrl = "ws://127.0.0.1:5810/nt/v4/websocket";
-    const simWs = new WebSocket(targetUrl, ["networktables.org"]);
+    const simWs = new WebSocket(targetUrl);
 
     simWs.on("message", (data, isBinary) => {
       if (clientWs.readyState === WebSocket.OPEN) {
