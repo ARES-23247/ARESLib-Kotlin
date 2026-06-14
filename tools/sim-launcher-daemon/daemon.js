@@ -34,6 +34,7 @@ const WebSocket = require("ws");
 
 // Constants & Configurations
 const PORT = process.env.PORT || 8080;
+const PORT_SECURE = process.env.PORT_SECURE || 8443;
 const REPO_ROOT = path.resolve(daemonDir, "../..");
 const ALLOWED_ORIGINS = [
   "https://aresfirst-portal.web.app",
@@ -104,57 +105,64 @@ console.log(`JDK Version:     ${env.jdkVersion} ${env.jdkValid ? "✅ (>= 17)" :
 console.log(`Gradle Wrapper:  ${env.gradlewExists ? "✅ Found" : "❌ Missing"}`);
 console.log("============================================\n");
 
-// 3. Initialize WebSocket Server with Secure/Unsecure HTTP
-let server;
+// 3. Initialize HTTP & HTTPS Servers for WS and WSS support
 const sslDir = path.join(daemonDir, "ssl");
 const certPath = path.join(sslDir, "cert.pem");
 const keyPath = path.join(sslDir, "key.pem");
-
 const hasSSL = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
+// Setup verifyClient for CORS / origin check
+const wsVerifyClient = (info) => {
+  const origin = info.origin;
+  const isAllowed = ALLOWED_ORIGINS.some((allowed) => {
+    if (allowed.includes("*")) {
+      return origin.startsWith(allowed.replace("*", ""));
+    }
+    return origin === allowed;
+  });
+
+  if (!isAllowed) {
+    console.warn(`[Daemon] Rejected connection from unauthorized origin: ${origin}`);
+  }
+  return isAllowed;
+};
+
+// Create unsecure HTTP / WS server (always running on port 8080)
+const httpServer = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end("ARES Sim Launcher Daemon running (WS).\n");
+});
+
+const wssUnsecure = new WebSocket.Server({
+  server: httpServer,
+  verifyClient: wsVerifyClient
+});
+
+// Create secure HTTPS / WSS server (optional, runs on port 8443 if SSL certs exist)
+let httpsServer = null;
+let wssSecure = null;
+
 if (hasSSL) {
-  console.log(`[Daemon] SSL Certificates found. Starting secure server (WSS)...`);
+  console.log(`[Daemon] SSL Certificates found. Starting secure server (WSS) on port ${PORT_SECURE}...`);
   const options = {
     cert: fs.readFileSync(certPath),
     key: fs.readFileSync(keyPath)
   };
-  server = https.createServer(options, (req, res) => {
+  httpsServer = https.createServer(options, (req, res) => {
     res.writeHead(200);
     res.end("ARES Sim Launcher Daemon running securely (WSS).\n");
   });
-} else {
-  console.log(`[Daemon] SSL Certificates not found at ${certPath}. Starting standard server (WS)...`);
-  console.log(`[Daemon] NOTE: Web browsers visiting production HTTPS portals will reject unsecure WS connections.`);
-  console.log(`[Daemon] To enable WSS, generate certificates using mkcert and place them under:`);
-  console.log(`         ${certPath}`);
-  console.log(`         ${keyPath}\n`);
-  server = http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end("ARES Sim Launcher Daemon running (WS).\n");
+  wssSecure = new WebSocket.Server({
+    server: httpsServer,
+    verifyClient: wsVerifyClient
   });
+} else {
+  console.log(`[Daemon] SSL Certificates not found at ${certPath}. Secure server (WSS) disabled.`);
+  console.log(`[Daemon] Run 'node generate-certs.js' to generate self-signed certificates and enable WSS.`);
 }
 
-// Configure CORS and Handshake Origin Verification
-const wss = new WebSocket.Server({
-  server,
-  verifyClient: (info) => {
-    const origin = info.origin;
-    // Allow development connections and explicitly approved production portal origins
-    const isAllowed = ALLOWED_ORIGINS.some((allowed) => {
-      if (allowed.includes("*")) {
-        return origin.startsWith(allowed.replace("*", ""));
-      }
-      return origin === allowed;
-    });
-
-    if (!isAllowed) {
-      console.warn(`[Daemon] Rejected connection from unauthorized origin: ${origin}`);
-    }
-    return isAllowed;
-  }
-});
-
-wss.on("connection", (ws) => {
+// Handler for incoming connections
+const onConnection = (ws) => {
   console.log("[Daemon] Client connected.");
 
   // Send initial status check info
@@ -328,9 +336,19 @@ wss.on("connection", (ws) => {
       activeProcess = null;
     }
   });
+};
+
+wssUnsecure.on("connection", onConnection);
+if (wssSecure) {
+  wssSecure.on("connection", onConnection);
+}
+
+httpServer.listen(PORT, () => {
+  console.log(`[Daemon] Unsecure server listening on port ${PORT} (ws://localhost:${PORT})`);
 });
 
-server.listen(PORT, () => {
-  const protocol = hasSSL ? "wss" : "ws";
-  console.log(`[Daemon] Server listening on port ${PORT} (${protocol}://localhost:${PORT})`);
-});
+if (httpsServer) {
+  httpsServer.listen(PORT_SECURE, () => {
+    console.log(`[Daemon] Secure server listening on port ${PORT_SECURE} (wss://localhost:${PORT_SECURE})`);
+  });
+}
