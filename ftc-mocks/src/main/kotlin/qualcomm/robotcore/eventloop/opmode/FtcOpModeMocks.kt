@@ -18,7 +18,7 @@ abstract class LinearOpMode {
         }
     }
     val gamepad1 = Gamepad()
-    val telemetry = Telemetry()
+    val telemetry: Telemetry = org.firstinspires.ftc.robotcore.external.MockTelemetry()
     fun opModeIsActive(): Boolean = true
     fun waitForStart() {}
 }
