@@ -5,6 +5,7 @@
   "main": "daemon.js",
   "private": true,
   "dependencies": {
+    "selfsigned": "^5.5.0",
     "ws": "^8.18.0"
   }
 }
