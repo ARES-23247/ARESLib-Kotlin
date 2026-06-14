@@ -170,9 +170,18 @@ if (hasSSL) {
     verifyClient: wsVerifyClient
   });
 
-  wssProxy.on("connection", (clientWs) => {
-    console.log("[Proxy] Browser client connected.");
-    const targetUrl = "ws://127.0.0.1:5810/nt/v4/websocket";
+  wssProxy.on("connection", (clientWs, req) => {
+    let targetHost = "127.0.0.1";
+    try {
+      const url = new URL(req.url || "", "http://localhost");
+      const hostParam = url.searchParams.get("host");
+      if (hostParam) {
+        targetHost = hostParam;
+      }
+    } catch (e) {}
+
+    console.log(`[Proxy] Browser client connected. Proxying to ws://${targetHost}:5810`);
+    const targetUrl = `ws://${targetHost}:5810/nt/v4/websocket`;
     const simWs = new WebSocket(targetUrl);
 
     simWs.on("message", (data, isBinary) => {
