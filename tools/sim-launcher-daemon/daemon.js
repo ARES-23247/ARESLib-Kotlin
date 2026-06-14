@@ -240,9 +240,23 @@ const onConnection = (ws) => {
             env: { ...process.env, JAVA_OPTS: "-XX:+UseG1GC" }
           });
 
+          let isStarted = false;
           // Line-by-line stdout parsing
           const stdoutRl = readline.createInterface({ input: activeProcess.stdout });
           stdoutRl.on("line", (line) => {
+            if (!isStarted && (
+              line.includes("Simulation Running") ||
+              line.includes("NT: Listening") ||
+              line.includes("FLOODGATE") ||
+              line.includes("SUPERSTRUCTURE")
+            )) {
+              isStarted = true;
+              console.log("[Daemon] Simulator is running. Notifying client...");
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "status", status: "running" }));
+              }
+            }
+
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: "log", line }));
             }
