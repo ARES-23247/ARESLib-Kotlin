@@ -141,6 +141,8 @@ const wssUnsecure = new WebSocket.Server({
 // Create secure HTTPS / WSS server (optional, runs on port 8443 if SSL certs exist)
 let httpsServer = null;
 let wssSecure = null;
+let httpsProxyServer = null;
+let wssProxy = null;
 
 if (hasSSL) {
   console.log(`[Daemon] SSL Certificates found. Starting secure server (WSS) on port ${PORT_SECURE}...`);
@@ -155,6 +157,55 @@ if (hasSSL) {
   wssSecure = new WebSocket.Server({
     server: httpsServer,
     verifyClient: wsVerifyClient
+  });
+
+  // Start WSS to WS proxy on port 5811 for secure NT4 support
+  console.log(`[Daemon] Starting secure NT4 WSS proxy on port 5811...`);
+  httpsProxyServer = https.createServer(options, (req, res) => {
+    res.writeHead(200);
+    res.end("ARES NT4 WSS Proxy running.\n");
+  });
+  wssProxy = new WebSocket.Server({
+    server: httpsProxyServer,
+    verifyClient: wsVerifyClient
+  });
+
+  wssProxy.on("connection", (clientWs) => {
+    console.log("[Proxy] Browser client connected.");
+    const targetUrl = "ws://127.0.0.1:5810/nt/v4/websocket";
+    const simWs = new WebSocket(targetUrl, ["networktables.org"]);
+
+    simWs.on("message", (data, isBinary) => {
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(data, { binary: isBinary });
+      }
+    });
+
+    clientWs.on("message", (data, isBinary) => {
+      if (simWs.readyState === WebSocket.OPEN) {
+        simWs.send(data, { binary: isBinary });
+      }
+    });
+
+    simWs.on("close", () => {
+      console.log("[Proxy] Simulator connection closed.");
+      clientWs.close();
+    });
+
+    clientWs.on("close", () => {
+      console.log("[Proxy] Browser client connection closed.");
+      simWs.close();
+    });
+
+    simWs.on("error", (err) => {
+      console.error("[Proxy] Simulator connection error:", err);
+      clientWs.close();
+    });
+
+    clientWs.on("error", (err) => {
+      console.error("[Proxy] Browser client connection error:", err);
+      simWs.close();
+    });
   });
 } else {
   console.log(`[Daemon] SSL Certificates not found at ${certPath}. Secure server (WSS) disabled.`);
@@ -364,5 +415,12 @@ httpServer.listen(PORT, () => {
 if (httpsServer) {
   httpsServer.listen(PORT_SECURE, () => {
     console.log(`[Daemon] Secure server listening on port ${PORT_SECURE} (wss://localhost:${PORT_SECURE})`);
+  });
+}
+
+if (httpsProxyServer) {
+  const PORT_PROXY = 5811;
+  httpsProxyServer.listen(PORT_PROXY, () => {
+    console.log(`[Daemon] Secure NT4 proxy listening on port ${PORT_PROXY} (wss://localhost:${PORT_PROXY})`);
   });
 }
