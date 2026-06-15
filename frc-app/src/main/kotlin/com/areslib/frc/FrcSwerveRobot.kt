@@ -7,12 +7,7 @@ import com.areslib.hardware.IntakeIO
 import com.areslib.hardware.FeederIO
 import com.areslib.state.DriveState
 import com.areslib.subsystem.AresRobot
-import com.areslib.telemetry.ARESNetworkStatePublisher
-import com.areslib.telemetry.DataLoggingTelemetry
-import com.areslib.telemetry.GamepadState
-import com.areslib.telemetry.ITelemetry
-import com.areslib.telemetry.RobotStatusTracker
-import com.areslib.telemetry.RobotWebServer
+import com.areslib.telemetry.*
 import com.areslib.control.BrownoutGuard
 import com.areslib.frc.action.*
 import com.areslib.frc.subsystem.*
@@ -261,10 +256,7 @@ class FrcSwerveRobot(
             MarvinStatePublisher.publish(store.state, dataLoggingTelemetry)
 
             // Publish brownout telemetry
-            dataLoggingTelemetry.putNumber("Robot/BatteryVoltage", batteryVoltage)
-            dataLoggingTelemetry.putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
-            dataLoggingTelemetry.putString("Robot/BrownoutState", brownoutGuard.state.name)
-            dataLoggingTelemetry.putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
+            dataLoggingTelemetry.logBrownout(brownoutGuard, batteryVoltage)
 
             // Publish EKF covariance diagonals
             val cov = store.state.drive.poseEstimator.covariance
@@ -274,16 +266,12 @@ class FrcSwerveRobot(
             dataLoggingTelemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceDiagonals)
 
             // Publish 3D robot pose (quaternion format for AdvantageScope)
-            val heading = store.state.drive.odometryHeading
-            val halfH = heading / 2.0
-            pose3dArray[0] = store.state.drive.odometryX
-            pose3dArray[1] = store.state.drive.odometryY
-            pose3dArray[2] = 0.0
-            pose3dArray[3] = Math.cos(halfH)
-            pose3dArray[4] = 0.0
-            pose3dArray[5] = 0.0
-            pose3dArray[6] = Math.sin(halfH)
-            dataLoggingTelemetry.putDoubleArray("Robot/Pose3d", pose3dArray)
+            dataLoggingTelemetry.logPose3d(
+                "Robot/Pose3d",
+                store.state.drive.odometryX,
+                store.state.drive.odometryY,
+                store.state.drive.odometryHeading
+            )
 
             // Publish swerve module states
             val vx = store.state.drive.xVelocityMetersPerSecond

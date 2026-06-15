@@ -89,3 +89,33 @@ object RobotInputsFramePool {
      */
     val availableCount: Int get() = pool.size
 }
+
+/**
+ * Asynchronously populates the current RobotInputsFrame with drive, imu, odometry, and vision states.
+ */
+fun RobotInputsFrame.populate(
+    timestamp: Long,
+    poseUpdate: com.areslib.action.RobotAction.PoseUpdate,
+    driveState: com.areslib.state.DriveState,
+    hasVision: Boolean,
+    measurements: List<com.areslib.state.VisionMeasurement>
+) {
+    this.timestampMs = timestamp
+    
+    this.odometryInputs.posX = poseUpdate.xMeters
+    this.odometryInputs.posY = poseUpdate.yMeters
+    this.odometryInputs.heading = poseUpdate.headingRadians
+    this.odometryInputs.velX = driveState.xVelocityMetersPerSecond
+    this.odometryInputs.velY = driveState.yVelocityMetersPerSecond
+    this.odometryInputs.headingVelocity = driveState.angularVelocityRadiansPerSecond
+    this.odometryInputs.timestampMs = timestamp
+
+    this.imuInputs.headingRadians = poseUpdate.headingRadians
+    this.imuInputs.pitchRadians = 0.0
+    this.imuInputs.rollRadians = 0.0
+    this.imuInputs.yawVelocityRadPerSec = driveState.angularVelocityRadiansPerSecond
+    this.imuInputs.timestampMs = timestamp
+
+    this.visionInputs.isConnected = hasVision
+    this.visionInputs.measurements = measurements
+}

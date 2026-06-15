@@ -12,10 +12,9 @@ import com.areslib.kinematics.MecanumKinematics
 import com.areslib.math.ChassisSpeeds
 import com.areslib.action.RobotAction
 import com.areslib.telemetry.GamepadState
-
-import com.areslib.telemetry.NT4Telemetry
-import com.areslib.telemetry.DataLoggingTelemetry
-import com.areslib.telemetry.ARESNetworkStatePublisher
+import com.areslib.logging.populate
+import com.areslib.math.toFormattedString
+import com.areslib.telemetry.*
 import com.areslib.control.BrownoutGuard
 import com.areslib.control.CurrentBudgetManager
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
@@ -256,30 +255,15 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             publishTelemetry(timestamp, dtSeconds, batteryVoltage, gamepad1, gamepad2)
 
             // 6. Populate and log the raw inputs frame for deterministic simulator replay
-            val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent()
-            inputsFrame.timestampMs = timestamp
-
-            // Populate odometry inputs
-            inputsFrame.odometryInputs.posX = poseUpdate.xMeters
-            inputsFrame.odometryInputs.posY = poseUpdate.yMeters
-            inputsFrame.odometryInputs.heading = poseUpdate.headingRadians
-            inputsFrame.odometryInputs.velX = store.state.drive.xVelocityMetersPerSecond
-            inputsFrame.odometryInputs.velY = store.state.drive.yVelocityMetersPerSecond
-            inputsFrame.odometryInputs.headingVelocity = store.state.drive.angularVelocityRadiansPerSecond
-            inputsFrame.odometryInputs.timestampMs = timestamp
-
-            // Populate IMU inputs
-            inputsFrame.imuInputs.headingRadians = poseUpdate.headingRadians
-            inputsFrame.imuInputs.pitchRadians = 0.0
-            inputsFrame.imuInputs.rollRadians = 0.0
-            inputsFrame.imuInputs.yawVelocityRadPerSec = store.state.drive.angularVelocityRadiansPerSecond
-            inputsFrame.imuInputs.timestampMs = timestamp
-
-            // Populate vision inputs
-            inputsFrame.visionInputs.isConnected = limelightIO != null
-            inputsFrame.visionInputs.measurements = visionInputs.measurements
-
-            // Log the frame asynchronously
+            val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent().apply {
+                populate(
+                    timestamp,
+                    poseUpdate,
+                    store.state.drive,
+                    limelightIO != null,
+                    visionInputs.measurements
+                )
+            }
             inputLogger.logFrame(inputsFrame)
         } catch (e: Throwable) {
             System.err.println("FtcMecanumRobot: Exception in update loop: ${e.message}")
@@ -473,9 +457,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         dataLoggingTelemetry.putNumber("motor_rr_current", mecanumIO.brIO.currentAmps)
         
         val estPose = store.state.drive.poseEstimator.estimatedPose
-        dataLoggingTelemetry.putNumber("pinpoint_x", estPose.x)
-        dataLoggingTelemetry.putNumber("pinpoint_y", estPose.y)
-        dataLoggingTelemetry.putNumber("pinpoint_heading", estPose.heading.radians)
+        dataLoggingTelemetry.logPose2d("pinpoint", estPose, useUnderscores = true, lowercase = true)
         
         val rawOdomX = store.state.drive.odometryX
         val rawOdomY = store.state.drive.odometryY
@@ -485,36 +467,16 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         publisher.publish(store.state, gamepad1, gamepad2)
 
         // Publish physical motor telemetry (power, encoder positions, velocities, currents)
-        dataLoggingTelemetry.putNumber("Drive/MotorPower_FL", mecanumIO.flIO.power * mecanumIO.flIO.powerScale)
-        dataLoggingTelemetry.putNumber("Drive/MotorPower_FR", mecanumIO.frIO.power * mecanumIO.frIO.powerScale)
-        dataLoggingTelemetry.putNumber("Drive/MotorPower_BL", mecanumIO.blIO.power * mecanumIO.blIO.powerScale)
-        dataLoggingTelemetry.putNumber("Drive/MotorPower_BR", mecanumIO.brIO.power * mecanumIO.brIO.powerScale)
-
-        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FL", mecanumIO.flIO.position)
-        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FR", mecanumIO.frIO.position)
-        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BL", mecanumIO.blIO.position)
-        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BR", mecanumIO.brIO.position)
-
-        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FL", mecanumIO.flIO.velocity)
-        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FR", mecanumIO.frIO.velocity)
-        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BL", mecanumIO.blIO.velocity)
-        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BR", mecanumIO.brIO.velocity)
-
-        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FL", mecanumIO.flIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FR", mecanumIO.frIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BL", mecanumIO.blIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BR", mecanumIO.brIO.currentAmps)
+        dataLoggingTelemetry.logDriveMotor("FL", mecanumIO.flIO)
+        dataLoggingTelemetry.logDriveMotor("FR", mecanumIO.frIO)
+        dataLoggingTelemetry.logDriveMotor("BL", mecanumIO.blIO)
+        dataLoggingTelemetry.logDriveMotor("BR", mecanumIO.brIO)
 
         // Publish Limelight / Vision pipeline telemetry
         dataLoggingTelemetry.putString("Vision/Status", lastVisionStatus)
         lastLimelightPose?.let { pose ->
-            dataLoggingTelemetry.putDoubleArray(
-                "AdvantageScope/VisionPose",
-                doubleArrayOf(pose.x, pose.y, pose.heading.radians)
-            )
-            dataLoggingTelemetry.putNumber("Vision/Pose_X", pose.x)
-            dataLoggingTelemetry.putNumber("Vision/Pose_Y", pose.y)
-            dataLoggingTelemetry.putNumber("Vision/Pose_Heading", pose.heading.radians)
+            dataLoggingTelemetry.logPoseArray2d("AdvantageScope/VisionPose", pose)
+            dataLoggingTelemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
         }
         if (visionInputs.measurements.isNotEmpty()) {
             val primaryMeasurement = visionInputs.measurements[0]
@@ -531,26 +493,18 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         // 6. Driver Station local telemetry (human-readable summary)
         localTelemetry?.let { t ->
             // A. Pinpoint vs EKF Pose
-            t.addData("EKF Pose (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
-                store.state.drive.poseEstimator.estimatedPose.x,
-                store.state.drive.poseEstimator.estimatedPose.y,
-                Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians)
-            ))
-            t.addData("Raw Pinpoint (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
+            t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
+            val pinpointPose = com.areslib.math.Pose2d(
                 store.state.drive.odometryX,
                 store.state.drive.odometryY,
-                Math.toDegrees(store.state.drive.odometryHeading)
-            ))
+                com.areslib.math.Rotation2d(store.state.drive.odometryHeading)
+            )
+            t.addData("Raw Pinpoint (X, Y, Deg)", pinpointPose.toFormattedString())
 
             // Limelight Pose
             val llStr = lastLimelightPose?.let { pose ->
                 val ageSec = (timestamp - lastLimelightTimeMs) / 1000.0
-                String.format("(%.2f, %.2f) %.1f° (%.1fs ago)",
-                    pose.x,
-                    pose.y,
-                    Math.toDegrees(pose.heading.radians),
-                    ageSec
-                )
+                "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
             } ?: "NO TARGET"
             t.addData("Limelight Pose (X, Y, Deg)", llStr)
             t.addData("Vision Status", lastVisionStatus)

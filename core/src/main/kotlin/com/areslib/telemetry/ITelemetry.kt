@@ -19,3 +19,66 @@ interface ITelemetry {
      */
     fun update() {}
 }
+
+/**
+ * Extension to log drive motor telemetry using the exact ARES drive key conventions.
+ */
+fun ITelemetry.logDriveMotor(name: String, motor: com.areslib.hardware.MotorIO) {
+    putNumber("Drive/MotorPower_$name", motor.power * motor.powerScale)
+    putNumber("Drive/MotorEncoder_$name", motor.position)
+    putNumber("Drive/MotorVelocity_$name", motor.velocity)
+    putNumber("Drive/MotorCurrent_$name", motor.currentAmps)
+}
+
+/**
+ * Extension to log a 2D pose with format formatting.
+ */
+fun ITelemetry.logPose2d(prefix: String, pose: com.areslib.math.Pose2d, useUnderscores: Boolean = false, lowercase: Boolean = false) {
+    val sep = if (useUnderscores) "_" else "/"
+    val xStr = if (lowercase) "x" else "X"
+    val yStr = if (lowercase) "y" else "Y"
+    val hStr = if (lowercase) "heading" else "Heading"
+    putNumber("$prefix$sep$xStr", pose.x)
+    putNumber("$prefix$sep$yStr", pose.y)
+    putNumber("$prefix$sep$hStr", pose.heading.radians)
+}
+
+/**
+ * Extension to log a 2D pose as a flat double array of [x, y, headingRad].
+ */
+fun ITelemetry.logPoseArray2d(key: String, pose: com.areslib.math.Pose2d) {
+    putDoubleArray(key, doubleArrayOf(pose.x, pose.y, pose.heading.radians))
+}
+
+/**
+ * Extension to log a 3D pose array (for AdvantageScope) from x, y, and heading.
+ */
+fun ITelemetry.logPose3d(key: String, x: Double, y: Double, headingRad: Double) {
+    val halfH = headingRad / 2.0
+    putDoubleArray(key, doubleArrayOf(
+        x,
+        y,
+        0.0,
+        Math.cos(halfH),
+        0.0,
+        0.0,
+        Math.sin(halfH)
+    ))
+}
+
+/**
+ * Extension to log a 3D pose array (for AdvantageScope) from a Pose2d.
+ */
+fun ITelemetry.logPose3d(key: String, pose: com.areslib.math.Pose2d) {
+    logPose3d(key, pose.x, pose.y, pose.heading.radians)
+}
+
+/**
+ * Extension to log brownout guard state and diagnostics.
+ */
+fun ITelemetry.logBrownout(brownoutGuard: com.areslib.control.BrownoutGuard, batteryVoltage: Double) {
+    putNumber("Robot/BatteryVoltage", batteryVoltage)
+    putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
+    putString("Robot/BrownoutState", brownoutGuard.state.name)
+    putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
+}

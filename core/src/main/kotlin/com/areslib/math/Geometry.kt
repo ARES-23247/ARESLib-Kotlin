@@ -25,3 +25,10 @@ data class Pose2d(
 ) {
     val translation: Translation2d get() = Translation2d(x, y)
 }
+
+/**
+ * Formats a Pose2d into a standard human-readable format: "(X.XX, Y.YY) DEGREES°".
+ */
+fun Pose2d.toFormattedString(): String {
+    return String.format("(%.2f, %.2f) %.1f°", x, y, Math.toDegrees(heading.radians))
+}
