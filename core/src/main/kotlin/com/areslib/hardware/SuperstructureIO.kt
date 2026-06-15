@@ -1,12 +1,21 @@
 package com.areslib.hardware
 
+import com.areslib.telemetry.ITelemetry
+
 /**
  * Pure abstraction for reading and writing to the physical dual-motor Flywheel shooter.
  * De-couples the pure math state engine from the CTRE Phoenix 6 libraries.
  */
-interface FlywheelIO {
-    /** Refreshes cached status signals from the hardware (batch transaction) */
-    fun refresh() {}
+interface FlywheelIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/VelocityRpm", velocityRpm)
+        telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
+        telemetry.putNumber("$prefix/TempCelsius", tempCelsius)
+    }
+
+    override fun safe() {
+        setAppliedVoltage(0.0)
+    }
 
     /** Sets the target velocity of the flywheel using closed-loop controller on the motor */
     fun setVelocityRpm(rpm: Double)
@@ -30,9 +39,15 @@ interface FlywheelIO {
 /**
  * Pure abstraction for the adjustable angle cowl/hood.
  */
-interface CowlIO {
-    /** Refreshes cached status signals from the hardware (batch transaction) */
-    fun refresh() {}
+interface CowlIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/AngleDegrees", angleDegrees)
+        telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
+    }
+
+    override fun safe() {
+        setAppliedVoltage(0.0)
+    }
 
     /** Sets the target absolute position angle in degrees */
     fun setTargetAngle(degrees: Double)
@@ -52,9 +67,17 @@ interface CowlIO {
 /**
  * Pure abstraction for the deployed pivot-arm intake and active rollers.
  */
-interface IntakeIO {
-    /** Refreshes cached status signals from the hardware (batch transaction) */
-    fun refresh() {}
+interface IntakeIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/PivotAngleDegrees", pivotAngleDegrees)
+        telemetry.putNumber("$prefix/PivotCurrentAmps", pivotCurrentAmps)
+        telemetry.putNumber("$prefix/RollerCurrentAmps", rollerCurrentAmps)
+    }
+
+    override fun safe() {
+        setPivotVoltage(0.0)
+        setRollerVoltage(0.0)
+    }
 
     /** Sets the target absolute angle of the pivot arm in degrees */
     fun setPivotAngle(degrees: Double)
@@ -81,9 +104,15 @@ interface IntakeIO {
 /**
  * Pure abstraction for the transfer/feeder rollers.
  */
-interface FeederIO {
-    /** Refreshes cached status signals from the hardware (batch transaction) */
-    fun refresh() {}
+interface FeederIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putBoolean("$prefix/PieceDetected", isBeamBroken)
+        telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
+    }
+
+    override fun safe() {
+        setAppliedVoltage(0.0)
+    }
 
     /** Sets the applied voltage of the feeder motor directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
@@ -100,9 +129,15 @@ interface FeederIO {
 /**
  * Pure abstraction for the fast-climber vertical elevator.
  */
-interface ClimberIO {
-    /** Refreshes cached status signals from the hardware (batch transaction) */
-    fun refresh() {}
+interface ClimberIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/ExtensionMeters", extensionMeters)
+        telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
+    }
+
+    override fun safe() {
+        setAppliedVoltage(0.0)
+    }
 
     /** Sets the target extension position in meters */
     fun setTargetExtension(meters: Double)
@@ -122,9 +157,15 @@ interface ClimberIO {
 /**
  * Pure abstraction for the floor rollers.
  */
-interface FloorIO {
-    /** Refreshes cached status signals from the hardware (batch transaction) */
-    fun refresh() {}
+interface FloorIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/VelocityRps", velocityRps)
+        telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
+    }
+
+    override fun safe() {
+        setAppliedVoltage(0.0)
+    }
 
     /** Sets the applied voltage of the floor rollers directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)

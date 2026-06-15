@@ -56,24 +56,30 @@ class FtcPowerManagerTest {
             }
         }
 
-        val powerManager = FtcPowerManager(hardwareMap)
-        val motors = listOf(MockMotorCurrentIO(1.0), MockMotorCurrentIO(2.0))
-        powerManager.registerMotors(motors)
+        com.areslib.hardware.HardwareRegistry.clear()
+        try {
+            val powerManager = FtcPowerManager(hardwareMap)
+            val motors = listOf(MockMotorCurrentIO(1.0), MockMotorCurrentIO(2.0))
+            com.areslib.hardware.HardwareRegistry.registerMotor("motor1", motors[0])
+            com.areslib.hardware.HardwareRegistry.registerMotor("motor2", motors[1])
 
-        // Assert estimated current is sum of motor currents
-        assertEquals(3.0, powerManager.currentAmps, 1e-6)
+            // Assert estimated current is sum of motor currents
+            assertEquals(3.0, powerManager.currentAmps, 1e-6)
 
-        // Normal run should have 1.0 power scale
-        val scale1 = powerManager.update(0.02, 100)
-        assertEquals(1.0, scale1, 1e-6)
+            // Normal run should have 1.0 power scale
+            val scale1 = powerManager.update(0.02, 100)
+            assertEquals(1.0, scale1, 1e-6)
 
-        // Trigger brownout (drop voltage to 7.0V)
-        mockSensor.voltage = 7.0
-        for (i in 1..10) {
-            powerManager.update(0.02, 300 + i * 110L)
+            // Trigger brownout (drop voltage to 7.0V)
+            mockSensor.voltage = 7.0
+            for (i in 1..10) {
+                powerManager.update(0.02, 300 + i * 110L)
+            }
+            
+            // Power scale should be reduced by brownout guard
+            assertTrue(powerManager.powerScale < 1.0)
+        } finally {
+            com.areslib.hardware.HardwareRegistry.clear()
         }
-        
-        // Power scale should be reduced by brownout guard
-        assertTrue(powerManager.powerScale < 1.0)
     }
 }

@@ -62,36 +62,7 @@ class FrcTelemetryManager(baseTelemetry: ITelemetry, private val store: Store) :
         dataLoggingTelemetry.logBrownout(brownoutGuard, batteryVoltage)
     }
 
-    /**
-     * Publishes physical motor current draws, temperatures, and custom diagnostics.
-     */
-    fun logSuperstructureDiagnostics(
-        flywheelIO: FlywheelIO,
-        cowlIO: CowlIO,
-        intakeIO: IntakeIO,
-        feederIO: FeederIO,
-        floorIO: FloorIO,
-        climberIO: ClimberIO
-    ) {
-        dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/CurrentAmps", flywheelIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/TempCelsius", flywheelIO.tempCelsius)
-        dataLoggingTelemetry.putNumber("Diagnostics/Cowl/CurrentAmps", cowlIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Intake/PivotCurrentAmps", intakeIO.pivotCurrentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Intake/RollerCurrentAmps", intakeIO.rollerCurrentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Feeder/CurrentAmps", feederIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Floor/CurrentAmps", floorIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Climber/CurrentAmps", climberIO.currentAmps)
-    }
 
-    /**
-     * Publishes swerve currents and encoder diagnostics.
-     */
-    fun logSwerveDiagnostics(swerveIO: com.areslib.frc.SwerveHardwareIO?) {
-        if (swerveIO != null) {
-            dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/Currents", swerveIO.currents)
-            dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/EncoderPositions", swerveIO.encoderPositions)
-        }
-    }
 
     override fun close() {
         dataLoggingTelemetry.close()

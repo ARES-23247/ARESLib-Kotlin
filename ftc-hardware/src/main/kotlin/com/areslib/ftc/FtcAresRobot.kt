@@ -7,12 +7,20 @@ import com.areslib.ftc.hardware.FtcMotor
 import com.areslib.ftc.hardware.FtcImu
 import com.areslib.hardware.ImuInputs
 import com.areslib.action.RobotAction
+import com.areslib.subsystem.DriveSubsystem
+import com.areslib.subsystem.ShooterSubsystem
+import com.areslib.subsystem.IntakeSubsystem
 
 /**
  * Concrete single-motor testing testbed facade.
  * Extends FtcBaseRobot and uses null sensors for AprilTag and pinpoint localization.
  */
 class FtcAresRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinpointName = null, limelightName = null) {
+
+    // Subsystem Facades
+    val drive = DriveSubsystem(store)
+    val shooter = ShooterSubsystem(store)
+    val intake = IntakeSubsystem(store)
     
     // 1. Concrete FTC Hardware wrappers
     val motor = FtcMotor(hardwareMap.get(DcMotorEx::class.java, "revMotor"))
@@ -21,17 +29,15 @@ class FtcAresRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinpoin
     private val imuInputs = ImuInputs()
 
     init {
-        // Register the test motor with the power manager for current budgeting
-        powerManager.registerMotors(listOf(motor))
+        com.areslib.hardware.HardwareRegistry.registerMotor("revMotor", motor)
+        com.areslib.hardware.HardwareRegistry.registerDevice("IMU", imu)
     }
 
     override fun updateHardwareInputs() {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        
-        // 1. Read hardware inputs
+        com.areslib.hardware.HardwareRegistry.refreshAll()
         imu.updateInputs(imuInputs)
 
-        // 2. Dispatch to the underlying Redux store
         store.dispatch(RobotAction.DriveHardwareUpdate(
             xVelocity = imuInputs.yawVelocityRadPerSec,
             yVelocity = 0.0,
@@ -46,20 +52,13 @@ class FtcAresRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinpoin
     }
 
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
-        // Write outputs to motors based on computed Redux state with voltage compensation
         val targetVolts = (store.state.drive.odometryX * 0.1) * 12.0
-
-        motor.powerScale = powerScale
         motor.setVoltage(targetVolts, batteryVoltage)
     }
 
-    override fun publishRobotTelemetry(timestamp: Long) {
-        telemetryManager.dataLoggingTelemetry.putNumber("test_motor_current", motor.currentAmps)
-    }
+    override fun publishRobotTelemetry(timestamp: Long) {}
 
     override fun safeHardware() {
-        try {
-            motor.power = 0.0
-        } catch (_: Throwable) {}
+        com.areslib.hardware.HardwareRegistry.safeAll()
     }
 }

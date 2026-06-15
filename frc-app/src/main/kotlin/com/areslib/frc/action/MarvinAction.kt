@@ -52,10 +52,6 @@ data class SuperstructureSensorUpdate @kotlin.jvm.JvmOverloads constructor(
     override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
 ) : RobotAction
 
-data class StartSlamtake @kotlin.jvm.JvmOverloads constructor(
-    override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-) : RobotAction
+class StartSlamtake : RobotAction
 
-data class StopSlamtake @kotlin.jvm.JvmOverloads constructor(
-    override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-) : RobotAction
+class StopSlamtake : RobotAction

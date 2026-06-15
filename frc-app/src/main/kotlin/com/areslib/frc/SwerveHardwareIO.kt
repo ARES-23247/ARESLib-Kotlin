@@ -2,15 +2,23 @@ package com.areslib.frc
 
 import com.areslib.state.DriveState
 
+import com.areslib.hardware.SubsystemIO
+import com.areslib.telemetry.ITelemetry
+
 /**
  * Interface representing the hardware input/output for the swerve drivetrain.
  *
  * This allows clean decoupling of the swerve drivetrain logic from Phoenix 6/CTRE hardware
  * JNI classes, facilitating unit testing and simulation.
  */
-interface SwerveHardwareIO {
+interface SwerveHardwareIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putDoubleArray("$prefix/Currents", currents)
+        telemetry.putDoubleArray("$prefix/EncoderPositions", encoderPositions)
+    }
+
     /** Refreshes cached status signals from the hardware. */
-    fun refresh() {}
+    override fun refresh() {}
 
     /** Reads the drive state from the hardware. */
     fun read(): DriveState

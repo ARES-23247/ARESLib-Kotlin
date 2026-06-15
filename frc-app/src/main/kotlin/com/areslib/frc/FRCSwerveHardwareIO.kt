@@ -48,6 +48,10 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         )
     }
 
+    override fun safe() {
+        write(DriveState())
+    }
+
     override val currents: DoubleArray
         get() = doubleArrayOf(
             currentDraw1.valueAsDouble,

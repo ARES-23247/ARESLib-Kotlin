@@ -24,6 +24,12 @@ class Store(
         listeners.forEach { it(state) }
     }
 
+    fun dispatchAll(vararg actions: RobotAction) {
+        actions.forEach { actionListener?.invoke(it) }
+        state = actions.fold(state) { acc, action -> reducer(acc, action) }
+        listeners.forEach { it(state) }
+    }
+
     fun subscribe(listener: (RobotState) -> Unit): () -> Unit {
         listeners.add(listener)
         return { listeners.remove(listener) }

@@ -17,7 +17,16 @@ data class ImuInputs(
 /**
  * Pure abstraction for reading a gyroscope / IMU.
  */
-interface ImuIO {
+interface ImuIO : SubsystemIO {
+    override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
+        val inputs = ImuInputs()
+        updateInputs(inputs)
+        telemetry.putNumber("$prefix/HeadingRad", inputs.headingRadians)
+        telemetry.putNumber("$prefix/PitchRad", inputs.pitchRadians)
+        telemetry.putNumber("$prefix/RollRad", inputs.rollRadians)
+        telemetry.putNumber("$prefix/YawVelocityRadPerSec", inputs.yawVelocityRadPerSec)
+    }
+
     /**
      * Poll the latest IMU signals into the inputs structure.
      */

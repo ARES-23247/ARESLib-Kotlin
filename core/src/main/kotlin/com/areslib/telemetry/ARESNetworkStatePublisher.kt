@@ -69,44 +69,10 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Vision/MeasurementCount", state.vision.measurements.size.toDouble())
 
         // ── Gamepad 1 ──
-        if (gamepad1 != null) {
-            telemetry.putNumber("Gamepad1/LeftStick_X", gamepad1.leftStickX.toDouble())
-            telemetry.putNumber("Gamepad1/LeftStick_Y", gamepad1.leftStickY.toDouble())
-            telemetry.putNumber("Gamepad1/RightStick_X", gamepad1.rightStickX.toDouble())
-            telemetry.putNumber("Gamepad1/RightStick_Y", gamepad1.rightStickY.toDouble())
-            telemetry.putNumber("Gamepad1/LeftTrigger", gamepad1.leftTrigger.toDouble())
-            telemetry.putNumber("Gamepad1/RightTrigger", gamepad1.rightTrigger.toDouble())
-            telemetry.putBoolean("Gamepad1/A", gamepad1.a)
-            telemetry.putBoolean("Gamepad1/B", gamepad1.b)
-            telemetry.putBoolean("Gamepad1/X", gamepad1.x)
-            telemetry.putBoolean("Gamepad1/Y", gamepad1.y)
-            telemetry.putBoolean("Gamepad1/DpadUp", gamepad1.dpadUp)
-            telemetry.putBoolean("Gamepad1/DpadDown", gamepad1.dpadDown)
-            telemetry.putBoolean("Gamepad1/DpadLeft", gamepad1.dpadLeft)
-            telemetry.putBoolean("Gamepad1/DpadRight", gamepad1.dpadRight)
-            telemetry.putBoolean("Gamepad1/LeftBumper", gamepad1.leftBumper)
-            telemetry.putBoolean("Gamepad1/RightBumper", gamepad1.rightBumper)
-        }
+        gamepad1?.let { telemetry.logGamepad("Gamepad1", it) }
 
         // ── Gamepad 2 ──
-        if (gamepad2 != null) {
-            telemetry.putNumber("Gamepad2/LeftStick_X", gamepad2.leftStickX.toDouble())
-            telemetry.putNumber("Gamepad2/LeftStick_Y", gamepad2.leftStickY.toDouble())
-            telemetry.putNumber("Gamepad2/RightStick_X", gamepad2.rightStickX.toDouble())
-            telemetry.putNumber("Gamepad2/RightStick_Y", gamepad2.rightStickY.toDouble())
-            telemetry.putNumber("Gamepad2/LeftTrigger", gamepad2.leftTrigger.toDouble())
-            telemetry.putNumber("Gamepad2/RightTrigger", gamepad2.rightTrigger.toDouble())
-            telemetry.putBoolean("Gamepad2/A", gamepad2.a)
-            telemetry.putBoolean("Gamepad2/B", gamepad2.b)
-            telemetry.putBoolean("Gamepad2/X", gamepad2.x)
-            telemetry.putBoolean("Gamepad2/Y", gamepad2.y)
-            telemetry.putBoolean("Gamepad2/DpadUp", gamepad2.dpadUp)
-            telemetry.putBoolean("Gamepad2/DpadDown", gamepad2.dpadDown)
-            telemetry.putBoolean("Gamepad2/DpadLeft", gamepad2.dpadLeft)
-            telemetry.putBoolean("Gamepad2/DpadRight", gamepad2.dpadRight)
-            telemetry.putBoolean("Gamepad2/LeftBumper", gamepad2.leftBumper)
-            telemetry.putBoolean("Gamepad2/RightBumper", gamepad2.rightBumper)
-        }
+        gamepad2?.let { telemetry.logGamepad("Gamepad2", it) }
 
         telemetry.update()
     }

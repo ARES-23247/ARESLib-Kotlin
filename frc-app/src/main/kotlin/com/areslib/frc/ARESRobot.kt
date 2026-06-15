@@ -216,7 +216,7 @@ class ARESRobot : TimedRobot() {
             val aPressed = controller.aButton
             val isSlamtakeActive = robot.store.state.superstructure.marvinXIX.slamtakeActive
             if (aPressed && !isSlamtakeActive) {
-                robot.store.dispatch(StartSlamtake(com.areslib.util.RobotClock.currentTimeMillis()))
+                robot.store.dispatch(StartSlamtake())
             }
 
             // ── Left Bumper: Unjam ──
@@ -238,7 +238,7 @@ class ARESRobot : TimedRobot() {
                 lbPressed -> {
                     // Unjam sequence takes top priority
                     if (isSlamtakeActive) {
-                        robot.store.dispatch(StopSlamtake(com.areslib.util.RobotClock.currentTimeMillis()))
+                        robot.store.dispatch(StopSlamtake())
                     }
                     robot.store.dispatch(SetIntakePivot(deployed = true))
                     robot.store.dispatch(SetIntakeRollers(-5.0))

@@ -5,6 +5,8 @@ import com.areslib.math.Pose3d
 import com.areslib.math.Translation3d
 import com.areslib.math.Rotation3d
 
+import com.areslib.hardware.LoggableDevice
+
 data class VisionIOInputs(
     var isConnected: Boolean = false,
     var measurements: List<VisionMeasurement> = emptyList(),
@@ -15,7 +17,7 @@ data class VisionIOInputs(
  * Hardware abstraction interface for Vision Subsystems.
  * Can be implemented by Limelight (FTC/FRC) or PhotonVision.
  */
-interface VisionIO {
+interface VisionIO : LoggableDevice {
     /**
      * The physical mounting offset(s) of the camera(s) relative to the robot center.
      */

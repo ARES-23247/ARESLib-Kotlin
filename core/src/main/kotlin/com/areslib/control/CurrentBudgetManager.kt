@@ -223,6 +223,18 @@ class CurrentBudgetManager(
         }
     }
 
+    fun isRegistered(motor: MotorIO): Boolean {
+        for (i in 0 until slots.size) {
+            if (slots[i].motor === motor) return true
+        }
+        return false
+    }
+
+    fun clear() {
+        slots.clear()
+        reset()
+    }
+
     companion object {
         /** Pre-configured for standard FTC robot (20A fuse) */
         fun ftcDefaults(): CurrentBudgetManager = CurrentBudgetManager(

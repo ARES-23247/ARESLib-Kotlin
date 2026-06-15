@@ -25,6 +25,13 @@ class FrcPowerManager {
         batteryVoltage = batteryVoltageSupplier()
         brownoutGuard.update(batteryVoltage)
         powerScale = brownoutGuard.powerScale
+
+        // Dynamically distribute powerScale to all registered motors
+        val motors = com.areslib.hardware.HardwareRegistry.getRegisteredMotors()
+        for (m in motors) {
+            m.powerScale = powerScale
+        }
+
         return powerScale
     }
 }

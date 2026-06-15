@@ -4,7 +4,18 @@ package com.areslib.hardware
  * Pure abstraction for reading/writing to a physical motor.
  * Keeps the :core module decoupled from Qualcomm SDK.
  */
-interface MotorIO {
+interface MotorIO : SubsystemIO {
+    override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/Power", power * powerScale)
+        telemetry.putNumber("$prefix/Position", position)
+        telemetry.putNumber("$prefix/Velocity", velocity)
+        telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
+    }
+
+    override fun safe() {
+        power = 0.0
+    }
+
     /**
      * Motor power percentage (-1.0 to 1.0)
      */

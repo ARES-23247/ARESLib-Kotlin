@@ -7,6 +7,8 @@ import com.areslib.hardware.IntakeIO
 import com.areslib.hardware.FeederIO
 import com.areslib.state.DriveState
 import com.areslib.subsystem.AresRobot
+import com.areslib.subsystem.DriveSubsystem
+import com.areslib.subsystem.SwerveDriveFacade
 import com.areslib.telemetry.*
 import com.areslib.frc.action.*
 import com.areslib.frc.subsystem.*
@@ -70,6 +72,10 @@ class FrcSwerveRobot(
     reducer = com.areslib.frc.reducer.MarvinReducer::reduce
 ) {
 
+    // Subsystem Facades
+    val drive = DriveSubsystem(store)
+    val swerveDrive = SwerveDriveFacade(store)
+
     val marvinShooter = MarvinShooterSubsystem(store)
     val marvinIntake = MarvinIntakeSubsystem(store)
     val marvinClimber = MarvinClimberSubsystem(store)
@@ -92,6 +98,16 @@ class FrcSwerveRobot(
         RobotWebServer.start()
         RobotStatusTracker.isEnabled = false
         RobotStatusTracker.activeOpMode = "Init"
+
+        // Register all devices with HardwareRegistry for automated logging, lifecycle refresh, and safety shutdown
+        swerveIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Swerve", it) }
+        com.areslib.hardware.HardwareRegistry.registerDevice("Flywheel", flywheelIO)
+        com.areslib.hardware.HardwareRegistry.registerDevice("Cowl", cowlIO)
+        com.areslib.hardware.HardwareRegistry.registerDevice("Intake", intakeIO)
+        com.areslib.hardware.HardwareRegistry.registerDevice("Feeder", feederIO)
+        com.areslib.hardware.HardwareRegistry.registerDevice("Floor", floorIO)
+        com.areslib.hardware.HardwareRegistry.registerDevice("Climber", climberIO)
+        visionIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Vision", it) }
     }
 
     /**
@@ -106,14 +122,8 @@ class FrcSwerveRobot(
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
         try {
-            // Refresh all hardware status signals from CAN bus in a batch
-            swerveIO?.refresh()
-            flywheelIO.refresh()
-            cowlIO.refresh()
-            intakeIO.refresh()
-            feederIO.refresh()
-            floorIO.refresh()
-            climberIO.refresh()
+            // Refresh all hardware status signals in a batch
+            com.areslib.hardware.HardwareRegistry.refreshAll()
             val isEnabled = isEnabledProvider()
             val mode = robotModeProvider()
 
@@ -198,8 +208,7 @@ class FrcSwerveRobot(
             // ── 4. PUBLISH: Everything → NT4 + CSV ──
             telemetryManager.publish(gamepad1, gamepad2)
             telemetryManager.logBrownout(powerManager.brownoutGuard, batteryVoltage)
-            telemetryManager.logSuperstructureDiagnostics(flywheelIO, cowlIO, intakeIO, feederIO, floorIO, climberIO)
-            telemetryManager.logSwerveDiagnostics(swerveIO)
+            com.areslib.hardware.HardwareRegistry.publishAll(telemetry)
 
         } catch (e: Throwable) {
             System.err.println("FrcSwerveRobot: Exception in update loop: ${e.message}")
@@ -210,24 +219,7 @@ class FrcSwerveRobot(
 
     fun safeHardware() {
         try {
-            if (!isSimulation && swerveIO != null) {
-                try {
-                    swerveIO.write(store.state.drive.copy(
-                        xVelocityMetersPerSecond = 0.0,
-                        yVelocityMetersPerSecond = 0.0,
-                        angularVelocityRadiansPerSecond = 0.0
-                    ))
-                } catch (t: Throwable) {
-                    System.err.println("FrcSwerveRobot: Failed to safe swerve: ${t.message}")
-                }
-            }
-            try { flywheelIO.setVelocityRpm(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe flywheel: ${t.message}") }
-            try { cowlIO.setTargetAngle(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe cowl: ${t.message}") }
-            try { intakeIO.setPivotAngle(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe intake pivot: ${t.message}") }
-            try { intakeIO.setRollerVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe intake rollers: ${t.message}") }
-            try { feederIO.setAppliedVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe feeder: ${t.message}") }
-            try { floorIO.setAppliedVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe floor: ${t.message}") }
-            try { climberIO.setAppliedVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe climber: ${t.message}") }
+            com.areslib.hardware.HardwareRegistry.safeAll()
         } catch (ex: Throwable) {
             System.err.println("FrcSwerveRobot: Failed to apply safety stop: ${ex.message}")
         }

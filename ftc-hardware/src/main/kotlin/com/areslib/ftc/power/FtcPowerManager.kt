@@ -37,31 +37,12 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) {
     var powerScale = 1.0
         private set
 
-    private val registeredMotors = mutableListOf<MotorIO>()
-
     /**
      * Total current draw of the robot in amperes.
      * Returns the physical sensor reading if available, or the sum of registered motor current estimations.
      */
     val currentAmps: Double
-        get() = floodgate?.current ?: registeredMotors.sumOf { it.currentAmps }
-
-    /**
-     * Registers active drive motors with the power manager.
-     * Configures the software CurrentBudgetManager if no physical Floodgate sensor is present.
-     */
-    fun registerMotors(motors: List<MotorIO>) {
-        if (floodgate == null) {
-            val cbm = CurrentBudgetManager.ftcDefaults().apply {
-                for (m in motors) {
-                    register(m)
-                }
-            }
-            this.currentBudgetManager = cbm
-        }
-        registeredMotors.clear()
-        registeredMotors.addAll(motors)
-    }
+        get() = floodgate?.current ?: com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf { it.currentAmps }
 
     /**
      * Updates the battery voltage reading (rate-limited to 10Hz) and recalculates power scaling.
@@ -92,6 +73,7 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) {
         var scale = brownoutGuard.powerScale
 
         // 2. Floodgate current protection — throttle on overload (or software fallback)
+        val motors = com.areslib.hardware.HardwareRegistry.getRegisteredMotors()
         floodgate?.let { fg ->
             fg.update()
             if (fg.isOverloadWarning()) {
@@ -99,12 +81,28 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) {
                 val fuseScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
                 scale = minOf(scale, fuseScale)
             }
-        } ?: currentBudgetManager?.let { cbm ->
+        } ?: run {
+            var cbm = currentBudgetManager
+            if (cbm == null) {
+                cbm = CurrentBudgetManager.ftcDefaults()
+                currentBudgetManager = cbm
+            }
+            for (m in motors) {
+                if (!cbm.isRegistered(m)) {
+                    cbm.register(m)
+                }
+            }
             cbm.update(batteryVoltage, enableCalibration = true)
             scale = minOf(scale, cbm.powerScale)
         }
 
         powerScale = scale
+        
+        // Dynamically distribute final powerScale to all registered motors
+        for (m in motors) {
+            m.powerScale = scale
+        }
+        
         return scale
     }
 }

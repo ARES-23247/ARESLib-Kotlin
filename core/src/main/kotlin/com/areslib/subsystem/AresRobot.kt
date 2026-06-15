@@ -9,10 +9,4 @@ open class AresRobot(
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) {
     val store = Store(initialState, reducer)
-
-    val drive = DriveSubsystem(store)
-    val mecanumDrive = MecanumDriveFacade(store)
-    val swerveDrive = SwerveDriveFacade(store)
-    val shooter = ShooterSubsystem(store)
-    val intake = IntakeSubsystem(store)
 }

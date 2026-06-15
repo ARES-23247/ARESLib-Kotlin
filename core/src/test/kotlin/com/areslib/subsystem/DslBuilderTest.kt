@@ -14,8 +14,8 @@ class DslBuilderTest {
             // Default initialization
         }
         
-        assertEquals(0.0, robot.drive.xVelocity)
-        assertEquals(SuperstructureMode.IDLE, robot.shooter.mode)
+        assertEquals(0.0, robot.store.state.drive.xVelocityMetersPerSecond)
+        assertEquals(SuperstructureMode.IDLE, robot.store.state.superstructure.mode)
     }
 
     @Test

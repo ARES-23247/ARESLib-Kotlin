@@ -7,11 +7,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 
+class TestRobot : AresRobot() {
+    val drive = DriveSubsystem(store)
+    val shooter = ShooterSubsystem(store)
+    val intake = IntakeSubsystem(store)
+}
+
 class SubsystemFacadeTest {
 
     @Test
     fun `test drive subsystem facade updates velocity`() {
-        val robot = AresRobot()
+        val robot = TestRobot()
         
         assertEquals(0.0, robot.drive.xVelocity)
         assertEquals(0.0, robot.drive.yVelocity)
@@ -25,7 +31,7 @@ class SubsystemFacadeTest {
 
     @Test
     fun `test shooter subsystem facade updates state`() {
-        val robot = AresRobot()
+        val robot = TestRobot()
         
         assertEquals(SuperstructureMode.IDLE, robot.shooter.mode)
         assertEquals(0.0, robot.shooter.flywheelRPM)
@@ -49,7 +55,7 @@ class SubsystemFacadeTest {
 
     @Test
     fun `test intake subsystem facade updates state`() {
-        val robot = AresRobot()
+        val robot = TestRobot()
         
         assertFalse(robot.intake.isDeployed)
         

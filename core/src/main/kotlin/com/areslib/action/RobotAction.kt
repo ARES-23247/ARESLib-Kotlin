@@ -5,6 +5,7 @@ package com.areslib.action
  */
 interface RobotAction {
     val timestampMs: Long
+        get() = com.areslib.util.RobotClock.currentTimeMillis()
 
     // Hardware Updates
     data class DriveHardwareUpdate(

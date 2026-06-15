@@ -4,11 +4,12 @@ import com.areslib.action.RobotAction
 import com.areslib.state.SuperstructureState
 import com.areslib.state.SuperstructureMode
 
-object SuperstructureReducer {
-    /**
-     * Reduces the SuperstructureState slice based on intake, flywheel, and transfer actions.
-     */
-    fun reduce(state: SuperstructureState, action: RobotAction): SuperstructureState {
+interface SuperstructureTransitionStrategy {
+    fun reduce(state: SuperstructureState, action: RobotAction): SuperstructureState
+}
+
+object DefaultSuperstructureTransition : SuperstructureTransitionStrategy {
+    override fun reduce(state: SuperstructureState, action: RobotAction): SuperstructureState {
         return when (action) {
             is RobotAction.PathEventTriggered -> {
                 if (action.eventName == "IntakeOn") {
@@ -100,5 +101,16 @@ object SuperstructureReducer {
             }
             else -> state
         }
+    }
+}
+
+object SuperstructureReducer {
+    var strategy: SuperstructureTransitionStrategy = DefaultSuperstructureTransition
+
+    /**
+     * Reduces the SuperstructureState slice based on intake, flywheel, and transfer actions.
+     */
+    fun reduce(state: SuperstructureState, action: RobotAction): SuperstructureState {
+        return strategy.reduce(state, action)
     }
 }

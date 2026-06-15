@@ -18,7 +18,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val frDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE,
     val blDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
     val brDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE
-) {
+) : com.areslib.hardware.SubsystemIO {
     val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, flName)
     val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
     val backLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, blName)
@@ -69,6 +69,55 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         frontRight.direction = frDirection
         backLeft.direction = blDirection
         backRight.direction = brDirection
+
+        // Register drive motors automatically for automatic diagnostics and current budgeting
+        com.areslib.hardware.HardwareRegistry.registerMotor(flName, flIO)
+        com.areslib.hardware.HardwareRegistry.registerMotor(frName, frIO)
+        com.areslib.hardware.HardwareRegistry.registerMotor(blName, blIO)
+        com.areslib.hardware.HardwareRegistry.registerMotor(brName, brIO)
+        com.areslib.hardware.HardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
+    }
+
+    override fun refresh() {
+        updateInputs()
+    }
+
+    override fun safe() {
+        apply(com.areslib.kinematics.MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0), 12.0, 0.02, 0.0)
+    }
+
+    /**
+     * Coordinate-centric Mecanum drive calculation wrapper.
+     */
+    fun drive(
+        driveState: com.areslib.state.DriveState,
+        kinematics: com.areslib.kinematics.MecanumKinematics,
+        batteryVolts: Double,
+        dtSeconds: Double
+    ) {
+        val maxSpeed = maxWheelSpeedMetersPerSecond
+        val vx = driveState.xVelocityMetersPerSecond * maxSpeed
+        val vy = driveState.yVelocityMetersPerSecond * maxSpeed
+        val omega = driveState.angularVelocityRadiansPerSecond * maxSpeed
+
+        val chassisSpeeds = if (driveState.isFieldCentric) {
+            com.areslib.math.ChassisSpeeds.fromFieldRelativeSpeeds(
+                vx, vy, omega,
+                com.areslib.math.Rotation2d(driveState.poseEstimator.estimatedPose.heading.radians)
+            )
+        } else {
+            com.areslib.math.ChassisSpeeds(vx, vy, omega)
+        }
+        val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
+
+        apply(
+            speeds = wheelSpeeds.normalize(maxSpeed),
+            batteryVolts = batteryVolts,
+            dtSeconds = dtSeconds,
+            powerScale = flIO.powerScale
+        )
+        
+        applyPowerScale(flIO.powerScale)
     }
 
     /**

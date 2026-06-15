@@ -2,15 +2,14 @@ package com.areslib.hardware
 
 import com.areslib.telemetry.ITelemetry
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Global registry for automatic hardware device logging and diagnostics.
- * Allows 100% automatic telemetry logging of all registered motors and servos.
+ * Global registry for automatic hardware device logging, diagnostics, power scaling, and lifecycle batch reads.
  */
 object HardwareRegistry {
-    private val motors = ConcurrentHashMap<String, MotorIO>()
-    private val servos = ConcurrentHashMap<String, ServoIO>()
-    private val closeables = java.util.concurrent.CopyOnWriteArrayList<AutoCloseable>()
+    private val devices = ConcurrentHashMap<String, LoggableDevice>()
+    private val closeables = CopyOnWriteArrayList<AutoCloseable>()
 
     /**
      * Registers a closeable hardware wrapper to ensure background threads are terminated on close.
@@ -20,17 +19,55 @@ object HardwareRegistry {
     }
 
     /**
+     * Registers a generic loggable device with a unique system name.
+     */
+    fun registerDevice(name: String, device: LoggableDevice) {
+        devices[name] = device
+    }
+
+    /**
      * Registers a motor with a unique diagnostic name.
      */
     fun registerMotor(name: String, motor: MotorIO) {
-        motors[name] = motor
+        registerDevice("Motors/$name", motor)
     }
 
     /**
      * Registers a servo with a unique diagnostic name.
      */
     fun registerServo(name: String, servo: ServoIO) {
-        servos[name] = servo
+        registerDevice("Servos/$name", servo)
+    }
+
+    /**
+     * Retrieves all registered motor wrappers for power budget calculations and voltage compensation.
+     */
+    fun getRegisteredMotors(): List<MotorIO> {
+        return devices.values.filterIsInstance<MotorIO>()
+    }
+
+    /**
+     * Batches status updates and read transactions across all registered SubsystemIO components.
+     */
+    fun refreshAll() {
+        for (device in devices.values) {
+            if (device is SubsystemIO) {
+                device.refresh()
+            }
+        }
+    }
+
+    /**
+     * Triggers safety failsafes across all registered subsystems.
+     */
+    fun safeAll() {
+        for (device in devices.values) {
+            if (device is SubsystemIO) {
+                try {
+                    device.safe()
+                } catch (_: Exception) {}
+            }
+        }
     }
 
     /**
@@ -43,8 +80,15 @@ object HardwareRegistry {
             } catch (_: Exception) {}
         }
         closeables.clear()
-        motors.clear()
-        servos.clear()
+
+        for (device in devices.values) {
+            if (device is AutoCloseable) {
+                try {
+                    device.close()
+                } catch (_: Exception) {}
+            }
+        }
+        devices.clear()
     }
 
     /**
@@ -58,15 +102,8 @@ object HardwareRegistry {
      * Publishes the current state of all registered hardware devices to the telemetry provider.
      */
     fun publishAll(telemetry: ITelemetry) {
-        for ((name, motor) in motors) {
-            telemetry.putNumber("Hardware/Motors/$name/Power", motor.power * motor.powerScale)
-            telemetry.putNumber("Hardware/Motors/$name/Position", motor.position)
-            telemetry.putNumber("Hardware/Motors/$name/Velocity", motor.velocity)
-            telemetry.putNumber("Hardware/Motors/$name/CurrentAmps", motor.currentAmps)
-        }
-
-        for ((name, servo) in servos) {
-            telemetry.putNumber("Hardware/Servos/$name/Position", servo.position)
+        for ((name, device) in devices) {
+            device.logTelemetry(telemetry, "Hardware/$name")
         }
     }
 }

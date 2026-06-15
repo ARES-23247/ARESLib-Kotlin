@@ -82,3 +82,25 @@ fun ITelemetry.logBrownout(brownoutGuard: com.areslib.control.BrownoutGuard, bat
     putString("Robot/BrownoutState", brownoutGuard.state.name)
     putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
 }
+
+/**
+ * Extension to log gamepad state without code duplication.
+ */
+fun ITelemetry.logGamepad(prefix: String, gamepad: GamepadState) {
+    putNumber("$prefix/LeftStick_X", gamepad.leftStickX.toDouble())
+    putNumber("$prefix/LeftStick_Y", gamepad.leftStickY.toDouble())
+    putNumber("$prefix/RightStick_X", gamepad.rightStickX.toDouble())
+    putNumber("$prefix/RightStick_Y", gamepad.rightStickY.toDouble())
+    putNumber("$prefix/LeftTrigger", gamepad.leftTrigger.toDouble())
+    putNumber("$prefix/RightTrigger", gamepad.rightTrigger.toDouble())
+    putBoolean("$prefix/A", gamepad.a)
+    putBoolean("$prefix/B", gamepad.b)
+    putBoolean("$prefix/X", gamepad.x)
+    putBoolean("$prefix/Y", gamepad.y)
+    putBoolean("$prefix/DpadUp", gamepad.dpadUp)
+    putBoolean("$prefix/DpadDown", gamepad.dpadDown)
+    putBoolean("$prefix/DpadLeft", gamepad.dpadLeft)
+    putBoolean("$prefix/DpadRight", gamepad.dpadRight)
+    putBoolean("$prefix/LeftBumper", gamepad.leftBumper)
+    putBoolean("$prefix/RightBumper", gamepad.rightBumper)
+}
