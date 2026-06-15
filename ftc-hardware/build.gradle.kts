@@ -9,6 +9,7 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
     google()
+    maven("https://repo.dairy.foundation/releases")
 }
 
 dependencies {

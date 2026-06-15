@@ -21,6 +21,15 @@ allprojects {
         maven("https://frcmaven.wpi.edu/artifactory/release/")
         maven("https://maven.ctr-electronics.com/release/")
         maven("https://jitpack.io")
+        maven("https://repo.dairy.foundation/releases")
+    }
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23")
+            force("org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23")
+        }
     }
 }
 
