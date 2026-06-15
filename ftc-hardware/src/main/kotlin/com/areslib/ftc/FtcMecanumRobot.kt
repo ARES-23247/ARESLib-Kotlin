@@ -393,6 +393,24 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         mecanumIO.applyPowerScale(effectiveScale)
 
         // 5. Publish EVERYTHING to NT4 + CSV automatically
+        // Flat telemetry keys for cloud ingestion/diagnostic sync
+        dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
+        dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
+        dataLoggingTelemetry.putNumber("motor_lf_current", mecanumIO.flIO.currentAmps)
+        dataLoggingTelemetry.putNumber("motor_rf_current", mecanumIO.frIO.currentAmps)
+        dataLoggingTelemetry.putNumber("motor_lr_current", mecanumIO.blIO.currentAmps)
+        dataLoggingTelemetry.putNumber("motor_rr_current", mecanumIO.brIO.currentAmps)
+        
+        val estPose = store.state.drive.poseEstimator.estimatedPose
+        dataLoggingTelemetry.putNumber("pinpoint_x", estPose.x)
+        dataLoggingTelemetry.putNumber("pinpoint_y", estPose.y)
+        dataLoggingTelemetry.putNumber("pinpoint_heading", estPose.heading.radians)
+        
+        val rawOdomX = store.state.drive.odometryX
+        val rawOdomY = store.state.drive.odometryY
+        dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
+        dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
+
         publisher.publish(store.state, gamepad1, gamepad2)
 
         // Publish physical motor telemetry (power, encoder positions, velocities, currents)
