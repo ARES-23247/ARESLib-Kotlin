@@ -66,8 +66,19 @@ object MarvinReducer {
                     climber = currentMarvin.climber.copy(targetExtensionMeters = action.meters)
                 )
             }
-            is SuperstructureSensorUpdate -> {
+            is StartSlamtake -> {
                 currentMarvin.copy(
+                    slamtakeActive = true,
+                    slamtakeStartTimeMs = action.timestampMs
+                )
+            }
+            is StopSlamtake -> {
+                currentMarvin.copy(
+                    slamtakeActive = false
+                )
+            }
+            is SuperstructureSensorUpdate -> {
+                var updatedMarvin = currentMarvin.copy(
                     flywheel = currentMarvin.flywheel.copy(velocityRpm = action.flywheelRpm),
                     cowl = currentMarvin.cowl.copy(angleDegrees = action.cowlAngle),
                     intake = currentMarvin.intake.copy(pivotAngleDegrees = action.intakeAngle),
@@ -75,6 +86,30 @@ object MarvinReducer {
                     floor = currentMarvin.floor.copy(velocityRps = action.floorVelocityRps),
                     climber = currentMarvin.climber.copy(extensionMeters = action.climberExtensionMeters)
                 )
+
+                if (updatedMarvin.slamtakeActive) {
+                    val elapsed = (action.timestampMs - updatedMarvin.slamtakeStartTimeMs) / 1000.0
+                    if (elapsed < 0.5) {
+                        updatedMarvin = updatedMarvin.copy(
+                            intake = updatedMarvin.intake.copy(isDeployed = true, targetAngleDegrees = 90.0, targetRollerVelocityRps = 10.0),
+                            floor = updatedMarvin.floor.copy(targetVelocityRps = 10.0),
+                            feeder = updatedMarvin.feeder.copy(targetVelocityRps = 0.0)
+                        )
+                    } else if (elapsed < 1.5) {
+                        updatedMarvin = updatedMarvin.copy(
+                            intake = updatedMarvin.intake.copy(isDeployed = false, targetAngleDegrees = 0.0, targetRollerVelocityRps = 10.0),
+                            floor = updatedMarvin.floor.copy(targetVelocityRps = 10.0),
+                            feeder = updatedMarvin.feeder.copy(targetVelocityRps = 0.0)
+                        )
+                    } else {
+                        updatedMarvin = updatedMarvin.copy(
+                            slamtakeActive = false,
+                            intake = updatedMarvin.intake.copy(targetRollerVelocityRps = 0.0),
+                            floor = updatedMarvin.floor.copy(targetVelocityRps = 0.0)
+                        )
+                    }
+                }
+                updatedMarvin
             }
             else -> null
         }

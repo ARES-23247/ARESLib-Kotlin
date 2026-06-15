@@ -51,13 +51,15 @@ object SCurveTrajectoryParameterizer {
             return Path(listOf(PathPoint(Pose2d(waypoints[0].x, waypoints[0].y, startHeading), 0.0)))
         }
 
+        val validSpacing = if (spacingMeters.isNaN() || spacingMeters.isInfinite() || spacingMeters <= 1e-5) 0.02 else spacingMeters
+
         // 1. Interpolate waypoints into high-resolution path points
         val rawPoints = mutableListOf<Translation2d>()
         for (i in 0 until waypoints.size - 1) {
             val w1 = waypoints[i]
             val w2 = waypoints[i + 1]
             val dist = hypot(w2.x - w1.x, w2.y - w1.y)
-            val numSteps = kotlin.math.max(1, (dist / spacingMeters).toInt())
+            val numSteps = kotlin.math.max(1, (dist / validSpacing).toInt())
             for (step in 0 until numSteps) {
                 val t = step.toDouble() / numSteps
                 val x = w1.x + (w2.x - w1.x) * t

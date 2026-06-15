@@ -16,6 +16,32 @@ class SwerveModuleIOFtc(
     private var lastSteerAbsolute = 0.0
     private var lastWarningTime = 0L
 
+    private val lock = Any()
+    @Volatile private var running = true
+    private var latestVoltage = 0.0
+
+    init {
+        val thread = Thread {
+            while (running) {
+                try {
+                    val volt = analogEncoder.voltage
+                    synchronized(lock) {
+                        latestVoltage = volt
+                    }
+                } catch (_: Exception) {}
+                try {
+                    Thread.sleep(5)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
+            }
+        }
+        thread.isDaemon = true
+        thread.name = "ARES-SwerveModuleIOFtc-Analog-Thread"
+        thread.start()
+    }
+
     override fun updateInputs(inputs: SwerveModuleInputs) {
         // FTC has no synchronous CAN block like Phoenix 6, so we poll individually.
         try {
@@ -31,7 +57,8 @@ class SwerveModuleIOFtc(
         }
 
         try {
-            lastSteerAbsolute = analogEncoder.voltage / 3.3 * 2.0 * Math.PI
+            val volt = synchronized(lock) { latestVoltage }
+            lastSteerAbsolute = volt / 3.3 * 2.0 * Math.PI
         } catch (e: Exception) {
             logError("analogEncoder.voltage", e)
         }
@@ -49,4 +76,9 @@ class SwerveModuleIOFtc(
             lastWarningTime = now
         }
     }
+
+    fun close() {
+        running = false
+    }
 }
+

@@ -28,6 +28,7 @@ class SlewRateLimiter(
             return input
         }
 
+        if (!dtSeconds.isFinite()) return lastValue
         val dt = if (dtSeconds > 0.0) dtSeconds else 0.0
         if (dt == 0.0) return lastValue
 

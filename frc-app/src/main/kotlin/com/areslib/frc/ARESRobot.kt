@@ -36,13 +36,7 @@ class ARESRobot : TimedRobot() {
     private val controller = XboxController(0)
     private val coPilotController = XboxController(1)
 
-    // Edge detector for LB toggle
-    private var prevLB = false
     private var intakeDeployed = false
-
-    // Slamtake state tracking
-    private var slamtakeActive = false
-    private var slamtakeStartTime = 0.0
     private var driverYawOffset = 0.0
 
     // Pre-allocated ShotResult for SOTM (zero-allocation)
@@ -68,44 +62,7 @@ class ARESRobot : TimedRobot() {
         val isReal = RobotBase.isReal()
         robot = if (isReal) {
             try {
-                // Marvin 19 Physical Hardware on "CAN2" high-speed bus
-                val leftMasterFX = com.ctre.phoenix6.hardware.TalonFX(9, "CAN2")
-                val leftFollowerFX = com.ctre.phoenix6.hardware.TalonFX(10, "CAN2")
-                val rightMasterFX = com.ctre.phoenix6.hardware.TalonFX(11, "CAN2")
-                val rightFollowerFX = com.ctre.phoenix6.hardware.TalonFX(12, "CAN2")
-                val cowlFX = com.ctre.phoenix6.hardware.TalonFX(13, "CAN2")
-                val pivotFX = com.ctre.phoenix6.hardware.TalonFX(14, "CAN2")
-                val rollerFX = com.ctre.phoenix6.hardware.TalonFX(15, "CAN2")
-                val floorFX = com.ctre.phoenix6.hardware.TalonFX(16, "CAN2")
-                val climberFX = com.ctre.phoenix6.hardware.TalonFX(19, "CAN2")
-                val feederFX = com.ctre.phoenix6.hardware.TalonFX(20, "CAN2")
-
-                // Initialize CTRE SwerveDrivetrain using Tuner X constants
-                val ctreDrivetrain = frc.robot.generated.TunerConstants.TunerSwerveDrivetrain(
-                    frc.robot.generated.TunerConstants.DrivetrainConstants,
-                    frc.robot.generated.TunerConstants.FrontLeft,
-                    frc.robot.generated.TunerConstants.FrontRight,
-                    frc.robot.generated.TunerConstants.BackLeft,
-                    frc.robot.generated.TunerConstants.BackRight
-                )
-                val swerveIO = FRCSwerveHardwareIO(ctreDrivetrain)
-
-                // Initialize Limelight cameras
-                val limelightShooter = FrcLimelightIO("limelight-shooter")
-                val limelightBack = FrcLimelightIO("limelight-back")
-                val compositeVision = com.areslib.hardware.vision.CompositeVisionIO(listOf(limelightShooter, limelightBack))
-
-                FrcSwerveRobot(
-                    swerveIO = swerveIO,
-                    flywheelIO = FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX),
-                    cowlIO = FRCCowlHardwareIO(cowlFX),
-                    intakeIO = FRCIntakeHardwareIO(pivotFX, rollerFX),
-                    feederIO = FRCFeederHardwareIO(feederFX),
-                    floorIO = FRCFloorHardwareIO(floorFX),
-                    climberIO = FRCClimberHardwareIO(climberFX),
-                    visionIO = compositeVision,
-                    isSimulation = false
-                )
+                FrcSwerveRobot.createPhysicalMarvinXIX()
             } catch (e: Exception) {
                 println("Failed to initialize physical hardware: ${e.message}")
                 // Fallback to sim IO
@@ -196,43 +153,19 @@ class ARESRobot : TimedRobot() {
 
             // ── Driver / Copilot Shooting Triggers ──
             val rtPressed = controller.rightTriggerAxis > 0.5
-            val rbPressed = controller.rightBumper
+            val rbPressed = controller.rightBumperButton
             val bPressed = controller.bButton
             val copilotRtPressed = coPilotController.rightTriggerAxis > 0.5
-            val copilotRbPressed = coPilotController.rightBumper
+            val copilotRbPressed = coPilotController.rightBumperButton
 
             when {
                 rtPressed -> {
                     // Shoot-on-the-Move (SOTM) Speaker Aiming
-                    val rx = robot.store.state.drive.xVelocityMetersPerSecond
-                    val ry = robot.store.state.drive.yVelocityMetersPerSecond
-                    val omega = robot.store.state.drive.angularVelocityRadiansPerSecond
-                    
-                    val cos = currentPose.heading.cos
-                    val sin = currentPose.heading.sin
-                    val fieldVx = rx * cos - ry * sin
-                    val fieldVy = rx * sin + ry * cos
-                    
-                    val fieldSpeeds = ChassisSpeeds(fieldVx, fieldVy, omega)
-                    
-                    ShotSetup.calculate(currentPose, fieldSpeeds, speakerTranslation, shotResult)
-                    
-                    robot.store.dispatch(SetFlywheelSpeed(shotResult.targetFlywheelRpm))
-                    robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
-                    robot.store.dispatch(SetCowlAngle(shotResult.targetCowlAngleDegrees))
-                    
-                    val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
-                    val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
-                    val kp = 4.0
-                    rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec
-                    
-                    val headingAligned = Math.abs(wrappedError) < 0.05
-                    val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
-                    if (headingAligned && rpmAligned) {
-                        robot.store.dispatch(SetFeederSpeed(10.0))
-                    } else {
-                        robot.store.dispatch(SetFeederSpeed(0.0))
-                    }
+                    rotation = robot.marvinShooter.updateShootOnTheMove(
+                        currentPose = currentPose,
+                        targetTranslation = speakerTranslation,
+                        shotResult = shotResult
+                    )
                 }
                 rbPressed -> {
                     // Aim and Shuttle
@@ -245,59 +178,19 @@ class ARESRobot : TimedRobot() {
                     val shuttleTarget = targetPoses.minByOrNull { kotlin.math.hypot(it.x - currentPose.x, it.y - currentPose.y) }
                         ?: Translation2d(2.0, 6.0)
 
-                    val rx = robot.store.state.drive.xVelocityMetersPerSecond
-                    val ry = robot.store.state.drive.yVelocityMetersPerSecond
-                    val omega = robot.store.state.drive.angularVelocityRadiansPerSecond
-                    
-                    val cos = currentPose.heading.cos
-                    val sin = currentPose.heading.sin
-                    val fieldVx = rx * cos - ry * sin
-                    val fieldVy = rx * sin + ry * cos
-                    val fieldSpeeds = ChassisSpeeds(fieldVx, fieldVy, omega)
-                    
-                    ShotSetup.calculate(currentPose, fieldSpeeds, shuttleTarget, shotResult)
-                    
-                    robot.store.dispatch(SetFlywheelSpeed(shotResult.targetFlywheelRpm))
-                    robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
-                    robot.store.dispatch(SetCowlAngle(shotResult.targetCowlAngleDegrees))
-                    
-                    val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
-                    val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
-                    val kp = 4.0
-                    rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec
-                    
-                    val headingAligned = Math.abs(wrappedError) < 0.05
-                    val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
-                    if (headingAligned && rpmAligned) {
-                        robot.store.dispatch(SetFeederSpeed(10.0))
-                        robot.store.dispatch(SetFloorSpeed(10.0))
-                    } else {
-                        robot.store.dispatch(SetFeederSpeed(0.0))
-                        robot.store.dispatch(SetFloorSpeed(0.0))
-                    }
+                    rotation = robot.marvinShooter.updateShootOnTheMove(
+                        currentPose = currentPose,
+                        targetTranslation = shuttleTarget,
+                        shotResult = shotResult,
+                        runFloorRollers = true
+                    )
                 }
                 bPressed -> {
                     // Static Shoot (Speaker Aiming)
-                    val dist = kotlin.math.hypot(currentPose.x - speakerTranslation.x, currentPose.y - speakerTranslation.y)
-                    val targetRpm = ShotSetup.interpolateRpm(dist)
-                    val targetCowl = ShotSetup.interpolateCowl(dist)
-                    
-                    robot.store.dispatch(SetFlywheelSpeed(targetRpm))
-                    robot.store.dispatch(RobotAction.SetFlywheelActive(true, com.areslib.util.RobotClock.currentTimeMillis()))
-                    robot.store.dispatch(SetCowlAngle(targetCowl))
-                    
-                    val headingError = Math.atan2(speakerTranslation.y - currentPose.y, speakerTranslation.x - currentPose.x) - currentPose.heading.radians + Math.PI
-                    val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
-                    val kp = 4.0
-                    rotation = wrappedError * kp
-                    
-                    val headingAligned = Math.abs(wrappedError) < 0.05
-                    val rpmAligned = Math.abs(robot.store.state.superstructure.marvinXIX.flywheel.velocityRpm - targetRpm) < 150.0
-                    if (headingAligned && rpmAligned) {
-                        robot.store.dispatch(SetFeederSpeed(10.0))
-                    } else {
-                        robot.store.dispatch(SetFeederSpeed(0.0))
-                    }
+                    rotation = robot.marvinShooter.updateStaticShoot(
+                        currentPose = currentPose,
+                        targetTranslation = speakerTranslation
+                    )
                 }
                 copilotRtPressed -> {
                     // Copilot manual Hub shot reference
@@ -319,15 +212,15 @@ class ARESRobot : TimedRobot() {
             // Apply drive command
             robot.drive.joystickDrive(forward, strafe, rotation)
 
-            // ── A Button: Slamtake Sequence ──
+            // ── A Button: Start Slamtake Sequence ──
             val aPressed = controller.aButton
-            if (aPressed && !slamtakeActive) {
-                slamtakeActive = true
-                slamtakeStartTime = Timer.getFPGATimestamp()
+            val isSlamtakeActive = robot.store.state.superstructure.marvinXIX.slamtakeActive
+            if (aPressed && !isSlamtakeActive) {
+                robot.store.dispatch(StartSlamtake(com.areslib.util.RobotClock.currentTimeMillis()))
             }
 
             // ── Left Bumper: Unjam ──
-            val lbPressed = controller.leftBumper
+            val lbPressed = controller.leftBumperButton
 
             // ── Left Trigger: Intake/Feeder active run ──
             val ltPressed = controller.leftTriggerAxis > 0.5
@@ -344,33 +237,16 @@ class ARESRobot : TimedRobot() {
             when {
                 lbPressed -> {
                     // Unjam sequence takes top priority
-                    slamtakeActive = false
+                    if (isSlamtakeActive) {
+                        robot.store.dispatch(StopSlamtake(com.areslib.util.RobotClock.currentTimeMillis()))
+                    }
                     robot.store.dispatch(SetIntakePivot(deployed = true))
                     robot.store.dispatch(SetIntakeRollers(-5.0))
                     robot.store.dispatch(SetFloorSpeed(-5.0))
                     robot.store.dispatch(SetFeederSpeed(-5.0))
                 }
-                slamtakeActive -> {
-                    val elapsed = Timer.getFPGATimestamp() - slamtakeStartTime
-                    if (elapsed < 0.5) {
-                        robot.store.dispatch(SetIntakePivot(deployed = true))
-                        robot.store.dispatch(SetIntakeRollers(10.0))
-                        robot.store.dispatch(SetFloorSpeed(10.0))
-                        robot.store.dispatch(SetFeederSpeed(0.0))
-                    } else if (elapsed < 1.5) {
-                        robot.store.dispatch(SetIntakePivot(deployed = false))
-                        robot.store.dispatch(SetIntakeRollers(10.0))
-                        robot.store.dispatch(SetFloorSpeed(10.0))
-                        robot.store.dispatch(SetFeederSpeed(0.0))
-                    } else {
-                        slamtakeActive = false
-                        robot.store.dispatch(SetIntakePivot(deployed = intakeDeployed))
-                        robot.store.dispatch(SetIntakeRollers(0.0))
-                        robot.store.dispatch(SetFloorSpeed(0.0))
-                        if (!rtPressed && !rbPressed && !bPressed) {
-                            robot.store.dispatch(SetFeederSpeed(0.0))
-                        }
-                    }
+                isSlamtakeActive -> {
+                    // Handled inside MarvinReducer!
                 }
                 ltPressed -> {
                     // Active manual intake

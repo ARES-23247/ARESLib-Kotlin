@@ -51,3 +51,11 @@ data class SuperstructureSensorUpdate @kotlin.jvm.JvmOverloads constructor(
     val climberExtensionMeters: Double = 0.0,
     override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
 ) : RobotAction
+
+data class StartSlamtake @kotlin.jvm.JvmOverloads constructor(
+    override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+) : RobotAction
+
+data class StopSlamtake @kotlin.jvm.JvmOverloads constructor(
+    override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+) : RobotAction

@@ -78,7 +78,7 @@ class PIDController(
      * Calculates the control output given the current measurement and a timestep dt.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
-        if (!measurement.isFinite() || !setpoint.isFinite() || dtSeconds <= 0.0) {
+        if (!measurement.isFinite() || !setpoint.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0) {
             val now = RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("PIDController: Invalid inputs detected (measurement=$measurement, setpoint=$setpoint, dtSeconds=$dtSeconds). Returning safe fallback 0.0.")

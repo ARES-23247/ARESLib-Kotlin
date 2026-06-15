@@ -51,7 +51,7 @@ class TrapezoidProfile {
         constraints: Constraints,
         outState: State
     ) {
-        if (dtSeconds <= 0.0) {
+        if (dtSeconds.isNaN() || dtSeconds.isInfinite() || dtSeconds <= 0.0) {
             outState.setTo(current)
             return
         }

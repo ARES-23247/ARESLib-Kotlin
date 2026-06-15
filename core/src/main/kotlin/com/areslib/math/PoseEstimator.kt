@@ -4,9 +4,19 @@ import com.areslib.state.VisionMeasurement
 
 data class PoseHistoryEntry(
     var timestampMs: Long = 0L,
-    var pose: Pose2d = Pose2d(),
+    var x: Double = 0.0,
+    var y: Double = 0.0,
+    var headingRad: Double = 0.0,
     var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
-)
+) {
+    var pose: Pose2d
+        get() = Pose2d(x, y, Rotation2d(headingRad))
+        set(value) {
+            x = value.x
+            y = value.y
+            headingRad = value.heading.radians
+        }
+}
 
 class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEntry>() {
     private val entries = Array(capacity) { PoseHistoryEntry() }
@@ -36,7 +46,9 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
             val src = entries[i]
             val dest = newBuf.entries[i]
             dest.timestampMs = src.timestampMs
-            dest.pose = src.pose
+            dest.x = src.x
+            dest.y = src.y
+            dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
         }
         newBuf.head = head
@@ -51,7 +63,9 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
             val src = this.entries[i]
             val dest = destination.entries[i]
             dest.timestampMs = src.timestampMs
-            dest.pose = src.pose
+            dest.x = src.x
+            dest.y = src.y
+            dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
         }
     }
@@ -61,6 +75,15 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         val entry = get(index)
         entry.timestampMs = timestampMs
         entry.pose = pose
+        entry.covariance.setTo(covariance)
+    }
+
+    fun updateEntryDirect(index: Int, timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3) {
+        val entry = get(index)
+        entry.timestampMs = timestampMs
+        entry.x = x
+        entry.y = y
+        entry.headingRad = headingRad
         entry.covariance.setTo(covariance)
     }
 }
@@ -312,8 +335,8 @@ object PoseEstimator {
         val tagPose = activeTags[measurement.tagId]
         var incidenceScale = 1.0
         val distance = if (tagPose != null) {
-            val dx = tagPose.x - baseEntry.pose.x
-            val dy = tagPose.y - baseEntry.pose.y
+            val dx = tagPose.x - baseEntry.x
+            val dy = tagPose.y - baseEntry.y
             val losHeading = kotlin.math.atan2(dy, dx)
             val phi = InputMath.wrapAngle(losHeading - tagPose.rotation.z)
             val cosPhi = kotlin.math.cos(phi)
@@ -322,8 +345,8 @@ object PoseEstimator {
         } else {
             // Fallback to measurement pose distance from robot base
             val measurementPose = measurement.targetPose.toPose2d()
-            val dx = measurementPose.x - baseEntry.pose.x
-            val dy = measurementPose.y - baseEntry.pose.y
+            val dx = measurementPose.x - baseEntry.x
+            val dy = measurementPose.y - baseEntry.y
             kotlin.math.sqrt(dx * dx + dy * dy)
         }
 
@@ -379,10 +402,10 @@ object PoseEstimator {
 
         // Innovation residual y = z - Hx (where H is identity since we directly measure pose)
         val measurementPose2d = measurement.targetPose.toPose2d()
-        val headingDiff = InputMath.wrapAngle(measurementPose2d.heading.radians - baseEntry.pose.heading.radians)
+        val headingDiff = InputMath.wrapAngle(measurementPose2d.heading.radians - baseEntry.headingRad)
 
-        val yX = measurementPose2d.x - baseEntry.pose.x
-        val yY = measurementPose2d.y - baseEntry.pose.y
+        val yX = measurementPose2d.x - baseEntry.x
+        val yY = measurementPose2d.y - baseEntry.y
         val yZ = headingDiff
 
         // 3. Statistical Mahalanobis Distance Outlier Rejection
@@ -442,36 +465,30 @@ object PoseEstimator {
         scratchCov.m10 = cov10; scratchCov.m11 = cov11; scratchCov.m12 = cov12
         scratchCov.m20 = cov20; scratchCov.m21 = cov21; scratchCov.m22 = cov22
 
-        val updatedPose = Pose2d(
-            baseEntry.pose.x + dxX,
-            baseEntry.pose.y + dxY,
-            Rotation2d(baseEntry.pose.heading.radians + dxZ)
-        )
-
         // Copy current state history to scratch history for mutating
         state.history.copyInto(scratchHistory)
 
         // Now we must replay all odometry deltas from closestIndex + 1 to the end
-        var currentPose = updatedPose
+        var currentX = baseEntry.x + dxX
+        var currentY = baseEntry.y + dxY
+        var currentHeadingRad = InputMath.wrapAngle(baseEntry.headingRad + dxZ)
         var currentCov = scratchCov
 
-        scratchHistory.updateEntry(closestIndex, baseEntry.timestampMs, currentPose, currentCov)
+        scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, currentCov)
 
         for (i in (closestIndex + 1) until state.history.size) {
-            val prevRaw = state.history[i - 1].pose
-            val currRaw = state.history[i].pose
+            val prevRaw = state.history[i - 1]
+            val currRaw = state.history[i]
             
             // Calculate raw delta
             val deltaX = currRaw.x - prevRaw.x
             val deltaY = currRaw.y - prevRaw.y
-            val deltaHeading = currRaw.heading.radians - prevRaw.heading.radians
+            val deltaHeading = currRaw.headingRad - prevRaw.headingRad
 
             // Re-apply delta to our updated state
-            currentPose = Pose2d(
-                currentPose.x + deltaX,
-                currentPose.y + deltaY,
-                Rotation2d(currentPose.heading.radians + deltaHeading)
-            )
+            currentX += deltaX
+            currentY += deltaY
+            currentHeadingRad = InputMath.wrapAngle(currentHeadingRad + deltaHeading)
 
             scratchCov2.m00 = currentCov.m00 + Q.m00
             scratchCov2.m01 = currentCov.m01 + Q.m01
@@ -483,7 +500,7 @@ object PoseEstimator {
             scratchCov2.m21 = currentCov.m21 + Q.m21
             scratchCov2.m22 = currentCov.m22 + Q.m22
             
-            scratchHistory.updateEntry(i, state.history[i].timestampMs, currentPose, scratchCov2)
+            scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2)
             currentCov = scratchCov2
         }
 
@@ -491,7 +508,7 @@ object PoseEstimator {
         scratchHistory.copyInto(state.history)
 
         return state.copy(
-            estimatedPose = currentPose,
+            estimatedPose = Pose2d(currentX, currentY, Rotation2d(currentHeadingRad)),
             covariance = Matrix3x3(currentCov.m00, currentCov.m01, currentCov.m02, currentCov.m10, currentCov.m11, currentCov.m12, currentCov.m20, currentCov.m21, currentCov.m22)
         )
     }
