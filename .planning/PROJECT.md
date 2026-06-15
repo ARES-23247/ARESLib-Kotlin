@@ -86,21 +86,23 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ FRC-MS-03: Phoenix 6 TalonFX & CANcoder CTRE Wrappers with Current Limits. — v2.9
 - ✓ FRC-MS-04: High-Fidelity Superstructure Rotational and Gravity Simulator. — v2.9
 
+- ✓ FRC-INT-01: Unified FRC Marvin 19 Robot Loop — v3.0
+- ✓ FRC-SIM-02: AdvantageScope Superstructure 2D/3D visualizer stream — v3.0
+- ✓ FTC-SYS-01: Decouple simulated/mock FTC classes out of :core completely — v3.0
+
 ### Active
 
-- [ ] FRC-INT-01: Unified FRC Marvin 19 Robot Loop
-- [ ] FRC-SIM-02: AdvantageScope Superstructure 2D/3D visualizer stream
-- [ ] FTC-SYS-01: Decouple simulated/mock FTC classes out of :core completely
+- [ ] FTC-SYS-02: Subsystem Modularity & Student Loop Facade
+- [ ] FTC-EKF-03: FTC EKF Reset Alignment & Yaw Rejection Lockout
 - [ ] SYS-TEST-01: Complete FRC autonomous match simulation (ShootAndMobility)
 
-## Current Milestone: v3.0 (FRC Marvin 19 Unified Robot Integration & Full System Verification)
+## Current Milestone: v3.1 (FTC EKF Localization Hardening & FRC E2E Match Simulation)
 
-**Goal:** Unify the Marvin 19 drivetrain and superstructure Redux states, decouple simulation mock boundaries, stream comprehensive AdvantageScope 3D telemetry, and validate end-to-end autonomous matches.
+**Goal:** Harden the FTC EKF pose integration resets and vision outlier threshold gates to prevent driver-centric control lockout, implement the student facade layer, and run full FRC autonomous match simulations.
 
 **Target features:**
-- FRC-INT-01 (Unified Robot Loop)
-- FRC-SIM-02 (AdvantageScope Superstructure Visualizer)
-- FTC-SYS-01 (Mocks Separation & Real OpMode Hardening)
+- FTC-SYS-02 (Student Loop Facade)
+- FTC-EKF-03 (Reset Alignment & Yaw Rejection Lockout)
 - SYS-TEST-01 (Autonomous Match Simulation)
 
 ### Out of Scope

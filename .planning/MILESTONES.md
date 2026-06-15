@@ -1,6 +1,19 @@
 # Milestones
 
+## v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification (Shipped: 2026-06-15)
+
+**Phases completed:** 3 phases, 2 plans
+
+**Key accomplishments:**
+
+- Integrated the Marvin 19 FRC Superstructure Redux state and swerve drivetrain kinematic model into a unified FRC robot execution loop.
+- Set up AdvantageScope 3D visualization and telemetry streaming via NT4 for live monitoring of robot subsystems.
+- Relocated pure simulated FTC classes to the `:ftc-mocks` module to achieve clean compilation boundaries and mock isolation.
+
+---
+
 ## v2.9 Physical Deployment & FRC Marvin 19 Redux Migration (Shipped: 2026-05-18)
+
 
 **Phases completed:** 8 phases, 8 plans
 

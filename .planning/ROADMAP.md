@@ -23,38 +23,25 @@
 - ✅ **v2.7 Path Execution & Dynamic Task Planning** — Phases 56-59 (shipped 2026-05-18)
 - ✅ **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (shipped 2026-05-18)
 - ✅ **v2.9 Physical Deployment & FRC Marvin 19 Redux Migration** — Phases 64-71 (shipped 2026-05-18)
-- 🚧 **v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification** — Phases 72-75 (in progress)
+- ✅ **v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification** — Phases 72-74 (shipped 2026-06-15)
+- 🚧 **v3.1 FTC EKF Localization Hardening & FRC E2E Match Simulation** — Phases 74.1-75 (in progress)
 
 ## Phases
 
-### 🚧 v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification (Phases 72-75)
+### 🚧 v3.1 FTC EKF Localization Hardening & FRC E2E Match Simulation (Phases 74.1-75)
 
-- [x] Phase 72: Unified FRC Marvin 19 Robot Loop (completed 2026-05-18)
-- [x] Phase 73: AdvantageScope 3D Visualizer & Stream (completed 2026-05-18)
-- [x] Phase 74: FTC Mock Isolation & Deployment Hardening (completed 2026-05-19)
-- [ ] Phase 74.1: Subsystem Modularity & Student Loop Facade (INSERTED)
+- [ ] Phase 74.1: Subsystem Modularity & Student Loop Facade
+- [ ] Phase 74.2: FTC EKF Reset Alignment & Yaw Lockout Correction (INSERTED)
 - [ ] Phase 75: FRC Autonomous Match E2E Simulation
 
-### Phase 72: Unified FRC Marvin 19 Robot Loop
-
-**Goal**: Integrate the Redux state machine for the Marvin 19 superstructure and the Swerve drivetrain into a unified robot execution loop in `frc-app`.
-**Mode**: Smart Autonomous Discuss
-
-### Phase 73: AdvantageScope 3D Visualizer & Stream
-
-**Goal**: Implement AdvantageScope 3D simulation streaming and visualizer fields.
-**Mode**: Smart Autonomous Discuss
-**Completed**: 2026-05-18
-
-### Phase 74: FTC Mock Isolation & Deployment Hardening
-
-**Goal**: Harden the FTC simulator and app deployment with mock isolation testing.
-**Mode**: Smart Autonomous Discuss
-**Completed**: 2026-05-19
-
-### Phase 74.1: Subsystem Modularity & Student Loop Facade (INSERTED)
+### Phase 74.1: Subsystem Modularity & Student Loop Facade
 
 **Goal**: Implement a clean vertical-slice subsystem modularity design and an intuitive student-facing loop facade to simplify state, action dispatching, and background telemetry.
+**Mode**: Smart Autonomous Discuss
+
+### Phase 74.2: FTC EKF Reset Alignment & Yaw Lockout Correction (INSERTED)
+
+**Goal**: Correct FTC EKF estimated pose overrides when resetting offsets, and widen the Limelight yaw rejection gate to 30.0 degrees to prevent permanent EKF lockouts under drift.
 **Mode**: Smart Autonomous Discuss
 
 ### Phase 75: FRC Autonomous Match E2E Simulation
@@ -63,9 +50,9 @@
 **Mode**: Smart Autonomous Discuss
 
 <details>
-<summary>✅ Legacy Milestones (v1.0 to v2.9) — SHIPPED</summary>
+<summary>✅ Legacy Milestones (v1.0 to v3.0) — SHIPPED</summary>
 
-- [x] Phases 1-71 completed successfully and archived.
+- [x] Phases 1-74 completed successfully and archived.
 
 </details>
 
@@ -73,8 +60,6 @@
 
 | Phase             | Milestone | Plans Complete | Status      | Completed  |
 | ----------------- | --------- | -------------- | ----------- | ---------- |
-| 72. Unified FRC Marvin 19 Robot Loop | v3.0 | 0/1 | Complete    | 2026-05-18 |
-| 73. AdvantageScope 3D Visualizer & Stream | v3.0 | 1/1 | Complete    | 2026-05-18 |
-| 74. FTC Mock Isolation & Deployment Hardening | v3.0 | 1/1 | Complete    | 2026-05-19 |
-| 74.1 Subsystem Modularity & Student Loop Facade | v3.0 | 0/1 | Not started | -          |
-| 75. FRC Autonomous Match E2E Simulation | v3.0 | 0/1 | Not started | -          |
+| 74.1 Subsystem Modularity & Student Loop Facade | v3.1 | 0/1 | Not started | -          |
+| 74.2 FTC EKF Reset Alignment & Yaw Lockout Correction | v3.1 | 0/1 | Not started | -          |
+| 75. FRC Autonomous Match E2E Simulation | v3.1 | 0/1 | Not started | -          |
