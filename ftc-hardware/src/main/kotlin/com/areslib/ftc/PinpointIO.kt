@@ -5,7 +5,7 @@ import com.areslib.action.RobotAction
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 
-class PinpointIO(private val driver: GoBildaPinpointDriver) {
+class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
     private var offsetX = 0.0
     private var offsetY = 0.0
     private var offsetHeading = 0.0
@@ -20,6 +20,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) {
     private var lastWarningTime = 0L
 
     init {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 try {
@@ -111,7 +112,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) {
         }
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

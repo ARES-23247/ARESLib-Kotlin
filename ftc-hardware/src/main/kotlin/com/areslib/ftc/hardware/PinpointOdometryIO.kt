@@ -19,7 +19,7 @@ interface PinpointDriverProxy {
     fun resetPosAndIMU()
 }
 
-class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO {
+class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO, AutoCloseable {
     private val lock = Any()
     private var running = true
 
@@ -32,6 +32,7 @@ class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO {
     private var latestTimestamp = 0L
 
     init {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 try {
@@ -80,7 +81,7 @@ class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO {
         }
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

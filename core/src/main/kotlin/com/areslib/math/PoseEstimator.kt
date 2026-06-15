@@ -86,6 +86,19 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         entry.headingRad = headingRad
         entry.covariance.setTo(covariance)
     }
+
+    companion object {
+        private val pool = Array(64) { HistoryBuffer(50) }
+        private var poolIndex = 0
+
+        @Synchronized
+        fun obtainCopy(src: HistoryBuffer): HistoryBuffer {
+            val dest = pool[poolIndex]
+            src.copyInto(dest)
+            poolIndex = (poolIndex + 1) % 64
+            return dest
+        }
+    }
 }
 
 /**
@@ -197,9 +210,9 @@ object PoseEstimator {
 
         // Catastrophic tilt / beaching check: Freeze odometry updates
         if (currentlyBeached) {
-            val history = state.history
-            history.addEntry(timestampMs, state.estimatedPose, state.covariance)
-            return state.copy(isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
+            val newHistory = HistoryBuffer.obtainCopy(state.history)
+            newHistory.addEntry(timestampMs, state.estimatedPose, state.covariance)
+            return state.copy(history = newHistory, isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
         }
 
         val timeSinceUnbeachedMs = timestampMs - unbeachedTime
@@ -264,12 +277,13 @@ object PoseEstimator {
             state.covariance.m20 + scratchQ.m20, state.covariance.m21 + scratchQ.m21, state.covariance.m22 + scratchQ.m22
         )
 
-        val history = state.history
-        history.addEntry(timestampMs, newPose, newCovariance)
+        val newHistory = HistoryBuffer.obtainCopy(state.history)
+        newHistory.addEntry(timestampMs, newPose, newCovariance)
 
         return state.copy(
             estimatedPose = newPose,
             covariance = newCovariance,
+            history = newHistory,
             isBeached = currentlyBeached,
             lastUnbeachedTimeMs = unbeachedTime,
             gyroBiasRadPerSec = newBias
@@ -465,8 +479,9 @@ object PoseEstimator {
         scratchCov.m10 = cov10; scratchCov.m11 = cov11; scratchCov.m12 = cov12
         scratchCov.m20 = cov20; scratchCov.m21 = cov21; scratchCov.m22 = cov22
 
+        val newHistory = HistoryBuffer.obtainCopy(state.history)
         // Copy current state history to scratch history for mutating
-        state.history.copyInto(scratchHistory)
+        newHistory.copyInto(scratchHistory)
 
         // Now we must replay all odometry deltas from closestIndex + 1 to the end
         var currentX = baseEntry.x + dxX
@@ -504,12 +519,13 @@ object PoseEstimator {
             currentCov = scratchCov2
         }
 
-        // Copy mutated scratch history back to state history in-place
-        scratchHistory.copyInto(state.history)
+        // Copy mutated scratch history back to newHistory in-place
+        scratchHistory.copyInto(newHistory)
 
         return state.copy(
             estimatedPose = Pose2d(currentX, currentY, Rotation2d(currentHeadingRad)),
-            covariance = Matrix3x3(currentCov.m00, currentCov.m01, currentCov.m02, currentCov.m10, currentCov.m11, currentCov.m12, currentCov.m20, currentCov.m21, currentCov.m22)
+            covariance = Matrix3x3(currentCov.m00, currentCov.m01, currentCov.m02, currentCov.m10, currentCov.m11, currentCov.m12, currentCov.m20, currentCov.m21, currentCov.m22),
+            history = newHistory
         )
     }
 }

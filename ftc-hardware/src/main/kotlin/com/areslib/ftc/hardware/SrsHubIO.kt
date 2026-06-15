@@ -20,7 +20,7 @@ import com.areslib.math.Rotation2d
     xmlTag = "SrsHub",
     description = "SRS Robotics Expansion Hub over I2C"
 )
-class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true) {
+class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true), AutoCloseable {
     // Structured bulk cache buffers
     private val cachedAnalog = DoubleArray(4)
     private val cachedDigital = BooleanArray(4)
@@ -45,15 +45,54 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val cachedOdoVelY = DoubleArray(4)
     private val cachedOdoHeadingVel = DoubleArray(4)
 
+    private val activePinpoints = BooleanArray(4)
+    private val pendingServoPositions = DoubleArray(4) { Double.NaN }
+
     private val lock = Any()
     private var running = true
     private var isInitialized = false
 
+    fun registerPinpoint(port: Int) {
+        synchronized(lock) {
+            if (port in 0 until 4) {
+                activePinpoints[port] = true
+            }
+        }
+    }
+
     init {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 if (isInitialized) {
-                    update()
+                    // 1. Process pending servo writes
+                    synchronized(lock) {
+                        for (port in 0 until 4) {
+                            val pos = pendingServoPositions[port]
+                            if (!pos.isNaN()) {
+                                try {
+                                    val raw = (pos.coerceIn(0.0, 1.0) * 65535.0).toInt()
+                                    val buffer = byteArrayOf((raw and 0xFF).toByte(), ((raw shl 8) and 0xFF).toByte())
+                                    deviceClient.write(16 + port * 2, buffer)
+                                    pendingServoPositions[port] = Double.NaN
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    }
+
+                    // 2. Trigger updates for active pinpoint sensors
+                    synchronized(lock) {
+                        for (port in 0 until 4) {
+                            if (activePinpoints[port]) {
+                                try {
+                                    deviceClient.write(124 + port, byteArrayOf(1))
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    }
+
+                    // 3. Poll the hub registers
+                    pollHub()
                 }
                 try {
                     Thread.sleep(5)
@@ -89,6 +128,10 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
      * Handled by the background thread, so this method is now a no-op wrapper.
      */
     fun update() {
+        // No-op wrapper to satisfy legacy callers on the main thread
+    }
+
+    private fun pollHub() {
         try {
             val data = deviceClient.read(0, 256)
             if (data.size < 256) return // Safeguard against incomplete read
@@ -191,11 +234,11 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     // Direct actuator writes (these bypass the read cache and run immediately)
     fun setPwmDutyCycle(port: Int, dutyCycle: Double) {
-        try {
-            val raw = (dutyCycle.coerceIn(0.0, 1.0) * 65535.0).toInt()
-            val buffer = byteArrayOf((raw and 0xFF).toByte(), ((raw shl 8) and 0xFF).toByte())
-            deviceClient.write(16 + port * 2, buffer)
-        } catch (_: Exception) {}
+        synchronized(lock) {
+            if (port in 0 until 4) {
+                pendingServoPositions[port] = dutyCycle
+            }
+        }
     }
 
     fun readPwmPulseWidth(port: Int): Int {
@@ -218,12 +261,10 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     fun updateI2cOdometry(port: Int) {
-        try {
-            deviceClient.write(124 + port, byteArrayOf(1))
-        } catch (_: Exception) {}
+        // Handled asynchronously in background thread
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }
@@ -412,6 +453,7 @@ class SrsHubPinpointOdometry(
 ) : OdometryIO {
     override fun initialize(startPose: Pose2d) {
         srsHub.resetI2cOdometry(port)
+        srsHub.registerPinpoint(port)
     }
 
     override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {

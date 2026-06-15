@@ -9,7 +9,7 @@ class SwerveModuleIOFtc(
     private val driveMotor: DcMotorEx,
     private val steerMotor: DcMotorEx,
     private val analogEncoder: AnalogInput
-) : SwerveModuleIO {
+) : SwerveModuleIO, AutoCloseable {
 
     private var lastDrivePosition = 0.0
     private var lastDriveVelocity = 0.0
@@ -21,6 +21,7 @@ class SwerveModuleIOFtc(
     private var latestVoltage = 0.0
 
     init {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 try {
@@ -77,7 +78,7 @@ class SwerveModuleIOFtc(
         }
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

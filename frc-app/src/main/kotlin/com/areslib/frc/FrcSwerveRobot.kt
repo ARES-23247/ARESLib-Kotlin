@@ -415,5 +415,11 @@ class FrcSwerveRobot(
         RobotStatusTracker.isEnabled = false
         RobotWebServer.stop()
         dataLoggingTelemetry.close()
+        com.areslib.hardware.HardwareRegistry.closeAll()
+        try {
+            val ftcMotorClass = Class.forName("com.areslib.ftc.hardware.FtcMotor")
+            val unregisterAllMethod = ftcMotorClass.getMethod("unregisterAll")
+            unregisterAllMethod.invoke(null)
+        } catch (_: Exception) {}
     }
 }

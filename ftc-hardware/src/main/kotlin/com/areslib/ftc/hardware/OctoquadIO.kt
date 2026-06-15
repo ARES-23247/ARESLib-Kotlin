@@ -17,7 +17,7 @@ import java.nio.ByteOrder
     xmlTag = "OctoQuad",
     description = "OctoQuad 8-channel quadrature encoder / localizer module"
 )
-class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true) {
+class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true), AutoCloseable {
 
     companion object {
         const val OCTOQUAD_I2C_ADDRESS = 0x30
@@ -60,6 +60,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private var running = true
 
     init {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 if (isInitialized) {
@@ -223,7 +224,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     fun readLocalizerData(): LocalizerDataBlock = synchronized(lock) { cachedLocalizerData }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

@@ -18,12 +18,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 class FtcMotor(
     private val motor: DcMotorEx,
     val name: String? = null
-) : MotorIO {
+) : MotorIO, AutoCloseable {
     private var encoderOffset = 0.0
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
     private var cachedAmps = 0.0
     private var updateCount = 0
+    private val currentLock = Any()
 
     init {
         try {
@@ -34,6 +35,12 @@ class FtcMotor(
         if (name != null) {
             HardwareRegistry.registerMotor(name, this)
         }
+        
+        synchronized(FtcMotor) {
+            motorsList.add(this)
+            startPollingThreadIfNeeded()
+        }
+        HardwareRegistry.registerCloseable(this)
     }
 
     private var targetPower: Double = 0.0
@@ -96,11 +103,17 @@ class FtcMotor(
         try {
             cachedVelocity = motor.velocity
         } catch (_: Exception) {}
+        if (motor.javaClass.simpleName.contains("Mock")) {
+            pollCurrentSync()
+        }
+    }
+
+    fun pollCurrentSync() {
         try {
-            if (updateCount % 10 == 0) {
-                cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            val amps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            synchronized(currentLock) {
+                cachedAmps = amps
             }
-            updateCount++
         } catch (_: Exception) {}
     }
 
@@ -111,13 +124,56 @@ class FtcMotor(
         get() = cachedPosition
 
     override val currentAmps: Double
-        get() = cachedAmps
+        get() = synchronized(currentLock) { cachedAmps }
 
     override fun resetEncoder() {
         try {
             encoderOffset = motor.currentPosition.toDouble()
             cachedPosition = 0.0
         } catch (_: Exception) {}
+    }
+
+    override fun close() {
+        synchronized(FtcMotor) {
+            motorsList.remove(this)
+        }
+    }
+
+    companion object {
+        private val motorsList = java.util.concurrent.CopyOnWriteArrayList<FtcMotor>()
+        @Volatile private var pollingRunning = false
+        private var pollingThread: Thread? = null
+
+        private fun startPollingThreadIfNeeded() {
+            if (pollingRunning) return
+            pollingRunning = true
+            pollingThread = Thread {
+                while (pollingRunning) {
+                    for (motorInstance in motorsList) {
+                        motorInstance.pollCurrentSync()
+                    }
+                    try {
+                        Thread.sleep(50) // 20Hz
+                    } catch (_: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                        break
+                    }
+                }
+            }.apply {
+                isDaemon = true
+                name = "ARES-MotorCurrent-Thread"
+                start()
+            }
+        }
+
+        fun unregisterAll() {
+            synchronized(this) {
+                pollingRunning = false
+                pollingThread?.interrupt()
+                pollingThread = null
+                motorsList.clear()
+            }
+        }
     }
 }
 
@@ -257,7 +313,7 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     private val version: com.areslib.hardware.RevEncoderVersion = com.areslib.hardware.RevEncoderVersion.V1,
     private val ticksPerRev: Double = 8192.0,
     val name: String? = null
-) : MotorIO {
+) : MotorIO, AutoCloseable {
     private var offset = 0.0
     private var cachedPosition = 0.0
     private val lock = Any()
@@ -268,6 +324,7 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
         if (name != null) {
             HardwareRegistry.registerMotor(name, this)
         }
+        HardwareRegistry.registerCloseable(this)
 
         val thread = Thread {
             while (running) {
@@ -317,7 +374,7 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }
@@ -350,7 +407,7 @@ class FtcServo(
         }
 }
 
-class FtcImu(private val imu: IMU) : ImuIO {
+class FtcImu(private val imu: IMU) : ImuIO, AutoCloseable {
     private var headingOffset = 0.0
     private val lock = Any()
 
@@ -383,6 +440,8 @@ class FtcImu(private val imu: IMU) : ImuIO {
                 latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
             }
         } catch (_: Exception) {}
+
+        HardwareRegistry.registerCloseable(this)
 
         // Launch low-priority daemon background thread to poll IMU asynchronously
         val imuThread = Thread {
@@ -429,18 +488,19 @@ class FtcImu(private val imu: IMU) : ImuIO {
         }
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }
 
 
-class FtcAnalogSensor(private val analogInput: AnalogInput) {
+class FtcAnalogSensor(private val analogInput: AnalogInput) : AutoCloseable {
     private val lock = Any()
     private var running = true
     private var latestVoltage = 0.0
 
     init {
+        HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 try {
@@ -466,12 +526,12 @@ class FtcAnalogSensor(private val analogInput: AnalogInput) {
         return synchronized(lock) { latestVoltage }
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }
 
-class FtcDigitalSensor(private val digitalChannel: DigitalChannel) {
+class FtcDigitalSensor(private val digitalChannel: DigitalChannel) : AutoCloseable {
     private val lock = Any()
     private var running = true
     private var latestState = false
@@ -481,6 +541,7 @@ class FtcDigitalSensor(private val digitalChannel: DigitalChannel) {
             digitalChannel.mode = DigitalChannel.Mode.INPUT
         } catch (_: Exception) {}
 
+        HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 try {
@@ -506,7 +567,7 @@ class FtcDigitalSensor(private val digitalChannel: DigitalChannel) {
         return synchronized(lock) { latestState }
     }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

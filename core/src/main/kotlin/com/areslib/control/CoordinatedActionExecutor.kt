@@ -130,13 +130,15 @@ class ParallelAction(private vararg val actions: Action) : Action {
     }
 
     override fun update(dtSeconds: Double) {
-        val iterator = activeActions.iterator()
-        while (iterator.hasNext()) {
-            val action = iterator.next()
+        var i = 0
+        while (i < activeActions.size) {
+            val action = activeActions[i]
             action.update(dtSeconds)
             if (action.isFinished()) {
                 action.end(false)
-                iterator.remove()
+                activeActions.removeAt(i)
+            } else {
+                i++
             }
         }
     }

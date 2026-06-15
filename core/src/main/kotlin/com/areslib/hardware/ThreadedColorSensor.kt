@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 class ThreadedColorSensor(
     private val physicalSensor: ColorSensorIO,
     pollIntervalMs: Long = 20 // 50 Hz poll rate by default
-) : ColorSensorIO {
+) : ColorSensorIO, AutoCloseable {
 
     @Volatile private var cachedRed: Int = 0
     @Volatile private var cachedGreen: Int = 0
@@ -24,6 +24,7 @@ class ThreadedColorSensor(
     }
 
     init {
+        HardwareRegistry.registerCloseable(this)
         scheduler.scheduleAtFixedRate({
             try {
                 cachedRed = physicalSensor.red
@@ -41,12 +42,16 @@ class ThreadedColorSensor(
     override val green: Int get() = cachedGreen
     override val blue: Int get() = cachedBlue
     override val alpha: Int get() = cachedAlpha
-    override val normalizedRgb: DoubleArray get() = cachedNormalized.clone()
+    override val normalizedRgb: DoubleArray get() = cachedNormalized
 
     /**
      * Safely shuts down the polling background thread.
      */
     fun shutdown() {
         scheduler.shutdown()
+    }
+
+    override fun close() {
+        shutdown()
     }
 }

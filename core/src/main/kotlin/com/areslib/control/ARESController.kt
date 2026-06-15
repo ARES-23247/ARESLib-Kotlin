@@ -32,7 +32,7 @@ class ARESController {
      * @param buttonSelector A lambda selecting the boolean field from ControllerState.
      * @return True if the button is currently true but was false in the previous loop.
      */
-    fun onPressed(buttonSelector: (ControllerState) -> Boolean): Boolean {
+    inline fun onPressed(buttonSelector: (ControllerState) -> Boolean): Boolean {
         return buttonSelector(currentState) && !buttonSelector(previousState)
     }
 
@@ -42,7 +42,7 @@ class ARESController {
      * @param buttonSelector A lambda selecting the boolean field from ControllerState.
      * @return True if the button is currently false but was true in the previous loop.
      */
-    fun onReleased(buttonSelector: (ControllerState) -> Boolean): Boolean {
+    inline fun onReleased(buttonSelector: (ControllerState) -> Boolean): Boolean {
         return !buttonSelector(currentState) && buttonSelector(previousState)
     }
 
@@ -52,7 +52,7 @@ class ARESController {
      * @param buttonSelector A lambda selecting the boolean field from ControllerState.
      * @return True if the button is currently true.
      */
-    fun isHeld(buttonSelector: (ControllerState) -> Boolean): Boolean {
+    inline fun isHeld(buttonSelector: (ControllerState) -> Boolean): Boolean {
         return buttonSelector(currentState)
     }
 
@@ -64,7 +64,7 @@ class ARESController {
      * @param threshold The value above which the axis is considered "pressed".
      * @return True if the axis crossed the threshold this loop.
      */
-    fun triggerPressed(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean {
+    inline fun triggerPressed(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean {
         return triggerSelector(currentState) > threshold && triggerSelector(previousState) <= threshold
     }
 
@@ -76,7 +76,7 @@ class ARESController {
      * @param threshold The value above which the axis is considered "pressed".
      * @return True if the axis is currently above the threshold.
      */
-    fun triggerHeld(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean {
+    inline fun triggerHeld(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean {
         return triggerSelector(currentState) > threshold
     }
 }

@@ -77,14 +77,5 @@ object FtcPerformanceManager {
                 // Ignore failures in mock context
             }
         }
-
-        // Poll unified 256-byte bulk register block for all connected SRS Hubs
-        for (srsHub in srsHubs) {
-            try {
-                srsHub.update()
-            } catch (e: Exception) {
-                // Ignore failures in mock context
-            }
-        }
     }
 }

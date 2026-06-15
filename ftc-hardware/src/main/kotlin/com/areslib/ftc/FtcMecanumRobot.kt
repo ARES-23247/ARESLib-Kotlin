@@ -186,6 +186,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 headingRadians = 0.0,
                 timestampMs = timestamp
             )
+            if (pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100) {
+                safeHardware()
+                throw IllegalStateException("Pinpoint pose update is stale! Age: ${timestamp - poseUpdate.timestampMs}ms (exceeds 100ms threshold)")
+            }
             store.dispatch(poseUpdate)
 
             // 2. Update visual AprilTag observations
@@ -542,6 +546,17 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         }
     }
 
+    fun safeHardware() {
+        try {
+            mecanumIO.apply(
+                speeds = com.areslib.kinematics.MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0),
+                batteryVolts = cachedBatteryVoltage,
+                dtSeconds = 0.02,
+                powerScale = 0.0
+            )
+        } catch (_: Throwable) {}
+    }
+
     /**
      * Gracefully cleans up background logging threads and closes network telemetry.
      */
@@ -552,6 +567,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         inputLogger.stop()
         actionLogger.stop()
         pinpointIO?.close()
+        com.areslib.hardware.HardwareRegistry.closeAll()
+        com.areslib.ftc.hardware.FtcMotor.unregisterAll()
     }
 }
 

@@ -98,4 +98,9 @@ class FtcAresRobot(private val hardwareMap: HardwareMap) : AresRobot() {
         motor.powerScale = effectiveScale
         motor.power = targetPower
     }
+
+    fun close() {
+        com.areslib.hardware.HardwareRegistry.closeAll()
+        FtcMotor.unregisterAll()
+    }
 }

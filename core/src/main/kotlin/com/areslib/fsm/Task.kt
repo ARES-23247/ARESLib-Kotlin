@@ -39,7 +39,8 @@ interface Task {
  */
 class FlywheelReadyTask(
     private val targetRPM: Double,
-    private val timestampMs: Long
+    private val timestampMs: Long,
+    private val timeoutMs: Long = 4000L
 ) : Task {
     override val name = "FlywheelReady($targetRPM RPM)"
 
@@ -51,7 +52,7 @@ class FlywheelReadyTask(
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         // Reduced state updates the superstructure.mode to ready or check RPM directly
-        return state.superstructure.flywheelRPM >= targetRPM * 0.95
+        return state.superstructure.flywheelRPM >= targetRPM * 0.95 || elapsedMs >= timeoutMs
     }
 }
 
@@ -60,7 +61,8 @@ class FlywheelReadyTask(
  */
 class IntakeUntilCountTask(
     private val targetCount: Int,
-    private val timestampMs: Long
+    private val timestampMs: Long,
+    private val timeoutMs: Long = 5000L
 ) : Task {
     override val name = "IntakeUntilCount($targetCount)"
 
@@ -71,7 +73,7 @@ class IntakeUntilCountTask(
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        return state.superstructure.inventoryCount >= targetCount
+        return state.superstructure.inventoryCount >= targetCount || elapsedMs >= timeoutMs
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
@@ -127,12 +129,13 @@ class TimeWaitTask(
  * Task to block execution until path progress reaches a certain distance.
  */
 class PathProgressWaitTask(
-    private val targetDistanceMeters: Double
+    private val targetDistanceMeters: Double,
+    private val timeoutMs: Long = 10000L
 ) : Task {
     override val name = "PathProgressWait($targetDistanceMeters m)"
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        return state.pathState.currentDistanceMeters >= targetDistanceMeters
+        return state.pathState.currentDistanceMeters >= targetDistanceMeters || elapsedMs >= timeoutMs
     }
 }
 

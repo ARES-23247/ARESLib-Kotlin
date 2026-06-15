@@ -60,60 +60,77 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
         linearAccelYG: Double = 0.0,
         linearAccelZG: Double = 1.0
     ): Boolean {
-        // 1. Check Ambiguity (if >= 0.0)
-        if (measurement.ambiguity > config.maxAmbiguity) {
-            return false
-        }
-
-        // 2. Check 3D Spatial Boundaries
-        val tagPose3d = measurement.targetPose
-        if (tagPose3d.x < config.minFieldX || tagPose3d.x > config.maxFieldX ||
-            tagPose3d.y < config.minFieldY || tagPose3d.y > config.maxFieldY ||
-            tagPose3d.z < config.minFieldZ || tagPose3d.z > config.maxFieldZ) {
-            return false
-        }
-
-        // 3. Check Distance
-        val tagPose2d = tagPose3d.toPose2d()
-        val dx = tagPose2d.x - robotPose.x
-        val dy = tagPose2d.y - robotPose.y
-        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-
-        if (distance > config.maxDistanceMeters) {
-            return false
-        }
-
-        // 4. Check Yaw rotation alignment relative to robot gyro heading
-        val tagYaw = tagPose3d.rotation.z
-        val headingDiff = normalizeAngle(tagYaw - robotHeadingRad)
-
-        if (abs(headingDiff) > config.maxRotationDeviationRad) {
-            return false
-        }
-
-        // 5. Check Angular Velocity Lockout (Motion Blur guard)
-        if (abs(angularVelocityRadPerSec) > config.maxAngularVelocityRadPerSec) {
-            return false
-        }
-
-        // 6. Check High-G Shock Lockout (Collision guard)
-        val dynamicZ = if (linearAccelZG == 0.0) 0.0 else linearAccelZG - 1.0
-        val shockMagnitude = sqrt(
-            linearAccelXG * linearAccelXG +
-            linearAccelYG * linearAccelYG +
-            dynamicZ * dynamicZ
+        return isValid(
+            config = config,
+            measurement = measurement,
+            robotHeadingRad = robotHeadingRad,
+            robotPose = robotPose,
+            angularVelocityRadPerSec = angularVelocityRadPerSec,
+            linearAccelXG = linearAccelXG,
+            linearAccelYG = linearAccelYG,
+            linearAccelZG = linearAccelZG
         )
-        if (shockMagnitude > config.maxAccelerationG) {
-            return false
-        }
-
-        return true
     }
 
-    /**
-     * Normalizes an angle in radians to the range (-PI, PI].
-     */
-    private fun normalizeAngle(angle: Double): Double {
-        return com.areslib.math.InputMath.wrapAngle(angle)
+    companion object {
+        fun isValid(
+            config: VisionFilterConfig,
+            measurement: VisionMeasurement,
+            robotHeadingRad: Double,
+            robotPose: Pose2d,
+            angularVelocityRadPerSec: Double = 0.0,
+            linearAccelXG: Double = 0.0,
+            linearAccelYG: Double = 0.0,
+            linearAccelZG: Double = 1.0
+        ): Boolean {
+            // 1. Check Ambiguity (if >= 0.0)
+            if (measurement.ambiguity > config.maxAmbiguity) {
+                return false
+            }
+
+            // 2. Check 3D Spatial Boundaries
+            val tagPose3d = measurement.targetPose
+            if (tagPose3d.x < config.minFieldX || tagPose3d.x > config.maxFieldX ||
+                tagPose3d.y < config.minFieldY || tagPose3d.y > config.maxFieldY ||
+                tagPose3d.z < config.minFieldZ || tagPose3d.z > config.maxFieldZ) {
+                return false
+            }
+
+            // 3. Check Distance
+            val tagPose2d = tagPose3d.toPose2d()
+            val dx = tagPose2d.x - robotPose.x
+            val dy = tagPose2d.y - robotPose.y
+            val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+
+            if (distance > config.maxDistanceMeters) {
+                return false
+            }
+
+            // 4. Check Yaw rotation alignment relative to robot gyro heading
+            val tagYaw = tagPose3d.rotation.z
+            val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeadingRad)
+
+            if (kotlin.math.abs(headingDiff) > config.maxRotationDeviationRad) {
+                return false
+            }
+
+            // 5. Check Angular Velocity Lockout (Motion Blur guard)
+            if (kotlin.math.abs(angularVelocityRadPerSec) > config.maxAngularVelocityRadPerSec) {
+                return false
+            }
+
+            // 6. Check High-G Shock Lockout (Collision guard)
+            val dynamicZ = if (linearAccelZG == 0.0) 0.0 else linearAccelZG - 1.0
+            val shockMagnitude = kotlin.math.sqrt(
+                linearAccelXG * linearAccelXG +
+                linearAccelYG * linearAccelYG +
+                dynamicZ * dynamicZ
+            )
+            if (shockMagnitude > config.maxAccelerationG) {
+                return false
+            }
+
+            return true
+        }
     }
 }

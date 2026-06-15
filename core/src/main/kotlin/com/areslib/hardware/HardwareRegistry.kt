@@ -10,6 +10,14 @@ import java.util.concurrent.ConcurrentHashMap
 object HardwareRegistry {
     private val motors = ConcurrentHashMap<String, MotorIO>()
     private val servos = ConcurrentHashMap<String, ServoIO>()
+    private val closeables = java.util.concurrent.CopyOnWriteArrayList<AutoCloseable>()
+
+    /**
+     * Registers a closeable hardware wrapper to ensure background threads are terminated on close.
+     */
+    fun registerCloseable(closeable: AutoCloseable) {
+        closeables.add(closeable)
+    }
 
     /**
      * Registers a motor with a unique diagnostic name.
@@ -26,11 +34,24 @@ object HardwareRegistry {
     }
 
     /**
+     * Clears all registered devices and terminates background threads.
+     */
+    fun closeAll() {
+        for (c in closeables) {
+            try {
+                c.close()
+            } catch (_: Exception) {}
+        }
+        closeables.clear()
+        motors.clear()
+        servos.clear()
+    }
+
+    /**
      * Clears all registered devices (useful between OpModes / tests).
      */
     fun clear() {
-        motors.clear()
-        servos.clear()
+        closeAll()
     }
 
     /**
