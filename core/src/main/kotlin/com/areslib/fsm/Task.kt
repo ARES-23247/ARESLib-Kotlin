@@ -281,23 +281,29 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
 /**
  * Task that commands the robot to follow a specific trajectory path.
  */
-class FollowPathTask(
+class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val follower: com.areslib.pathing.HolonomicPathFollower,
-    private val path: com.areslib.pathing.Path
+    private val path: com.areslib.pathing.Path,
+    private val symmetry: com.areslib.math.FieldSymmetry = com.areslib.math.FieldSymmetry.ROTATIONAL,
+    private val fieldLength: Double = com.areslib.math.CoordinateTransformers.FTC_FIELD_SIZE,
+    private val fieldWidth: Double = com.areslib.math.CoordinateTransformers.FTC_FIELD_SIZE
 ) : Task {
     override val name = "FollowPath(${path.points.size} points)"
     private var lastTimeMs = 0L
+    private lateinit var activePath: com.areslib.pathing.Path
 
     override fun initialize(state: RobotState): List<RobotAction> {
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+        val alliance = state.drive.alliance
+        activePath = com.areslib.math.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
         return listOf(
-            RobotAction.SwitchPath(path, isDetour = false, timestampMs = lastTimeMs)
+            RobotAction.SwitchPath(activePath, isDetour = false, timestampMs = lastTimeMs)
         )
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        if (path.points.isEmpty()) return true
-        val targetDistance = path.points.last().distanceMeters
+        if (activePath.points.isEmpty()) return true
+        val targetDistance = activePath.points.last().distanceMeters
         return state.pathState.currentDistanceMeters >= targetDistance || elapsedMs >= 15000L
     }
 
@@ -307,7 +313,7 @@ class FollowPathTask(
         lastTimeMs = currentTimestamp
 
         val currentDistance = state.pathState.currentDistanceMeters
-        val targetPoint = path.sampleAtDistance(currentDistance)
+        val targetPoint = activePath.sampleAtDistance(currentDistance)
         follower.update(targetPoint, dt)
 
         val nextDistance = currentDistance + targetPoint.velocityMps * dt

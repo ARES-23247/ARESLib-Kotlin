@@ -46,11 +46,11 @@ class FtcAresRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinpoin
     }
 
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
-        // Write outputs to motors based on computed Redux state
-        val targetPower = store.state.drive.odometryX * 0.1
+        // Write outputs to motors based on computed Redux state with voltage compensation
+        val targetVolts = (store.state.drive.odometryX * 0.1) * 12.0
 
         motor.powerScale = powerScale
-        motor.power = targetPower
+        motor.setVoltage(targetVolts, batteryVoltage)
     }
 
     override fun publishRobotTelemetry(timestamp: Long) {
