@@ -2,6 +2,8 @@ package com.areslib.fsm
 
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
+import com.areslib.pathing.*
+import com.areslib.subsystem.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -102,5 +104,56 @@ class TaskGroupTest {
         // At 200ms: task2 completed, parallel completed
         assertTrue(parallel.isCompleted(state, 200L))
         assertTrue(task2.ended)
+    }
+
+    @Test
+    fun `test FollowPathTask spline tracking`() {
+        val mockJson = """
+            {
+              "waypoints": [
+                {"anchor": {"x": 2.0, "y": 2.0}},
+                {"anchor": {"x": 8.0, "y": 6.0}}
+              ]
+            }
+        """.trimIndent()
+        val path = PathPlannerParser.parsePath(mockJson)
+
+        var speedsVx = 0.0
+        var speedsVy = 0.0
+        var speedsOmega = 0.0
+        val mockDrivetrain = object : DrivetrainSubsystem {
+            override fun setChassisSpeeds(vx: Double, vy: Double, omega: Double) {
+                speedsVx = vx
+                speedsVy = vy
+                speedsOmega = omega
+            }
+            override fun getEstimatedPose(): com.areslib.math.Pose2d {
+                return com.areslib.math.Pose2d(1.9, 1.9, com.areslib.math.Rotation2d.fromDegrees(0.0))
+            }
+            override fun readSensors(store: Store, timestampMs: Long) {}
+            override fun writeOutputs(state: RobotState, scale: Double) {}
+            override fun close() {}
+        }
+
+        val follower = HolonomicPathFollower(mockDrivetrain)
+        val task = FollowPathTask(follower, path)
+
+        var state = RobotState()
+        val initActions = task.initialize(state)
+        assertEquals(1, initActions.size)
+        assertTrue(initActions[0] is RobotAction.SwitchPath)
+
+        state = com.areslib.reducer.rootReducer(state, initActions[0])
+
+        val execActions = task.execute(state, 20L)
+        assertEquals(1, execActions.size)
+        assertTrue(execActions[0] is RobotAction.UpdatePathProgress)
+
+        assertTrue(speedsVx > 0.0, "vx should be positive towards target")
+        assertTrue(speedsVy > 0.0, "vy should be positive towards target")
+
+        task.end(state, interrupted = false)
+        assertEquals(0.0, speedsVx)
+        assertEquals(0.0, speedsVy)
     }
 }

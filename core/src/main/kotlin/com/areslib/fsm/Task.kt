@@ -277,3 +277,48 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
         return actions
     }
 }
+
+/**
+ * Task that commands the robot to follow a specific trajectory path.
+ */
+class FollowPathTask(
+    private val follower: com.areslib.pathing.HolonomicPathFollower,
+    private val path: com.areslib.pathing.Path
+) : Task {
+    override val name = "FollowPath(${path.points.size} points)"
+    private var lastTimeMs = 0L
+
+    override fun initialize(state: RobotState): List<RobotAction> {
+        lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+        return listOf(
+            RobotAction.SwitchPath(path, isDetour = false, timestampMs = lastTimeMs)
+        )
+    }
+
+    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (path.points.isEmpty()) return true
+        val targetDistance = path.points.last().distanceMeters
+        return state.pathState.currentDistanceMeters >= targetDistance || elapsedMs >= 15000L
+    }
+
+    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
+        val currentTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        val dt = if (lastTimeMs == 0L || currentTimestamp <= lastTimeMs) 0.02 else (currentTimestamp - lastTimeMs) / 1000.0
+        lastTimeMs = currentTimestamp
+
+        val currentDistance = state.pathState.currentDistanceMeters
+        val targetPoint = path.sampleAtDistance(currentDistance)
+        follower.update(targetPoint, dt)
+
+        val nextDistance = currentDistance + targetPoint.velocityMps * dt
+        return listOf(
+            RobotAction.UpdatePathProgress(nextDistance, currentTimestamp)
+        )
+    }
+
+    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+        follower.stop()
+        return emptyList()
+    }
+}
+
