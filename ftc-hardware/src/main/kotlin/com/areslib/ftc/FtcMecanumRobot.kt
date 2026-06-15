@@ -554,9 +554,12 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     dtSeconds = 0.02,
                     powerScale = 0.0
                 )
-            } catch (ex: Exception) {
+            } catch (ex: Throwable) {
                 System.err.println("FtcMecanumRobot: Failed to apply safety stop: ${ex.message}")
             }
+            try {
+                dataLoggingTelemetry.putString("Robot/Error", "FATAL CRASH: ${e.message}")
+            } catch (_: Throwable) {}
         }
     }
 
@@ -569,6 +572,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         dataLoggingTelemetry.close()
         inputLogger.stop()
         actionLogger.stop()
+        pinpointIO?.close()
     }
 }
 

@@ -11,7 +11,7 @@ data class Translation3d(val x: Double = 0.0, val y: Double = 0.0, val z: Double
 data class Quaternion(val w: Double = 1.0, val x: Double = 0.0, val y: Double = 0.0, val z: Double = 0.0) {
     fun normalize(): Quaternion {
         val norm = sqrt(w * w + x * x + y * y + z * z)
-        if (norm == 0.0) return Quaternion()
+        if (norm.isNaN() || norm.isInfinite() || norm == 0.0) return Quaternion()
         return Quaternion(w / norm, x / norm, y / norm, z / norm)
     }
 

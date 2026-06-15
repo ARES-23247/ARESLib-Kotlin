@@ -20,6 +20,10 @@ import com.areslib.frc.state.marvinXIX
 import com.areslib.frc.telemetry.MarvinStatePublisher
 
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
+import com.ctre.phoenix6.CANBus
+import com.ctre.phoenix6.hardware.TalonFX
+import com.areslib.hardware.vision.CompositeVisionIO
+import frc.robot.generated.TunerConstants
 
 /**
  * FRC Swerve Robot facade — the FRC mirror of FtcMecanumRobot.
@@ -311,24 +315,32 @@ class FrcSwerveRobot(
         } catch (e: Throwable) {
             System.err.println("FrcSwerveRobot: Exception in update loop: ${e.message}")
             e.printStackTrace()
-            try {
-                if (!isSimulation && swerveIO != null) {
+            safeHardware()
+        }
+    }
+
+    fun safeHardware() {
+        try {
+            if (!isSimulation && swerveIO != null) {
+                try {
                     swerveIO.write(store.state.drive.copy(
                         xVelocityMetersPerSecond = 0.0,
                         yVelocityMetersPerSecond = 0.0,
                         angularVelocityRadiansPerSecond = 0.0
                     ))
+                } catch (t: Throwable) {
+                    System.err.println("FrcSwerveRobot: Failed to safe swerve: ${t.message}")
                 }
-                flywheelIO.setVelocityRpm(0.0)
-                cowlIO.setTargetAngle(0.0)
-                intakeIO.setPivotAngle(0.0)
-                intakeIO.setRollerVoltage(0.0)
-                feederIO.setAppliedVoltage(0.0)
-                floorIO.setAppliedVoltage(0.0)
-                climberIO.setAppliedVoltage(0.0)
-            } catch (ex: Exception) {
-                System.err.println("FrcSwerveRobot: Failed to apply safety stop: ${ex.message}")
             }
+            try { flywheelIO.setVelocityRpm(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe flywheel: ${t.message}") }
+            try { cowlIO.setTargetAngle(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe cowl: ${t.message}") }
+            try { intakeIO.setPivotAngle(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe intake pivot: ${t.message}") }
+            try { intakeIO.setRollerVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe intake rollers: ${t.message}") }
+            try { feederIO.setAppliedVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe feeder: ${t.message}") }
+            try { floorIO.setAppliedVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe floor: ${t.message}") }
+            try { climberIO.setAppliedVoltage(0.0) } catch (t: Throwable) { System.err.println("FrcSwerveRobot: Failed to safe climber: ${t.message}") }
+        } catch (ex: Throwable) {
+            System.err.println("FrcSwerveRobot: Failed to apply safety stop: ${ex.message}")
         }
     }
 
@@ -360,6 +372,52 @@ class FrcSwerveRobot(
             Pair(0.35, 0.35), Pair(0.35, -0.35),
             Pair(-0.35, 0.35), Pair(-0.35, -0.35)
         )
+
+        /**
+         * Factory function to initialize the Marvin XIX physical hardware.
+         */
+        fun createPhysicalMarvinXIX(): FrcSwerveRobot {
+            val can2Bus = CANBus("CAN2")
+
+            // Marvin 19 Physical Hardware on "CAN2" high-speed bus
+            val leftMasterFX = TalonFX(9, can2Bus)
+            val leftFollowerFX = TalonFX(10, can2Bus)
+            val rightMasterFX = TalonFX(11, can2Bus)
+            val rightFollowerFX = TalonFX(12, can2Bus)
+            val cowlFX = TalonFX(13, can2Bus)
+            val pivotFX = TalonFX(14, can2Bus)
+            val rollerFX = TalonFX(15, can2Bus)
+            val floorFX = TalonFX(16, can2Bus)
+            val climberFX = TalonFX(19, can2Bus)
+            val feederFX = TalonFX(20, can2Bus)
+
+            // Initialize CTRE SwerveDrivetrain using Tuner X constants
+            val ctreDrivetrain = TunerConstants.TunerSwerveDrivetrain(
+                TunerConstants.DrivetrainConstants,
+                TunerConstants.FrontLeft,
+                TunerConstants.FrontRight,
+                TunerConstants.BackLeft,
+                TunerConstants.BackRight
+            )
+            val swerveIO = FRCSwerveHardwareIO(ctreDrivetrain)
+
+            // Initialize Limelight cameras
+            val limelightShooter = FrcLimelightIO("limelight-shooter")
+            val limelightBack = FrcLimelightIO("limelight-back")
+            val compositeVision = CompositeVisionIO(listOf(limelightShooter, limelightBack))
+
+            return FrcSwerveRobot(
+                swerveIO = swerveIO,
+                flywheelIO = FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX),
+                cowlIO = FRCCowlHardwareIO(cowlFX),
+                intakeIO = FRCIntakeHardwareIO(pivotFX, rollerFX),
+                feederIO = FRCFeederHardwareIO(feederFX),
+                floorIO = FRCFloorHardwareIO(floorFX),
+                climberIO = FRCClimberHardwareIO(climberFX),
+                visionIO = compositeVision,
+                isSimulation = false
+            )
+        }
     }
 
     /**

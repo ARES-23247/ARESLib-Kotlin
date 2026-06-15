@@ -20,24 +20,67 @@ interface PinpointDriverProxy {
 }
 
 class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO {
+    private val lock = Any()
+    private var running = true
+
+    private var latestPosX = 0.0
+    private var latestPosY = 0.0
+    private var latestHeading = 0.0
+    private var latestVelX = 0.0
+    private var latestVelY = 0.0
+    private var latestHeadingVelocity = 0.0
+    private var latestTimestamp = 0L
+
+    init {
+        val thread = Thread {
+            while (running) {
+                try {
+                    driver.update()
+                    val px = driver.posX
+                    val py = driver.posY
+                    val h = driver.heading
+                    val vx = driver.velX
+                    val vy = driver.velY
+                    val hv = driver.headingVelocity
+                    synchronized(lock) {
+                        latestPosX = px
+                        latestPosY = py
+                        latestHeading = h
+                        latestVelX = vx
+                        latestVelY = vy
+                        latestHeadingVelocity = hv
+                        latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+                    }
+                } catch (_: Exception) {}
+                try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+            }
+        }
+        thread.isDaemon = true
+        thread.name = "ARES-PinpointOdometry-Thread"
+        thread.start()
+    }
+
     override fun initialize(startPose: Pose2d) {
-        try {
-            driver.resetPosAndIMU()
-        } catch (_: Exception) {}
+        synchronized(lock) {
+            try {
+                driver.resetPosAndIMU()
+            } catch (_: Exception) {}
+        }
     }
 
     override fun updateInputs(inputs: OdometryInputs) {
-        try {
-            driver.update()
-            inputs.posX = driver.posX
-            inputs.posY = driver.posY
-            inputs.heading = driver.heading
-            inputs.velX = driver.velX
-            inputs.velY = driver.velY
-            inputs.headingVelocity = driver.headingVelocity
-            inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-        } catch (e: Exception) {
-            // Read timeout / UART failure fallback: silently retain previous cached inputs
+        synchronized(lock) {
+            inputs.posX = latestPosX
+            inputs.posY = latestPosY
+            inputs.heading = latestHeading
+            inputs.velX = latestVelX
+            inputs.velY = latestVelY
+            inputs.headingVelocity = latestHeadingVelocity
+            inputs.timestampMs = if (latestTimestamp != 0L) latestTimestamp else com.areslib.util.RobotClock.currentTimeMillis()
         }
+    }
+
+    fun close() {
+        running = false
     }
 }

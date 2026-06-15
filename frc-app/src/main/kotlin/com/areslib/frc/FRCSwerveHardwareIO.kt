@@ -27,7 +27,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     private val absEnc3 = (drivetrain.getModule(2).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
     private val absEnc4 = (drivetrain.getModule(3).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
 
-    private val pigeon = com.ctre.phoenix6.hardware.Pigeon2(9, "CAN2")
+    private val pigeon = com.ctre.phoenix6.hardware.Pigeon2(9, com.ctre.phoenix6.CANBus("CAN2"))
     private val pitchSignal = pigeon.pitch
     private val rollSignal = pigeon.roll
 

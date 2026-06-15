@@ -21,7 +21,9 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     private val normalizedSensor = device as? NormalizedColorSensor
     private val distanceSensor = device as? DistanceSensor
 
-    private var lastUpdateMs = 0L
+    private val lock = Any()
+    private var running = true
+
     private var cachedRed = 0
     private var cachedGreen = 0
     private var cachedBlue = 0
@@ -29,93 +31,88 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     private var cachedNormalized = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
     private var cachedDistance = Double.NaN
 
-    @Synchronized
-    private fun updateIfStale() {
-        val now = RobotClock.currentTimeMillis()
-        if (now - lastUpdateMs < 20) return
-        lastUpdateMs = now
+    init {
+        val thread = Thread {
+            while (running) {
+                var red = 0
+                var green = 0
+                var blue = 0
+                var alpha = 0
+                try {
+                    red = device.red()
+                    green = device.green()
+                    blue = device.blue()
+                    alpha = device.alpha()
+                } catch (_: Exception) {}
 
-        // Fetch color sensor data
-        try {
-            cachedRed = device.red()
-            cachedGreen = device.green()
-            cachedBlue = device.blue()
-            cachedAlpha = device.alpha()
-        } catch (_: Exception) {
-            cachedRed = 0
-            cachedGreen = 0
-            cachedBlue = 0
-            cachedAlpha = 0
-        }
-
-        // Fetch normalized RGB data
-        try {
-            val colors = normalizedSensor?.normalizedColors
-            if (colors != null) {
-                cachedNormalized = doubleArrayOf(
-                    colors.red.toDouble(),
-                    colors.green.toDouble(),
-                    colors.blue.toDouble(),
-                    colors.alpha.toDouble()
-                )
-            } else {
-                val sum = (cachedRed + cachedGreen + cachedBlue + cachedAlpha).toDouble()
-                cachedNormalized = if (sum < 0.1) {
-                    doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-                } else {
-                    doubleArrayOf(cachedRed / sum, cachedGreen / sum, cachedBlue / sum, cachedAlpha / sum)
+                var normalized = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                try {
+                    val colors = normalizedSensor?.normalizedColors
+                    if (colors != null) {
+                        normalized = doubleArrayOf(
+                            colors.red.toDouble(),
+                            colors.green.toDouble(),
+                            colors.blue.toDouble(),
+                            colors.alpha.toDouble()
+                        )
+                    } else {
+                        val sum = (red + green + blue + alpha).toDouble()
+                        normalized = if (sum < 0.1) {
+                            doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                        } else {
+                            doubleArrayOf(red / sum, green / sum, blue / sum, alpha / sum)
+                        }
+                    }
+                } catch (_: Exception) {
+                    val sum = (red + green + blue + alpha).toDouble()
+                    normalized = if (sum < 0.1) {
+                        doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                    } else {
+                        doubleArrayOf(red / sum, green / sum, blue / sum, alpha / sum)
+                    }
                 }
-            }
-        } catch (_: Exception) {
-            val sum = (cachedRed + cachedGreen + cachedBlue + cachedAlpha).toDouble()
-            cachedNormalized = if (sum < 0.1) {
-                doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-            } else {
-                doubleArrayOf(cachedRed / sum, cachedGreen / sum, cachedBlue / sum, cachedAlpha / sum)
-            }
-        }
 
-        // Fetch distance sensor data
-        try {
-            cachedDistance = distanceSensor?.getDistance(Distance.METER) ?: Double.NaN
-        } catch (_: Exception) {
-            cachedDistance = Double.NaN
+                var distance = Double.NaN
+                try {
+                    distance = distanceSensor?.getDistance(Distance.METER) ?: Double.NaN
+                } catch (_: Exception) {}
+
+                synchronized(lock) {
+                    cachedRed = red
+                    cachedGreen = green
+                    cachedBlue = blue
+                    cachedAlpha = alpha
+                    cachedNormalized = normalized
+                    cachedDistance = distance
+                }
+
+                try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+            }
         }
+        thread.isDaemon = true
+        thread.name = "ARES-ColorSensorV3-Thread"
+        thread.start()
     }
 
     override val red: Int
-        get() {
-            updateIfStale()
-            return cachedRed
-        }
+        get() = synchronized(lock) { cachedRed }
     override val green: Int
-        get() {
-            updateIfStale()
-            return cachedGreen
-        }
+        get() = synchronized(lock) { cachedGreen }
     override val blue: Int
-        get() {
-            updateIfStale()
-            return cachedBlue
-        }
+        get() = synchronized(lock) { cachedBlue }
     override val alpha: Int
-        get() {
-            updateIfStale()
-            return cachedAlpha
-        }
+        get() = synchronized(lock) { cachedAlpha }
 
     override val normalizedRgb: DoubleArray
-        get() {
-            updateIfStale()
-            return cachedNormalized
-        }
+        get() = synchronized(lock) { cachedNormalized }
 
     /**
      * Reads the integrated proximity rangefinder distance in meters.
      */
     override val distanceMeters: Double
-        get() {
-            updateIfStale()
-            return cachedDistance
-        }
+        get() = synchronized(lock) { cachedDistance }
+
+    fun close() {
+        running = false
+    }
 }

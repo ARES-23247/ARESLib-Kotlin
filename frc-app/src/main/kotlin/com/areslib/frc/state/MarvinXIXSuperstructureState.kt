@@ -69,7 +69,9 @@ data class MarvinXIXSuperstructureState(
     val intake: IntakeState = IntakeState(),
     val feeder: FeederState = FeederState(),
     val climber: ClimberState = ClimberState(),
-    val floor: FloorState = FloorState()
+    val floor: FloorState = FloorState(),
+    val slamtakeActive: Boolean = false,
+    val slamtakeStartTimeMs: Long = 0L
 )
 
 /**

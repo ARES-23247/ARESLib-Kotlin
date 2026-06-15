@@ -34,8 +34,13 @@ object CostmapReducer {
                         val obstacleFieldY = sensorFieldY + obs.distanceMeters * kotlin.math.sin(sensorFieldAngle)
 
                         val mergeThreshold = 0.3
-                        val existingIdx = currentObstacles.indexOfFirst { 
-                            kotlin.math.hypot(it.x - obstacleFieldX, it.y - obstacleFieldY) < mergeThreshold 
+                        var existingIdx = -1
+                        for (i in 0 until currentObstacles.size) {
+                            val it = currentObstacles[i]
+                            if (kotlin.math.hypot(it.x - obstacleFieldX, it.y - obstacleFieldY) < mergeThreshold) {
+                                existingIdx = i
+                                break
+                            }
                         }
 
                         val newObstacle = Obstacle(obstacleFieldX, obstacleFieldY)
@@ -45,15 +50,16 @@ object CostmapReducer {
                             currentObstacles.add(newObstacle)
                         }
                     } else {
-                        currentObstacles.removeAll { obstacle ->
+                        for (i in currentObstacles.size - 1 downTo 0) {
+                            val obstacle = currentObstacles[i]
                             val dx = obstacle.x - sensorFieldX
                             val dy = obstacle.y - sensorFieldY
                             val dist = kotlin.math.hypot(dx, dy)
                             val angleToObstacle = kotlin.math.atan2(dy, dx)
-                            
                             val angleDiff = com.areslib.math.InputMath.wrapAngle(angleToObstacle - sensorFieldAngle)
-                            
-                            dist < obs.maxRangeMeters && kotlin.math.abs(angleDiff) < Math.toRadians(15.0)
+                            if (dist < obs.maxRangeMeters && kotlin.math.abs(angleDiff) < Math.toRadians(15.0)) {
+                                currentObstacles.removeAt(i)
+                            }
                         }
                     }
                 }

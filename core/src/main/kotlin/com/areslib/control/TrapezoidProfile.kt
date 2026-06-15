@@ -6,6 +6,8 @@ package com.areslib.control
  * enforcing maximum velocity and acceleration limits.
  */
 class TrapezoidProfile {
+    private val currentLocal = State()
+    private val goalLocal = State()
 
     /**
      * Profile constraints defining the physical limits of the mechanism.
@@ -65,14 +67,10 @@ class TrapezoidProfile {
         val cutoff = current.position <= goal.position
         val direction = if (cutoff) 1.0 else -1.0
 
-        val currentLocal = State(
-            current.position * direction,
-            current.velocity * direction
-        )
-        val goalLocal = State(
-            goal.position * direction,
-            goal.velocity * direction
-        )
+        currentLocal.position = current.position * direction
+        currentLocal.velocity = current.velocity * direction
+        goalLocal.position = goal.position * direction
+        goalLocal.velocity = goal.velocity * direction
 
         // Clamp goal velocity to constraints
         goalLocal.velocity = goalLocal.velocity.coerceIn(-constraints.maxVelocity, constraints.maxVelocity)

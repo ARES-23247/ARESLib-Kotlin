@@ -60,7 +60,8 @@ class VFHPlanner(
         sectors.fill(0.0)
 
         // Step 1: Accumulate obstacle density weights in sector bins
-        for (obstacle in obstacles) {
+        for (i in 0 until obstacles.size) {
+            val obstacle = obstacles[i]
             val dx = obstacle.x - robotPose.x
             val dy = obstacle.y - robotPose.y
             val distance = hypot(dx, dy)
@@ -150,7 +151,7 @@ class VFHPlanner(
         val robotProgress = robotPose.x * ux + robotPose.y * uy
 
         var hasUnpassedObstacles = false
-        for (i in obstacles.indices) {
+        for (i in 0 until obstacles.size) {
             val obs = obstacles[i]
             val obsProgress = obs.x * ux + obs.y * uy
             if (obsProgress + obs.radius + 0.15 > robotProgress) {

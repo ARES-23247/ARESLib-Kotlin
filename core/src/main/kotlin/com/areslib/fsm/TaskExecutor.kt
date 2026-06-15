@@ -48,19 +48,13 @@ class TaskExecutor {
     @Synchronized
     fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> {
         var actions: MutableList<RobotAction>? = null
-        fun addActions(list: List<RobotAction>) {
-            if (list.isNotEmpty()) {
-                if (actions == null) actions = mutableListOf()
-                actions!!.addAll(list)
-            }
-        }
 
         val currentActive = activeTask
         if (currentActive != null) {
             val elapsed = currentTimestampMs - activeTaskStartTimeMs
             preemptedStack.push(Pair(currentActive, elapsed))
             try {
-                addActions(currentActive.end(state, interrupted = true))
+                actions = addActions(actions, currentActive.end(state, interrupted = true))
             } catch (e: Exception) {
                 System.err.println("TaskExecutor: Exception during task.end for preempted task ${currentActive.name}: ${e.message}")
                 e.printStackTrace()
@@ -70,11 +64,11 @@ class TaskExecutor {
         activeTask = task
         activeTaskStartTimeMs = currentTimestampMs
         try {
-            addActions(task.initialize(state))
+            actions = addActions(actions, task.initialize(state))
         } catch (e: Exception) {
             System.err.println("TaskExecutor: Exception during task.initialize for preempting task ${task.name}: ${e.message}")
             e.printStackTrace()
-            addActions(handleTaskFailure(task, state))
+            actions = addActions(actions, handleTaskFailure(task, state))
         }
         return actions ?: emptyList()
     }
@@ -87,12 +81,6 @@ class TaskExecutor {
     fun update(state: RobotState, currentTimestampMs: Long): List<RobotAction> {
         if (isSuspended) return emptyList()
         var actions: MutableList<RobotAction>? = null
-        fun addActions(list: List<RobotAction>) {
-            if (list.isNotEmpty()) {
-                if (actions == null) actions = mutableListOf()
-                actions!!.addAll(list)
-            }
-        }
 
         var task = activeTask
         var loopCount = 0
@@ -113,11 +101,11 @@ class TaskExecutor {
                     activeTask = nextTask
                     activeTaskStartTimeMs = currentTimestampMs
                     try {
-                        addActions(nextTask.initialize(state))
+                        actions = addActions(actions, nextTask.initialize(state))
                     } catch (e: Exception) {
                         System.err.println("TaskExecutor: Exception during task.initialize for task ${nextTask.name}: ${e.message}")
                         e.printStackTrace()
-                        addActions(handleTaskFailure(nextTask, state))
+                        actions = addActions(actions, handleTaskFailure(nextTask, state))
                         break
                     }
                     task = nextTask
@@ -133,14 +121,14 @@ class TaskExecutor {
                 } catch (e: Exception) {
                     System.err.println("TaskExecutor: Exception in task.isCompleted for task ${task.name}: ${e.message}")
                     e.printStackTrace()
-                    addActions(handleTaskFailure(task, state))
+                    actions = addActions(actions, handleTaskFailure(task, state))
                     break
                 }
                 
                 if (isCompleted) {
                     // Finalize active task
                     try {
-                        addActions(task.end(state, interrupted = false))
+                        actions = addActions(actions, task.end(state, interrupted = false))
                     } catch (e: Exception) {
                         System.err.println("TaskExecutor: Exception in task.end for task ${task.name}: ${e.message}")
                         e.printStackTrace()
@@ -153,10 +141,10 @@ class TaskExecutor {
                     } catch (e: Exception) {
                         System.err.println("TaskExecutor: Exception in task.execute for task ${task.name}: ${e.message}")
                         e.printStackTrace()
-                        addActions(handleTaskFailure(task, state))
+                        actions = addActions(actions, handleTaskFailure(task, state))
                         break
                     }
-                    addActions(execActions)
+                    actions = addActions(actions, execActions)
                     break // Stop frame update as active task is currently running
                 }
             }
@@ -167,6 +155,13 @@ class TaskExecutor {
         }
 
         return actions ?: emptyList()
+    }
+
+    private fun addActions(existing: MutableList<RobotAction>?, newActions: List<RobotAction>): MutableList<RobotAction>? {
+        if (newActions.isEmpty()) return existing
+        val list = existing ?: mutableListOf()
+        list.addAll(newActions)
+        return list
     }
 
     private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {

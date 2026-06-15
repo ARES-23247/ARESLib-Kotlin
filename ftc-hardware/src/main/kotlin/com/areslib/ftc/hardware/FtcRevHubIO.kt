@@ -260,11 +260,34 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
 ) : MotorIO {
     private var offset = 0.0
     private var cachedPosition = 0.0
+    private val lock = Any()
+    private var running = true
+    private var latestVoltage = 0.0
 
     init {
         if (name != null) {
             HardwareRegistry.registerMotor(name, this)
         }
+
+        val thread = Thread {
+            while (running) {
+                try {
+                    val volt = analogInput.voltage
+                    synchronized(lock) {
+                        latestVoltage = volt
+                    }
+                } catch (_: Exception) {}
+                try {
+                    Thread.sleep(5)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
+            }
+        }
+        thread.isDaemon = true
+        thread.name = "ARES-AnalogEncoder-Thread-${name ?: "unnamed"}"
+        thread.start()
     }
 
     override var power: Double
@@ -274,7 +297,8 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
 
     fun updateInputs() {
         try {
-            val normalized = analogInput.voltage / version.maxVoltage
+            val volt = synchronized(lock) { latestVoltage }
+            val normalized = volt / version.maxVoltage
             cachedPosition = (normalized * ticksPerRev) - offset
         } catch (_: Exception) {}
     }
@@ -287,9 +311,14 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
 
     override fun resetEncoder() {
         try {
-            offset = (analogInput.voltage / version.maxVoltage) * ticksPerRev
+            val volt = synchronized(lock) { latestVoltage }
+            offset = (volt / version.maxVoltage) * ticksPerRev
             cachedPosition = 0.0
         } catch (_: Exception) {}
+    }
+
+    fun close() {
+        running = false
     }
 }
 
@@ -379,7 +408,7 @@ class FtcImu(private val imu: IMU) : ImuIO {
             }
         }
         imuThread.isDaemon = true
-        imuThread.priority = Thread.MIN_PRIORITY
+        imuThread.priority = Thread.NORM_PRIORITY
         imuThread.name = "ARES-Asynchronous-IMU-Thread"
         imuThread.start()
     }
@@ -407,27 +436,77 @@ class FtcImu(private val imu: IMU) : ImuIO {
 
 
 class FtcAnalogSensor(private val analogInput: AnalogInput) {
-    fun getVoltage(): Double {
-        return try {
-            analogInput.voltage
-        } catch (_: Exception) {
-            0.0
+    private val lock = Any()
+    private var running = true
+    private var latestVoltage = 0.0
+
+    init {
+        val thread = Thread {
+            while (running) {
+                try {
+                    val volt = analogInput.voltage
+                    synchronized(lock) {
+                        latestVoltage = volt
+                    }
+                } catch (_: Exception) {}
+                try {
+                    Thread.sleep(20)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
+            }
         }
+        thread.isDaemon = true
+        thread.name = "ARES-AnalogSensor-Thread"
+        thread.start()
+    }
+
+    fun getVoltage(): Double {
+        return synchronized(lock) { latestVoltage }
+    }
+
+    fun close() {
+        running = false
     }
 }
 
 class FtcDigitalSensor(private val digitalChannel: DigitalChannel) {
+    private val lock = Any()
+    private var running = true
+    private var latestState = false
+
     init {
         try {
             digitalChannel.mode = DigitalChannel.Mode.INPUT
         } catch (_: Exception) {}
+
+        val thread = Thread {
+            while (running) {
+                try {
+                    val state = digitalChannel.state
+                    synchronized(lock) {
+                        latestState = state
+                    }
+                } catch (_: Exception) {}
+                try {
+                    Thread.sleep(20)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
+            }
+        }
+        thread.isDaemon = true
+        thread.name = "ARES-DigitalSensor-Thread"
+        thread.start()
     }
 
     fun getState(): Boolean {
-        return try {
-            digitalChannel.state
-        } catch (_: Exception) {
-            false
-        }
+        return synchronized(lock) { latestState }
+    }
+
+    fun close() {
+        running = false
     }
 }

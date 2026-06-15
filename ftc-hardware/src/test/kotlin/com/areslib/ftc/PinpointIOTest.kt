@@ -32,6 +32,7 @@ class PinpointIOTest {
         rawDriver.posX = 0.5 // moved 0.5m forward in driver frame
         rawDriver.posY = 0.0
         rawDriver.heading = 0.0
+        Thread.sleep(20) // Allow background thread to run
 
         val update1 = pinpointIO.getPoseUpdate()
         // x_field = rawX * cos(PI) - rawY * sin(PI) + offset_x = 0.5 * (-1) - 0 + 1.0 = 0.5
@@ -43,6 +44,7 @@ class PinpointIOTest {
         rawDriver.posX = 1.0
         rawDriver.posY = 0.5
         rawDriver.heading = 0.5 // rotated 0.5 rad
+        Thread.sleep(20) // Allow background thread to run
 
         val update2 = pinpointIO.getPoseUpdate()
         // x_field = 1.0 * cos(PI) - 0.5 * sin(PI) + 1.0 = -1.0 + 1.0 = 0.0
@@ -76,6 +78,7 @@ class PinpointIOTest {
         // If the robot now rotates further by +0.1 rad and moves +0.5m along raw X:
         rawDriver.posX += 0.5
         rawDriver.heading += 0.1
+        Thread.sleep(20) // Allow background thread to run
 
         val finalUpdate = pinpointIO.getPoseUpdate()
         // The heading should change to 1.6

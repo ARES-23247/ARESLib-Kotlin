@@ -49,11 +49,90 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     private var isInitialized = false
     private var lastUpdateTimeMs = 0L
-
+ 
     // Cache buffers for registers
     private val cachedPositions = IntArray(8)
     private val cachedVelocities = IntArray(8)
     private val cachedPulseWidths = IntArray(8)
+    private var cachedLocalizerData = LocalizerDataBlock()
+
+    private val lock = Any()
+    private var running = true
+
+    init {
+        val thread = Thread {
+            while (running) {
+                if (isInitialized) {
+                    val pos = IntArray(8)
+                    val vel = IntArray(8)
+                    val pw = IntArray(8)
+                    var posSuccess = false
+                    var velSuccess = false
+                    var pwSuccess = false
+
+                    try {
+                        val posBytes = deviceClient.read(REG_ENC_0, 32)
+                        if (posBytes.size >= 32) {
+                            val buf = ByteBuffer.wrap(posBytes).order(OCTOQUAD_ENDIAN)
+                            for (i in 0 until 8) {
+                                pos[i] = buf.int
+                            }
+                            posSuccess = true
+                        }
+                    } catch (_: Exception) {}
+
+                    try {
+                        val velBytes = deviceClient.read(REG_VEL_0, 32)
+                        if (velBytes.size >= 32) {
+                            val buf = ByteBuffer.wrap(velBytes).order(OCTOQUAD_ENDIAN)
+                            for (i in 0 until 8) {
+                                vel[i] = buf.int
+                            }
+                            velSuccess = true
+                        }
+                    } catch (_: Exception) {}
+
+                    try {
+                        val pwBytes = deviceClient.read(REG_PULSE_WIDTH_0, 16)
+                        if (pwBytes.size >= 16) {
+                            val buf = ByteBuffer.wrap(pwBytes).order(OCTOQUAD_ENDIAN)
+                            for (i in 0 until 8) {
+                                pw[i] = buf.short.toInt() and 0xFFFF
+                            }
+                            pwSuccess = true
+                        }
+                    } catch (_: Exception) {}
+
+                    val loc = try {
+                        val bytes = deviceClient.read(REG_LOC_X, 12)
+                        val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
+                        val block = LocalizerDataBlock()
+                        block.posX_mm = buf.short
+                        block.posY_mm = buf.short
+                        block.velX_mmS = buf.short
+                        block.velY_mmS = buf.short
+                        block.heading_rad = buf.short * SCALAR_LOCALIZER_HEADING
+                        block.velHeading_radS = buf.short * SCALAR_LOCALIZER_HEADING_VELOCITY
+                        block
+                    } catch (_: Exception) {
+                        null
+                    }
+
+                    synchronized(lock) {
+                        if (posSuccess) System.arraycopy(pos, 0, cachedPositions, 0, 8)
+                        if (velSuccess) System.arraycopy(vel, 0, cachedVelocities, 0, 8)
+                        if (pwSuccess) System.arraycopy(pw, 0, cachedPulseWidths, 0, 8)
+                        if (loc != null) cachedLocalizerData = loc
+                        lastUpdateTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+                    }
+                }
+                try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+            }
+        }
+        thread.isDaemon = true
+        thread.name = "ARES-Octoquad-Thread"
+        thread.start()
+    }
 
     override fun doInitialize(): Boolean {
         return try {
@@ -76,56 +155,13 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     override fun getDeviceName(): String = "OctoQuad FWv3"
 
-    /**
-     * Bulk reads positions, velocities, and pulse widths.
-     * Rate-limited to once per 3ms loop cycle to prevent duplicate I2C reads.
-     */
     fun update() {
-        if (!isInitialized) return
-        val now = com.areslib.util.RobotClock.currentTimeMillis()
-        if (now - lastUpdateTimeMs < 3) return
-        lastUpdateTimeMs = now
-
-        try {
-            val posBytes = deviceClient.read(REG_ENC_0, 32)
-            if (posBytes.size >= 32) {
-                val buf = ByteBuffer.wrap(posBytes).order(OCTOQUAD_ENDIAN)
-                for (i in 0 until 8) {
-                    cachedPositions[i] = buf.int
-                }
-            }
-        } catch (e: Exception) {
-            // Gracefully handle read failures
-        }
-
-        try {
-            val velBytes = deviceClient.read(REG_VEL_0, 32)
-            if (velBytes.size >= 32) {
-                val buf = ByteBuffer.wrap(velBytes).order(OCTOQUAD_ENDIAN)
-                for (i in 0 until 8) {
-                    cachedVelocities[i] = buf.int
-                }
-            }
-        } catch (e: Exception) {
-            // Gracefully handle read failures
-        }
-
-        try {
-            val pwBytes = deviceClient.read(REG_PULSE_WIDTH_0, 16)
-            if (pwBytes.size >= 16) {
-                val buf = ByteBuffer.wrap(pwBytes).order(OCTOQUAD_ENDIAN)
-                for (i in 0 until 8) {
-                    cachedPulseWidths[i] = buf.short.toInt() and 0xFFFF
-                }
-            }
-        } catch (e: Exception) {
-            // Gracefully handle read failures
-        }
+        // Background thread handles update
     }
 
-    fun getCachedPosition(channel: Int): Int = cachedPositions.getOrElse(channel) { 0 }
-    fun getCachedVelocity(channel: Int): Int = cachedVelocities.getOrElse(channel) { 0 }
-    fun getCachedPulseWidth(channel: Int): Int = cachedPulseWidths.getOrElse(channel) { 0 }
+    fun getCachedPosition(channel: Int): Int = synchronized(lock) { cachedPositions.getOrElse(channel) { 0 } }
+    fun getCachedVelocity(channel: Int): Int = synchronized(lock) { cachedVelocities.getOrElse(channel) { 0 } }
+    fun getCachedPulseWidth(channel: Int): Int = synchronized(lock) { cachedPulseWidths.getOrElse(channel) { 0 } }
 
     /**
      * Reads a single encoder position (legacy, non-cached fallback)
@@ -185,22 +221,10 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         var velHeading_radS: Float = 0f
     )
 
-    fun readLocalizerData(): LocalizerDataBlock {
-        return try {
-            val bytes = deviceClient.read(REG_LOC_X, 12)
-            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-            
-            val block = LocalizerDataBlock()
-            block.posX_mm = buf.short
-            block.posY_mm = buf.short
-            block.velX_mmS = buf.short
-            block.velY_mmS = buf.short
-            block.heading_rad = buf.short * SCALAR_LOCALIZER_HEADING
-            block.velHeading_radS = buf.short * SCALAR_LOCALIZER_HEADING_VELOCITY
-            block
-        } catch (_: Exception) {
-            LocalizerDataBlock()
-        }
+    fun readLocalizerData(): LocalizerDataBlock = synchronized(lock) { cachedLocalizerData }
+
+    fun close() {
+        running = false
     }
 }
 

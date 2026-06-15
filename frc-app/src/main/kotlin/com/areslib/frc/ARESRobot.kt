@@ -421,17 +421,7 @@ class ARESRobot : TimedRobot() {
         } catch (e: Throwable) {
             System.err.println("ARESRobot: Exception in teleopPeriodic: ${e.message}")
             e.printStackTrace()
-            try {
-                robot.drive.joystickDrive(0.0, 0.0, 0.0)
-                robot.store.dispatch(RobotAction.SetFlywheelActive(false, com.areslib.util.RobotClock.currentTimeMillis()))
-                robot.store.dispatch(SetFlywheelSpeed(0.0))
-                robot.store.dispatch(SetFeederSpeed(0.0))
-                robot.store.dispatch(SetFloorSpeed(0.0))
-                robot.store.dispatch(SetIntakeRollers(0.0))
-                robot.store.dispatch(SetClimberVoltage(0.0))
-            } catch (ex: Exception) {
-                System.err.println("ARESRobot: Failed to apply safety stop: ${ex.message}")
-            }
+            robot.safeHardware()
         }
     }
 
@@ -526,17 +516,7 @@ class ARESRobot : TimedRobot() {
         } catch (e: Throwable) {
             System.err.println("ARESRobot: Exception in autonomousPeriodic: ${e.message}")
             e.printStackTrace()
-            try {
-                robot.drive.joystickDrive(0.0, 0.0, 0.0)
-                robot.store.dispatch(RobotAction.SetFlywheelActive(false, com.areslib.util.RobotClock.currentTimeMillis()))
-                robot.store.dispatch(SetFlywheelSpeed(0.0))
-                robot.store.dispatch(SetFeederSpeed(0.0))
-                robot.store.dispatch(SetFloorSpeed(0.0))
-                robot.store.dispatch(SetIntakeRollers(0.0))
-                robot.store.dispatch(SetClimberVoltage(0.0))
-            } catch (ex: Exception) {
-                System.err.println("ARESRobot: Failed to apply safety stop: ${ex.message}")
-            }
+            robot.safeHardware()
         }
     }
 

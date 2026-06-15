@@ -38,20 +38,36 @@ class FtcVL53L5CX(private val driver: VL53L5CXDriverProxy) : MultizoneDistanceSe
     override val columns: Int
         get() = try { driver.columns } catch (_: Exception) { 0 }
 
+    private val lock = Any()
+    private var running = true
     private var lastDistances = DoubleArray(0)
 
-    override val distancesMeters: DoubleArray
-        get() {
-            try {
-                driver.update()
-                val raw = driver.distancesMillimeters
-                if (raw.size != lastDistances.size) {
-                    lastDistances = DoubleArray(raw.size)
-                }
-                for (i in raw.indices) {
-                    lastDistances[i] = raw[i] / 1000.0 // Convert mm to meters
-                }
-            } catch (_: Exception) {}
-            return lastDistances
+    init {
+        val thread = Thread {
+            while (running) {
+                try {
+                    driver.update()
+                    val raw = driver.distancesMillimeters
+                    val dists = DoubleArray(raw.size)
+                    for (i in raw.indices) {
+                        dists[i] = raw[i] / 1000.0
+                    }
+                    synchronized(lock) {
+                        lastDistances = dists
+                    }
+                } catch (_: Exception) {}
+                try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+            }
         }
+        thread.isDaemon = true
+        thread.name = "ARES-VL53L5CX-Thread"
+        thread.start()
+    }
+
+    override val distancesMeters: DoubleArray
+        get() = synchronized(lock) { lastDistances }
+
+    fun close() {
+        running = false
+    }
 }

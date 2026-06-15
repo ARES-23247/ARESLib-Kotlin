@@ -8,27 +8,36 @@ import com.areslib.state.RobotState
  * Delegates domain state slices to specialized domain-focused sub-reducers to
  * prevent a single monolithic file and improve readability/extensibility.
  */
+private val DEFAULT_STD_DEVS = com.areslib.math.Vector3(0.05, 0.05, 0.1)
+
 fun rootReducer(state: RobotState, action: RobotAction): RobotState {
     return when (action) {
         is RobotAction.VisionMeasurementsReceived -> {
             val robotPose = state.drive.poseEstimator.estimatedPose
             val robotHeading = robotPose.heading.radians
-            val validMeasurements = action.measurements.filter {
-                val visionFilter = com.areslib.hardware.vision.VisionOutlierFilter(state.vision.filterConfig)
-                visionFilter.isValid(
-                    measurement = it,
-                    robotHeadingRad = robotHeading,
-                    robotPose = robotPose,
-                    angularVelocityRadPerSec = state.drive.angularVelocityRadiansPerSecond,
-                    linearAccelXG = state.drive.xAccelerationG,
-                    linearAccelYG = state.drive.yAccelerationG,
-                    linearAccelZG = state.drive.zAccelerationG
-                )
+            val measurements = action.measurements
+            val validMeasurements = ArrayList<com.areslib.state.VisionMeasurement>(measurements.size)
+            val visionFilter = com.areslib.hardware.vision.VisionOutlierFilter(state.vision.filterConfig)
+
+            for (i in 0 until measurements.size) {
+                val it = measurements[i]
+                if (visionFilter.isValid(
+                        measurement = it,
+                        robotHeadingRad = robotHeading,
+                        robotPose = robotPose,
+                        angularVelocityRadPerSec = state.drive.angularVelocityRadiansPerSecond,
+                        linearAccelXG = state.drive.xAccelerationG,
+                        linearAccelYG = state.drive.yAccelerationG,
+                        linearAccelZG = state.drive.zAccelerationG
+                    )) {
+                    validMeasurements.add(it)
+                }
             }
 
             var currentEstimator = state.drive.poseEstimator
-            val stdDevs = action.customVisionStdDevs ?: com.areslib.math.Vector3(0.05, 0.05, 0.1)
-            for (measurement in validMeasurements) {
+            val stdDevs = action.customVisionStdDevs ?: DEFAULT_STD_DEVS
+            for (i in 0 until validMeasurements.size) {
+                val measurement = validMeasurements[i]
                 currentEstimator = com.areslib.math.PoseEstimator.addVisionMeasurement(
                     state = currentEstimator,
                     measurement = measurement,

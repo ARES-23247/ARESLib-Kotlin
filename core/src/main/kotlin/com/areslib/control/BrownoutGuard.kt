@@ -69,7 +69,8 @@ class BrownoutGuard(
         if (!voltage.isFinite() || voltage < 0.0) return
 
         lastVoltage = voltage
-        batteryPercent = ((voltage / nominalVoltage) * 100.0).coerceIn(0.0, 100.0)
+        val normVolt = if (nominalVoltage > 0.1) nominalVoltage else 13.0
+        batteryPercent = ((voltage / normVolt) * 100.0).coerceIn(0.0, 100.0)
 
         val previousState = state
 

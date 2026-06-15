@@ -2,14 +2,14 @@ package com.areslib.frc.subsystem
 
 import com.areslib.subsystem.Store
 import com.areslib.state.SuperstructureMode
-import com.areslib.frc.action.SetFlywheelSpeed
-import com.areslib.frc.action.SetCowlAngle
-import com.areslib.frc.action.SetIntakePivot
-import com.areslib.frc.action.SetIntakeRollers
-import com.areslib.frc.action.SetClimberVoltage
-import com.areslib.frc.action.SetClimberExtension
+import com.areslib.frc.action.*
 import com.areslib.action.RobotAction
 import com.areslib.frc.state.marvinXIX
+import com.areslib.math.Pose2d
+import com.areslib.math.Translation2d
+import com.areslib.math.ChassisSpeeds
+import com.areslib.control.ShotResult
+import com.areslib.control.ShotSetup
 
 class MarvinShooterSubsystem(private val store: Store) {
     val mode: SuperstructureMode
@@ -47,6 +47,89 @@ class MarvinShooterSubsystem(private val store: Store) {
     fun setCowlAngle(degrees: Double) {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         store.dispatch(SetCowlAngle(degrees, timestamp))
+    }
+
+    /**
+     * Calculates SOTM parameters, dispatches target speeds/angles, and returns target rotation command.
+     */
+    fun updateShootOnTheMove(
+        currentPose: Pose2d,
+        targetTranslation: Translation2d,
+        shotResult: ShotResult,
+        runFloorRollers: Boolean = false
+    ): Double {
+        val driveState = store.state.drive
+        val rx = driveState.xVelocityMetersPerSecond
+        val ry = driveState.yVelocityMetersPerSecond
+        val omega = driveState.angularVelocityRadiansPerSecond
+        
+        val cos = currentPose.heading.cos
+        val sin = currentPose.heading.sin
+        val fieldVx = rx * cos - ry * sin
+        val fieldVy = rx * sin + ry * cos
+        
+        val fieldSpeeds = ChassisSpeeds(fieldVx, fieldVy, omega)
+        
+        ShotSetup.calculate(currentPose, fieldSpeeds, targetTranslation, shotResult)
+        
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        store.dispatch(SetFlywheelSpeed(shotResult.targetFlywheelRpm, timestamp))
+        store.dispatch(RobotAction.SetFlywheelActive(true, timestamp))
+        store.dispatch(SetCowlAngle(shotResult.targetCowlAngleDegrees, timestamp))
+        
+        val headingError = shotResult.robotTargetHeadingRad - currentPose.heading.radians
+        val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
+        val kp = 4.0
+        val rotation = wrappedError * kp + shotResult.angularVelocityFeedforwardRadPerSec
+        
+        val headingAligned = Math.abs(wrappedError) < 0.05
+        val rpmAligned = Math.abs(store.state.superstructure.marvinXIX.flywheel.velocityRpm - shotResult.targetFlywheelRpm) < 150.0
+        
+        if (headingAligned && rpmAligned) {
+            store.dispatch(SetFeederSpeed(10.0, timestamp))
+            if (runFloorRollers) {
+                store.dispatch(SetFloorSpeed(10.0, timestamp))
+            }
+        } else {
+            store.dispatch(SetFeederSpeed(0.0, timestamp))
+            if (runFloorRollers) {
+                store.dispatch(SetFloorSpeed(0.0, timestamp))
+            }
+        }
+        
+        return rotation
+    }
+
+    /**
+     * Calculates static shooting parameters and dispatches targets.
+     */
+    fun updateStaticShoot(
+        currentPose: Pose2d,
+        targetTranslation: Translation2d
+    ): Double {
+        val dist = kotlin.math.hypot(currentPose.x - targetTranslation.x, currentPose.y - targetTranslation.y)
+        val targetRpm = ShotSetup.interpolateRpm(dist)
+        val targetCowl = ShotSetup.interpolateCowl(dist)
+        
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        store.dispatch(SetFlywheelSpeed(targetRpm, timestamp))
+        store.dispatch(RobotAction.SetFlywheelActive(true, timestamp))
+        store.dispatch(SetCowlAngle(targetCowl, timestamp))
+        
+        val headingError = Math.atan2(targetTranslation.y - currentPose.y, targetTranslation.x - currentPose.x) - currentPose.heading.radians + Math.PI
+        val wrappedError = com.areslib.math.InputMath.wrapAngle(headingError)
+        val kp = 4.0
+        val rotation = wrappedError * kp
+        
+        val headingAligned = Math.abs(wrappedError) < 0.05
+        val rpmAligned = Math.abs(store.state.superstructure.marvinXIX.flywheel.velocityRpm - targetRpm) < 150.0
+        if (headingAligned && rpmAligned) {
+            store.dispatch(SetFeederSpeed(10.0, timestamp))
+        } else {
+            store.dispatch(SetFeederSpeed(0.0, timestamp))
+        }
+        
+        return rotation
     }
 }
 

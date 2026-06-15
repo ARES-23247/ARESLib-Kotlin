@@ -106,6 +106,7 @@ class RealWorldWorkloadTier4Test {
         pinpoint.posX = 1.5
         pinpoint.posY = 2.0
         pinpoint.heading = 0.5
+        Thread.sleep(20) // Allow background thread to run
         robot.update()
 
         // Verify EKF pose incorporates data
@@ -127,6 +128,7 @@ class RealWorldWorkloadTier4Test {
 
         // verify flywheelTask completed and we transition to intakeTask
         assertEquals("IntakeUntilCount(1)", executor.activeTaskName)
+        robot.close()
     }
 
     @Test
@@ -245,5 +247,6 @@ class RealWorldWorkloadTier4Test {
         // Verify motors shut off safely
         assertEquals(0.0, fl.currentPower, 1e-6)
         assertEquals(0.0, fr.currentPower, 1e-6)
+        robot.close()
     }
 }

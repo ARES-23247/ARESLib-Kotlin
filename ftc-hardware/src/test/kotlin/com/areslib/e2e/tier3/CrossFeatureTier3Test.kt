@@ -111,6 +111,7 @@ class CrossFeatureTier3Test {
         mockDriver.mockX = 1.0
         mockDriver.mockY = 1.5
         mockDriver.mockHeading = 0.5
+        Thread.sleep(20) // Allow background thread to run
         pinpointIO.updateInputs(inputs)
         assertEquals(1.0, inputs.posX, 1e-6)
 
@@ -129,6 +130,7 @@ class CrossFeatureTier3Test {
 
         // 3. Simulate Pinpoint UART failure / disconnect
         mockDriver.shouldThrow = true
+        Thread.sleep(20) // Allow background thread to execute throwing logic
         assertDoesNotThrow {
             pinpointIO.updateInputs(inputs)
         }

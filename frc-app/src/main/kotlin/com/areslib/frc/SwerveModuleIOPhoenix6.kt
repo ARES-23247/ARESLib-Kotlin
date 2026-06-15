@@ -21,9 +21,9 @@ class SwerveModuleIOPhoenix6(
         BaseStatusSignal.waitForAll(0.02, drivePosition, driveVelocity, steerPosition)
         
         // Populate inputs mutably locally just for transport
-        inputs.drivePositionRads = drivePosition.valueAsDouble
-        inputs.driveVelocityRadsPerSec = driveVelocity.valueAsDouble
-        inputs.steerAbsolutePositionRads = steerPosition.valueAsDouble
+        inputs.drivePositionRads = drivePosition.valueAsDouble * 2.0 * Math.PI
+        inputs.driveVelocityRadsPerSec = driveVelocity.valueAsDouble * 2.0 * Math.PI
+        inputs.steerAbsolutePositionRads = steerPosition.valueAsDouble * 2.0 * Math.PI
         
         // This timestamp is perfectly synced across all devices on the CANivore
         inputs.timestampMs = (drivePosition.timestamp.time * 1000).toLong()
