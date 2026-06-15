@@ -32,3 +32,8 @@ compose.desktop {
         }
     }
 }
+
+kotlin {
+    jvmToolchain(21)
+}
+
