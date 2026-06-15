@@ -95,6 +95,34 @@ class Costmap(
     }
 
     /**
+     * Rasterizes and registers a list of static obstacles from a field layout.
+     */
+    fun setStaticObstacles(obstacles: List<com.areslib.state.RobotFieldObstacle>) {
+        for (obs in obstacles) {
+            if (!obs.isBlocking) continue // Skip non-blocking elements like ramps
+
+            // Obstacle boundaries in meters (from centering)
+            val minX = obs.x - obs.height / 2.0
+            val maxX = obs.x + obs.height / 2.0
+            val minY = obs.y - obs.width / 2.0
+            val maxY = obs.y + obs.width / 2.0
+
+            // Map boundaries to grid cell ranges
+            val startCellX = (((minX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
+            val endCellX = (((maxX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
+            val startCellY = (((minY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
+            val endCellY = (((maxY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
+
+            // Mark cells as occupied
+            for (cx in startCellX..endCellX) {
+                for (cy in startCellY..endCellY) {
+                    setObstacle(cx, cy, true)
+                }
+            }
+        }
+    }
+
+    /**
      * Checks if a grid cell coordinate is occupied by a raw obstacle.
      */
     fun isCellOccupied(cellX: Int, cellY: Int): Boolean {
