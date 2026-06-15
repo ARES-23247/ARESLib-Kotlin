@@ -6,7 +6,7 @@ import com.areslib.control.HolonomicDriveController
 import com.areslib.control.PIDController
 import com.areslib.pathing.Path
 import com.areslib.pathing.DynamicPathLoader
-import com.qualcomm.robotcore.hardware.ElapsedTime
+import com.areslib.util.RobotClock
 
 /**
  * A simplified, clean autonomous OpMode using the FtcMecanumRobot facade.
@@ -57,7 +57,7 @@ open class ARESMecanumAuto : LinearOpMode() {
         try {
             waitForStart()
 
-            val timer = ElapsedTime()
+            val startMs = RobotClock.currentTimeMillis()
             var lastTime = 0.0
             val totalLength = if (path.points.isNotEmpty()) path.points.last().distanceMeters else 0.0
             var loopCount = 0L
@@ -68,7 +68,7 @@ open class ARESMecanumAuto : LinearOpMode() {
                 val loopStartMs = com.areslib.util.RobotClock.currentTimeMillis()
 
                 try {
-                    val currentTime = timer.seconds()
+                    val currentTime = (loopStartMs - startMs) / 1000.0
                     val dt = if (currentTime > lastTime) currentTime - lastTime else 0.02
                     lastTime = currentTime
 

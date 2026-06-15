@@ -1,5 +1,7 @@
 package com.areslib.ftc.hardware
 
+import com.areslib.util.RobotClock
+
 import com.areslib.hardware.ColorSensorIO
 import com.areslib.hardware.DistanceSensorIO
 import com.qualcomm.robotcore.hardware.ColorSensor
@@ -29,7 +31,7 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
 
     @Synchronized
     private fun updateIfStale() {
-        val now = System.currentTimeMillis()
+        val now = RobotClock.currentTimeMillis()
         if (now - lastUpdateMs < 20) return
         lastUpdateMs = now
 

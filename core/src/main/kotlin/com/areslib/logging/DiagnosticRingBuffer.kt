@@ -1,5 +1,7 @@
 package com.areslib.logging
 
+import com.areslib.util.RobotClock
+
 /**
  * A highly optimized, thread-safe circular diagnostic buffer.
  * It provides a zero-GC allocation footprint when logging telemetry data
@@ -31,7 +33,7 @@ class DiagnosticRingBuffer(val capacity: Int = 1000) {
      * @param value The value of the metric.
      */
     fun log(tag: String, value: Double) {
-        log(tag, value, System.currentTimeMillis())
+        log(tag, value, RobotClock.currentTimeMillis())
     }
 
     /**
@@ -56,7 +58,7 @@ class DiagnosticRingBuffer(val capacity: Int = 1000) {
      * @param message The character array containing the diagnostic message.
      */
     fun log(message: CharArray) {
-        log(message, 0, message.size, System.currentTimeMillis())
+        log(message, 0, message.size, RobotClock.currentTimeMillis())
     }
 
     /**

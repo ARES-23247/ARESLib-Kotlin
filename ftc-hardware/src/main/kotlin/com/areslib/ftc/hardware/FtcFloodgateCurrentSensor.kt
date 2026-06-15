@@ -1,7 +1,6 @@
 package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.hardware.AnalogInput
-import com.qualcomm.robotcore.hardware.ElapsedTime
 import com.areslib.util.RobotClock
 
 interface AnalogVoltageInput {

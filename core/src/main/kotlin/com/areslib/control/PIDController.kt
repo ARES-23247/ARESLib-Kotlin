@@ -1,5 +1,7 @@
 package com.areslib.control
 
+import com.areslib.util.RobotClock
+
 /**
  * A pure math implementation of a PID controller, suitable for use in
  * purely functional Redux loops without depending on WPILib runtime.
@@ -77,7 +79,7 @@ class PIDController(
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
         if (!measurement.isFinite() || !setpoint.isFinite() || dtSeconds <= 0.0) {
-            val now = System.currentTimeMillis()
+            val now = RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("PIDController: Invalid inputs detected (measurement=$measurement, setpoint=$setpoint, dtSeconds=$dtSeconds). Returning safe fallback 0.0.")
                 lastWarningTime = now

@@ -1,6 +1,7 @@
 package com.areslib.control
 
 import kotlin.math.abs
+import com.areslib.util.RobotClock
 
 /**
  * A championship-grade Discrete-Time State-Space **Linear-Quadratic Regulator (LQR)**
@@ -139,7 +140,7 @@ class LQRController(
         require(y.size == numOutputs) { "Measurement dimensions mismatch" }
         require(xRef.size == numStates) { "Reference state dimensions mismatch" }
         if (!y.all { it.isFinite() } || !xRef.all { it.isFinite() } || dtSeconds <= 0.0) {
-            val now = System.currentTimeMillis()
+            val now = RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
                 lastWarningTime = now
