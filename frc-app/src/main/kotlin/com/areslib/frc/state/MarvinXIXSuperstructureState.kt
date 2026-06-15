@@ -72,7 +72,19 @@ data class MarvinXIXSuperstructureState(
     val floor: FloorState = FloorState(),
     val slamtakeActive: Boolean = false,
     val slamtakeStartTimeMs: Long = 0L
-)
+) {
+    fun withFlywheelSpeed(rpm: Double) = copy(flywheel = flywheel.copy(targetVelocityRpm = rpm))
+    fun withCowlAngle(degrees: Double) = copy(cowl = cowl.copy(targetAngleDegrees = degrees))
+    fun withIntakePivot(deployed: Boolean) = copy(intake = intake.copy(
+        isDeployed = deployed,
+        targetAngleDegrees = if (deployed) 90.0 else 0.0
+    ))
+    fun withIntakeRollers(speedRps: Double) = copy(intake = intake.copy(targetRollerVelocityRps = speedRps))
+    fun withFeederSpeed(speedRps: Double) = copy(feeder = feeder.copy(targetVelocityRps = speedRps))
+    fun withFloorSpeed(speedRps: Double) = copy(floor = floor.copy(targetVelocityRps = speedRps))
+    fun withClimberVoltage(volts: Double) = copy(climber = climber.copy(targetVoltage = volts))
+    fun withClimberExtension(meters: Double) = copy(climber = climber.copy(targetExtensionMeters = meters))
+}
 
 /**
  * Extension property to retrieve the Marvin XIX specific superstructure state.

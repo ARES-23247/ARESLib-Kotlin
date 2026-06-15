@@ -23,49 +23,14 @@ object MarvinReducer {
         // Then apply Marvin XIX specific state updates
         val currentMarvin = nextState.superstructure.marvinXIX
         val nextMarvin = when (action) {
-            is SetFlywheelSpeed -> {
-                currentMarvin.copy(
-                    flywheel = currentMarvin.flywheel.copy(targetVelocityRpm = action.rpm)
-                )
-            }
-            is SetCowlAngle -> {
-                currentMarvin.copy(
-                    cowl = currentMarvin.cowl.copy(targetAngleDegrees = action.degrees)
-                )
-            }
-            is SetIntakePivot -> {
-                currentMarvin.copy(
-                    intake = currentMarvin.intake.copy(
-                        isDeployed = action.deployed,
-                        targetAngleDegrees = if (action.deployed) 90.0 else 0.0
-                    )
-                )
-            }
-            is SetIntakeRollers -> {
-                currentMarvin.copy(
-                    intake = currentMarvin.intake.copy(targetRollerVelocityRps = action.speedRps)
-                )
-            }
-            is SetFeederSpeed -> {
-                currentMarvin.copy(
-                    feeder = currentMarvin.feeder.copy(targetVelocityRps = action.speedRps)
-                )
-            }
-            is SetFloorSpeed -> {
-                currentMarvin.copy(
-                    floor = currentMarvin.floor.copy(targetVelocityRps = action.speedRps)
-                )
-            }
-            is SetClimberVoltage -> {
-                currentMarvin.copy(
-                    climber = currentMarvin.climber.copy(targetVoltage = action.volts)
-                )
-            }
-            is SetClimberExtension -> {
-                currentMarvin.copy(
-                    climber = currentMarvin.climber.copy(targetExtensionMeters = action.meters)
-                )
-            }
+            is SetFlywheelSpeed -> currentMarvin.withFlywheelSpeed(action.rpm)
+            is SetCowlAngle -> currentMarvin.withCowlAngle(action.degrees)
+            is SetIntakePivot -> currentMarvin.withIntakePivot(action.deployed)
+            is SetIntakeRollers -> currentMarvin.withIntakeRollers(action.speedRps)
+            is SetFeederSpeed -> currentMarvin.withFeederSpeed(action.speedRps)
+            is SetFloorSpeed -> currentMarvin.withFloorSpeed(action.speedRps)
+            is SetClimberVoltage -> currentMarvin.withClimberVoltage(action.volts)
+            is SetClimberExtension -> currentMarvin.withClimberExtension(action.meters)
             is StartSlamtake -> {
                 currentMarvin.copy(
                     slamtakeActive = true,

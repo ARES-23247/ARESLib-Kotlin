@@ -89,6 +89,12 @@ data class SuperstructureState(
 ) {
     inline fun <reified T> getSubstate(key: String): T? = states[key] as? T
 
+    inline fun <reified T> updateState(key: String, block: T.() -> T): SuperstructureState {
+        val current = (states[key] as? T) ?: error("Substate for key '$key' was not found or has incorrect type")
+        val updated = current.block()
+        return this.copy(states = this.states + (key to updated as Any))
+    }
+
     /** Returns true when the flywheel is within 5% of target RPM */
     val isFlywheelAtSpeed: Boolean
         get() = flywheelActive && flywheelRPM >= flywheelTargetRPM * 0.95
