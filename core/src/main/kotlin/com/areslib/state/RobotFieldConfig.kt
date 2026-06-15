@@ -28,6 +28,11 @@ enum class ObstacleType {
     @SerializedName("ramp") RAMP
 }
 
+data class RobotFieldPoint(
+    val x: Double = 0.0,
+    val y: Double = 0.0
+)
+
 data class RobotFieldObstacle(
     val id: String = "",
     val name: String = "",
@@ -37,7 +42,17 @@ data class RobotFieldObstacle(
     val height: Double = 0.1,
     val isBlocking: Boolean = true,
     val obstacleType: ObstacleType = ObstacleType.BLOCKING,
-    val rampDirection: AxisDirection? = null
+    val rampDirection: AxisDirection? = null,
+    val shape: String = "rectangle", // "rectangle" or "polygon"
+    val points: List<RobotFieldPoint> = emptyList()
+)
+
+data class RobotFieldAprilTag(
+    val id: Int = 0,
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val z: Double = 0.0,
+    val yaw: Double = 0.0 // Yaw rotation in degrees
 )
 
 data class RobotFieldConfig(
@@ -49,7 +64,8 @@ data class RobotFieldConfig(
     val yAxisDirection: AxisDirection = AxisDirection.LEFT,
     val redDriverStation: DriverStationSide = DriverStationSide.SOUTH,
     val blueDriverStation: DriverStationSide = DriverStationSide.NORTH,
-    val obstacles: List<RobotFieldObstacle> = emptyList()
+    val obstacles: List<RobotFieldObstacle> = emptyList(),
+    val apriltags: List<RobotFieldAprilTag> = emptyList()
 ) {
     /**
      * Resolves the starting pose based on the alliance's driver station wall.

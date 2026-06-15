@@ -212,7 +212,23 @@ object DesktopSimLauncher {
         var lastY = 0.0
         var lastHeading = 0.0
         var simLoopCount = 0
-        val visionSimulator = com.areslib.hardware.vision.VisionSimulator()
+        val activeFieldConfig = com.areslib.state.RobotFieldManager.activeConfig
+        val visionTags = if (activeFieldConfig.apriltags.isNotEmpty()) {
+            activeFieldConfig.apriltags.associate { tag ->
+                tag.id to com.areslib.math.Pose3d(
+                    com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
+                    com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                )
+            }
+        } else {
+            mapOf(
+                1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
+                2 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
+                3 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0)),
+                4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
+            )
+        }
+        val visionSimulator = com.areslib.hardware.vision.VisionSimulator(visionTags)
 
         while (true) {
             org.lwjgl.glfw.GLFW.glfwPollEvents()
