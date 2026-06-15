@@ -158,3 +158,122 @@ class ActionDispatchTask(
         return dispatched
     }
 }
+
+/**
+ * Task group that runs a list of tasks sequentially, one after another.
+ */
+class SequentialTaskGroup(private val tasks: List<Task>) : Task {
+    override val name = "Sequential(${tasks.joinToString { it.name }})"
+    private var currentIndex = 0
+    private var currentTaskStartTimeMs = 0L
+    private val pendingActions = mutableListOf<RobotAction>()
+
+    override fun initialize(state: RobotState): List<RobotAction> {
+        currentIndex = 0
+        currentTaskStartTimeMs = 0L
+        pendingActions.clear()
+        if (tasks.isEmpty()) return emptyList()
+        return tasks[0].initialize(state)
+    }
+
+    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        while (currentIndex < tasks.size) {
+            val currentTask = tasks[currentIndex]
+            val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
+            if (currentTask.isCompleted(state, currentTaskElapsed)) {
+                pendingActions.addAll(currentTask.end(state, interrupted = false))
+                currentIndex++
+                currentTaskStartTimeMs = elapsedMs
+                if (currentIndex < tasks.size) {
+                    pendingActions.addAll(tasks[currentIndex].initialize(state))
+                }
+            } else {
+                return false
+            }
+        }
+        return true
+    }
+
+    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
+        val actions = mutableListOf<RobotAction>()
+        if (pendingActions.isNotEmpty()) {
+            actions.addAll(pendingActions)
+            pendingActions.clear()
+        }
+        if (currentIndex < tasks.size) {
+            val currentTask = tasks[currentIndex]
+            val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
+            actions.addAll(currentTask.execute(state, currentTaskElapsed))
+        }
+        return actions
+    }
+
+    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+        val actions = mutableListOf<RobotAction>()
+        if (pendingActions.isNotEmpty()) {
+            actions.addAll(pendingActions)
+            pendingActions.clear()
+        }
+        if (interrupted && currentIndex < tasks.size) {
+            actions.addAll(tasks[currentIndex].end(state, interrupted = true))
+        }
+        return actions
+    }
+}
+
+/**
+ * Task group that runs multiple tasks simultaneously in parallel.
+ */
+class ParallelTaskGroup(private val tasks: List<Task>) : Task {
+    override val name = "Parallel(${tasks.joinToString { it.name }})"
+    private val completedTasks = mutableSetOf<Task>()
+    private val pendingActions = mutableListOf<RobotAction>()
+
+    override fun initialize(state: RobotState): List<RobotAction> {
+        completedTasks.clear()
+        pendingActions.clear()
+        return tasks.flatMap { it.initialize(state) }
+    }
+
+    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        for (task in tasks) {
+            if (!completedTasks.contains(task)) {
+                if (task.isCompleted(state, elapsedMs)) {
+                    completedTasks.add(task)
+                    pendingActions.addAll(task.end(state, interrupted = false))
+                }
+            }
+        }
+        return completedTasks.size == tasks.size
+    }
+
+    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
+        val actions = mutableListOf<RobotAction>()
+        if (pendingActions.isNotEmpty()) {
+            actions.addAll(pendingActions)
+            pendingActions.clear()
+        }
+        for (task in tasks) {
+            if (!completedTasks.contains(task)) {
+                actions.addAll(task.execute(state, elapsedMs))
+            }
+        }
+        return actions
+    }
+
+    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+        val actions = mutableListOf<RobotAction>()
+        if (pendingActions.isNotEmpty()) {
+            actions.addAll(pendingActions)
+            pendingActions.clear()
+        }
+        if (interrupted) {
+            for (task in tasks) {
+                if (!completedTasks.contains(task)) {
+                    actions.addAll(task.end(state, interrupted = true))
+                }
+            }
+        }
+        return actions
+    }
+}

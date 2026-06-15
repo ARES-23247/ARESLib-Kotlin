@@ -84,8 +84,11 @@ data class SuperstructureState(
     val elevatorHeightMeters: Double = 0.0,
     
     // Custom extensible container for season/robot-specific states
-    val custom: Any? = null
+    val custom: Any? = null,
+    val states: Map<String, Any> = emptyMap()
 ) {
+    inline fun <reified T> getSubstate(key: String): T? = states[key] as? T
+
     /** Returns true when the flywheel is within 5% of target RPM */
     val isFlywheelAtSpeed: Boolean
         get() = flywheelActive && flywheelRPM >= flywheelTargetRPM * 0.95
