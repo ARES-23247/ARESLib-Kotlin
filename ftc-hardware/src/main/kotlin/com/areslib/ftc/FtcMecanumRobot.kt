@@ -1,84 +1,34 @@
 package com.areslib.ftc
 
 import com.qualcomm.robotcore.hardware.HardwareMap
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
-import com.qualcomm.hardware.limelightvision.Limelight3A
-import com.areslib.subsystem.AresRobot
-import com.areslib.hardware.ftc.vision.FtcLimelightIO
-import com.areslib.hardware.vision.VisionIO
-import com.areslib.hardware.vision.CompositeVisionIO
-import com.areslib.hardware.vision.VisionIOInputs
-import com.areslib.kinematics.MecanumKinematics
-import com.areslib.math.ChassisSpeeds
-import com.areslib.action.RobotAction
-import com.areslib.telemetry.GamepadState
-import com.areslib.logging.populate
-import com.areslib.math.toFormattedString
-import com.areslib.telemetry.*
-import com.areslib.control.BrownoutGuard
-import com.areslib.control.CurrentBudgetManager
-import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
-import com.qualcomm.robotcore.hardware.AnalogInput
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import com.areslib.ftc.hardware.FtcPerformanceManager
+import com.areslib.ftc.MecanumHardwareIO
+import com.areslib.kinematics.MecanumKinematics
+import com.areslib.kinematics.MecanumWheelSpeeds
+import com.areslib.math.Pose2d
+import com.areslib.math.Rotation2d
+import com.areslib.math.ChassisSpeeds
+import com.areslib.telemetry.logDriveMotor
 
 /**
- * A hardware facade and coordinator for FTC Mecanum Robots.
- *
- * This class abstracts the motor controller interactions, kinematics, odometry sensors (such as the GoBilda Pinpoint),
- * and vision sensors (such as the Limelight 3A). It implements a unified, low-overhead robot state update loop that:
- * - Integrates high-frequency wheel odometry / Pinpoint measurements into the central Redux state store EKF.
- * - Handles retroactive vision measurements from Limelight with latency compensation and Mahalanobis rejection.
- * - Executes stationary "Kidnapped Robot Recovery" to automatically reseed localization in case of severe drift.
- * - Implements battery-compensated motor voltage scaling, brownout protection, and current budget management.
- * - Publishes telemetry automatically to NetworkTables (NT4) and local Driver Station screens.
- *
- * @property hardwareMap The FTC HardwareMap containing motor and sensor references.
- * @property flName HardwareMap name for the Front-Left motor.
- * @property frName HardwareMap name for the Front-Right motor.
- * @property blName HardwareMap name for the Back-Left motor.
- * @property brName HardwareMap name for the Back-Right motor.
- * @property pinpointName Optional HardwareMap name for the GoBilda Pinpoint driver.
- * @property limelightName Optional HardwareMap name for the Limelight 3A vision sensor.
- * @property localTelemetry Optional telemetry object for local Driver Station output.
- * @property flDirection Direction configuration for the Front-Left motor.
- * @property frDirection Direction configuration for the Front-Right motor.
- * @property blDirection Direction configuration for the Back-Left motor.
- * @property brDirection Direction configuration for the Back-Right motor.
+ * Concrete Mecanum Drive robot facade.
+ * Implements wheel kinematics conversions, battery sag motor compensation,
+ * and publishes mecanum-specific motor currents and powers.
  */
 class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
-    val hardwareMap: HardwareMap,
+    hardwareMap: HardwareMap,
     flName: String = "fl",
     frName: String = "fr",
     blName: String = "bl",
     brName: String = "br",
     pinpointName: String? = "pinpoint",
     limelightName: String? = "limelight",
-    private val localTelemetry: Telemetry? = null,
+    localTelemetry: Telemetry? = null,
     flDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
     frDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
     blDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
     brDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
-) : AresRobot() {
-
-    init {
-        FtcPerformanceManager.initialize(hardwareMap)
-        // Intercept and record all dispatched store actions asynchronously
-        store.actionListener = { actionLogger.logAction(it) }
-        com.areslib.telemetry.RobotWebServer.start()
-        com.areslib.telemetry.RobotStatusTracker.isEnabled = false
-        com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
-    }
-
-
-    // Telemetry & Network Tables State Publisher
-    private val nt4 = NT4Telemetry()
-    private val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
-    private val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
-
-    // Asynchronous JSONL recorders for offline deterministic log replay
-    private val inputLogger = com.areslib.logging.InputLogger()
-    private val actionLogger = com.areslib.action.ActionLogger()
+) : FtcBaseRobot(hardwareMap, pinpointName, limelightName, localTelemetry) {
 
     // 1. Physical Hardware IO & Kinematics Controllers
     val mecanumIO = MecanumHardwareIO(
@@ -88,432 +38,62 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         blDirection = blDirection,
         brDirection = brDirection
     )
-    val pinpointIO: PinpointIO? = try {
-        pinpointName?.let { name ->
-            val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, name)
-            PinpointIO(pinpointDriver)
-        }
-    } catch (_: Exception) {
-        null
-    }
-    
-    private val limelightIO: VisionIO? = try {
-        limelightName?.let { namesStr ->
-            val names = namesStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            if (names.size > 1) {
-                val ios = names.map { name ->
-                    val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
-                    FtcLimelightIO(limelightDriver)
-                }
-                CompositeVisionIO(ios)
-            } else if (names.size == 1) {
-                val limelightDriver = hardwareMap.get(Limelight3A::class.java, names[0])
-                FtcLimelightIO(limelightDriver)
-            } else {
-                null
-            }
-        }
-    } catch (_: Exception) {
-        null
-    }
-    private val visionInputs = VisionIOInputs()
-    private var lastLimelightPose: com.areslib.math.Pose2d? = null
-    private var lastLimelightTimeMs = 0L
-    var lastVisionStatus = "OFFLINE"
-    private var consecutiveVisionRejections = 0
-    var isInInit: Boolean = true
-    private var hasInitializedPoseWithVision = false
-    
-    private var lastUpdateTime = 0L
-    private var lastVoltageReadTime = 0L
-    private var cachedBatteryVoltage = 12.0
-    
+
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
 
-    /** Brownout protection guard — auto-scales motor power on voltage sag */
-    val brownoutGuard = BrownoutGuard.ftcDefaults()
-
-    /** Floodgate V2 current sensor — null if no Floodgate is connected */
-    val floodgate: FtcFloodgateCurrentSensor? = try {
-        val analogInput = hardwareMap.get(AnalogInput::class.java, "floodgate")
-        FtcFloodgateCurrentSensor(analogInput)
-    } catch (_: Exception) {
-        null // No Floodgate connected — current protection fallback active
+    init {
+        // Register drive motors with the power manager for current budgeting
+        powerManager.registerMotors(listOf(mecanumIO.flIO, mecanumIO.frIO, mecanumIO.blIO, mecanumIO.brIO))
     }
 
-    /** Software current budget manager — used as a fallback if no Floodgate sensor is found */
-    val currentBudgetManager: CurrentBudgetManager? = if (floodgate == null) {
-        CurrentBudgetManager.ftcDefaults().apply {
-            register(mecanumIO.flIO)
-            register(mecanumIO.frIO)
-            register(mecanumIO.blIO)
-            register(mecanumIO.brIO)
-        }
-    } else {
-        null
+    override fun updateHardwareInputs() {
+        // Update cached inputs for drivetrain motors from bulk read registers
+        mecanumIO.updateInputs()
     }
 
-    /**
-     * Coordinated frame update for Mecanum Drivetrain.
-     *
-     * Pass gamepad states to get automatic input logging for replay.
-     * If omitted, everything else is still logged — gamepads are optional.
-     *
-     * @param gamepad1 Optional driver gamepad state (use `gamepad1.toState()`)
-     * @param gamepad2 Optional operator gamepad state (use `gamepad2.toState()`)
-     */
-    fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
-        if (!com.areslib.telemetry.RobotStatusTracker.isEnabled) {
-            com.areslib.telemetry.RobotWebServer.stop()
-        }
-        com.areslib.telemetry.RobotStatusTracker.isEnabled = true
-        com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Active"
-        // 0. Clear manual bulk caches at the beginning of the frame
-        FtcPerformanceManager.clearBulkCaches()
-
-        try {
-            val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-            val dtSeconds = if (lastUpdateTime == 0L) 0.02 else (timestamp - lastUpdateTime) / 1000.0
-            lastUpdateTime = timestamp
-
-            // 0b. Update cached inputs for drivetrain motors from the bulk read registers
-            mecanumIO.updateInputs()
-
-            // 1. Read pinpoint sensors and update the EKF state store
-            val poseUpdate = pinpointIO?.getPoseUpdate() ?: RobotAction.PoseUpdate(
-                xMeters = 0.0,
-                yMeters = 0.0,
-                headingRadians = 0.0,
-                timestampMs = timestamp
+    override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
+        // Process kinematics using current State targets
+        val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
+        val vx = store.state.drive.xVelocityMetersPerSecond * maxSpeed
+        val vy = store.state.drive.yVelocityMetersPerSecond * maxSpeed
+        val omega = store.state.drive.angularVelocityRadiansPerSecond * maxSpeed
+        
+        // Field-centric vs Robot-centric coordinate transformation
+        val chassisSpeeds = if (store.state.drive.isFieldCentric) {
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                vx, vy, omega,
+                Rotation2d(store.state.drive.poseEstimator.estimatedPose.heading.radians)
             )
-            if (pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100) {
-                safeHardware()
-                throw IllegalStateException("Pinpoint pose update is stale! Age: ${timestamp - poseUpdate.timestampMs}ms (exceeds 100ms threshold)")
-            }
-            store.dispatch(poseUpdate)
-
-            // 2. Update visual AprilTag observations
-            updateVision(timestamp)
-
-            // 3. Process kinematics using current State targets
-            val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
-            val vx = store.state.drive.xVelocityMetersPerSecond * maxSpeed
-            val vy = store.state.drive.yVelocityMetersPerSecond * maxSpeed
-            val omega = store.state.drive.angularVelocityRadiansPerSecond * maxSpeed
-            
-            // Field-centric vs Robot-centric coordinate transformation
-            val chassisSpeeds = if (store.state.drive.isFieldCentric) {
-                ChassisSpeeds.fromFieldRelativeSpeeds(
-                    vx, vy, omega,
-                    com.areslib.math.Rotation2d(store.state.drive.poseEstimator.estimatedPose.heading.radians)
-                )
-            } else {
-                ChassisSpeeds(vx, vy, omega)
-            }
-            val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
-
-            // 4. Fetch voltage sensor for sag compensation (rate-limited to 10Hz/100ms to eliminate blocking JNI overhead)
-            if (timestamp - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
-                lastVoltageReadTime = timestamp
-                val voltageSensors = hardwareMap.getAll(com.qualcomm.robotcore.hardware.VoltageSensor::class.java)
-                val newVoltage = if (voltageSensors.isNotEmpty()) {
-                    voltageSensors[0].voltage
-                } else {
-                    12.0
-                }
-                
-                // Apply a low-pass filter (time constant ~100ms) to prevent positive feedback sag oscillations during rapid acceleration
-                val alpha = dtSeconds / (0.1 + dtSeconds)
-                cachedBatteryVoltage = (cachedBatteryVoltage * (1.0 - alpha)) + (newVoltage * alpha)
-            }
-            val batteryVoltage = cachedBatteryVoltage
-
-            // 4b. Brownout protection — graduated power scaling on voltage sag
-            brownoutGuard.update(batteryVoltage)
-            var effectiveScale = brownoutGuard.powerScale
-
-            // 4c. Floodgate current protection — throttle on overload (or software fallback)
-            floodgate?.let { fg ->
-                fg.update()
-                if (fg.isOverloadWarning()) {
-                    // Graduated: scale inversely with fuse thermal load
-                    val fuseScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
-                    effectiveScale = minOf(effectiveScale, fuseScale)
-                }
-            } ?: currentBudgetManager?.let { cbm ->
-                cbm.update(batteryVoltage, enableCalibration = true)
-                effectiveScale = minOf(effectiveScale, cbm.powerScale)
-            }
-
-            // Apply battery-compensated voltage vectors with power scaling exactly once
-            mecanumIO.apply(
-                speeds = wheelSpeeds.normalize(mecanumIO.maxWheelSpeedMetersPerSecond),
-                batteryVolts = batteryVoltage,
-                dtSeconds = dtSeconds,
-                powerScale = effectiveScale
-            )
-            // Update local estimation tracking power scale
-            mecanumIO.applyPowerScale(effectiveScale)
-
-            // 5. Publish EVERYTHING to NT4 + CSV + local telemetry
-            publishTelemetry(timestamp, dtSeconds, batteryVoltage, gamepad1, gamepad2)
-
-            // 6. Populate and log the raw inputs frame for deterministic simulator replay
-            val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent().apply {
-                populate(
-                    timestamp,
-                    poseUpdate,
-                    store.state.drive,
-                    limelightIO != null,
-                    visionInputs.measurements
-                )
-            }
-            inputLogger.logFrame(inputsFrame)
-        } catch (e: Throwable) {
-            System.err.println("FtcMecanumRobot: Exception in update loop: ${e.message}")
-            e.printStackTrace()
-            // Stop all motors safely
-            try {
-                mecanumIO.apply(
-                    speeds = com.areslib.kinematics.MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0),
-                    batteryVolts = cachedBatteryVoltage,
-                    dtSeconds = 0.02,
-                    powerScale = 0.0
-                )
-            } catch (ex: Throwable) {
-                System.err.println("FtcMecanumRobot: Failed to apply safety stop: ${ex.message}")
-            }
-            try {
-                dataLoggingTelemetry.putString("Robot/Error", "FATAL CRASH: ${e.message}")
-            } catch (_: Throwable) {}
-        }
-    }
-
-    private fun updateVision(timestamp: Long) {
-        val io = limelightIO ?: run {
-            com.areslib.telemetry.RobotStatusTracker.visionConnected = false
-            com.areslib.telemetry.RobotStatusTracker.visionStatus = "OFFLINE"
-            return
-        }
-
-        io.updateInputs(visionInputs)
-        if (visionInputs.measurements.isEmpty()) {
-            lastVisionStatus = "NO TARGET"
-            com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
-            com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
-            return
-        }
-
-        val measurement = visionInputs.measurements[0]
-        lastLimelightPose = measurement.targetPose.toPose2d()
-        lastLimelightTimeMs = timestamp
-
-        // Diagnose why EKF might reject the measurement
-        val robotPose = store.state.drive.poseEstimator.estimatedPose
-        val robotHeading = robotPose.heading.radians
-        val tagPose3d = measurement.targetPose
-        val tagPose2d = tagPose3d.toPose2d()
-        val dx = tagPose2d.x - robotPose.x
-        val dy = tagPose2d.y - robotPose.y
-        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-        val tagYaw = tagPose3d.rotation.z
-        val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeading)
-
-        lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
-
-        // 1. One-time absolute snap during initialization to bypass outlier lockout
-        if (isInInit) {
-            if (!hasInitializedPoseWithVision && measurement.ambiguity < 0.05) {
-                val snapPose = measurement.targetPose.toPose2d()
-                pinpointIO?.initialize(snapPose, resetHardware = false)
-                hasInitializedPoseWithVision = true
-                lastVisionStatus = "INIT_ALIGN_SNAP"
-                store.dispatch(RobotAction.PoseUpdate(
-                    xMeters = snapPose.x,
-                    yMeters = snapPose.y,
-                    headingRadians = snapPose.heading.radians,
-                    timestampMs = timestamp,
-                    isReset = true
-                ))
-            }
         } else {
-            // Kidnapped Robot Recovery (Active Play)
-            val isRejected = lastVisionStatus.startsWith("REJ_")
-            val isHighConfidence = measurement.ambiguity < 0.05
-            val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
-                               store.state.drive.yVelocityMetersPerSecond == 0.0 &&
-                               store.state.drive.angularVelocityRadiansPerSecond == 0.0
-
-            if (isRejected && isHighConfidence && isStationary) {
-                consecutiveVisionRejections++
-                if (consecutiveVisionRejections >= 10) {
-                    val snapPose = measurement.targetPose.toPose2d()
-                    pinpointIO?.initialize(snapPose, resetHardware = false)
-                    consecutiveVisionRejections = 0
-                    lastVisionStatus = "RESEED_SNAP"
-                    store.dispatch(RobotAction.PoseUpdate(
-                        xMeters = snapPose.x,
-                        yMeters = snapPose.y,
-                        headingRadians = snapPose.heading.radians,
-                        timestampMs = timestamp,
-                        isReset = true
-                    ))
-                }
-            } else {
-                consecutiveVisionRejections = 0
-            }
+            ChassisSpeeds(vx, vy, omega)
         }
+        val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
 
-        store.dispatch(RobotAction.VisionMeasurementsReceived(
-            visionInputs.measurements,
-            timestamp,
-            null
-        ))
-
-        com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
-        com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
+        // Apply battery-compensated voltage vectors with power scaling exactly once
+        mecanumIO.apply(
+            speeds = wheelSpeeds.normalize(mecanumIO.maxWheelSpeedMetersPerSecond),
+            batteryVolts = batteryVoltage,
+            dtSeconds = dtSeconds,
+            powerScale = powerScale
+        )
+        // Update local estimation tracking power scale
+        mecanumIO.applyPowerScale(powerScale)
     }
 
-    private fun checkVisionOutlierRejection(
-        measurement: com.areslib.state.VisionMeasurement,
-        distance: Double,
-        headingDiff: Double
-    ): String {
-        val tagPose3d = measurement.targetPose
-        val tagPose2d = tagPose3d.toPose2d()
-        val filterConfig = store.state.vision.filterConfig
-
-        return when {
-            measurement.ambiguity > filterConfig.maxAmbiguity -> {
-                String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, filterConfig.maxAmbiguity)
-            }
-            tagPose3d.x < filterConfig.minFieldX || tagPose3d.x > filterConfig.maxFieldX ||
-            tagPose3d.y < filterConfig.minFieldY || tagPose3d.y > filterConfig.maxFieldY ||
-            tagPose3d.z < filterConfig.minFieldZ || tagPose3d.z > filterConfig.maxFieldZ -> {
-                String.format("REJ_BOUNDS (Z: %.2f)", tagPose3d.z)
-            }
-            distance > filterConfig.maxDistanceMeters -> {
-                String.format("REJ_DIST (%.2fm > %.2fm)", distance, filterConfig.maxDistanceMeters)
-            }
-            kotlin.math.abs(headingDiff) > filterConfig.maxRotationDeviationRad -> {
-                String.format("REJ_YAW (%.1f° > %.1f°)", Math.toDegrees(headingDiff), Math.toDegrees(filterConfig.maxRotationDeviationRad))
-            }
-            else -> {
-                // Run a dry run of the EKF Mahalanobis rejection to see if that fails
-                val currentEstimator = store.state.drive.poseEstimator
-                if (currentEstimator.history.isNotEmpty()) {
-                    val closestIndex = currentEstimator.history.indices.reversed().firstOrNull {
-                        currentEstimator.history[it].timestampMs <= measurement.timestampMs
-                    } ?: -1
-                    if (closestIndex != -1) {
-                        val baseEntry = currentEstimator.history[closestIndex]
-                        val stdDevs = com.areslib.math.Vector3(0.05, 0.05, 0.1)
-                        val numTags = visionInputs.measurements.size
-                        val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
-                        val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
-                        
-                        val scaledStdDevsX = stdDevs.x * (multiTagFactor * distFactor)
-                        val scaledStdDevsY = stdDevs.y * (multiTagFactor * distFactor)
-                        val scaledStdDevsZ = stdDevs.z * (multiTagFactor * distFactor)
-                        
-                        val rXX = scaledStdDevsX * scaledStdDevsX
-                        val rYY = scaledStdDevsY * scaledStdDevsY
-                        val rZZ = scaledStdDevsZ * scaledStdDevsZ
-                        
-                        val sXX = baseEntry.covariance.m00 + rXX
-                        val sYY = baseEntry.covariance.m11 + rYY
-                        val sZZ = baseEntry.covariance.m22 + rZZ
-                        
-                        val yX = tagPose2d.x - baseEntry.pose.x
-                        val yY = tagPose2d.y - baseEntry.pose.y
-                        val yZ = com.areslib.math.InputMath.wrapAngle(tagPose2d.heading.radians - baseEntry.pose.heading.radians)
-                        
-                        val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
-                        if (dMSquared > 12.0) {
-                            String.format("REJ_MAHALANOBIS (%.2f > 12.0)", dMSquared)
-                        } else {
-                            "ACCEPTED"
-                        }
-                    } else {
-                        "ACCEPTED (NO_HIST)"
-                    }
-                } else {
-                    "ACCEPTED"
-                }
-            }
-        }
-    }
-
-    private fun publishTelemetry(
-        timestamp: Long,
-        dtSeconds: Double,
-        batteryVoltage: Double,
-        gamepad1: com.areslib.telemetry.GamepadState?,
-        gamepad2: com.areslib.telemetry.GamepadState?
-    ) {
-        // 5. Publish EVERYTHING to NT4 + CSV automatically
-        // Flat telemetry keys for cloud ingestion/diagnostic sync
-        dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
-        dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
-        dataLoggingTelemetry.putNumber("motor_lf_current", mecanumIO.flIO.currentAmps)
-        dataLoggingTelemetry.putNumber("motor_rf_current", mecanumIO.frIO.currentAmps)
-        dataLoggingTelemetry.putNumber("motor_lr_current", mecanumIO.blIO.currentAmps)
-        dataLoggingTelemetry.putNumber("motor_rr_current", mecanumIO.brIO.currentAmps)
-        
-        val estPose = store.state.drive.poseEstimator.estimatedPose
-        dataLoggingTelemetry.logPose2d("pinpoint", estPose, useUnderscores = true, lowercase = true)
-        
-        val rawOdomX = store.state.drive.odometryX
-        val rawOdomY = store.state.drive.odometryY
-        dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
-        dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
-
-        publisher.publish(store.state, gamepad1, gamepad2)
+    override fun publishRobotTelemetry(timestamp: Long) {
+        telemetryManager.dataLoggingTelemetry.putNumber("motor_lf_current", mecanumIO.flIO.currentAmps)
+        telemetryManager.dataLoggingTelemetry.putNumber("motor_rf_current", mecanumIO.frIO.currentAmps)
+        telemetryManager.dataLoggingTelemetry.putNumber("motor_lr_current", mecanumIO.blIO.currentAmps)
+        telemetryManager.dataLoggingTelemetry.putNumber("motor_rr_current", mecanumIO.brIO.currentAmps)
 
         // Publish physical motor telemetry (power, encoder positions, velocities, currents)
-        dataLoggingTelemetry.logDriveMotor("FL", mecanumIO.flIO)
-        dataLoggingTelemetry.logDriveMotor("FR", mecanumIO.frIO)
-        dataLoggingTelemetry.logDriveMotor("BL", mecanumIO.blIO)
-        dataLoggingTelemetry.logDriveMotor("BR", mecanumIO.brIO)
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("FL", mecanumIO.flIO)
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("FR", mecanumIO.frIO)
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("BL", mecanumIO.blIO)
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("BR", mecanumIO.brIO)
 
-        // Publish Limelight / Vision pipeline telemetry
-        dataLoggingTelemetry.putString("Vision/Status", lastVisionStatus)
-        lastLimelightPose?.let { pose ->
-            dataLoggingTelemetry.logPoseArray2d("AdvantageScope/VisionPose", pose)
-            dataLoggingTelemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
-        }
-        if (visionInputs.measurements.isNotEmpty()) {
-            val primaryMeasurement = visionInputs.measurements[0]
-            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
-            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
-        } else {
-            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", -1.0)
-            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
-        }
-
-        // Publish all registered custom hardware devices automatically
-        com.areslib.hardware.HardwareRegistry.publishAll(dataLoggingTelemetry)
-
-        // 6. Driver Station local telemetry (human-readable summary)
+        // Local Driver Station telemetry specific prints
         localTelemetry?.let { t ->
-            // A. Pinpoint vs EKF Pose
-            t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
-            val pinpointPose = com.areslib.math.Pose2d(
-                store.state.drive.odometryX,
-                store.state.drive.odometryY,
-                com.areslib.math.Rotation2d(store.state.drive.odometryHeading)
-            )
-            t.addData("Raw Pinpoint (X, Y, Deg)", pinpointPose.toFormattedString())
-
-            // Limelight Pose
-            val llStr = lastLimelightPose?.let { pose ->
-                val ageSec = (timestamp - lastLimelightTimeMs) / 1000.0
-                "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
-            } ?: "NO TARGET"
-            t.addData("Limelight Pose (X, Y, Deg)", llStr)
-            t.addData("Vision Status", lastVisionStatus)
-
-            // B. Motor Power values
             t.addData("Motor Powers", String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
                 mecanumIO.flIO.power * mecanumIO.flIO.powerScale,
                 mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
@@ -521,54 +101,23 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 mecanumIO.brIO.power * mecanumIO.brIO.powerScale
             ))
 
-            // C. Current Draw
-            val currentStr = if (floodgate != null) {
-                String.format("%.1f A (Physical)", floodgate.current)
+            val currentStr = if (powerManager.floodgate != null) {
+                String.format("%.1f A (Physical)", powerManager.floodgate.current)
             } else {
-                val estTotal = mecanumIO.flIO.currentAmps + mecanumIO.frIO.currentAmps + mecanumIO.blIO.currentAmps + mecanumIO.brIO.currentAmps
-                String.format("%.1f A (Estimated)", estTotal)
+                String.format("%.1f A (Estimated)", powerManager.currentAmps)
             }
             t.addData("Current Draw", currentStr)
-
-            // D. Battery and Timing Metrics
-            t.addData("System Health", String.format("Battery: %.2fV | Loop: %.1fms", 
-                batteryVoltage, 
-                dtSeconds * 1000.0
-            ))
-
-            // E. Hardware Status
-            t.addData("Sensors", String.format("Pinpoint: %s | Limelight: %s",
-                if (pinpointIO != null) "ONLINE" else "OFFLINE",
-                if (limelightIO != null) "ONLINE" else "OFFLINE"
-            ))
-
-            t.update()
         }
     }
 
-    fun safeHardware() {
+    override fun safeHardware() {
         try {
             mecanumIO.apply(
-                speeds = com.areslib.kinematics.MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0),
-                batteryVolts = cachedBatteryVoltage,
+                speeds = MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0),
+                batteryVolts = 12.0,
                 dtSeconds = 0.02,
                 powerScale = 0.0
             )
         } catch (_: Throwable) {}
     }
-
-    /**
-     * Gracefully cleans up background logging threads and closes network telemetry.
-     */
-    fun close() {
-        com.areslib.telemetry.RobotStatusTracker.isEnabled = false
-        com.areslib.telemetry.RobotWebServer.stop()
-        dataLoggingTelemetry.close()
-        inputLogger.stop()
-        actionLogger.stop()
-        pinpointIO?.close()
-        com.areslib.hardware.HardwareRegistry.closeAll()
-        com.areslib.ftc.hardware.FtcMotor.unregisterAll()
-    }
 }
-

@@ -1,0 +1,110 @@
+package com.areslib.ftc.power
+
+import com.qualcomm.robotcore.hardware.HardwareMap
+import com.qualcomm.robotcore.hardware.VoltageSensor
+import com.qualcomm.robotcore.hardware.AnalogInput
+import com.areslib.control.BrownoutGuard
+import com.areslib.control.CurrentBudgetManager
+import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
+import com.areslib.hardware.MotorIO
+
+/**
+ * Manages the robot's electrical power budgeting.
+ * Filters battery voltage to compensate for sag, updates brownout protection,
+ * and throttles motors dynamically using either a physical current sensor (Floodgate)
+ * or a software current budget estimator.
+ */
+class FtcPowerManager(private val hardwareMap: HardwareMap) {
+    private var lastVoltageReadTime = 0L
+    private var cachedBatteryVoltage = 12.0
+
+    /** Brownout protection guard — auto-scales motor power on voltage sag */
+    val brownoutGuard = BrownoutGuard.ftcDefaults()
+
+    /** Floodgate V2 current sensor — null if no Floodgate is connected */
+    val floodgate: FtcFloodgateCurrentSensor? = try {
+        val analogInput = hardwareMap.get(AnalogInput::class.java, "floodgate")
+        FtcFloodgateCurrentSensor(analogInput)
+    } catch (_: Throwable) {
+        null
+    }
+
+    /** Software current budget manager — used as a fallback if no Floodgate sensor is found */
+    var currentBudgetManager: CurrentBudgetManager? = null
+
+    var batteryVoltage = 12.0
+        private set
+    var powerScale = 1.0
+        private set
+
+    private val registeredMotors = mutableListOf<MotorIO>()
+
+    /**
+     * Total current draw of the robot in amperes.
+     * Returns the physical sensor reading if available, or the sum of registered motor current estimations.
+     */
+    val currentAmps: Double
+        get() = floodgate?.current ?: registeredMotors.sumOf { it.currentAmps }
+
+    /**
+     * Registers active drive motors with the power manager.
+     * Configures the software CurrentBudgetManager if no physical Floodgate sensor is present.
+     */
+    fun registerMotors(motors: List<MotorIO>) {
+        if (floodgate == null) {
+            val cbm = CurrentBudgetManager.ftcDefaults().apply {
+                for (m in motors) {
+                    register(m)
+                }
+            }
+            this.currentBudgetManager = cbm
+        }
+        registeredMotors.clear()
+        registeredMotors.addAll(motors)
+    }
+
+    /**
+     * Updates the battery voltage reading (rate-limited to 10Hz) and recalculates power scaling.
+     *
+     * @param dtSeconds Loop cycle delta time in seconds.
+     * @param timestamp System time in milliseconds.
+     * @return The calculated power scale factor (0.0 to 1.0).
+     */
+    fun update(dtSeconds: Double, timestamp: Long): Double {
+        // Fetch voltage sensor for sag compensation (rate-limited to 10Hz/100ms to eliminate blocking JNI overhead)
+        if (timestamp - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
+            lastVoltageReadTime = timestamp
+            val voltageSensors = hardwareMap.getAll(VoltageSensor::class.java)
+            val newVoltage = if (voltageSensors.isNotEmpty()) {
+                voltageSensors[0].voltage
+            } else {
+                12.0
+            }
+            
+            // Apply a low-pass filter (time constant ~100ms) to prevent positive feedback sag oscillations during rapid acceleration
+            val alpha = dtSeconds / (0.1 + dtSeconds)
+            cachedBatteryVoltage = (cachedBatteryVoltage * (1.0 - alpha)) + (newVoltage * alpha)
+        }
+        batteryVoltage = cachedBatteryVoltage
+
+        // 1. Brownout protection — graduated power scaling on voltage sag
+        brownoutGuard.update(batteryVoltage)
+        var scale = brownoutGuard.powerScale
+
+        // 2. Floodgate current protection — throttle on overload (or software fallback)
+        floodgate?.let { fg ->
+            fg.update()
+            if (fg.isOverloadWarning()) {
+                // Graduated: scale inversely with fuse thermal load
+                val fuseScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
+                scale = minOf(scale, fuseScale)
+            }
+        } ?: currentBudgetManager?.let { cbm ->
+            cbm.update(batteryVoltage, enableCalibration = true)
+            scale = minOf(scale, cbm.powerScale)
+        }
+
+        powerScale = scale
+        return scale
+    }
+}
