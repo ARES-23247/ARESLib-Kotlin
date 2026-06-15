@@ -14,9 +14,6 @@ import com.areslib.action.RobotAction
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.logging.populate
-import com.areslib.telemetry.logPose2d
-import com.areslib.telemetry.logPoseArray2d
-import com.areslib.math.toFormattedString
 
 /**
  * Abstract base class for all FTC robots.
@@ -127,7 +124,17 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             updateSubsystems(dtSeconds, batteryVoltage, effectiveScale)
 
             // 5. Publish logging and diagnostics
-            publishTelemetry(timestamp, dtSeconds, batteryVoltage, gamepad1, gamepad2)
+            telemetryManager.publish(
+                state = store.state,
+                gamepad1 = gamepad1,
+                gamepad2 = gamepad2,
+                dtSeconds = dtSeconds,
+                batteryVoltage = batteryVoltage,
+                visionTracker = visionTracker,
+                timestamp = timestamp,
+                localTelemetry = localTelemetry,
+                onSubclassPublish = { publishRobotTelemetry(timestamp) }
+            )
 
             // 6. Record frame inputs for deterministic replay
             val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent().apply {
@@ -170,67 +177,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * Safe fallback state: immediately sets all actuator powers to zero.
      */
     abstract fun safeHardware()
-
-    private fun publishTelemetry(
-        timestamp: Long,
-        dtSeconds: Double,
-        batteryVoltage: Double,
-        gamepad1: com.areslib.telemetry.GamepadState?,
-        gamepad2: com.areslib.telemetry.GamepadState?
-    ) {
-        telemetryManager.dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
-        telemetryManager.dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
-
-        val estPose = store.state.drive.poseEstimator.estimatedPose
-        telemetryManager.dataLoggingTelemetry.logPose2d("pinpoint", estPose, useUnderscores = true, lowercase = true)
-        
-        val rawOdomX = store.state.drive.odometryX
-        val rawOdomY = store.state.drive.odometryY
-        telemetryManager.dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
-        telemetryManager.dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
-
-        // Subclass-specific telemetry (motor powers, currents, custom subsystems)
-        publishRobotTelemetry(timestamp)
-
-        telemetryManager.publish(store.state, gamepad1, gamepad2)
-
-        // Vision telemetry
-        telemetryManager.dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
-        visionTracker.lastLimelightPose?.let { pose ->
-            telemetryManager.dataLoggingTelemetry.logPoseArray2d("AdvantageScope/VisionPose", pose)
-            telemetryManager.dataLoggingTelemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
-        }
-        if (visionTracker.visionInputs.measurements.isNotEmpty()) {
-            val primaryMeasurement = visionTracker.visionInputs.measurements[0]
-            telemetryManager.dataLoggingTelemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
-            telemetryManager.dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
-        } else {
-            telemetryManager.dataLoggingTelemetry.putNumber("Vision/Primary_TagId", -1.0)
-            telemetryManager.dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
-        }
-
-        // Global custom hardware telemetry
-        com.areslib.hardware.HardwareRegistry.publishAll(telemetryManager.dataLoggingTelemetry)
-
-        // Human-readable local driver station console printouts
-        localTelemetry?.let { t ->
-            t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
-            val pinpointPose = com.areslib.math.Pose2d(
-                store.state.drive.odometryX,
-                store.state.drive.odometryY,
-                com.areslib.math.Rotation2d(store.state.drive.odometryHeading)
-            )
-            t.addData("Raw Pinpoint (X, Y, Deg)", pinpointPose.toFormattedString())
-
-            val llStr = visionTracker.lastLimelightPose?.let { pose ->
-                val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
-                "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
-            } ?: "NO TARGET"
-            t.addData("Limelight Pose (X, Y, Deg)", llStr)
-            t.addData("Vision Status", visionTracker.lastVisionStatus)
-            t.update()
-        }
-    }
 
     /**
      * Gracefully stops logging threads, closes network connections,
