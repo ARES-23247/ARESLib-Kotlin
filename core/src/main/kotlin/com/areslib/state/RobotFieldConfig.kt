@@ -72,6 +72,14 @@ data class RobotFieldConfig(
      * Starts adjacent to the wall facing the field center.
      */
     fun getInitialPose(alliance: Alliance): com.areslib.math.Pose2d {
+        if (fieldType == FieldType.FRC) {
+            return if (alliance == Alliance.BLUE) {
+                com.areslib.math.Pose2d(0.5, 4.1055, com.areslib.math.Rotation2d(0.0))
+            } else {
+                com.areslib.math.Pose2d(16.041, 4.1055, com.areslib.math.Rotation2d(Math.PI))
+            }
+        }
+
         val side = if (alliance == Alliance.BLUE) blueDriverStation else redDriverStation
         
         // Calculate coordinate based on which side is the driver wall
@@ -101,6 +109,14 @@ data class RobotFieldConfig(
      * Maps raw driver joystick commands to absolute EKF coordinates based on the configured driver station side.
      */
     fun mapJoystickIntents(joystickForward: Double, joystickLeft: Double, alliance: Alliance): Pair<Double, Double> {
+        if (fieldType == FieldType.FRC) {
+            return if (alliance == Alliance.BLUE) {
+                Pair(joystickForward, joystickLeft)
+            } else {
+                Pair(-joystickForward, -joystickLeft)
+            }
+        }
+
         val side = if (alliance == Alliance.BLUE) blueDriverStation else redDriverStation
         
         var vx = 0.0

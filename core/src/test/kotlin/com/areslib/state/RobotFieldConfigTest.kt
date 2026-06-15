@@ -152,4 +152,40 @@ class RobotFieldConfigTest {
         assertFalse(costmap.isOccupied(0.5, 0.5))
         assertFalse(costmap.isOccupied(-0.5, -0.5))
     }
+
+    @Test
+    fun testFrcInitialPoseCalculation() {
+        val config = RobotFieldConfig(
+            fieldType = FieldType.FRC
+        )
+
+        // Blue starts at (0.5, 4.1055) facing 0.0
+        val bluePose = config.getInitialPose(Alliance.BLUE)
+        assertEquals(0.5, bluePose.x, 0.001)
+        assertEquals(4.1055, bluePose.y, 0.001)
+        assertEquals(0.0, bluePose.heading.radians, 0.001)
+
+        // Red starts at (16.041, 4.1055) facing PI (wrapped to -PI)
+        val redPose = config.getInitialPose(Alliance.RED)
+        assertEquals(16.041, redPose.x, 0.001)
+        assertEquals(4.1055, redPose.y, 0.001)
+        assertEquals(-Math.PI, redPose.heading.radians, 0.001)
+    }
+
+    @Test
+    fun testFrcJoystickMapping() {
+        val config = RobotFieldConfig(
+            fieldType = FieldType.FRC
+        )
+
+        // Blue alliance: vx = forward, vy = left
+        val blueMapping = config.mapJoystickIntents(1.0, 0.5, Alliance.BLUE)
+        assertEquals(1.0, blueMapping.first, 0.001)
+        assertEquals(0.5, blueMapping.second, 0.001)
+
+        // Red alliance: vx = -forward, vy = -left
+        val redMapping = config.mapJoystickIntents(1.0, 0.5, Alliance.RED)
+        assertEquals(-1.0, redMapping.first, 0.001)
+        assertEquals(-0.5, redMapping.second, 0.001)
+    }
 }
