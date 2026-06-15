@@ -52,8 +52,8 @@ class VisionOutlierFilterTest {
 
     @Test
     fun testHeadingRejection() {
-        // Heading deviation is 30 degrees (exceeds max of 15 degrees)
-        val deviationRad = Math.toRadians(30.0)
+        // Heading deviation is 35 degrees (exceeds max of 30 degrees)
+        val deviationRad = Math.toRadians(35.0)
         val measurement = VisionMeasurement(
             timestampMs = 100L,
             targetPose = Pose3d(Translation3d(2.0, 0.0, 0.0), Rotation3d(0.0, 0.0, deviationRad)),

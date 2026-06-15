@@ -44,7 +44,8 @@ interface RobotAction {
         val rollDegrees: Double = 0.0,
         val xAccelerationG: Double = 0.0,
         val yAccelerationG: Double = 0.0,
-        val zAccelerationG: Double = 0.0
+        val zAccelerationG: Double = 0.0,
+        val isReset: Boolean = false
     ) : RobotAction
 
     data class SetAlliance(

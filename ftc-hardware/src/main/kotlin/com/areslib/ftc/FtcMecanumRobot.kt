@@ -275,6 +275,13 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                         pinpointIO?.initialize(snapPose, resetHardware = false)
                         hasInitializedPoseWithVision = true
                         lastVisionStatus = "INIT_ALIGN_SNAP"
+                        store.dispatch(RobotAction.PoseUpdate(
+                            xMeters = snapPose.x,
+                            yMeters = snapPose.y,
+                            headingRadians = snapPose.heading.radians,
+                            timestampMs = timestamp,
+                            isReset = true
+                        ))
                     }
                 } else {
                     // Kidnapped Robot Recovery (Active Play):
@@ -297,6 +304,13 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                             pinpointIO?.initialize(snapPose, resetHardware = false)
                             consecutiveVisionRejections = 0
                             lastVisionStatus = "RESEED_SNAP"
+                            store.dispatch(RobotAction.PoseUpdate(
+                                xMeters = snapPose.x,
+                                yMeters = snapPose.y,
+                                headingRadians = snapPose.heading.radians,
+                                timestampMs = timestamp,
+                                isReset = true
+                            ))
                         }
                     } else {
                         consecutiveVisionRejections = 0

@@ -157,7 +157,8 @@ class SwerveDriveFacade(private val store: Store) {
             xMeters = path.points.firstOrNull()?.pose?.x ?: pose.x,
             yMeters = path.points.firstOrNull()?.pose?.y ?: pose.y,
             headingRadians = path.points.firstOrNull()?.pose?.heading?.radians ?: pose.heading.radians,
-            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+            isReset = true
         ))
     }
 }

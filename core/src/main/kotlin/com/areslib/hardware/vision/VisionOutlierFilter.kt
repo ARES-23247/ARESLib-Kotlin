@@ -12,7 +12,7 @@ import kotlin.math.sqrt
 data class VisionFilterConfig(
     val maxDistanceMeters: Double = 6.0,
     val maxAmbiguity: Double = 0.2,
-    val maxRotationDeviationRad: Double = Math.toRadians(15.0),
+    val maxRotationDeviationRad: Double = Math.toRadians(30.0),
     val minFieldX: Double = -2.5,
     val maxFieldX: Double = 2.5,
     val minFieldY: Double = -2.5,

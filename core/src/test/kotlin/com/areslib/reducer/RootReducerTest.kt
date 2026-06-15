@@ -130,4 +130,39 @@ class RootReducerTest {
         assertEquals(0.1, poseState.drive.yAccelerationG)
         assertEquals(1.05, poseState.drive.zAccelerationG)
     }
+
+    @Test
+    fun `test pose update with reset completely overwrites EKF pose and clears history`() {
+        var state = RobotState()
+        
+        // 1. Establish some history and non-zero pose
+        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 100L))
+        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 200L))
+        
+        // EKF pose is now around 2.0
+        val poseBefore = state.drive.poseEstimator.estimatedPose
+        assertEquals(2.0, poseBefore.x, 0.1)
+        assertTrue(state.drive.poseEstimator.history.size >= 2)
+        
+        // 2. Dispatch a PoseUpdate with isReset = true
+        val resetAction = RobotAction.PoseUpdate(
+            xMeters = 5.0,
+            yMeters = 5.0,
+            headingRadians = 1.0,
+            timestampMs = 300L,
+            isReset = true
+        )
+        
+        val stateAfterReset = rootReducer(state, resetAction)
+        
+        val poseAfter = stateAfterReset.drive.poseEstimator.estimatedPose
+        assertEquals(5.0, poseAfter.x, 1e-6)
+        assertEquals(5.0, poseAfter.y, 1e-6)
+        assertEquals(1.0, poseAfter.heading.radians, 1e-6)
+        
+        // History should only contain the new state
+        assertEquals(1, stateAfterReset.drive.poseEstimator.history.size)
+        assertEquals(300L, stateAfterReset.drive.poseEstimator.history[0].timestampMs)
+        assertEquals(5.0, stateAfterReset.drive.poseEstimator.history[0].pose.x, 1e-6)
+    }
 }

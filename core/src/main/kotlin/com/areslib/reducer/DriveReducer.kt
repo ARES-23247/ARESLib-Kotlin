@@ -39,19 +39,33 @@ object DriveReducer {
                 )
             }
             is RobotAction.PoseUpdate -> {
-                val deltaX = action.xMeters - state.odometryX
-                val deltaY = action.yMeters - state.odometryY
-                val deltaHeading = com.areslib.math.InputMath.wrapAngle(action.headingRadians - state.odometryHeading)
+                val updatedEstimator = if (action.isReset) {
+                    val newPose = com.areslib.math.Pose2d(action.xMeters, action.yMeters, com.areslib.math.Rotation2d(action.headingRadians))
+                    val newHistory = com.areslib.math.HistoryBuffer(50)
+                    newHistory.addEntry(action.timestampMs, newPose, com.areslib.math.Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01))
+                    
+                    state.poseEstimator.copy(
+                        estimatedPose = newPose,
+                        covariance = com.areslib.math.Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01),
+                        history = newHistory,
+                        isBeached = false,
+                        lastUnbeachedTimeMs = action.timestampMs
+                    )
+                } else {
+                    val deltaX = action.xMeters - state.odometryX
+                    val deltaY = action.yMeters - state.odometryY
+                    val deltaHeading = com.areslib.math.InputMath.wrapAngle(action.headingRadians - state.odometryHeading)
 
-                val deltaTrans = Translation2d(deltaX, deltaY)
-                val updatedEstimator = PoseEstimator.addOdometryObservation(
-                    state = state.poseEstimator,
-                    timestampMs = action.timestampMs,
-                    deltaTranslation = deltaTrans,
-                    deltaHeading = Rotation2d(deltaHeading),
-                    pitchDegrees = action.pitchDegrees,
-                    rollDegrees = action.rollDegrees
-                )
+                    val deltaTrans = Translation2d(deltaX, deltaY)
+                    PoseEstimator.addOdometryObservation(
+                        state = state.poseEstimator,
+                        timestampMs = action.timestampMs,
+                        deltaTranslation = deltaTrans,
+                        deltaHeading = Rotation2d(deltaHeading),
+                        pitchDegrees = action.pitchDegrees,
+                        rollDegrees = action.rollDegrees
+                    )
+                }
 
                 state.copy(
                     odometryX = action.xMeters,
