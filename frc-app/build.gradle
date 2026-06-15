@@ -5,8 +5,12 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2026.2.1"
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
+
+kotlin {
+    jvmToolchain(21)
+}
 
 def ROBOT_MAIN_CLASS = "com.areslib.frc.Main"
 
