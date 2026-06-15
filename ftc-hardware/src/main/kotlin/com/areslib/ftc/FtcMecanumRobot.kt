@@ -190,148 +190,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             store.dispatch(poseUpdate)
 
             // 2. Update visual AprilTag observations
-            limelightIO?.let { io ->
-                io.updateInputs(visionInputs)
-                if (visionInputs.measurements.isNotEmpty()) {
-                    val measurement = visionInputs.measurements[0]
-                    lastLimelightPose = measurement.targetPose.toPose2d()
-                    lastLimelightTimeMs = timestamp
-
-                    // Diagnose why EKF might reject the measurement
-                    val robotPose = store.state.drive.poseEstimator.estimatedPose
-                    val robotHeading = robotPose.heading.radians
-                    val tagPose3d = measurement.targetPose
-                    val tagPose2d = tagPose3d.toPose2d()
-                    val dx = tagPose2d.x - robotPose.x
-                    val dy = tagPose2d.y - robotPose.y
-                    val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-                    val tagYaw = tagPose3d.rotation.z
-                    val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeading)
-
-                    val filterConfig = store.state.vision.filterConfig
-                    lastVisionStatus = when {
-                        measurement.ambiguity > filterConfig.maxAmbiguity -> {
-                            String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, filterConfig.maxAmbiguity)
-                        }
-                        tagPose3d.x < filterConfig.minFieldX || tagPose3d.x > filterConfig.maxFieldX ||
-                        tagPose3d.y < filterConfig.minFieldY || tagPose3d.y > filterConfig.maxFieldY ||
-                        tagPose3d.z < filterConfig.minFieldZ || tagPose3d.z > filterConfig.maxFieldZ -> {
-                            String.format("REJ_BOUNDS (Z: %.2f)", tagPose3d.z)
-                        }
-                        distance > filterConfig.maxDistanceMeters -> {
-                            String.format("REJ_DIST (%.2fm > %.2fm)", distance, filterConfig.maxDistanceMeters)
-                        }
-                        kotlin.math.abs(headingDiff) > filterConfig.maxRotationDeviationRad -> {
-                            String.format("REJ_YAW (%.1f° > %.1f°)", Math.toDegrees(headingDiff), Math.toDegrees(filterConfig.maxRotationDeviationRad))
-                        }
-                        else -> {
-                            // Run a dry run of the EKF Mahalanobis rejection to see if that fails
-                            val currentEstimator = store.state.drive.poseEstimator
-                            if (currentEstimator.history.isNotEmpty()) {
-                                val closestIndex = currentEstimator.history.indices.reversed().firstOrNull {
-                                    currentEstimator.history[it].timestampMs <= measurement.timestampMs
-                                } ?: -1
-                                if (closestIndex != -1) {
-                                    val baseEntry = currentEstimator.history[closestIndex]
-                                    val stdDevs = com.areslib.math.Vector3(0.05, 0.05, 0.1)
-                                    val numTags = visionInputs.measurements.size
-                                    val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
-                                    val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
-                                    
-                                    val scaledStdDevsX = stdDevs.x * (multiTagFactor * distFactor)
-                                    val scaledStdDevsY = stdDevs.y * (multiTagFactor * distFactor)
-                                    val scaledStdDevsZ = stdDevs.z * (multiTagFactor * distFactor)
-                                    
-                                    val rXX = scaledStdDevsX * scaledStdDevsX
-                                    val rYY = scaledStdDevsY * scaledStdDevsY
-                                    val rZZ = scaledStdDevsZ * scaledStdDevsZ
-                                    
-                                    val sXX = baseEntry.covariance.m00 + rXX
-                                    val sYY = baseEntry.covariance.m11 + rYY
-                                    val sZZ = baseEntry.covariance.m22 + rZZ
-                                    
-                                    val yX = tagPose2d.x - baseEntry.pose.x
-                                    val yY = tagPose2d.y - baseEntry.pose.y
-                                    val yZ = com.areslib.math.InputMath.wrapAngle(tagPose2d.heading.radians - baseEntry.pose.heading.radians)
-                                    
-                                    val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
-                                    if (dMSquared > 12.0) {
-                                        String.format("REJ_MAHALANOBIS (%.2f > 12.0)", dMSquared)
-                                    } else {
-                                        "ACCEPTED"
-                                    }
-                                } else {
-                                    "ACCEPTED (NO_HIST)"
-                                }
-                            } else {
-                                "ACCEPTED"
-                            }
-                        }
-                    }
-
-                    // 1. One-time absolute snap during initialization to bypass outlier lockout
-                    if (isInInit) {
-                        if (!hasInitializedPoseWithVision && measurement.ambiguity < 0.05) {
-                            val snapPose = measurement.targetPose.toPose2d()
-                            pinpointIO?.initialize(snapPose, resetHardware = false)
-                            hasInitializedPoseWithVision = true
-                            lastVisionStatus = "INIT_ALIGN_SNAP"
-                            store.dispatch(RobotAction.PoseUpdate(
-                                xMeters = snapPose.x,
-                                yMeters = snapPose.y,
-                                headingRadians = snapPose.heading.radians,
-                                timestampMs = timestamp,
-                                isReset = true
-                            ))
-                        }
-                    } else {
-                        // Kidnapped Robot Recovery (Active Play):
-                        // If the EKF is rejecting our vision inputs (large drift/mismatch), but the Limelight is
-                        // reporting a high-confidence pose (low ambiguity) while the robot is stationary (commanded 0.0),
-                        // we track consecutive rejections. If rejected for 10 frames (~200ms), we force-reseed EKF/Pinpoint
-                        // to the Limelight pose.
-                        val isRejected = lastVisionStatus.startsWith("REJ_")
-                        val isHighConfidence = measurement.ambiguity < 0.05
-                        val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
-                                           store.state.drive.yVelocityMetersPerSecond == 0.0 &&
-                                           store.state.drive.angularVelocityRadiansPerSecond == 0.0
-
-                        if (isRejected && isHighConfidence && isStationary) {
-                            consecutiveVisionRejections++
-                            if (consecutiveVisionRejections >= 10) {
-                                val snapPose = measurement.targetPose.toPose2d()
-                                // Reset pinpoint computer hardware and set its internal offsets to the snap pose.
-                                // This causes the next EKF propagation delta to snap the EKF estimated pose to the snap pose.
-                                pinpointIO?.initialize(snapPose, resetHardware = false)
-                                consecutiveVisionRejections = 0
-                                lastVisionStatus = "RESEED_SNAP"
-                                store.dispatch(RobotAction.PoseUpdate(
-                                    xMeters = snapPose.x,
-                                    yMeters = snapPose.y,
-                                    headingRadians = snapPose.heading.radians,
-                                    timestampMs = timestamp,
-                                    isReset = true
-                                ))
-                            }
-                        } else {
-                            consecutiveVisionRejections = 0
-                        }
-                    }
-
-                    store.dispatch(RobotAction.VisionMeasurementsReceived(
-                        visionInputs.measurements,
-                        timestamp,
-                        null
-                    ))
-                } else {
-                    lastVisionStatus = "NO TARGET"
-                }
-                com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
-                com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
-            } ?: run {
-                com.areslib.telemetry.RobotStatusTracker.visionConnected = false
-                com.areslib.telemetry.RobotStatusTracker.visionStatus = "OFFLINE"
-            }
+            updateVision(timestamp)
 
             // 3. Process kinematics using current State targets
             val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
@@ -393,131 +252,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             // Update local estimation tracking power scale
             mecanumIO.applyPowerScale(effectiveScale)
 
-            // 5. Publish EVERYTHING to NT4 + CSV automatically
-            // Flat telemetry keys for cloud ingestion/diagnostic sync
-            dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
-            dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
-            dataLoggingTelemetry.putNumber("motor_lf_current", mecanumIO.flIO.currentAmps)
-            dataLoggingTelemetry.putNumber("motor_rf_current", mecanumIO.frIO.currentAmps)
-            dataLoggingTelemetry.putNumber("motor_lr_current", mecanumIO.blIO.currentAmps)
-            dataLoggingTelemetry.putNumber("motor_rr_current", mecanumIO.brIO.currentAmps)
-            
-            val estPose = store.state.drive.poseEstimator.estimatedPose
-            dataLoggingTelemetry.putNumber("pinpoint_x", estPose.x)
-            dataLoggingTelemetry.putNumber("pinpoint_y", estPose.y)
-            dataLoggingTelemetry.putNumber("pinpoint_heading", estPose.heading.radians)
-            
-            val rawOdomX = store.state.drive.odometryX
-            val rawOdomY = store.state.drive.odometryY
-            dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
-            dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
+            // 5. Publish EVERYTHING to NT4 + CSV + local telemetry
+            publishTelemetry(timestamp, dtSeconds, batteryVoltage, gamepad1, gamepad2)
 
-            publisher.publish(store.state, gamepad1, gamepad2)
-
-            // Publish physical motor telemetry (power, encoder positions, velocities, currents)
-            dataLoggingTelemetry.putNumber("Drive/MotorPower_FL", mecanumIO.flIO.power * mecanumIO.flIO.powerScale)
-            dataLoggingTelemetry.putNumber("Drive/MotorPower_FR", mecanumIO.frIO.power * mecanumIO.frIO.powerScale)
-            dataLoggingTelemetry.putNumber("Drive/MotorPower_BL", mecanumIO.blIO.power * mecanumIO.blIO.powerScale)
-            dataLoggingTelemetry.putNumber("Drive/MotorPower_BR", mecanumIO.brIO.power * mecanumIO.brIO.powerScale)
-
-            dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FL", mecanumIO.flIO.position)
-            dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FR", mecanumIO.frIO.position)
-            dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BL", mecanumIO.blIO.position)
-            dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BR", mecanumIO.brIO.position)
-
-            dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FL", mecanumIO.flIO.velocity)
-            dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FR", mecanumIO.frIO.velocity)
-            dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BL", mecanumIO.blIO.velocity)
-            dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BR", mecanumIO.brIO.velocity)
-
-            dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FL", mecanumIO.flIO.currentAmps)
-            dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FR", mecanumIO.frIO.currentAmps)
-            dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BL", mecanumIO.blIO.currentAmps)
-            dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BR", mecanumIO.brIO.currentAmps)
-
-            // Publish Limelight / Vision pipeline telemetry
-            dataLoggingTelemetry.putString("Vision/Status", lastVisionStatus)
-            lastLimelightPose?.let { pose ->
-                dataLoggingTelemetry.putDoubleArray(
-                    "AdvantageScope/VisionPose",
-                    doubleArrayOf(pose.x, pose.y, pose.heading.radians)
-                )
-                dataLoggingTelemetry.putNumber("Vision/Pose_X", pose.x)
-                dataLoggingTelemetry.putNumber("Vision/Pose_Y", pose.y)
-                dataLoggingTelemetry.putNumber("Vision/Pose_Heading", pose.heading.radians)
-            }
-            if (visionInputs.measurements.isNotEmpty()) {
-                val primaryMeasurement = visionInputs.measurements[0]
-                dataLoggingTelemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
-                dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
-            } else {
-                dataLoggingTelemetry.putNumber("Vision/Primary_TagId", -1.0)
-                dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
-            }
-
-            // Publish all registered custom hardware devices automatically
-            com.areslib.hardware.HardwareRegistry.publishAll(dataLoggingTelemetry)
-
-            // 6. Driver Station local telemetry (human-readable summary)
-            localTelemetry?.let { t ->
-                // A. Pinpoint vs EKF Pose
-                t.addData("EKF Pose (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
-                    store.state.drive.poseEstimator.estimatedPose.x,
-                    store.state.drive.poseEstimator.estimatedPose.y,
-                    Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians)
-                ))
-                t.addData("Raw Pinpoint (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
-                    store.state.drive.odometryX,
-                    store.state.drive.odometryY,
-                    Math.toDegrees(store.state.drive.odometryHeading)
-                ))
-
-                // Limelight Pose
-                val llStr = lastLimelightPose?.let { pose ->
-                    val ageSec = (timestamp - lastLimelightTimeMs) / 1000.0
-                    String.format("(%.2f, %.2f) %.1f° (%.1fs ago)",
-                        pose.x,
-                        pose.y,
-                        Math.toDegrees(pose.heading.radians),
-                        ageSec
-                    )
-                } ?: "NO TARGET"
-                t.addData("Limelight Pose (X, Y, Deg)", llStr)
-                t.addData("Vision Status", lastVisionStatus)
-
-                // B. Motor Power values
-                t.addData("Motor Powers", String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
-                    mecanumIO.flIO.power * mecanumIO.flIO.powerScale,
-                    mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
-                    mecanumIO.blIO.power * mecanumIO.blIO.powerScale,
-                    mecanumIO.brIO.power * mecanumIO.brIO.powerScale
-                ))
-
-                // C. Current Draw
-                val currentStr = if (floodgate != null) {
-                    String.format("%.1f A (Physical)", floodgate.current)
-                } else {
-                    val estTotal = mecanumIO.flIO.currentAmps + mecanumIO.frIO.currentAmps + mecanumIO.blIO.currentAmps + mecanumIO.brIO.currentAmps
-                    String.format("%.1f A (Estimated)", estTotal)
-                }
-                t.addData("Current Draw", currentStr)
-
-                // D. Battery and Timing Metrics
-                t.addData("System Health", String.format("Battery: %.2fV | Loop: %.1fms", 
-                    batteryVoltage, 
-                    dtSeconds * 1000.0
-                ))
-
-                // E. Hardware Status
-                t.addData("Sensors", String.format("Pinpoint: %s | Limelight: %s",
-                    if (pinpointIO != null) "ONLINE" else "OFFLINE",
-                    if (limelightIO != null) "ONLINE" else "OFFLINE"
-                ))
-
-                t.update()
-            }
-
-            // 7. Populate and log the raw inputs frame for deterministic simulator replay
+            // 6. Populate and log the raw inputs frame for deterministic simulator replay
             val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent()
             inputsFrame.timestampMs = timestamp
 
@@ -560,6 +298,293 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             try {
                 dataLoggingTelemetry.putString("Robot/Error", "FATAL CRASH: ${e.message}")
             } catch (_: Throwable) {}
+        }
+    }
+
+    private fun updateVision(timestamp: Long) {
+        val io = limelightIO ?: run {
+            com.areslib.telemetry.RobotStatusTracker.visionConnected = false
+            com.areslib.telemetry.RobotStatusTracker.visionStatus = "OFFLINE"
+            return
+        }
+
+        io.updateInputs(visionInputs)
+        if (visionInputs.measurements.isEmpty()) {
+            lastVisionStatus = "NO TARGET"
+            com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
+            com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
+            return
+        }
+
+        val measurement = visionInputs.measurements[0]
+        lastLimelightPose = measurement.targetPose.toPose2d()
+        lastLimelightTimeMs = timestamp
+
+        // Diagnose why EKF might reject the measurement
+        val robotPose = store.state.drive.poseEstimator.estimatedPose
+        val robotHeading = robotPose.heading.radians
+        val tagPose3d = measurement.targetPose
+        val tagPose2d = tagPose3d.toPose2d()
+        val dx = tagPose2d.x - robotPose.x
+        val dy = tagPose2d.y - robotPose.y
+        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+        val tagYaw = tagPose3d.rotation.z
+        val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeading)
+
+        lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
+
+        // 1. One-time absolute snap during initialization to bypass outlier lockout
+        if (isInInit) {
+            if (!hasInitializedPoseWithVision && measurement.ambiguity < 0.05) {
+                val snapPose = measurement.targetPose.toPose2d()
+                pinpointIO?.initialize(snapPose, resetHardware = false)
+                hasInitializedPoseWithVision = true
+                lastVisionStatus = "INIT_ALIGN_SNAP"
+                store.dispatch(RobotAction.PoseUpdate(
+                    xMeters = snapPose.x,
+                    yMeters = snapPose.y,
+                    headingRadians = snapPose.heading.radians,
+                    timestampMs = timestamp,
+                    isReset = true
+                ))
+            }
+        } else {
+            // Kidnapped Robot Recovery (Active Play)
+            val isRejected = lastVisionStatus.startsWith("REJ_")
+            val isHighConfidence = measurement.ambiguity < 0.05
+            val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
+                               store.state.drive.yVelocityMetersPerSecond == 0.0 &&
+                               store.state.drive.angularVelocityRadiansPerSecond == 0.0
+
+            if (isRejected && isHighConfidence && isStationary) {
+                consecutiveVisionRejections++
+                if (consecutiveVisionRejections >= 10) {
+                    val snapPose = measurement.targetPose.toPose2d()
+                    pinpointIO?.initialize(snapPose, resetHardware = false)
+                    consecutiveVisionRejections = 0
+                    lastVisionStatus = "RESEED_SNAP"
+                    store.dispatch(RobotAction.PoseUpdate(
+                        xMeters = snapPose.x,
+                        yMeters = snapPose.y,
+                        headingRadians = snapPose.heading.radians,
+                        timestampMs = timestamp,
+                        isReset = true
+                    ))
+                }
+            } else {
+                consecutiveVisionRejections = 0
+            }
+        }
+
+        store.dispatch(RobotAction.VisionMeasurementsReceived(
+            visionInputs.measurements,
+            timestamp,
+            null
+        ))
+
+        com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
+        com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
+    }
+
+    private fun checkVisionOutlierRejection(
+        measurement: com.areslib.state.VisionMeasurement,
+        distance: Double,
+        headingDiff: Double
+    ): String {
+        val tagPose3d = measurement.targetPose
+        val tagPose2d = tagPose3d.toPose2d()
+        val filterConfig = store.state.vision.filterConfig
+
+        return when {
+            measurement.ambiguity > filterConfig.maxAmbiguity -> {
+                String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, filterConfig.maxAmbiguity)
+            }
+            tagPose3d.x < filterConfig.minFieldX || tagPose3d.x > filterConfig.maxFieldX ||
+            tagPose3d.y < filterConfig.minFieldY || tagPose3d.y > filterConfig.maxFieldY ||
+            tagPose3d.z < filterConfig.minFieldZ || tagPose3d.z > filterConfig.maxFieldZ -> {
+                String.format("REJ_BOUNDS (Z: %.2f)", tagPose3d.z)
+            }
+            distance > filterConfig.maxDistanceMeters -> {
+                String.format("REJ_DIST (%.2fm > %.2fm)", distance, filterConfig.maxDistanceMeters)
+            }
+            kotlin.math.abs(headingDiff) > filterConfig.maxRotationDeviationRad -> {
+                String.format("REJ_YAW (%.1f° > %.1f°)", Math.toDegrees(headingDiff), Math.toDegrees(filterConfig.maxRotationDeviationRad))
+            }
+            else -> {
+                // Run a dry run of the EKF Mahalanobis rejection to see if that fails
+                val currentEstimator = store.state.drive.poseEstimator
+                if (currentEstimator.history.isNotEmpty()) {
+                    val closestIndex = currentEstimator.history.indices.reversed().firstOrNull {
+                        currentEstimator.history[it].timestampMs <= measurement.timestampMs
+                    } ?: -1
+                    if (closestIndex != -1) {
+                        val baseEntry = currentEstimator.history[closestIndex]
+                        val stdDevs = com.areslib.math.Vector3(0.05, 0.05, 0.1)
+                        val numTags = visionInputs.measurements.size
+                        val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
+                        val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
+                        
+                        val scaledStdDevsX = stdDevs.x * (multiTagFactor * distFactor)
+                        val scaledStdDevsY = stdDevs.y * (multiTagFactor * distFactor)
+                        val scaledStdDevsZ = stdDevs.z * (multiTagFactor * distFactor)
+                        
+                        val rXX = scaledStdDevsX * scaledStdDevsX
+                        val rYY = scaledStdDevsY * scaledStdDevsY
+                        val rZZ = scaledStdDevsZ * scaledStdDevsZ
+                        
+                        val sXX = baseEntry.covariance.m00 + rXX
+                        val sYY = baseEntry.covariance.m11 + rYY
+                        val sZZ = baseEntry.covariance.m22 + rZZ
+                        
+                        val yX = tagPose2d.x - baseEntry.pose.x
+                        val yY = tagPose2d.y - baseEntry.pose.y
+                        val yZ = com.areslib.math.InputMath.wrapAngle(tagPose2d.heading.radians - baseEntry.pose.heading.radians)
+                        
+                        val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
+                        if (dMSquared > 12.0) {
+                            String.format("REJ_MAHALANOBIS (%.2f > 12.0)", dMSquared)
+                        } else {
+                            "ACCEPTED"
+                        }
+                    } else {
+                        "ACCEPTED (NO_HIST)"
+                    }
+                } else {
+                    "ACCEPTED"
+                }
+            }
+        }
+    }
+
+    private fun publishTelemetry(
+        timestamp: Long,
+        dtSeconds: Double,
+        batteryVoltage: Double,
+        gamepad1: com.areslib.telemetry.GamepadState?,
+        gamepad2: com.areslib.telemetry.GamepadState?
+    ) {
+        // 5. Publish EVERYTHING to NT4 + CSV automatically
+        // Flat telemetry keys for cloud ingestion/diagnostic sync
+        dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
+        dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
+        dataLoggingTelemetry.putNumber("motor_lf_current", mecanumIO.flIO.currentAmps)
+        dataLoggingTelemetry.putNumber("motor_rf_current", mecanumIO.frIO.currentAmps)
+        dataLoggingTelemetry.putNumber("motor_lr_current", mecanumIO.blIO.currentAmps)
+        dataLoggingTelemetry.putNumber("motor_rr_current", mecanumIO.brIO.currentAmps)
+        
+        val estPose = store.state.drive.poseEstimator.estimatedPose
+        dataLoggingTelemetry.putNumber("pinpoint_x", estPose.x)
+        dataLoggingTelemetry.putNumber("pinpoint_y", estPose.y)
+        dataLoggingTelemetry.putNumber("pinpoint_heading", estPose.heading.radians)
+        
+        val rawOdomX = store.state.drive.odometryX
+        val rawOdomY = store.state.drive.odometryY
+        dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
+        dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
+
+        publisher.publish(store.state, gamepad1, gamepad2)
+
+        // Publish physical motor telemetry (power, encoder positions, velocities, currents)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_FL", mecanumIO.flIO.power * mecanumIO.flIO.powerScale)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_FR", mecanumIO.frIO.power * mecanumIO.frIO.powerScale)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_BL", mecanumIO.blIO.power * mecanumIO.blIO.powerScale)
+        dataLoggingTelemetry.putNumber("Drive/MotorPower_BR", mecanumIO.brIO.power * mecanumIO.brIO.powerScale)
+
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FL", mecanumIO.flIO.position)
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_FR", mecanumIO.frIO.position)
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BL", mecanumIO.blIO.position)
+        dataLoggingTelemetry.putNumber("Drive/MotorEncoder_BR", mecanumIO.brIO.position)
+
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FL", mecanumIO.flIO.velocity)
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_FR", mecanumIO.frIO.velocity)
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BL", mecanumIO.blIO.velocity)
+        dataLoggingTelemetry.putNumber("Drive/MotorVelocity_BR", mecanumIO.brIO.velocity)
+
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FL", mecanumIO.flIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_FR", mecanumIO.frIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BL", mecanumIO.blIO.currentAmps)
+        dataLoggingTelemetry.putNumber("Drive/MotorCurrent_BR", mecanumIO.brIO.currentAmps)
+
+        // Publish Limelight / Vision pipeline telemetry
+        dataLoggingTelemetry.putString("Vision/Status", lastVisionStatus)
+        lastLimelightPose?.let { pose ->
+            dataLoggingTelemetry.putDoubleArray(
+                "AdvantageScope/VisionPose",
+                doubleArrayOf(pose.x, pose.y, pose.heading.radians)
+            )
+            dataLoggingTelemetry.putNumber("Vision/Pose_X", pose.x)
+            dataLoggingTelemetry.putNumber("Vision/Pose_Y", pose.y)
+            dataLoggingTelemetry.putNumber("Vision/Pose_Heading", pose.heading.radians)
+        }
+        if (visionInputs.measurements.isNotEmpty()) {
+            val primaryMeasurement = visionInputs.measurements[0]
+            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
+            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
+        } else {
+            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", -1.0)
+            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
+        }
+
+        // Publish all registered custom hardware devices automatically
+        com.areslib.hardware.HardwareRegistry.publishAll(dataLoggingTelemetry)
+
+        // 6. Driver Station local telemetry (human-readable summary)
+        localTelemetry?.let { t ->
+            // A. Pinpoint vs EKF Pose
+            t.addData("EKF Pose (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
+                store.state.drive.poseEstimator.estimatedPose.x,
+                store.state.drive.poseEstimator.estimatedPose.y,
+                Math.toDegrees(store.state.drive.poseEstimator.estimatedPose.heading.radians)
+            ))
+            t.addData("Raw Pinpoint (X, Y, Deg)", String.format("(%.2f, %.2f) %.1f°",
+                store.state.drive.odometryX,
+                store.state.drive.odometryY,
+                Math.toDegrees(store.state.drive.odometryHeading)
+            ))
+
+            // Limelight Pose
+            val llStr = lastLimelightPose?.let { pose ->
+                val ageSec = (timestamp - lastLimelightTimeMs) / 1000.0
+                String.format("(%.2f, %.2f) %.1f° (%.1fs ago)",
+                    pose.x,
+                    pose.y,
+                    Math.toDegrees(pose.heading.radians),
+                    ageSec
+                )
+            } ?: "NO TARGET"
+            t.addData("Limelight Pose (X, Y, Deg)", llStr)
+            t.addData("Vision Status", lastVisionStatus)
+
+            // B. Motor Power values
+            t.addData("Motor Powers", String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
+                mecanumIO.flIO.power * mecanumIO.flIO.powerScale,
+                mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
+                mecanumIO.blIO.power * mecanumIO.blIO.powerScale,
+                mecanumIO.brIO.power * mecanumIO.brIO.powerScale
+            ))
+
+            // C. Current Draw
+            val currentStr = if (floodgate != null) {
+                String.format("%.1f A (Physical)", floodgate.current)
+            } else {
+                val estTotal = mecanumIO.flIO.currentAmps + mecanumIO.frIO.currentAmps + mecanumIO.blIO.currentAmps + mecanumIO.brIO.currentAmps
+                String.format("%.1f A (Estimated)", estTotal)
+            }
+            t.addData("Current Draw", currentStr)
+
+            // D. Battery and Timing Metrics
+            t.addData("System Health", String.format("Battery: %.2fV | Loop: %.1fms", 
+                batteryVoltage, 
+                dtSeconds * 1000.0
+            ))
+
+            // E. Hardware Status
+            t.addData("Sensors", String.format("Pinpoint: %s | Limelight: %s",
+                if (pinpointIO != null) "ONLINE" else "OFFLINE",
+                if (limelightIO != null) "ONLINE" else "OFFLINE"
+            ))
+
+            t.update()
         }
     }
 
