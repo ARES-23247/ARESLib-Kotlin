@@ -125,7 +125,7 @@ class CrossFeatureTier3Test {
         store.dispatch(RobotAction.UpdatePathProgress(1.0, 1000L))
         var actions = executor.update(store.state, 1000L)
         assertTrue(actions.isEmpty()) // Task not completed
-        assertEquals("PathProgressWait(2.0 m)", executor.getActiveTaskName())
+        assertEquals("PathProgressWait(2.0 m)", executor.activeTaskName)
 
         // 3. Simulate Pinpoint UART failure / disconnect
         mockDriver.shouldThrow = true

@@ -34,7 +34,8 @@ data class Path(
             val p2 = points[i + 1]
 
             if (distanceMeters >= p1.distanceMeters && distanceMeters <= p2.distanceMeters) {
-                val t = (distanceMeters - p1.distanceMeters) / (p2.distanceMeters - p1.distanceMeters)
+                val denom = p2.distanceMeters - p1.distanceMeters
+                val t = if (kotlin.math.abs(denom) < 1e-6) 0.0 else (distanceMeters - p1.distanceMeters) / denom
                 
                 val interpX = p1.pose.x + (p2.pose.x - p1.pose.x) * t
                 val interpY = p1.pose.y + (p2.pose.y - p1.pose.y) * t

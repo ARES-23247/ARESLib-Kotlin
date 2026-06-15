@@ -17,8 +17,8 @@ class SwerveModuleIOPhoenix6(
     private val steerPosition = steerMotor.position
 
     override fun updateInputs(inputs: SwerveModuleInputs) {
-        // FRC CANivore "Airlock" - block until all signals are perfectly synchronized
-        BaseStatusSignal.waitForAll(20.0, drivePosition, driveVelocity, steerPosition)
+        // FRC CANivore "Airlock" - block until all signals are perfectly synchronized (timeout capped at 20ms)
+        BaseStatusSignal.waitForAll(0.02, drivePosition, driveVelocity, steerPosition)
         
         // Populate inputs mutably locally just for transport
         inputs.drivePositionRads = drivePosition.valueAsDouble

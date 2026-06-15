@@ -120,192 +120,215 @@ class FrcSwerveRobot(
      * @param gamepad2 Optional operator gamepad
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
-        // Refresh all hardware status signals from CAN bus in a batch
-        swerveIO?.refresh()
-        flywheelIO.refresh()
-        cowlIO.refresh()
-        intakeIO.refresh()
-        feederIO.refresh()
-        floorIO.refresh()
-        climberIO.refresh()
-        val isEnabled = isEnabledProvider()
+        try {
+            // Refresh all hardware status signals from CAN bus in a batch
+            swerveIO?.refresh()
+            flywheelIO.refresh()
+            cowlIO.refresh()
+            intakeIO.refresh()
+            feederIO.refresh()
+            floorIO.refresh()
+            climberIO.refresh()
+            val isEnabled = isEnabledProvider()
 
-        val mode = robotModeProvider()
+            val mode = robotModeProvider()
 
 
-        if (isEnabled) {
-            RobotWebServer.stop()
-        } else {
-            RobotWebServer.start()
-        }
-
-        RobotStatusTracker.isEnabled = isEnabled
-        RobotStatusTracker.activeOpMode = mode
-
-        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-
-        // ── 1. READ: Hardware → Store ──
-        if (!isSimulation && swerveIO != null) {
-            val driveState = swerveIO.read()
-            val currentlyBeached = isBeached
-            val lastPose = store.state.drive.poseEstimator.estimatedPose
-            val x = if (currentlyBeached) lastPose.x else driveState.odometryX
-            val y = if (currentlyBeached) lastPose.y else driveState.odometryY
-
-            if (wasBeached && !currentlyBeached) {
-                swerveIO.seedPose(lastPose)
+            if (isEnabled) {
+                RobotWebServer.stop()
+            } else {
+                RobotWebServer.start()
             }
-            wasBeached = currentlyBeached
 
-            store.dispatch(RobotAction.PoseUpdate(
-                xMeters = x,
-                yMeters = y,
-                headingRadians = driveState.odometryHeading,
-                timestampMs = timestamp,
-                pitchDegrees = swerveIO.pitchDegrees,
-                rollDegrees = swerveIO.rollDegrees
-            ))
-        }
+            RobotStatusTracker.isEnabled = isEnabled
+            RobotStatusTracker.activeOpMode = mode
 
-        // ── 1.5. READ: Vision → Store ──
-        visionIO?.let { io ->
-            val drive = store.state.drive
-            io.setOrientation(
-                yawDegrees = Math.toDegrees(drive.odometryHeading),
-                yawRateDegPerSec = Math.toDegrees(drive.angularVelocityRadiansPerSecond),
-                pitchDegrees = drive.pitchDegrees,
-                pitchRateDegPerSec = 0.0,
-                rollDegrees = drive.rollDegrees,
-                rollRateDegPerSec = 0.0,
-                linearVelocityMps = Math.hypot(drive.xVelocityMetersPerSecond, drive.yVelocityMetersPerSecond)
-            )
-            io.updateInputs(visionInputs)
-            if (visionInputs.measurements.isNotEmpty()) {
-                val measurement = visionInputs.measurements[0]
-                if (!isSimulation && swerveIO != null) {
-                    val wpiPose = edu.wpi.first.math.geometry.Pose2d(
-                        measurement.targetPose.translation.x,
-                        measurement.targetPose.translation.y,
-                        edu.wpi.first.math.geometry.Rotation2d.fromRadians(measurement.targetPose.rotation.z)
-                    )
-                    val latencyMs = timestamp - measurement.timestampMs
-                    val timestampSec = edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - (latencyMs / 1000.0)
-                    try {
-                        swerveIO.addVisionMeasurement(wpiPose, timestampSec)
-                    } catch (e: Exception) {
-                        System.err.println("FrcSwerveRobot: Failed to feed vision to SwerveDrivetrain: ${e.message}")
-                    }
+            val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
+
+            // ── 1. READ: Hardware → Store ──
+            if (!isSimulation && swerveIO != null) {
+                val driveState = swerveIO.read()
+                val currentlyBeached = isBeached
+                val lastPose = store.state.drive.poseEstimator.estimatedPose
+                val x = if (currentlyBeached) lastPose.x else driveState.odometryX
+                val y = if (currentlyBeached) lastPose.y else driveState.odometryY
+
+                if (wasBeached && !currentlyBeached) {
+                    swerveIO.seedPose(lastPose)
                 }
-                store.dispatch(RobotAction.VisionMeasurementsReceived(
-                    visionInputs.measurements,
-                    timestamp,
-                    null
+                wasBeached = currentlyBeached
+
+                store.dispatch(RobotAction.PoseUpdate(
+                    xMeters = x,
+                    yMeters = y,
+                    headingRadians = driveState.odometryHeading,
+                    timestampMs = timestamp,
+                    pitchDegrees = swerveIO.pitchDegrees,
+                    rollDegrees = swerveIO.rollDegrees
                 ))
             }
-            RobotStatusTracker.visionConnected = visionInputs.isConnected
-        } ?: run {
-            RobotStatusTracker.visionConnected = false
-        }
 
-        // Read superstructure sensors
-        store.dispatch(SuperstructureSensorUpdate(
-            flywheelRpm = flywheelIO.velocityRpm,
-            cowlAngle = cowlIO.angleDegrees,
-            intakeAngle = intakeIO.pivotAngleDegrees,
-            pieceDetected = feederIO.isBeamBroken,
-            floorVelocityRps = floorIO.velocityRps,
-            climberExtensionMeters = climberIO.extensionMeters,
-            timestampMs = timestamp
-        ))
+            // ── 1.5. READ: Vision → Store ──
+            visionIO?.let { io ->
+                val drive = store.state.drive
+                io.setOrientation(
+                    yawDegrees = Math.toDegrees(drive.odometryHeading),
+                    yawRateDegPerSec = Math.toDegrees(drive.angularVelocityRadiansPerSecond),
+                    pitchDegrees = drive.pitchDegrees,
+                    pitchRateDegPerSec = 0.0,
+                    rollDegrees = drive.rollDegrees,
+                    rollRateDegPerSec = 0.0,
+                    linearVelocityMps = Math.hypot(drive.xVelocityMetersPerSecond, drive.yVelocityMetersPerSecond)
+                )
+                io.updateInputs(visionInputs)
+                if (visionInputs.measurements.isNotEmpty()) {
+                    val measurement = visionInputs.measurements[0]
+                    if (!isSimulation && swerveIO != null) {
+                        val wpiPose = edu.wpi.first.math.geometry.Pose2d(
+                            measurement.targetPose.translation.x,
+                            measurement.targetPose.translation.y,
+                            edu.wpi.first.math.geometry.Rotation2d.fromRadians(measurement.targetPose.rotation.z)
+                        )
+                        val latencyMs = timestamp - measurement.timestampMs
+                        val timestampSec = edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - (latencyMs / 1000.0)
+                        try {
+                            swerveIO.addVisionMeasurement(wpiPose, timestampSec)
+                        } catch (e: Exception) {
+                            System.err.println("FrcSwerveRobot: Failed to feed vision to SwerveDrivetrain: ${e.message}")
+                        }
+                    }
+                    store.dispatch(RobotAction.VisionMeasurementsReceived(
+                        visionInputs.measurements,
+                        timestamp,
+                        null
+                    ))
+                }
+                RobotStatusTracker.visionConnected = visionInputs.isConnected
+            } ?: run {
+                RobotStatusTracker.visionConnected = false
+            }
 
-        // ── 2. WRITE: Store → Hardware ──
-        if (!isSimulation && swerveIO != null) {
-            swerveIO.write(store.state.drive)
-        }
+            // Read superstructure sensors
+            store.dispatch(SuperstructureSensorUpdate(
+                flywheelRpm = flywheelIO.velocityRpm,
+                cowlAngle = cowlIO.angleDegrees,
+                intakeAngle = intakeIO.pivotAngleDegrees,
+                pieceDetected = feederIO.isBeamBroken,
+                floorVelocityRps = floorIO.velocityRps,
+                climberExtensionMeters = climberIO.extensionMeters,
+                timestampMs = timestamp
+            ))
 
-        // ── 3. BROWNOUT PROTECTION ──
-        val batteryVoltage = batteryVoltageSupplier()
-        brownoutGuard.update(batteryVoltage)
+            // ── 2. WRITE: Store → Hardware ──
+            if (!isSimulation && swerveIO != null) {
+                swerveIO.write(store.state.drive)
+            }
 
-        // Apply power scaling to all superstructure outputs
-        // (Drive swerve modules have their own voltage compensation via CTRE)
-        val scale = brownoutGuard.powerScale
-        val marvin = store.state.superstructure.marvinXIX
-        flywheelIO.setVelocityRpm(marvin.flywheel.targetVelocityRpm * scale)
-        cowlIO.setTargetAngle(marvin.cowl.targetAngleDegrees)
+            // ── 3. BROWNOUT PROTECTION ──
+            val batteryVoltage = batteryVoltageSupplier()
+            brownoutGuard.update(batteryVoltage)
 
-        val pivotAngle = marvin.intake.targetAngleDegrees
-        intakeIO.setPivotAngle(pivotAngle)
+            // Apply power scaling to all superstructure outputs
+            // (Drive swerve modules have their own voltage compensation via CTRE)
+            val scale = brownoutGuard.powerScale
+            val marvin = store.state.superstructure.marvinXIX
+            flywheelIO.setVelocityRpm(marvin.flywheel.targetVelocityRpm * scale)
+            cowlIO.setTargetAngle(marvin.cowl.targetAngleDegrees)
 
-        val targetRollerSpeed = marvin.intake.targetRollerVelocityRps
-        intakeIO.setRollerVoltage((targetRollerSpeed / 10.0) * 12.0 * scale)
+            val pivotAngle = marvin.intake.targetAngleDegrees
+            intakeIO.setPivotAngle(pivotAngle)
 
-        val targetFeederSpeed = marvin.feeder.targetVelocityRps
-        feederIO.setAppliedVoltage((targetFeederSpeed / 12.0) * 12.0 * scale)
+            val targetRollerSpeed = marvin.intake.targetRollerVelocityRps
+            intakeIO.setRollerVoltage((targetRollerSpeed / 10.0) * 12.0 * scale)
 
-        val targetFloorSpeed = marvin.floor.targetVelocityRps
-        floorIO.setAppliedVoltage((targetFloorSpeed / 12.0) * 12.0 * scale)
+            val targetFeederSpeed = marvin.feeder.targetVelocityRps
+            feederIO.setAppliedVoltage((targetFeederSpeed / 12.0) * 12.0 * scale)
 
-        val targetClimberVoltage = marvin.climber.targetVoltage
-        climberIO.setAppliedVoltage(targetClimberVoltage * scale)
+            val targetFloorSpeed = marvin.floor.targetVelocityRps
+            floorIO.setAppliedVoltage((targetFloorSpeed / 12.0) * 12.0 * scale)
 
-        // ── 4. PUBLISH: Everything → NT4 + CSV ──
-        publisher.publish(store.state, gamepad1, gamepad2)
+            val targetClimberVoltage = marvin.climber.targetVoltage
+            climberIO.setAppliedVoltage(targetClimberVoltage * scale)
 
-        // Publish Marvin XIX specific sub-states
-        MarvinStatePublisher.publish(store.state, dataLoggingTelemetry)
+            // ── 4. PUBLISH: Everything → NT4 + CSV ──
+            publisher.publish(store.state, gamepad1, gamepad2)
 
-        // Publish brownout telemetry
-        dataLoggingTelemetry.putNumber("Robot/BatteryVoltage", batteryVoltage)
-        dataLoggingTelemetry.putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
-        dataLoggingTelemetry.putString("Robot/BrownoutState", brownoutGuard.state.name)
-        dataLoggingTelemetry.putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
+            // Publish Marvin XIX specific sub-states
+            MarvinStatePublisher.publish(store.state, dataLoggingTelemetry)
 
-        // Publish EKF covariance diagonals
-        val cov = store.state.drive.poseEstimator.covariance
-        covarianceDiagonals[0] = cov.m00
-        covarianceDiagonals[1] = cov.m11
-        covarianceDiagonals[2] = cov.m22
-        dataLoggingTelemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceDiagonals)
+            // Publish brownout telemetry
+            dataLoggingTelemetry.putNumber("Robot/BatteryVoltage", batteryVoltage)
+            dataLoggingTelemetry.putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
+            dataLoggingTelemetry.putString("Robot/BrownoutState", brownoutGuard.state.name)
+            dataLoggingTelemetry.putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
 
-        // Publish 3D robot pose (quaternion format for AdvantageScope)
-        val heading = store.state.drive.odometryHeading
-        val halfH = heading / 2.0
-        pose3dArray[0] = store.state.drive.odometryX
-        pose3dArray[1] = store.state.drive.odometryY
-        pose3dArray[2] = 0.0
-        pose3dArray[3] = Math.cos(halfH)
-        pose3dArray[4] = 0.0
-        pose3dArray[5] = 0.0
-        pose3dArray[6] = Math.sin(halfH)
-        dataLoggingTelemetry.putDoubleArray("Robot/Pose3d", pose3dArray)
+            // Publish EKF covariance diagonals
+            val cov = store.state.drive.poseEstimator.covariance
+            covarianceDiagonals[0] = cov.m00
+            covarianceDiagonals[1] = cov.m11
+            covarianceDiagonals[2] = cov.m22
+            dataLoggingTelemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceDiagonals)
 
-        // Publish swerve module states
-        val vx = store.state.drive.xVelocityMetersPerSecond
-        val vy = store.state.drive.yVelocityMetersPerSecond
-        val omega = store.state.drive.angularVelocityRadiansPerSecond
-        for (i in 0..3) {
-            val wvx = vx - omega * SWERVE_OFFSETS[i].second
-            val wvy = vy + omega * SWERVE_OFFSETS[i].first
-            swerveStates[i * 2] = Math.atan2(wvy, wvx)
-            swerveStates[i * 2 + 1] = Math.hypot(wvx, wvy)
-        }
-        dataLoggingTelemetry.putDoubleArray("Robot/SwerveStates", swerveStates)
+            // Publish 3D robot pose (quaternion format for AdvantageScope)
+            val heading = store.state.drive.odometryHeading
+            val halfH = heading / 2.0
+            pose3dArray[0] = store.state.drive.odometryX
+            pose3dArray[1] = store.state.drive.odometryY
+            pose3dArray[2] = 0.0
+            pose3dArray[3] = Math.cos(halfH)
+            pose3dArray[4] = 0.0
+            pose3dArray[5] = 0.0
+            pose3dArray[6] = Math.sin(halfH)
+            dataLoggingTelemetry.putDoubleArray("Robot/Pose3d", pose3dArray)
 
-        // Publish superstructure diagnostics
-        dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/CurrentAmps", flywheelIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/TempCelsius", flywheelIO.tempCelsius)
-        dataLoggingTelemetry.putNumber("Diagnostics/Cowl/CurrentAmps", cowlIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Intake/PivotCurrentAmps", intakeIO.pivotCurrentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Intake/RollerCurrentAmps", intakeIO.rollerCurrentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Feeder/CurrentAmps", feederIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Floor/CurrentAmps", floorIO.currentAmps)
-        dataLoggingTelemetry.putNumber("Diagnostics/Climber/CurrentAmps", climberIO.currentAmps)
+            // Publish swerve module states
+            val vx = store.state.drive.xVelocityMetersPerSecond
+            val vy = store.state.drive.yVelocityMetersPerSecond
+            val omega = store.state.drive.angularVelocityRadiansPerSecond
+            for (i in 0..3) {
+                val wvx = vx - omega * SWERVE_OFFSETS[i].second
+                val wvy = vy + omega * SWERVE_OFFSETS[i].first
+                swerveStates[i * 2] = Math.atan2(wvy, wvx)
+                swerveStates[i * 2 + 1] = Math.hypot(wvx, wvy)
+            }
+            dataLoggingTelemetry.putDoubleArray("Robot/SwerveStates", swerveStates)
 
-        // Publish swerve diagnostics
-        if (swerveIO != null) {
-            dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/Currents", swerveIO.currents)
-            dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/EncoderPositions", swerveIO.encoderPositions)
+            // Publish superstructure diagnostics
+            dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/CurrentAmps", flywheelIO.currentAmps)
+            dataLoggingTelemetry.putNumber("Diagnostics/Flywheel/TempCelsius", flywheelIO.tempCelsius)
+            dataLoggingTelemetry.putNumber("Diagnostics/Cowl/CurrentAmps", cowlIO.currentAmps)
+            dataLoggingTelemetry.putNumber("Diagnostics/Intake/PivotCurrentAmps", intakeIO.pivotCurrentAmps)
+            dataLoggingTelemetry.putNumber("Diagnostics/Intake/RollerCurrentAmps", intakeIO.rollerCurrentAmps)
+            dataLoggingTelemetry.putNumber("Diagnostics/Feeder/CurrentAmps", feederIO.currentAmps)
+            dataLoggingTelemetry.putNumber("Diagnostics/Floor/CurrentAmps", floorIO.currentAmps)
+            dataLoggingTelemetry.putNumber("Diagnostics/Climber/CurrentAmps", climberIO.currentAmps)
+
+            // Publish swerve diagnostics
+            if (swerveIO != null) {
+                dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/Currents", swerveIO.currents)
+                dataLoggingTelemetry.putDoubleArray("Diagnostics/Swerve/EncoderPositions", swerveIO.encoderPositions)
+            }
+        } catch (e: Throwable) {
+            System.err.println("FrcSwerveRobot: Exception in update loop: ${e.message}")
+            e.printStackTrace()
+            try {
+                if (!isSimulation && swerveIO != null) {
+                    swerveIO.write(store.state.drive.copy(
+                        xVelocityMetersPerSecond = 0.0,
+                        yVelocityMetersPerSecond = 0.0,
+                        angularVelocityRadiansPerSecond = 0.0
+                    ))
+                }
+                flywheelIO.setVelocityRpm(0.0)
+                cowlIO.setTargetAngle(0.0)
+                intakeIO.setPivotAngle(0.0)
+                intakeIO.setRollerVoltage(0.0)
+                feederIO.setAppliedVoltage(0.0)
+                floorIO.setAppliedVoltage(0.0)
+                climberIO.setAppliedVoltage(0.0)
+            } catch (ex: Exception) {
+                System.err.println("FrcSwerveRobot: Failed to apply safety stop: ${ex.message}")
+            }
         }
     }
 

@@ -126,7 +126,7 @@ class RealWorldWorkloadTier4Test {
         actions2.forEach { robot.store.dispatch(it) }
 
         // verify flywheelTask completed and we transition to intakeTask
-        assertEquals("IntakeUntilCount(1)", executor.getActiveTaskName())
+        assertEquals("IntakeUntilCount(1)", executor.activeTaskName)
     }
 
     @Test

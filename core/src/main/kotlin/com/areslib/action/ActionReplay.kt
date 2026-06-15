@@ -28,6 +28,7 @@ object ActionReplay {
         "SetFlywheelActive" to RobotAction.SetFlywheelActive::class.java,
         "SetTransferActive" to RobotAction.SetTransferActive::class.java,
         "UpdateFlywheelRPM" to RobotAction.UpdateFlywheelRPM::class.java,
+        "SetFlywheelTargetRPM" to RobotAction.SetFlywheelTargetRPM::class.java,
         "SetInventoryCount" to RobotAction.SetInventoryCount::class.java,
         "ObstacleCostmapUpdate" to RobotAction.ObstacleCostmapUpdate::class.java,
         "ChainPaths" to RobotAction.ChainPaths::class.java,

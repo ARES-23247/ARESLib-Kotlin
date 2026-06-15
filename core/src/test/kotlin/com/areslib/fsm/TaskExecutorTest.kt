@@ -28,7 +28,7 @@ class TaskExecutorTest {
         executor.addTask(ActionDispatchTask(action2))
 
         // Initial size
-        assertEquals(3, executor.size())
+        assertEquals(3, executor.size)
 
         // First update dispatches action1 and starts TimeWaitTask immediately due to zero-latency cascade
         val actions1 = executor.update(state, baseTime)
@@ -39,12 +39,12 @@ class TaskExecutorTest {
         // Apply action to state
         state = rootReducer(state, actions1[0])
         assertEquals(5, state.superstructure.inventoryCount)
-        assertEquals("TimeWait(500 ms)", executor.getActiveTaskName())
+        assertEquals("TimeWait(500 ms)", executor.activeTaskName)
 
         // Update before 500ms has elapsed — no action dispatched, wait task remains active
         val actions2 = executor.update(state, baseTime + 200L)
         assertTrue(actions2.isEmpty())
-        assertEquals("TimeWait(500 ms)", executor.getActiveTaskName())
+        assertEquals("TimeWait(500 ms)", executor.activeTaskName)
 
         // Update after 500ms has elapsed — wait task finishes and cascades to ActionDispatchTask(action2) immediately
         val actions3 = executor.update(state, baseTime + 500L)
@@ -54,8 +54,8 @@ class TaskExecutorTest {
 
         state = rootReducer(state, actions3[0])
         assertEquals(10, state.superstructure.inventoryCount)
-        assertNull(executor.getActiveTaskName())
-        assertEquals(0, executor.size())
+        assertNull(executor.activeTaskName)
+        assertEquals(0, executor.size)
     }
 
     @Test
@@ -85,7 +85,7 @@ class TaskExecutorTest {
         
         val actions2 = executor.update(state, baseTime + 100L)
         assertTrue(actions2.isEmpty()) // Still waiting
-        assertEquals("FlywheelReady(4000.0 RPM)", executor.getActiveTaskName())
+        assertEquals("FlywheelReady(4000.0 RPM)", executor.activeTaskName)
 
         // Ramped up to speed
         val readyRPMAction = RobotAction.UpdateFlywheelRPM(3900.0, baseTime + 200L)
@@ -103,7 +103,7 @@ class TaskExecutorTest {
         assertTrue((actions3[0] as RobotAction.SetTransferActive).active)
 
         state = rootReducer(state, actions3[0])
-        assertEquals("Shoot", executor.getActiveTaskName())
+        assertEquals("Shoot", executor.activeTaskName)
         assertEquals(SuperstructureMode.SHOOTING, state.superstructure.mode)
 
         // Simulate shooting (inventory drops to 0)
@@ -128,7 +128,7 @@ class TaskExecutorTest {
 
         // Start standard task
         executor.update(state, baseTime)
-        assertEquals("TimeWait(1000 ms)", executor.getActiveTaskName())
+        assertEquals("TimeWait(1000 ms)", executor.activeTaskName)
 
         // 300ms has elapsed, now we preempt it with a high-priority quick dispatch
         val preemptionAction = RobotAction.SetIntakeActive(true, baseTime + 300L)
@@ -141,8 +141,8 @@ class TaskExecutorTest {
         // Preempt starts preemptive task instantly
         assertEquals(1, preemptActions.size)
         assertTrue(preemptActions[0] is RobotAction.SetIntakeActive)
-        assertEquals("ActionDispatch(SetIntakeActive)", executor.getActiveTaskName())
-        assertEquals(2, executor.size()) // 1 active, 1 preempted on stack
+        assertEquals("ActionDispatch(SetIntakeActive)", executor.activeTaskName)
+        assertEquals(2, executor.size) // 1 active, 1 preempted on stack
 
         state = rootReducer(state, preemptActions[0])
         assertTrue(state.superstructure.intakeActive)
@@ -150,18 +150,18 @@ class TaskExecutorTest {
         // Updating executes the ActionDispatch, completes it, and resumes TimeWaitTask instantly
         val resumeActions = executor.update(state, baseTime + 300L)
         assertTrue(resumeActions.isEmpty())
-        assertEquals("TimeWait(1000 ms)", executor.getActiveTaskName())
+        assertEquals("TimeWait(1000 ms)", executor.activeTaskName)
 
         // Ensure remaining wait time math is intact (needs 700ms more from baseTime + 300L -> finishes at baseTime + 1000L)
         // Check halfway at 800ms total (500ms since preemption)
         val halfActions = executor.update(state, baseTime + 800L)
         assertTrue(halfActions.isEmpty())
-        assertEquals("TimeWait(1000 ms)", executor.getActiveTaskName())
+        assertEquals("TimeWait(1000 ms)", executor.activeTaskName)
 
         // Check completion at 1000ms total
         val finalActions = executor.update(state, baseTime + 1000L)
-        assertNull(executor.getActiveTaskName())
-        assertEquals(0, executor.size())
+        assertNull(executor.activeTaskName)
+        assertEquals(0, executor.size)
     }
 
     @Test
@@ -178,12 +178,12 @@ class TaskExecutorTest {
         // 2000ms elapsed, but suspended, so should not complete
         val actions = executor.update(state, baseTime + 2000L)
         assertTrue(actions.isEmpty())
-        assertEquals("TimeWait(1000 ms)", executor.getActiveTaskName())
+        assertEquals("TimeWait(1000 ms)", executor.activeTaskName)
 
         executor.resume()
 
         // Now that it is resumed, update should complete it
         val resumeActions = executor.update(state, baseTime + 2000L)
-        assertNull(executor.getActiveTaskName())
+        assertNull(executor.activeTaskName)
     }
 }

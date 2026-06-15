@@ -18,7 +18,7 @@ class ShooterSubsystem(private val store: Store) {
 
     fun spinUp(targetRpm: Double) {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        store.dispatch(RobotAction.UpdateFlywheelRPM(targetRpm, timestamp))
+        store.dispatch(RobotAction.SetFlywheelTargetRPM(targetRpm, timestamp))
         store.dispatch(RobotAction.SetFlywheelActive(true, timestamp))
     }
 

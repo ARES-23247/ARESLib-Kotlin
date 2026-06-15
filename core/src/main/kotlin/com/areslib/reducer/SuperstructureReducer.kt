@@ -73,19 +73,27 @@ object SuperstructureReducer {
                     mode = newMode
                 )
             }
-            is RobotAction.UpdateFlywheelRPM -> {
+            is RobotAction.SetFlywheelTargetRPM -> {
+                val nextState = state.copy(flywheelTargetRPM = action.targetRpm)
                 val newMode = when {
-                    state.transferActive && state.isFlywheelAtSpeed -> SuperstructureMode.SHOOTING
-                    state.flywheelActive && action.rpm >= state.flywheelTargetRPM * 0.95 -> SuperstructureMode.FLYWHEEL_READY
-                    state.flywheelActive -> SuperstructureMode.FLYWHEEL_SPINUP
-                    state.intakeActive -> SuperstructureMode.INTAKING
+                    nextState.transferActive && nextState.isFlywheelAtSpeed -> SuperstructureMode.SHOOTING
+                    nextState.flywheelActive && nextState.isFlywheelAtSpeed -> SuperstructureMode.FLYWHEEL_READY
+                    nextState.flywheelActive -> SuperstructureMode.FLYWHEEL_SPINUP
+                    nextState.intakeActive -> SuperstructureMode.INTAKING
                     else -> SuperstructureMode.IDLE
                 }
-                state.copy(
-                    flywheelRPM = action.rpm,
-                    flywheelTargetRPM = if (action.rpm > 0.0) action.rpm else state.flywheelTargetRPM,
-                    mode = newMode
-                )
+                nextState.copy(mode = newMode)
+            }
+            is RobotAction.UpdateFlywheelRPM -> {
+                val nextState = state.copy(flywheelRPM = action.rpm)
+                val newMode = when {
+                    nextState.transferActive && nextState.isFlywheelAtSpeed -> SuperstructureMode.SHOOTING
+                    nextState.flywheelActive && nextState.isFlywheelAtSpeed -> SuperstructureMode.FLYWHEEL_READY
+                    nextState.flywheelActive -> SuperstructureMode.FLYWHEEL_SPINUP
+                    nextState.intakeActive -> SuperstructureMode.INTAKING
+                    else -> SuperstructureMode.IDLE
+                }
+                nextState.copy(mode = newMode)
             }
             is RobotAction.SetInventoryCount -> {
                 state.copy(inventoryCount = action.count)

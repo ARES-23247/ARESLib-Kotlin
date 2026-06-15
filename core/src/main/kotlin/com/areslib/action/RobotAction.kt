@@ -99,6 +99,11 @@ interface RobotAction {
         override val timestampMs: Long
     ) : RobotAction
 
+    data class SetFlywheelTargetRPM(
+        val targetRpm: Double,
+        override val timestampMs: Long
+    ) : RobotAction
+
     data class SetInventoryCount(
         val count: Int,
         override val timestampMs: Long

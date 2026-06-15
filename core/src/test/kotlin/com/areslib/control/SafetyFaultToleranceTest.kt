@@ -122,8 +122,8 @@ class SafetyFaultToleranceTest {
         val actions = executor.update(dummyState, 1000L)
         
         // Ensure size tracks the remainder correctly (1000 total initially, 100 processed, so ~900 remaining)
-        assertTrue(executor.size() > 0)
-        assertTrue(executor.size() <= 901)
+        assertTrue(executor.size > 0)
+        assertTrue(executor.size <= 901)
     }
 
     @Test

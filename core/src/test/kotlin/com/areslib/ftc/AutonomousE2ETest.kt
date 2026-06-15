@@ -164,7 +164,7 @@ class AutonomousE2ETest {
                 state = rootReducer(state, action)
             }
 
-            println("Step $step | Pose=(${String.format("%.3f", state.drive.poseEstimator.estimatedPose.x)}, ${String.format("%.3f", state.drive.poseEstimator.estimatedPose.y)}), Heading=${String.format("%.1f", Math.toDegrees(state.drive.poseEstimator.estimatedPose.heading.radians))} | Distance=${String.format("%.3f", state.pathState.currentDistanceMeters)} | ActiveTask=${taskExecutor.getActiveTaskName()} | Mode=${state.superstructure.mode} | FlywheelRPM=${state.superstructure.flywheelRPM} | Inventory=${state.superstructure.inventoryCount}")
+            println("Step $step | Pose=(${String.format("%.3f", state.drive.poseEstimator.estimatedPose.x)}, ${String.format("%.3f", state.drive.poseEstimator.estimatedPose.y)}), Heading=${String.format("%.1f", Math.toDegrees(state.drive.poseEstimator.estimatedPose.heading.radians))} | Distance=${String.format("%.3f", state.pathState.currentDistanceMeters)} | ActiveTask=${taskExecutor.activeTaskName} | Mode=${state.superstructure.mode} | FlywheelRPM=${state.superstructure.flywheelRPM} | Inventory=${state.superstructure.inventoryCount}")
         }
 
         println("=== END OF AUTONOMOUS E2E SIMULATION VALIDATION ===")
@@ -173,8 +173,8 @@ class AutonomousE2ETest {
         assertTrue(detourTriggered, "Autonomous loop should have triggered detour switching")
         
         // Assert FSM completed all tasks
-        assertEquals(0, taskExecutor.size(), "FSM Task Executor should have successfully executed all tasks in queue")
-        assertNull(taskExecutor.getActiveTaskName())
+        assertEquals(0, taskExecutor.size, "FSM Task Executor should have successfully executed all tasks in queue")
+        assertNull(taskExecutor.activeTaskName)
 
         // Verify state variables at end of autonomous sequence
         assertFalse(state.superstructure.transferActive, "Transfer should have been disabled after shooting")

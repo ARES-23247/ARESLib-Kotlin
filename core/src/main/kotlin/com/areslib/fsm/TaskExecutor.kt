@@ -47,18 +47,36 @@ class TaskExecutor {
      */
     @Synchronized
     fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> {
-        val actions = mutableListOf<RobotAction>()
+        var actions: MutableList<RobotAction>? = null
+        fun addActions(list: List<RobotAction>) {
+            if (list.isNotEmpty()) {
+                if (actions == null) actions = mutableListOf()
+                actions!!.addAll(list)
+            }
+        }
+
         val currentActive = activeTask
         if (currentActive != null) {
             val elapsed = currentTimestampMs - activeTaskStartTimeMs
             preemptedStack.push(Pair(currentActive, elapsed))
-            actions.addAll(currentActive.end(state, interrupted = true))
+            try {
+                addActions(currentActive.end(state, interrupted = true))
+            } catch (e: Exception) {
+                System.err.println("TaskExecutor: Exception during task.end for preempted task ${currentActive.name}: ${e.message}")
+                e.printStackTrace()
+            }
         }
         
         activeTask = task
         activeTaskStartTimeMs = currentTimestampMs
-        actions.addAll(task.initialize(state))
-        return actions
+        try {
+            addActions(task.initialize(state))
+        } catch (e: Exception) {
+            System.err.println("TaskExecutor: Exception during task.initialize for preempting task ${task.name}: ${e.message}")
+            e.printStackTrace()
+            addActions(handleTaskFailure(task, state))
+        }
+        return actions ?: emptyList()
     }
 
     /**
@@ -68,7 +86,13 @@ class TaskExecutor {
     @Synchronized
     fun update(state: RobotState, currentTimestampMs: Long): List<RobotAction> {
         if (isSuspended) return emptyList()
-        val actions = mutableListOf<RobotAction>()
+        var actions: MutableList<RobotAction>? = null
+        fun addActions(list: List<RobotAction>) {
+            if (list.isNotEmpty()) {
+                if (actions == null) actions = mutableListOf()
+                actions!!.addAll(list)
+            }
+        }
 
         var task = activeTask
         var loopCount = 0
@@ -88,7 +112,14 @@ class TaskExecutor {
                     val nextTask = queue.poll()
                     activeTask = nextTask
                     activeTaskStartTimeMs = currentTimestampMs
-                    actions.addAll(nextTask.initialize(state))
+                    try {
+                        addActions(nextTask.initialize(state))
+                    } catch (e: Exception) {
+                        System.err.println("TaskExecutor: Exception during task.initialize for task ${nextTask.name}: ${e.message}")
+                        e.printStackTrace()
+                        addActions(handleTaskFailure(nextTask, state))
+                        break
+                    }
                     task = nextTask
                 } else {
                     break
@@ -97,13 +128,35 @@ class TaskExecutor {
 
             if (task != null) {
                 val elapsed = currentTimestampMs - activeTaskStartTimeMs
-                if (task.isCompleted(state, elapsed)) {
+                val isCompleted = try {
+                    task.isCompleted(state, elapsed)
+                } catch (e: Exception) {
+                    System.err.println("TaskExecutor: Exception in task.isCompleted for task ${task.name}: ${e.message}")
+                    e.printStackTrace()
+                    addActions(handleTaskFailure(task, state))
+                    break
+                }
+                
+                if (isCompleted) {
                     // Finalize active task
-                    actions.addAll(task.end(state, interrupted = false))
+                    try {
+                        addActions(task.end(state, interrupted = false))
+                    } catch (e: Exception) {
+                        System.err.println("TaskExecutor: Exception in task.end for task ${task.name}: ${e.message}")
+                        e.printStackTrace()
+                    }
                     activeTask = null
                     task = null // Continue loop to dequeue/resume instantly
                 } else {
-                    actions.addAll(task.execute(state, elapsed))
+                    val execActions = try {
+                        task.execute(state, elapsed)
+                    } catch (e: Exception) {
+                        System.err.println("TaskExecutor: Exception in task.execute for task ${task.name}: ${e.message}")
+                        e.printStackTrace()
+                        addActions(handleTaskFailure(task, state))
+                        break
+                    }
+                    addActions(execActions)
                     break // Stop frame update as active task is currently running
                 }
             }
@@ -113,7 +166,20 @@ class TaskExecutor {
             System.err.println("TaskExecutor: Loop transition threshold reached ($maxLoopCount). Aborting update to prevent lockup.")
         }
 
-        return actions
+        return actions ?: emptyList()
+    }
+
+    private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {
+        System.err.println("TaskExecutor: Task ${task.name} failed. Halting FSM queue.")
+        val cleanupActions = try {
+            task.end(state, interrupted = true)
+        } catch (e: Exception) {
+            System.err.println("TaskExecutor: Exception during task.end cleanup: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
+        clear()
+        return cleanupActions
     }
 
     /**
@@ -129,14 +195,12 @@ class TaskExecutor {
     /**
      * Returns the name of the currently active task, if any.
      */
-    @Synchronized
-    fun getActiveTaskName(): String? = activeTask?.name
+    val activeTaskName: String?
+        @Synchronized get() = activeTask?.name
 
     /**
      * Gets total tasks currently loaded/executing (queue + active + preempted).
      */
-    @Synchronized
-    fun size(): Int {
-        return queue.size + (if (activeTask != null) 1 else 0) + preemptedStack.size
-    }
+    val size: Int
+        @Synchronized get() = queue.size + (if (activeTask != null) 1 else 0) + preemptedStack.size
 }
