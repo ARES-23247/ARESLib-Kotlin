@@ -27,7 +27,13 @@ object DesktopSimLauncher {
 
         // Read EKF config overrides if present
         var customVisionStdDevs: com.areslib.math.Vector3? = null
-        val configFile = java.io.File("config_override.json")
+        var configFile = java.io.File("config_override.json")
+        if (!configFile.exists()) {
+            val parentFile = java.io.File("../config_override.json")
+            if (parentFile.exists()) {
+                configFile = parentFile
+            }
+        }
         if (configFile.exists()) {
             try {
                 val configContent = configFile.readText()

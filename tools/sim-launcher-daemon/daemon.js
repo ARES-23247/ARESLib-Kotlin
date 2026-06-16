@@ -275,9 +275,16 @@ const onConnection = (ws) => {
 
         // Handle EKF overrides config if provided
         const configOverridePath = path.join(REPO_ROOT, "config_override.json");
+        const configOverrideSimPath = path.join(REPO_ROOT, "simulator", "config_override.json");
         if (msg.params) {
           try {
-            fs.writeFileSync(configOverridePath, JSON.stringify(msg.params, null, 2));
+            const configStr = JSON.stringify(msg.params, null, 2);
+            fs.writeFileSync(configOverridePath, configStr);
+            try {
+              fs.writeFileSync(configOverrideSimPath, configStr);
+            } catch (simErr) {
+              console.error("[Daemon Warning] Failed to write simulator config_override.json:", simErr.message);
+            }
             const logParams = { ...msg.params };
             if (logParams.obstacles) {
               logParams.obstacles = `[${logParams.obstacles.length} obstacles]`;
@@ -296,6 +303,9 @@ const onConnection = (ws) => {
           // Clean up any stale override files
           if (fs.existsSync(configOverridePath)) {
             try { fs.unlinkSync(configOverridePath); } catch (e) {}
+          }
+          if (fs.existsSync(configOverrideSimPath)) {
+            try { fs.unlinkSync(configOverrideSimPath); } catch (e) {}
           }
         }
 
@@ -344,10 +354,14 @@ const onConnection = (ws) => {
           activeProcess.on("exit", (code) => {
             console.log(`[Daemon] Simulator exited with code ${code}`);
             activeProcess = null;
-            // Clean up config_override.json
+            // Clean up config_override.json files
             const configOverridePath = path.join(REPO_ROOT, "config_override.json");
+            const configOverrideSimPath = path.join(REPO_ROOT, "simulator", "config_override.json");
             if (fs.existsSync(configOverridePath)) {
               try { fs.unlinkSync(configOverridePath); } catch (e) {}
+            }
+            if (fs.existsSync(configOverrideSimPath)) {
+              try { fs.unlinkSync(configOverrideSimPath); } catch (e) {}
             }
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({
