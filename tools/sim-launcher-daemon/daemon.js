@@ -183,6 +183,15 @@ if (hasSSL) {
     console.log(`[Proxy] Browser client connected. Proxying to ws://${targetHost}:5810`);
     const targetUrl = `ws://${targetHost}:5810/nt/v4/websocket`;
     const simWs = new WebSocket(targetUrl);
+    const messageQueue = [];
+
+    simWs.on("open", () => {
+      console.log("[Proxy] Simulator connection opened. Flushing message queue...");
+      while (messageQueue.length > 0) {
+        const msg = messageQueue.shift();
+        simWs.send(msg.data, { binary: msg.isBinary });
+      }
+    });
 
     simWs.on("message", (data, isBinary) => {
       if (clientWs.readyState === WebSocket.OPEN) {
@@ -193,6 +202,8 @@ if (hasSSL) {
     clientWs.on("message", (data, isBinary) => {
       if (simWs.readyState === WebSocket.OPEN) {
         simWs.send(data, { binary: isBinary });
+      } else {
+        messageQueue.push({ data, isBinary });
       }
     });
 
