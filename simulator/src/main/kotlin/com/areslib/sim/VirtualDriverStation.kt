@@ -32,23 +32,18 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
     // Mode toggles
     @Volatile var isTeleopMode = true
-        private set
-
     @Volatile var isFieldCentric = false
-        private set
-
     @Volatile var isRedAlliance = false
-        private set
 
     // FSM Toggles
     @Volatile var isIntaking = false
-        private set
-    
     @Volatile var isFlywheelOn = false
-        private set
-
     @Volatile var isTransferring = false
-        private set
+
+    // Web inputs
+    @Volatile var webVx = 0.0
+    @Volatile var webVy = 0.0
+    @Volatile var webOmega = 0.0
 
     // Gamepad axes
     @Volatile private var gamepadLx = 0f
@@ -468,6 +463,11 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         if (kotlin.math.abs(gamepadLy) > 0.1) vx += -gamepadLy * MAX_LINEAR_SPEED
         if (kotlin.math.abs(gamepadLx) > 0.1) vy += -gamepadLx * MAX_LINEAR_SPEED
         if (kotlin.math.abs(gamepadRx) > 0.1) omega += -gamepadRx * MAX_ANGULAR_SPEED
+
+        // Web Inputs
+        vx += webVx
+        vy += webVy
+        omega += webOmega
 
         // Clamp to max speeds
         vx = vx.coerceIn(-MAX_LINEAR_SPEED, MAX_LINEAR_SPEED)

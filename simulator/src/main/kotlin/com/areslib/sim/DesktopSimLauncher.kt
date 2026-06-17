@@ -238,6 +238,7 @@ object DesktopSimLauncher {
 
         while (true) {
             org.lwjgl.glfw.GLFW.glfwPollEvents()
+            TelemetryPublisher.pollWebInputs(driverStation)
             val startTime = System.currentTimeMillis()
 
             // Current Simulated Pose
@@ -333,12 +334,11 @@ object DesktopSimLauncher {
             val worldVy: Double
 
             if (driverStation.isTeleopMode && driverStation.isFieldCentric) {
-                // Field-centric: drivers stand on the SIDES of the field (Y-axis walls).
-                // Red drivers stand at -Y wall facing +Y: W=+Y, A=-X (left when facing +Y)
-                // Blue drivers stand at +Y wall facing -Y: W=-Y, A=+X
+                // Field-centric: map inputs directly to the alliance-oriented field coordinate frame.
+                // Red Alliance is mirrored/rotated 180 degrees from Blue.
                 val allianceSign = if (driverStation.isRedAlliance) 1.0 else -1.0
-                worldVx = -chassisSpeeds.vyMetersPerSecond * allianceSign
-                worldVy = chassisSpeeds.vxMetersPerSecond * allianceSign
+                worldVx = chassisSpeeds.vxMetersPerSecond * allianceSign
+                worldVy = chassisSpeeds.vyMetersPerSecond * allianceSign
             } else {
                 // Robot-centric teleop or auto: chassisSpeeds is robot-relative, rotate to world
                 worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
@@ -374,7 +374,7 @@ object DesktopSimLauncher {
                 moduleSpeedsActual, moduleAnglesActual
             )
             TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
-            TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode)
+            TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode, driverStation.isRedAlliance)
 
             // --- FSM STATE UPDATES ---
             if (driverStation.isTeleopMode) {

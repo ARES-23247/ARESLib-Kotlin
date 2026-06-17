@@ -29,6 +29,21 @@ object TelemetryPublisher {
     // Drive mode
     private val fieldCentricPub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/FieldCentric").publish()
     private val teleopModePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/TeleopMode").publish()
+    private val redAlliancePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/RedAlliance").publish()
+
+    // --- Web Dashboard Inputs Subscribers ---
+    private val webVxSub = ntInst.getDoubleTopic("ARES/Input/vx").subscribe(0.0)
+    private val webVySub = ntInst.getDoubleTopic("ARES/Input/vy").subscribe(0.0)
+    private val webOmegaSub = ntInst.getDoubleTopic("ARES/Input/omega").subscribe(0.0)
+    private val webIntakeSub = ntInst.getBooleanTopic("ARES/Input/isIntaking").subscribe(false)
+    private val webFlywheelSub = ntInst.getBooleanTopic("ARES/Input/isFlywheelOn").subscribe(false)
+    private val webTransferSub = ntInst.getBooleanTopic("ARES/Input/isTransferring").subscribe(false)
+    private val webTeleopSub = ntInst.getBooleanTopic("ARES/Input/isTeleopMode").subscribe(true)
+    private val webFieldCentricSub = ntInst.getBooleanTopic("ARES/Input/isFieldCentric").subscribe(false)
+    private val webRedAllianceSub = ntInst.getBooleanTopic("ARES/Input/isRedAlliance").subscribe(false)
+
+    private var lastWebInputTimestamp = 0L
+    private var lastWebInputReceiveTime = 0L
 
     // Superstructure telemetry
     private val flywheelRPMPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Superstructure/FlywheelRPM").publish()
@@ -106,9 +121,44 @@ object TelemetryPublisher {
     /**
      * Publishes drive mode flags.
      */
-    fun publishDriveMode(fieldCentric: Boolean, teleopMode: Boolean) {
+    fun publishDriveMode(fieldCentric: Boolean, teleopMode: Boolean, redAlliance: Boolean) {
         fieldCentricPub.set(fieldCentric)
         teleopModePub.set(teleopMode)
+        redAlliancePub.set(redAlliance)
+    }
+
+    /**
+     * Polls `/ARES/Input` topics from NT4. If fresh updates are found,
+     * pushes them directly into the VirtualDriverStation instance.
+     */
+    fun pollWebInputs(driverStation: VirtualDriverStation) {
+        val vxEntry = webVxSub.getAtomic()
+        val now = System.currentTimeMillis()
+
+        // Check if the NetworkTables timestamp has changed since our last poll
+        if (vxEntry.timestamp != lastWebInputTimestamp) {
+            lastWebInputTimestamp = vxEntry.timestamp
+            lastWebInputReceiveTime = now
+        }
+
+        // Only apply web inputs if we've received an update within the last 1.0 seconds
+        if (now - lastWebInputReceiveTime < 1000) {
+            driverStation.webVx = vxEntry.value
+            driverStation.webVy = webVySub.get()
+            driverStation.webOmega = webOmegaSub.get()
+
+            driverStation.isIntaking = webIntakeSub.get()
+            driverStation.isFlywheelOn = webFlywheelSub.get()
+            driverStation.isTransferring = webTransferSub.get()
+            driverStation.isTeleopMode = webTeleopSub.get()
+            driverStation.isFieldCentric = webFieldCentricSub.get()
+            driverStation.isRedAlliance = webRedAllianceSub.get()
+        } else {
+            // Clear web speeds so they don't linger
+            driverStation.webVx = 0.0
+            driverStation.webVy = 0.0
+            driverStation.webOmega = 0.0
+        }
     }
 
     /**
