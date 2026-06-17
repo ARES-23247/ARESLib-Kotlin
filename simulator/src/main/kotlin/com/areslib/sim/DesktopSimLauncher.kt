@@ -156,6 +156,7 @@ object DesktopSimLauncher {
         createWalls(world)
 
         // Load obstacles: either from config_override.json (if obstacles are defined there) or fallback to decode_obstacles.json
+        val activeObstacles = mutableListOf<Body>()
         var loadedCustomObstacles = false
         if (configFile.exists()) {
             try {
@@ -165,6 +166,7 @@ object DesktopSimLauncher {
                 if (root != null && root.has("obstacles") && !root.get("obstacles").isJsonNull) {
                     println("Loading custom obstacles from config_override.json into physics world...")
                     val obstacles = FieldObstacleLoader.loadObstacles(world, configContent, inMeters = true)
+                    activeObstacles.addAll(obstacles)
                     println("Loaded ${obstacles.size} custom obstacles successfully.")
                     loadedCustomObstacles = true
                 }
@@ -179,6 +181,7 @@ object DesktopSimLauncher {
             if (decodeJson != null) {
                 println("Loading DECODE season obstacles into physics world...")
                 val obstacles = FieldObstacleLoader.loadObstacles(world, decodeJson)
+                activeObstacles.addAll(obstacles)
                 println("Loaded ${obstacles.size} obstacles successfully.")
             } else {
                 println("No decode_obstacles.json resource found, skipping field obstacle generation.")
@@ -235,10 +238,35 @@ object DesktopSimLauncher {
             )
         }
         val visionSimulator = com.areslib.hardware.vision.VisionSimulator(visionTags)
+        var lastObstaclesTimestamp = 0L
 
         while (true) {
             org.lwjgl.glfw.GLFW.glfwPollEvents()
             TelemetryPublisher.pollWebInputs(driverStation)
+
+            // Check if we received updated obstacles from the web client
+            val obstaclesEntry = TelemetryPublisher.obstaclesSub.getAtomic()
+            if (obstaclesEntry.timestamp != lastObstaclesTimestamp) {
+                lastObstaclesTimestamp = obstaclesEntry.timestamp
+                val jsonStr = obstaclesEntry.value
+                println("[Simulator] Received updated field obstacles over NetworkTables: $jsonStr")
+
+                // Clear existing active obstacles from dyn4j world
+                activeObstacles.forEach { body ->
+                    world.removeBody(body)
+                }
+                activeObstacles.clear()
+
+                if (jsonStr.isNotEmpty() && jsonStr != "[]" && jsonStr != "{\"obstacles\":[]}") {
+                    try {
+                        val newObstacles = FieldObstacleLoader.loadObstacles(world, jsonStr, inMeters = true)
+                        activeObstacles.addAll(newObstacles)
+                        println("[Simulator] Dynamically loaded ${newObstacles.size} new obstacles.")
+                    } catch (e: Exception) {
+                        println("[Simulator] Failed to dynamically load obstacles: ${e.message}")
+                    }
+                }
+            }
             val startTime = System.currentTimeMillis()
 
             // Current Simulated Pose

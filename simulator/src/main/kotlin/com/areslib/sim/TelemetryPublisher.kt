@@ -41,8 +41,10 @@ object TelemetryPublisher {
     private val webTeleopSub = ntInst.getBooleanTopic("ARES/Input/isTeleopMode").subscribe(true)
     private val webFieldCentricSub = ntInst.getBooleanTopic("ARES/Input/isFieldCentric").subscribe(false)
     private val webRedAllianceSub = ntInst.getBooleanTopic("ARES/Input/isRedAlliance").subscribe(false)
+    private val webHeartbeatSub = ntInst.getIntegerTopic("ARES/Input/heartbeat").subscribe(0L)
+    val obstaclesSub = ntInst.getStringTopic("ARES/Input/obstacles").subscribe("")
 
-    private var lastWebInputTimestamp = 0L
+    private var lastWebHeartbeatTimestamp = 0L
     private var lastWebInputReceiveTime = 0L
 
     // Superstructure telemetry
@@ -132,18 +134,18 @@ object TelemetryPublisher {
      * pushes them directly into the VirtualDriverStation instance.
      */
     fun pollWebInputs(driverStation: VirtualDriverStation) {
-        val vxEntry = webVxSub.getAtomic()
+        val heartbeatEntry = webHeartbeatSub.getAtomic()
         val now = System.currentTimeMillis()
 
-        // Check if the NetworkTables timestamp has changed since our last poll
-        if (vxEntry.timestamp != lastWebInputTimestamp) {
-            lastWebInputTimestamp = vxEntry.timestamp
+        // Check if the NetworkTables heartbeat timestamp has changed since our last poll
+        if (heartbeatEntry.timestamp != lastWebHeartbeatTimestamp) {
+            lastWebHeartbeatTimestamp = heartbeatEntry.timestamp
             lastWebInputReceiveTime = now
         }
 
         // Only apply web inputs if we've received an update within the last 1.0 seconds
         if (now - lastWebInputReceiveTime < 1000) {
-            driverStation.webVx = vxEntry.value
+            driverStation.webVx = webVxSub.get()
             driverStation.webVy = webVySub.get()
             driverStation.webOmega = webOmegaSub.get()
 
