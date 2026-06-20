@@ -21,4 +21,7 @@ abstract class LinearOpMode {
     val telemetry: Telemetry = org.firstinspires.ftc.robotcore.external.MockTelemetry()
     fun opModeIsActive(): Boolean = true
     fun waitForStart() {}
+    fun sleep(milliseconds: Long) {
+        Thread.sleep(milliseconds)
+    }
 }

@@ -43,19 +43,32 @@ open class ARESMecanumAuto : LinearOpMode() {
         val pathFollower = com.areslib.ftc.control.FtcMecanumPathFollower(robot)
 
         // Parse trajectory spline path
-        val path: Path = try {
-            DynamicPathLoader.loadPath("example_path")
+        var path: Path? = null
+        var pathLoadError: String? = null
+        try {
+            path = DynamicPathLoader.loadPath("Example Path")
         } catch (e: Exception) {
-            telemetry.addData("Error", "Failed to load dynamic path: ${e.message}")
-            telemetry.update()
-            return
+            pathLoadError = e.message ?: "Unknown error"
         }
 
-        telemetry.addData("Status", "Initialized. Path loaded.")
-        telemetry.update()
+        if (pathLoadError != null) {
+            telemetry.addData("Error", "Failed to load dynamic path: $pathLoadError")
+            telemetry.addData("Status", "Initialization Failed!")
+            telemetry.update()
+        } else {
+            telemetry.addData("Status", "Initialized. Path loaded.")
+            telemetry.update()
+        }
 
         try {
             waitForStart()
+
+            if (path == null) {
+                telemetry.addData("CRASH", "Aborting: Path not loaded. Error: $pathLoadError")
+                telemetry.update()
+                sleep(2000L)
+                return
+            }
 
             val startMs = RobotClock.currentTimeMillis()
             var lastTime = 0.0

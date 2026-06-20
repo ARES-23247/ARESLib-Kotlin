@@ -73,6 +73,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     // Vision Tracker and Outlier Snapper
     val visionTracker = FtcVisionTracker(store, limelightIO, pinpointIO)
 
+    private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
 
     /**
@@ -106,10 +107,13 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 timestampMs = timestamp
             )
             
-            // Watchdog check for pinpoint sensor staleness
+            // Watchdog check for pinpoint sensor staleness - log warning instead of crashing
             if (pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100) {
-                safeHardware()
-                throw IllegalStateException("Pinpoint pose update is stale! Age: ${timestamp - poseUpdate.timestampMs}ms (exceeds 100ms threshold)")
+                val age = timestamp - poseUpdate.timestampMs
+                if (timestamp - lastPinpointWarningTime > 2000L) {
+                    System.err.println("FtcBaseRobot: Pinpoint pose update is stale! Age: ${age}ms")
+                    lastPinpointWarningTime = timestamp
+                }
             }
             store.dispatch(poseUpdate)
 
