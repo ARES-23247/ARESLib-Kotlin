@@ -71,4 +71,54 @@ class FtcLimelightIOTest {
         val expectedYawRad = Math.toRadians(16.0)
         assertEquals(expectedYawRad, transformedPose2d.heading.radians, 1e-6)
     }
+
+    @Test
+    fun testFiducialParsing() {
+        val ftcPose = Pose3D(
+            Position(DistanceUnit.METER, 1.0, 2.0, 0.5, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
+        )
+        val relativePose = Pose3D(
+            Position(DistanceUnit.METER, 0.5, -0.3, 1.5, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 10.0, 20.0, 30.0, 0)
+        )
+        val mockFiducial = com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult(
+            fiducialId = 1,
+            tx = 5.0,
+            ty = 2.0,
+            pose3d = Pose3D(),
+            robotPoseTargetSpace = relativePose
+        )
+        
+        class MockFiducialLLResult(
+            private val valid: Boolean,
+            private val botpose: Pose3D?,
+            private val fiducials: List<com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult>
+        ) : LLResult() {
+            override fun isValid(): Boolean = valid
+            override fun getBotpose(): Pose3D? = botpose
+            override fun getFiducialResults(): List<com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult> = fiducials
+        }
+        
+        val mockResult = MockFiducialLLResult(valid = true, botpose = ftcPose, fiducials = listOf(mockFiducial))
+        val mockLimelight = MockLimelight3A(mockResult)
+        val limelightIO = FtcLimelightIO(mockLimelight)
+        
+        val inputs = VisionIOInputs()
+        limelightIO.updateInputs(inputs)
+        
+        assertTrue(inputs.isConnected)
+        assertEquals(1, inputs.measurements.size)
+        
+        val measurement = inputs.measurements[0]
+        assertEquals(1, measurement.tagId)
+        
+        // Verify relative target space pose fields
+        assertEquals(0.5, measurement.robotPoseTargetSpace.x, 1e-6)
+        assertEquals(-0.3, measurement.robotPoseTargetSpace.y, 1e-6)
+        assertEquals(1.5, measurement.robotPoseTargetSpace.z, 1e-6)
+        assertEquals(Math.toRadians(30.0), measurement.robotPoseTargetSpace.rotation.x, 1e-6)
+        assertEquals(Math.toRadians(20.0), measurement.robotPoseTargetSpace.rotation.y, 1e-6)
+        assertEquals(Math.toRadians(10.0), measurement.robotPoseTargetSpace.rotation.z, 1e-6)
+    }
 }

@@ -325,6 +325,7 @@ const onConnection = (ws) => {
           // Line-by-line stdout parsing
           const stdoutRl = readline.createInterface({ input: activeProcess.stdout });
           stdoutRl.on("line", (line) => {
+            console.log(`[SIM-OUT] ${line}`);
             if (!isStarted && (
               line.includes("Simulation Running") ||
               line.includes("NT: Listening") ||
@@ -346,6 +347,7 @@ const onConnection = (ws) => {
           // Line-by-line stderr parsing
           const stderrRl = readline.createInterface({ input: activeProcess.stderr });
           stderrRl.on("line", (line) => {
+            console.error(`[SIM-ERR] ${line}`);
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: "log", line: `[ERROR] ${line}` }));
             }

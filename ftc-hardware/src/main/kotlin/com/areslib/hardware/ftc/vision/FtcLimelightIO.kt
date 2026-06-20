@@ -62,14 +62,47 @@ class FtcLimelightIO(
                         rotation = wpiRotation
                     )
                     
-                    val measurement = VisionMeasurement(
-                        timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-                        targetPose = pose,
-                        tagId = -1, // Limelight result might give primary tag, but we mock -1 for now
-                        ambiguity = 0.0 // Could map from result.ta
-                    )
-                    
-                    inputs.measurements = listOf(measurement)
+                    val fiducials = result.getFiducialResults()
+                    if (fiducials?.isNotEmpty() == true) {
+                        val measurements = ArrayList<VisionMeasurement>(fiducials.size)
+                        for (i in 0 until fiducials.size) {
+                            val f = fiducials[i]
+                            val robotPoseTargetSpaceFTC = f.getRobotPoseTargetSpace()
+                            val posTargetMeters = robotPoseTargetSpaceFTC.position.toUnit(DistanceUnit.METER)
+                            val orientTarget = robotPoseTargetSpaceFTC.orientation
+                            
+                            val robotPoseTargetSpaceWpi = Pose3d(
+                                translation = com.areslib.math.Translation3d(
+                                    x = posTargetMeters.x,
+                                    y = posTargetMeters.y,
+                                    z = posTargetMeters.z
+                                ),
+                                rotation = com.areslib.math.Rotation3d(
+                                    roll = orientTarget.getRoll(AngleUnit.RADIANS),
+                                    pitch = orientTarget.getPitch(AngleUnit.RADIANS),
+                                    yaw = orientTarget.getYaw(AngleUnit.RADIANS)
+                                )
+                            )
+                            
+                            val measurement = VisionMeasurement(
+                                timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+                                targetPose = pose,
+                                tagId = f.getFiducialId(),
+                                ambiguity = 0.0,
+                                robotPoseTargetSpace = robotPoseTargetSpaceWpi
+                            )
+                            measurements.add(measurement)
+                        }
+                        inputs.measurements = measurements
+                    } else {
+                        val measurement = VisionMeasurement(
+                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+                            targetPose = pose,
+                            tagId = -1,
+                            ambiguity = 0.0
+                        )
+                        inputs.measurements = listOf(measurement)
+                    }
                 } else {
                     inputs.measurements = emptyList()
                 }

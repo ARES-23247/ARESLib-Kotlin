@@ -86,7 +86,7 @@ class SensoryReplayRunnerTest {
                                 com.areslib.math.Translation3d(1.1, 0.2, 0.0),
                                 com.areslib.math.Rotation3d()
                             ),
-                            tagId = 1,
+                            tagId = 2,
                             ambiguity = 0.05
                         )
                     )

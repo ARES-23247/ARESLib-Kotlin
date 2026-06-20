@@ -139,15 +139,23 @@ object TelemetryPublisher {
 
         // Check if the NetworkTables heartbeat timestamp has changed since our last poll
         if (heartbeatEntry.timestamp != lastWebHeartbeatTimestamp) {
+            println("[TelemetryPublisher] Heartbeat updated: val=${heartbeatEntry.value}, ts=${heartbeatEntry.timestamp}, lastTs=$lastWebHeartbeatTimestamp")
             lastWebHeartbeatTimestamp = heartbeatEntry.timestamp
             lastWebInputReceiveTime = now
         }
 
         // Only apply web inputs if we've received an update within the last 1.0 seconds
-        if (now - lastWebInputReceiveTime < 1000) {
-            driverStation.webVx = webVxSub.get()
-            driverStation.webVy = webVySub.get()
-            driverStation.webOmega = webOmegaSub.get()
+        val timeDiff = now - lastWebInputReceiveTime
+        if (timeDiff < 1000) {
+            val vx = webVxSub.get()
+            val vy = webVySub.get()
+            val omega = webOmegaSub.get()
+            if (vx != 0.0 || vy != 0.0 || omega != 0.0) {
+                println("[TelemetryPublisher] Applying web inputs: vx=$vx, vy=$vy, omega=$omega (timeDiff=$timeDiff ms)")
+            }
+            driverStation.webVx = vx
+            driverStation.webVy = vy
+            driverStation.webOmega = omega
 
             driverStation.isIntaking = webIntakeSub.get()
             driverStation.isFlywheelOn = webFlywheelSub.get()

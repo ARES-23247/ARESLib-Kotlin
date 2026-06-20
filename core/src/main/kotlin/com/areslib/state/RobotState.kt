@@ -104,7 +104,8 @@ data class VisionMeasurement(
     val timestampMs: Long = 0L,
     val targetPose: Pose3d = Pose3d(),
     val tagId: Int = -1,
-    val ambiguity: Double = 0.0
+    val ambiguity: Double = 0.0,
+    val robotPoseTargetSpace: Pose3d = Pose3d()
 )
 
 data class VisionState(
