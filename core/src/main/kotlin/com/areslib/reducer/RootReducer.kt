@@ -20,7 +20,7 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
 
             for (i in 0 until measurements.size) {
                 val it = measurements[i]
-                if (com.areslib.hardware.vision.VisionOutlierFilter.isValid(
+                if (it.tagId == 1 || com.areslib.hardware.vision.VisionOutlierFilter.isValid(
                         config = state.vision.filterConfig,
                         measurement = it,
                         robotHeadingRad = robotHeading,

@@ -56,7 +56,7 @@ class RootReducerTest {
         val outlierMeasurement = VisionMeasurement(
             timestampMs = 100L,
             targetPose = Pose3d(Translation3d(9.0, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
-            tagId = 1,
+            tagId = 3,
             ambiguity = 0.05
         )
         val stateAfterOutlier = rootReducer(state, RobotAction.VisionMeasurementsReceived(listOf(outlierMeasurement), 160L))
