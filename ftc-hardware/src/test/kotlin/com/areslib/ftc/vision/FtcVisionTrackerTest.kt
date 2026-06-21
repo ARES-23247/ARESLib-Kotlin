@@ -27,7 +27,7 @@ class FtcVisionTrackerTest {
     fun `test initial alignment snap`() {
         val store = Store(RobotState(), ::rootReducer)
         val mockMeasurement = VisionMeasurement(
-            tagId = 1,
+            tagId = 3,
             targetPose = Pose3d(Translation3d(1.0, 2.0, 0.0), Rotation3d(0.0, 0.0, 0.5)), // 0.5 yaw rad
             ambiguity = 0.01,
             timestampMs = 100
@@ -50,7 +50,7 @@ class FtcVisionTrackerTest {
         val store = Store(RobotState(), ::rootReducer)
         // High ambiguity tag (> maxAmbiguity, which defaults to 0.15)
         val mockMeasurement = VisionMeasurement(
-            tagId = 1,
+            tagId = 3,
             targetPose = Pose3d(Translation3d(1.0, 2.0, 0.0), Rotation3d(0.0, 0.0, 0.5)),
             ambiguity = 0.5,
             timestampMs = 100
