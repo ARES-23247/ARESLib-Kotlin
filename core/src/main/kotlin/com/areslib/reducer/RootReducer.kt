@@ -36,15 +36,17 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
 
             var currentEstimator = state.drive.poseEstimator
             val stdDevs = action.customVisionStdDevs ?: DEFAULT_STD_DEVS
-            for (i in 0 until validMeasurements.size) {
-                val measurement = validMeasurements[i]
-                if (measurement.tagId == 1) continue // Skip Tag 1 for EKF fusion
-                currentEstimator = com.areslib.math.PoseEstimator.addVisionMeasurement(
-                    state = currentEstimator,
-                    measurement = measurement,
-                    visionStdDevs = stdDevs,
-                    numTags = validMeasurements.size
-                )
+            val hasTag1 = validMeasurements.any { it.tagId == 1 }
+            if (!hasTag1) {
+                for (i in 0 until validMeasurements.size) {
+                    val measurement = validMeasurements[i]
+                    currentEstimator = com.areslib.math.PoseEstimator.addVisionMeasurement(
+                        state = currentEstimator,
+                        measurement = measurement,
+                        visionStdDevs = stdDevs,
+                        numTags = validMeasurements.size
+                    )
+                }
             }
 
             val filteredAction = action.copy(measurements = validMeasurements)
