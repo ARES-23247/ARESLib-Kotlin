@@ -6,6 +6,7 @@ import com.areslib.pathing.PathPlannerParser
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
 import com.areslib.state.RobotState
+import com.areslib.util.RobotClock
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
 import org.dyn4j.geometry.Geometry
@@ -562,25 +563,25 @@ object DesktopSimLauncher {
                 // Dispatch intake state
                 state = com.areslib.reducer.rootReducer(
                     state, 
-                    com.areslib.action.RobotAction.SetIntakeActive(driverStation.isIntaking, System.currentTimeMillis())
+                    com.areslib.action.RobotAction.SetIntakeActive(driverStation.isIntaking, RobotClock.currentTimeMillis())
                 )
                 
                 // Dispatch flywheel state
                 state = com.areslib.reducer.rootReducer(
                     state, 
-                    com.areslib.action.RobotAction.SetFlywheelActive(driverStation.isFlywheelOn, System.currentTimeMillis())
+                    com.areslib.action.RobotAction.SetFlywheelActive(driverStation.isFlywheelOn, RobotClock.currentTimeMillis())
                 )
                 
                 // Update flywheel RPM from physics model
                 state = com.areslib.reducer.rootReducer(
                     state, 
-                    com.areslib.action.RobotAction.UpdateFlywheelRPM(robotDouble.flywheelRPM, System.currentTimeMillis())
+                    com.areslib.action.RobotAction.UpdateFlywheelRPM(robotDouble.flywheelRPM, RobotClock.currentTimeMillis())
                 )
                 
                 // Dispatch transfer state (reducer gates on flywheel readiness)
                 state = com.areslib.reducer.rootReducer(
                     state, 
-                    com.areslib.action.RobotAction.SetTransferActive(driverStation.isTransferring, System.currentTimeMillis())
+                    com.areslib.action.RobotAction.SetTransferActive(driverStation.isTransferring, RobotClock.currentTimeMillis())
                 )
                 
                 // Intake Logic (Distance-based sensor approximation)
@@ -598,7 +599,7 @@ object DesktopSimLauncher {
                             iterator.remove()
                             state = com.areslib.reducer.rootReducer(
                                 state, 
-                                com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount + 1, System.currentTimeMillis())
+                                com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount + 1, RobotClock.currentTimeMillis())
                             )
                             println("INTAKED BALL! Inventory: ${state.superstructure.inventoryCount}")
                         }
@@ -606,11 +607,11 @@ object DesktopSimLauncher {
                 }
 
                 // Shoot Logic — only fires when transfer is active (flywheel at speed + RT held + has ball)
-                if (state.superstructure.transferActive && state.superstructure.inventoryCount > 0 && System.currentTimeMillis() - lastShootTime > 500) {
-                    lastShootTime = System.currentTimeMillis()
+                if (state.superstructure.transferActive && state.superstructure.inventoryCount > 0 && RobotClock.currentTimeMillis() - lastShootTime > 500) {
+                    lastShootTime = RobotClock.currentTimeMillis()
                     state = com.areslib.reducer.rootReducer(
                         state, 
-                        com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount - 1, System.currentTimeMillis())
+                        com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount - 1, RobotClock.currentTimeMillis())
                     )
                     
                     val ball = Body()
@@ -680,7 +681,7 @@ object DesktopSimLauncher {
             lastY = newY
             lastHeading = newHeading
 
-            val currentTimeMs = System.currentTimeMillis()
+            val currentTimeMs = RobotClock.currentTimeMillis()
 
             // 1. Dispatch Odometry Hardware update using Redux Reducer
             state = com.areslib.reducer.rootReducer(

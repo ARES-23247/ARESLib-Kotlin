@@ -11,11 +11,14 @@ import java.util.concurrent.TimeUnit
 
 object CloudExporter {
     @Volatile
-    var areswebServerUrl: String = "http://localhost:5001/aresweb-23247/us-central1/api"
+    var areswebServerUrl: String = "http://localhost:5001/aresfirst-portal/us-central1/api"
 
-    private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { thread ->
-        Thread(thread, "ARES-CloudExporter-Thread").apply { isDaemon = true }
+    init {
+        System.getenv("ARESWEB_API_URL")?.let { areswebServerUrl = it }
     }
+
+    @Volatile
+    private var executor: ScheduledExecutorService? = null
 
     private val logDir: File by lazy {
         val javaVendor = System.getProperty("java.vendor") ?: ""
@@ -29,14 +32,22 @@ object CloudExporter {
     /**
      * Start background log checker and exporter task.
      */
+    @Synchronized
     fun start() {
-        executor.scheduleWithFixedDelay({
-            try {
-                exportLogs()
-            } catch (e: Exception) {
-                System.err.println("CloudExporter: Error in background export task: ${e.message}")
+        val current = executor
+        if (current == null || current.isShutdown) {
+            val newExecutor = Executors.newSingleThreadScheduledExecutor { thread ->
+                Thread(thread, "ARES-CloudExporter-Thread").apply { isDaemon = true }
             }
-        }, 5, 10, TimeUnit.SECONDS)
+            newExecutor.scheduleWithFixedDelay({
+                try {
+                    exportLogs()
+                } catch (e: Exception) {
+                    System.err.println("CloudExporter: Error in background export task: ${e.message}")
+                }
+            }, 5, 10, TimeUnit.SECONDS)
+            executor = newExecutor
+        }
     }
 
     private fun exportLogs() {
@@ -66,11 +77,11 @@ object CloudExporter {
         try {
             for (file in uploadableFiles) {
                 val route = when {
-                    file.name.startsWith("state_log_") -> "/api/upload/states"
-                    file.name.startsWith("action_log_") -> "/api/upload/actions"
-                    file.name.startsWith("input_log_") -> "/api/upload/inputs"
-                    file.name.startsWith("motor_log_") -> "/api/upload/motors"
-                    file.name.startsWith("vision_log_") -> "/api/upload/vision"
+                    file.name.startsWith("state_log_") -> "/upload/states"
+                    file.name.startsWith("action_log_") -> "/upload/actions"
+                    file.name.startsWith("input_log_") -> "/upload/inputs"
+                    file.name.startsWith("motor_log_") -> "/upload/motors"
+                    file.name.startsWith("vision_log_") -> "/upload/vision"
                     else -> continue
                 }
                 
@@ -206,5 +217,21 @@ object CloudExporter {
         } catch (e: Exception) {
             System.err.println("CloudExporter: Failed to archive file ${file.name}: ${e.message}")
         }
+    }
+
+    @Synchronized
+    fun stop() {
+        val current = executor
+        if (current != null && !current.isShutdown) {
+            current.shutdown()
+            try {
+                if (!current.awaitTermination(2, TimeUnit.SECONDS)) {
+                    current.shutdownNow()
+                }
+            } catch (_: InterruptedException) {
+                current.shutdownNow()
+            }
+        }
+        executor = null
     }
 }

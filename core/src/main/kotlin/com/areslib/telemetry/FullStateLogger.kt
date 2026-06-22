@@ -73,6 +73,7 @@ class FullStateLogger(
     )
 
     private var lastStateLogTimeMs = 0L
+    private var lastMotorLogTimeMs = 0L
     private val minStateLogIntervalMs = 1000L / config.logFrequencyHz
 
     // To track vision measurements changes
@@ -117,7 +118,8 @@ class FullStateLogger(
         }
 
         // 2. Log motor telemetry at the same rate
-        if (config.logMotors && (now - lastStateLogTimeMs >= minStateLogIntervalMs)) {
+        if (config.logMotors && (now - lastMotorLogTimeMs >= minStateLogIntervalMs)) {
+            lastMotorLogTimeMs = now
             val motors = HardwareRegistry.getRegisteredMotorsWithNames()
             val entries = ArrayList<MotorLogEntry>(motors.size)
             for ((name, motor) in motors) {

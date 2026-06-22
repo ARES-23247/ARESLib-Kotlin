@@ -120,5 +120,6 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
         inputLogger.stop()
         actionLogger.stop()
         fullStateLogger.stop()
+        CloudExporter.stop()
     }
 }
