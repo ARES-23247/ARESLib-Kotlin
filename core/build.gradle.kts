@@ -18,6 +18,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.github.FRC-For-FTC-Tools:nt-self-impl:0.0.2")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
     testImplementation(kotlin("test"))
 }
 
