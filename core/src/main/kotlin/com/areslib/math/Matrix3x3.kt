@@ -1,8 +1,13 @@
 package com.areslib.math
 
 /**
- * Immutable 3x3 Matrix optimized for low GC overhead.
+ * Mutable 3x3 matrix scratchpad optimized for zero-GC overhead in EKF hot paths.
  * Used primarily for 3-DOF Pose2d covariance in Kalman Filters.
+ *
+ * Fields are intentionally `var` with in-place mutators ([setTo], [addInPlace], [multiplyInPlace])
+ * to enable pre-allocated scratchpad reuse without heap allocations during control loop execution.
+ * Immutable operations ([plus], [minus], [times]) return new instances and should be used
+ * only outside hot paths (e.g., initialization, configuration).
  */
 data class Matrix3x3(
     var m00: Double = 0.0, var m01: Double = 0.0, var m02: Double = 0.0,

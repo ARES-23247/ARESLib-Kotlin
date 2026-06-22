@@ -2,6 +2,11 @@ package com.areslib.reducer
 
 import com.areslib.action.RobotAction
 import com.areslib.state.DriveState
+import com.areslib.state.DriveMode
+import com.areslib.math.InputMath
+import com.areslib.math.HistoryBuffer
+import com.areslib.math.Matrix3x3
+import com.areslib.math.Pose2d
 import com.areslib.math.Translation2d
 import com.areslib.math.Rotation2d
 import com.areslib.math.PoseEstimator
@@ -40,13 +45,13 @@ object DriveReducer {
             }
             is RobotAction.PoseUpdate -> {
                 val updatedEstimator = if (action.isReset) {
-                    val newPose = com.areslib.math.Pose2d(action.xMeters, action.yMeters, com.areslib.math.Rotation2d(action.headingRadians))
-                    val newHistory = com.areslib.math.HistoryBuffer(50)
-                    newHistory.addEntry(action.timestampMs, newPose, com.areslib.math.Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01))
+                    val newPose = Pose2d(action.xMeters, action.yMeters, Rotation2d(action.headingRadians))
+                    val newHistory = HistoryBuffer(50)
+                    newHistory.addEntry(action.timestampMs, newPose, Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01))
                     
                     state.poseEstimator.copy(
                         estimatedPose = newPose,
-                        covariance = com.areslib.math.Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01),
+                        covariance = Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01),
                         history = newHistory,
                         isBeached = false,
                         lastUnbeachedTimeMs = action.timestampMs
@@ -54,7 +59,7 @@ object DriveReducer {
                 } else {
                     val deltaX = action.xMeters - state.odometryX
                     val deltaY = action.yMeters - state.odometryY
-                    val deltaHeading = com.areslib.math.InputMath.wrapAngle(action.headingRadians - state.odometryHeading)
+                    val deltaHeading = InputMath.wrapAngle(action.headingRadians - state.odometryHeading)
 
                     val deltaTrans = Translation2d(deltaX, deltaY)
                     PoseEstimator.addOdometryObservation(
@@ -93,8 +98,8 @@ object DriveReducer {
                 val hasAngularInput = kotlin.math.abs(action.targetAngularVelocity) > 0.05
                 
                 val currentMode = state.driveMode
-                val newMode = if (currentMode == com.areslib.state.DriveMode.X_BRAKE && (hasLinearInput || hasAngularInput)) {
-                    com.areslib.state.DriveMode.TELEOP
+                val newMode = if (currentMode == DriveMode.X_BRAKE && (hasLinearInput || hasAngularInput)) {
+                    DriveMode.TELEOP
                 } else {
                     currentMode
                 }

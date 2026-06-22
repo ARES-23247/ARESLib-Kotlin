@@ -100,6 +100,25 @@ data class SuperstructureState(
         get() = flywheelActive && flywheelRPM >= flywheelTargetRPM * 0.95
 }
 
+/**
+ * A single AprilTag fiducial detection from the vision subsystem.
+ *
+ * @property timestampMs Capture timestamp in milliseconds from [com.areslib.util.RobotClock].
+ * @property targetPose The tag's 3D pose in the robot's coordinate frame (meters, radians).
+ * @property tagId The detected AprilTag's numeric fiducial ID.
+ * @property ambiguity PnP pose ambiguity score (0.0 = perfect, >0.2 = unreliable).
+ * @property robotPoseTargetSpace The robot's 3D pose expressed in **target-space** coordinates.
+ *
+ *   Target-space coordinate frame (origin at the center of the AprilTag face):
+ *   - **X+**: to the right of the tag (when facing the tag)
+ *   - **Y+**: upward from the tag
+ *   - **Z+**: outward from the tag face (toward the observer/camera)
+ *   - **Yaw+**: counter-clockwise rotation when viewed from above
+ *
+ *   This pose is the raw output from Limelight's `robotPoseTargetSpace` pipeline result.
+ *   It is used by the alignment controller to compute translational and rotational errors
+ *   for driving the robot square to the tag at a desired standoff distance.
+ */
 data class VisionMeasurement(
     val timestampMs: Long = 0L,
     val targetPose: Pose3d = Pose3d(),

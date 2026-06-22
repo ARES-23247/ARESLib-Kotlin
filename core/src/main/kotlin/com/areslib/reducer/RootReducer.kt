@@ -2,13 +2,17 @@ package com.areslib.reducer
 
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
+import com.areslib.state.VisionMeasurement
+import com.areslib.math.Vector3
+import com.areslib.math.PoseEstimator
+import com.areslib.hardware.vision.VisionOutlierFilter
 
 /**
  * A pure function that transitions the robot state based on the dispatched action.
  * Delegates domain state slices to specialized domain-focused sub-reducers to
  * prevent a single monolithic file and improve readability/extensibility.
  */
-private val DEFAULT_STD_DEVS = com.areslib.math.Vector3(0.05, 0.05, 0.1)
+private val DEFAULT_STD_DEVS = Vector3(0.05, 0.05, 0.1)
 
 fun rootReducer(state: RobotState, action: RobotAction): RobotState {
     return when (action) {
@@ -16,11 +20,11 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             val robotPose = state.drive.poseEstimator.estimatedPose
             val robotHeading = robotPose.heading.radians
             val measurements = action.measurements
-            val validMeasurements = ArrayList<com.areslib.state.VisionMeasurement>(measurements.size)
+            val validMeasurements = ArrayList<VisionMeasurement>(measurements.size)
 
             for (i in 0 until measurements.size) {
                 val it = measurements[i]
-                if (it.tagId == 1 || com.areslib.hardware.vision.VisionOutlierFilter.isValid(
+                if (it.tagId == 1 || VisionOutlierFilter.isValid(
                         config = state.vision.filterConfig,
                         measurement = it,
                         robotHeadingRad = robotHeading,
@@ -36,11 +40,17 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
 
             var currentEstimator = state.drive.poseEstimator
             val stdDevs = action.customVisionStdDevs ?: DEFAULT_STD_DEVS
-            val hasTag1 = validMeasurements.any { it.tagId == 1 }
+            val hasTag1 = run {
+                var found = false
+                for (j in 0 until validMeasurements.size) {
+                    if (validMeasurements[j].tagId == 1) { found = true; break }
+                }
+                found
+            }
             if (!hasTag1) {
                 for (i in 0 until validMeasurements.size) {
                     val measurement = validMeasurements[i]
-                    currentEstimator = com.areslib.math.PoseEstimator.addVisionMeasurement(
+                    currentEstimator = PoseEstimator.addVisionMeasurement(
                         state = currentEstimator,
                         measurement = measurement,
                         visionStdDevs = stdDevs,

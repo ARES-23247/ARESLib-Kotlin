@@ -1,13 +1,30 @@
 package com.areslib.action
 
 /**
- * Represents an immutable intent or hardware update event.
+ * Represents an immutable intent or hardware update event dispatched to the Redux store.
+ * All concrete subtypes are data classes with `val` fields, ensuring immutability.
  */
 interface RobotAction {
     val timestampMs: Long
         get() = com.areslib.util.RobotClock.currentTimeMillis()
 
     // Hardware Updates
+
+    /**
+     * Reports raw odometry deltas and IMU readings from the drive hardware each control loop frame.
+     *
+     * @property xVelocity Robot's X velocity in meters/second (WPILib: +X = forward).
+     * @property yVelocity Robot's Y velocity in meters/second (WPILib: +Y = left).
+     * @property angularVelocity Robot's angular velocity in radians/second (CCW-positive).
+     * @property deltaX Incremental X translation in meters since last frame.
+     * @property deltaY Incremental Y translation in meters since last frame.
+     * @property deltaHeading Incremental heading change in radians since last frame (CCW-positive).
+     * @property pitchDegrees Robot pitch angle in degrees (nose-up positive).
+     * @property rollDegrees Robot roll angle in degrees (right-side-down positive).
+     * @property xAccelerationG X-axis acceleration in G-forces (forward positive).
+     * @property yAccelerationG Y-axis acceleration in G-forces (left positive).
+     * @property zAccelerationG Z-axis acceleration in G-forces (up positive).
+     */
     data class DriveHardwareUpdate(
         val xVelocity: Double,
         val yVelocity: Double,
@@ -23,6 +40,13 @@ interface RobotAction {
         val zAccelerationG: Double = 0.0
     ) : RobotAction
     
+    /**
+     * Reports a simple 2D vision target detection (legacy single-target tracking).
+     *
+     * @property hasTarget Whether a target is currently detected.
+     * @property targetX Target X coordinate in the camera frame (meters).
+     * @property targetY Target Y coordinate in the camera frame (meters).
+     */
     data class VisionUpdate(
         val hasTarget: Boolean,
         val targetX: Double,
@@ -30,12 +54,32 @@ interface RobotAction {
         override val timestampMs: Long
     ) : RobotAction
 
+    /**
+     * Reports all AprilTag fiducial detections from the vision subsystem in a single frame.
+     *
+     * @property measurements List of individual tag detections with pose estimates.
+     * @property customVisionStdDevs Optional override for EKF vision measurement standard deviations
+     *   as a [com.areslib.math.Vector3] of (x meters, y meters, heading radians). If null, defaults are used.
+     */
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
         override val timestampMs: Long,
         val customVisionStdDevs: com.areslib.math.Vector3? = null
     ) : RobotAction
 
+    /**
+     * Reports an absolute pose update from the localization sensor (e.g., GoBilda Pinpoint).
+     *
+     * @property xMeters Absolute X position on the field in meters (WPILib: +X = toward Blue alliance wall).
+     * @property yMeters Absolute Y position on the field in meters (WPILib: +Y = toward back wall).
+     * @property headingRadians Absolute heading in radians (CCW-positive, 0 = facing +X).
+     * @property pitchDegrees Robot pitch angle in degrees (nose-up positive).
+     * @property rollDegrees Robot roll angle in degrees (right-side-down positive).
+     * @property xAccelerationG X-axis acceleration in G-forces.
+     * @property yAccelerationG Y-axis acceleration in G-forces.
+     * @property zAccelerationG Z-axis acceleration in G-forces.
+     * @property isReset If true, forces the EKF to hard-reset to this pose (e.g., re-initialization at match start).
+     */
     data class PoseUpdate(
         val xMeters: Double,
         val yMeters: Double,
@@ -49,22 +93,37 @@ interface RobotAction {
         val isReset: Boolean = false
     ) : RobotAction
 
+    /** Sets the active alliance color for field-centric driving and EKF initialization. */
     data class SetAlliance(
         val alliance: com.areslib.state.Alliance,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 
+    /** Sets the drive control mode (TELEOP, HEADING_HOLD, or X_BRAKE). */
     data class SetDriveMode(
         val mode: com.areslib.state.DriveMode,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 
+    /**
+     * Sets or clears the heading lock target for automatic heading hold.
+     * @property targetRadians Target heading in radians (CCW-positive), or null to disable heading lock.
+     */
     data class SetHeadingLockTarget(
         val targetRadians: Double?,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 
     // Human Intent
+
+    /**
+     * Dispatches driver joystick commands as velocity intents.
+     *
+     * @property targetXVelocity Desired forward velocity as a normalized value [-1.0, 1.0] (WPILib: +X = forward).
+     * @property targetYVelocity Desired lateral velocity as a normalized value [-1.0, 1.0] (WPILib: +Y = left).
+     * @property targetAngularVelocity Desired rotational velocity as a normalized value [-1.0, 1.0] (CCW-positive).
+     * @property isFieldCentric If true, X/Y are relative to the field; if false, relative to the robot chassis.
+     */
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
         val targetXVelocity: Double,
         val targetYVelocity: Double,
@@ -74,43 +133,63 @@ interface RobotAction {
     ) : RobotAction
 
     // Autonomous Events
+
+    /** Fired when the trajectory follower reaches a named event marker along the path. */
     data class PathEventTriggered(
         val eventName: String,
         override val timestampMs: Long
     ) : RobotAction
 
     // Superstructure FSM Actions
+
+    /** Activates or deactivates the intake motor. */
     data class SetIntakeActive(
         val active: Boolean,
         override val timestampMs: Long
     ) : RobotAction
 
+    /** Activates or deactivates the flywheel motor. */
     data class SetFlywheelActive(
         val active: Boolean,
         override val timestampMs: Long
     ) : RobotAction
 
+    /** Activates or deactivates the transfer motor (feeding game pieces to the flywheel). */
     data class SetTransferActive(
         val active: Boolean,
         override val timestampMs: Long
     ) : RobotAction
 
+    /** Reports the measured flywheel RPM from the encoder. */
     data class UpdateFlywheelRPM(
         val rpm: Double,
         override val timestampMs: Long
     ) : RobotAction
 
+    /** Sets the desired flywheel target RPM for the speed controller. */
     data class SetFlywheelTargetRPM(
         val targetRpm: Double,
         override val timestampMs: Long
     ) : RobotAction
 
+    /** Sets the current game piece inventory count. */
     data class SetInventoryCount(
         val count: Int,
         override val timestampMs: Long
     ) : RobotAction
 
     // Obstacle Avoidance Actions
+
+    /**
+     * A single range sensor observation for obstacle detection.
+     *
+     * @property sensorId Unique identifier for this range sensor.
+     * @property angleOffsetRad Sensor's angular offset from robot forward in radians (CCW-positive).
+     * @property positionOffsetXMeters Sensor's X mount offset from robot center in meters (forward positive).
+     * @property positionOffsetYMeters Sensor's Y mount offset from robot center in meters (left positive).
+     * @property distanceMeters Measured distance to the nearest obstacle in meters.
+     * @property maxRangeMeters Sensor's maximum effective range in meters.
+     */
     data class DistanceSensorObservation(
         val sensorId: String,
         val angleOffsetRad: Double,
@@ -120,12 +199,21 @@ interface RobotAction {
         val maxRangeMeters: Double = 4.0
     )
 
+    /** Dispatches a batch of distance sensor observations for costmap integration. */
     data class ObstacleCostmapUpdate(
         val observations: List<DistanceSensorObservation>,
         override val timestampMs: Long
     ) : RobotAction
 
     // Path Following and Switching Actions
+
+    /**
+     * Chains a sequence of paths for the trajectory follower to execute sequentially.
+     *
+     * @property paths Ordered list of [com.areslib.pathing.Path] segments to follow.
+     * @property maxVelocityMps Maximum allowed velocity in meters/second along the path.
+     * @property maxAccelerationMps2 Maximum allowed acceleration in meters/second².
+     */
     data class ChainPaths(
         val paths: List<com.areslib.pathing.Path>,
         val maxVelocityMps: Double = 2.0,
@@ -133,12 +221,22 @@ interface RobotAction {
         override val timestampMs: Long
     ) : RobotAction
 
+    /**
+     * Switches the active path being followed by the trajectory follower.
+     *
+     * @property path The new [com.areslib.pathing.Path] to follow.
+     * @property isDetour If true, this is a reactive obstacle-avoidance detour rather than a planned path switch.
+     */
     data class SwitchPath(
         val path: com.areslib.pathing.Path,
         val isDetour: Boolean = false,
         override val timestampMs: Long
     ) : RobotAction
 
+    /**
+     * Reports the trajectory follower's progress along the active path.
+     * @property distanceProgressMeters Cumulative distance traveled along the path in meters.
+     */
     data class UpdatePathProgress(
         val distanceProgressMeters: Double,
         override val timestampMs: Long

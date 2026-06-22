@@ -115,6 +115,9 @@ class ARESDataLogger {
         }
     }
 
+    // Pre-allocated StringBuilder for zero-allocation CSV row writing
+    private val csvBuilder = StringBuilder(512)
+
     private fun writeFrame(frame: Map<String, Any>) {
         val w = writer ?: return
 
@@ -126,14 +129,21 @@ class ARESDataLogger {
                 activeKeys.add("TimestampMs")
                 
                 // Add all other keys alphabetically
-                frame.keys.sorted().forEach { key ->
+                val sortedKeys = frame.keys.sorted()
+                for (i in 0 until sortedKeys.size) {
+                    val key = sortedKeys[i]
                     if (key != "TimestampMs") {
                         activeKeys.add(key)
                     }
                 }
 
                 try {
-                    w.write(activeKeys.joinToString(","))
+                    csvBuilder.setLength(0)
+                    for (i in 0 until activeKeys.size) {
+                        if (i > 0) csvBuilder.append(',')
+                        csvBuilder.append(activeKeys[i])
+                    }
+                    w.write(csvBuilder.toString())
                     w.newLine()
                     isHeaderWritten = true
                 } catch (e: IOException) {
@@ -142,12 +152,14 @@ class ARESDataLogger {
             }
 
             // 2. Write values corresponding to the configured headers
-            val row = activeKeys.map { key ->
-                frame[key]?.toString() ?: ""
-            }
-
             try {
-                w.write(row.joinToString(","))
+                csvBuilder.setLength(0)
+                for (i in 0 until activeKeys.size) {
+                    if (i > 0) csvBuilder.append(',')
+                    val value = frame[activeKeys[i]]
+                    if (value != null) csvBuilder.append(value.toString())
+                }
+                w.write(csvBuilder.toString())
                 w.newLine()
                 w.flush()
             } catch (e: IOException) {

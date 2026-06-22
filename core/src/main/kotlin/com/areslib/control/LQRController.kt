@@ -139,7 +139,10 @@ class LQRController(
     ): DoubleArray {
         require(y.size == numOutputs) { "Measurement dimensions mismatch" }
         require(xRef.size == numStates) { "Reference state dimensions mismatch" }
-        if (!y.all { it.isFinite() } || !xRef.all { it.isFinite() } || dtSeconds <= 0.0) {
+        var inputsValid = true
+        for (idx in y.indices) { if (!y[idx].isFinite()) { inputsValid = false; break } }
+        if (inputsValid) { for (idx in xRef.indices) { if (!xRef[idx].isFinite()) { inputsValid = false; break } } }
+        if (!inputsValid || dtSeconds <= 0.0) {
             val now = RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
