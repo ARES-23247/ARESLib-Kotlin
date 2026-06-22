@@ -36,6 +36,10 @@ class FlyingBall(
 
 class Dyn4jSimulation(seed: Long = 42L) {
 
+    constructor(config: com.areslib.state.RobotFieldConfig, seed: Long = 42L) : this(seed) {
+        buildWorld(config)
+    }
+
     // ── Physics World ──
     private val world = World<Body>()
     private val robotBody = Body()
@@ -535,5 +539,35 @@ class Dyn4jSimulation(seed: Long = 42L) {
             balls.add(ball)
         }
         println("Spawned exactly ${balls.size} structured cargo/fuel pieces.")
+    }
+
+    /**
+     * Dynamically constructs the physics world (walls, obstacles, game elements) from a RobotFieldConfig.
+     */
+    fun buildWorld(config: com.areslib.state.RobotFieldConfig) {
+        val bodies = world.bodies.toList()
+        for (body in bodies) {
+            if (body != robotBody) {
+                world.removeBody(body)
+            }
+        }
+        balls.clear()
+
+        val width = if (config.fieldType == com.areslib.state.FieldType.FRC) 16.541 else 3.6576
+        val height = if (config.fieldType == com.areslib.state.FieldType.FRC) 8.069 else 3.6576
+
+        // Outer bounds
+        addWall(width / 2.0, height, width, 0.1)   // Top
+        addWall(width / 2.0, 0.0, width, 0.1)      // Bottom
+        addWall(0.0, height / 2.0, 0.1, height)     // Left
+        addWall(width, height / 2.0, 0.1, height)   // Right
+
+        // Load obstacles
+        com.areslib.sim.FieldObstacleLoader.loadObstacles(world, config.obstacles)
+
+        // Load elements
+        val loadedElements = com.areslib.sim.FieldElementLoader.loadElements(world, config.elementTypes, config.elements)
+        balls.addAll(loadedElements)
+        println("[FRC Sim] Successfully built world with ${config.obstacles.size} obstacles and ${config.elements.size} elements.")
     }
 }

@@ -7,80 +7,50 @@ import org.dyn4j.dynamics.BodyFixture
 import org.dyn4j.geometry.Geometry
 import org.dyn4j.geometry.MassType
 import org.dyn4j.world.World
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldElementType
+import com.areslib.state.RobotFieldElementInstance
 
 object FieldElementLoader {
     private val gson = Gson()
 
-    data class ElementTypeSpec(
-        val id: String,
-        val name: String,
-        val shape: String, // "box", "cylinder", "sphere"
-        val width: Double,
-        val height: Double,
-        val depth: Double,
-        val diameter: Double?,
-        val color: String,
-        val massKg: Double,
-        val movable: Boolean
-    )
-
-    data class ElementInstanceSpec(
-        val id: String,
-        val elementTypeId: String,
-        val x: Double,
-        val y: Double,
-        val rotation: Double
-    )
-
     fun loadElements(world: World<Body>, jsonString: String): List<Body> {
-        val spawnedBodies = mutableListOf<Body>()
         try {
-            val root = gson.fromJson(jsonString, JsonObject::class.java)
-            if (!root.has("elementTypes") || root.get("elementTypes").isJsonNull ||
-                !root.has("elements") || root.get("elements").isJsonNull) {
-                return emptyList()
-            }
-
-            val typesArray = root.getAsJsonArray("elementTypes")
-            val typesMap = mutableMapOf<String, ElementTypeSpec>()
-            for (i in 0 until typesArray.size()) {
-                val tJson = typesArray.get(i).asJsonObject
-                val id = tJson.get("id").asString
-                val name = tJson.get("name").asString
-                val shape = tJson.get("shape").asString
-                val width = tJson.get("width").asDouble
-                val height = tJson.get("height").asDouble
-                val depth = tJson.get("depth").asDouble
-                val diameter = if (tJson.has("diameter") && !tJson.get("diameter").isJsonNull) tJson.get("diameter").asDouble else null
-                val color = tJson.get("color").asString
-                val massKg = tJson.get("massKg").asDouble
-                val movable = tJson.get("movable").asBoolean
-
-                typesMap[id] = ElementTypeSpec(id, name, shape, width, height, depth, diameter, color, massKg, movable)
-            }
-
-            val elementsArray = root.getAsJsonArray("elements")
-            for (i in 0 until elementsArray.size()) {
-                val elJson = elementsArray.get(i).asJsonObject
-                val id = elJson.get("id").asString
-                val typeId = elJson.get("elementTypeId").asString
-                val x = elJson.get("x").asDouble
-                val y = elJson.get("y").asDouble
-                val rotation = elJson.get("rotation").asDouble
-
-                val typeSpec = typesMap[typeId] ?: continue
-                val body = createBodyFromSpec(typeSpec, x, y, rotation)
-                world.addBody(body)
-                spawnedBodies.add(body)
+            val config = gson.fromJson(jsonString, RobotFieldConfig::class.java)
+            if (config != null) {
+                return loadElements(world, config.elementTypes, config.elements)
             }
         } catch (e: Exception) {
             System.err.println("Failed to parse field elements JSON: ${e.message}")
             e.printStackTrace()
         }
+        return emptyList()
+    }
+
+    fun loadElements(
+        world: World<Body>,
+        elementTypes: List<com.areslib.state.RobotFieldElementType>,
+        elements: List<com.areslib.state.RobotFieldElementInstance>
+    ): List<Body> {
+        val spawnedBodies = mutableListOf<Body>()
+        val typesMap = elementTypes.associateBy { it.id }
+
+        for (el in elements) {
+            val typeSpec = typesMap[el.elementTypeId] ?: continue
+            val body = createBodyFromSpec(typeSpec, el.x, el.y, el.rotation, el.id)
+            world.addBody(body)
+            spawnedBodies.add(body)
+        }
         return spawnedBodies
     }
 
-    private fun createBodyFromSpec(type: ElementTypeSpec, x: Double, y: Double, rotation: Double): Body {
+    private fun createBodyFromSpec(
+        type: com.areslib.state.RobotFieldElementType,
+        x: Double,
+        y: Double,
+        rotation: Double,
+        id: String
+    ): Body {
         val body = Body()
 
         val shape = when (type.shape.lowercase()) {
@@ -119,7 +89,7 @@ object FieldElementLoader {
             body.rotate(Math.toRadians(rotation), x, y)
         }
 
-        body.userData = type.name
+        body.userData = id
 
         return body
     }

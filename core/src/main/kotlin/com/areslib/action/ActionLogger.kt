@@ -17,7 +17,12 @@ import java.util.concurrent.TimeUnit
  * Thread-safe, asynchronous JSONL recorder for RobotAction streams.
  * Guarantees microsecond-accurate chronology logging with zero overhead on the main thread.
  */
-class ActionLogger {
+class ActionLogger(
+    val runId: String = "",
+    val robotId: String = "",
+    val matchNumber: Int = 0,
+    val alliance: String = "BLUE"
+) {
     private val gson = Gson()
     private val queue = LinkedBlockingQueue<RobotAction>(1000)
     private var writer: BufferedWriter? = null
@@ -36,7 +41,7 @@ class ActionLogger {
             val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
             
             val logDir = if (isAndroid) {
-                File("/sdcard/FIRST/action_logs/")
+                File("/sdcard/FIRST/telemetry_logs/")
             } else {
                 File("./logs/")
             }
@@ -85,6 +90,10 @@ class ActionLogger {
         val payloadJson = gson.toJsonTree(action) as JsonObject
         
         val envelope = JsonObject()
+        envelope.addProperty("run_id", runId)
+        envelope.addProperty("robot_id", robotId)
+        envelope.addProperty("match_number", matchNumber)
+        envelope.addProperty("alliance", alliance)
         envelope.addProperty("type", typeName)
         envelope.add("payload", payloadJson)
 

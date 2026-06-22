@@ -31,6 +31,12 @@ object RobotStatusTracker {
 
     @Volatile
     var activeLimelightIps: List<String> = emptyList()
+
+    @Volatile
+    var uploadProgress: Double = 0.0
+
+    @Volatile
+    var activeUploadFile: String? = null
 }
 
 /**
@@ -259,6 +265,7 @@ object RobotWebServer {
             }"""
         }.joinToString(",")
 
+        val activeFileJson = if (RobotStatusTracker.activeUploadFile != null) "\"${RobotStatusTracker.activeUploadFile}\"" else "null"
         val response = """{
             "enabled": ${RobotStatusTracker.isEnabled},
             "opMode": "${RobotStatusTracker.activeOpMode}",
@@ -266,6 +273,10 @@ object RobotWebServer {
                 "connected": ${RobotStatusTracker.visionConnected},
                 "status": "${RobotStatusTracker.visionStatus}",
                 "cameras": [$camerasJson]
+            },
+            "upload": {
+                "activeFile": $activeFileJson,
+                "progress": ${RobotStatusTracker.uploadProgress}
             }
         }""".trimIndent()
 
@@ -283,7 +294,7 @@ object RobotWebServer {
             return
         }
 
-        val files = logDir.listFiles { _, name -> name.endsWith(".csv") } ?: emptyArray()
+        val files = logDir.listFiles { _, name -> name.endsWith(".csv") || name.endsWith(".jsonl") } ?: emptyArray()
         val fileList = files.sortedBy { it.name }.joinToString(",") { "\"${it.name}\"" }
         sendJsonResponse(client, 200, "OK", "[$fileList]")
     }
@@ -301,7 +312,7 @@ object RobotWebServer {
         }
 
         val file = File(logDir, fileName)
-        if (!file.exists() || !file.name.endsWith(".csv")) {
+        if (!file.exists() || !(file.name.endsWith(".csv") || file.name.endsWith(".jsonl"))) {
             sendErrorResponse(client, 404, "Log file not found")
             return
         }
@@ -309,7 +320,8 @@ object RobotWebServer {
         val out = client.getOutputStream()
         out.write("HTTP/1.1 200 OK\r\n".toByteArray())
         writeCorsHeaders(out)
-        out.write("Content-Type: text/csv\r\n".toByteArray())
+        val contentType = if (file.name.endsWith(".jsonl")) "application/x-jsonlines" else "text/csv"
+        out.write("Content-Type: $contentType\r\n".toByteArray())
         out.write("Content-Length: ${file.length()}\r\n".toByteArray())
         out.write("Connection: close\r\n\r\n".toByteArray())
 
@@ -336,7 +348,7 @@ object RobotWebServer {
         }
 
         val file = File(logDir, fileName)
-        if (!file.exists() || !file.name.endsWith(".csv")) {
+        if (!file.exists() || !(file.name.endsWith(".csv") || file.name.endsWith(".jsonl"))) {
             sendErrorResponse(client, 404, "Log file not found")
             return
         }

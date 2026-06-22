@@ -44,7 +44,10 @@ data class RobotFieldObstacle(
     val obstacleType: ObstacleType = ObstacleType.BLOCKING,
     val rampDirection: AxisDirection? = null,
     val shape: String = "rectangle", // "rectangle" or "polygon"
-    val points: List<RobotFieldPoint> = emptyList()
+    val points: List<RobotFieldPoint> = emptyList(),
+    val friction: Double = 0.5,
+    val restitution: Double = 0.3,
+    val rotation: Double = 0.0
 )
 
 data class RobotFieldAprilTag(
@@ -53,6 +56,27 @@ data class RobotFieldAprilTag(
     val y: Double = 0.0,
     val z: Double = 0.0,
     val yaw: Double = 0.0 // Yaw rotation in degrees
+)
+
+data class RobotFieldElementType(
+    val id: String = "",
+    val name: String = "",
+    val shape: String = "box", // "box", "cylinder", "sphere"
+    val width: Double = 0.1,
+    val height: Double = 0.1,
+    val depth: Double = 0.1,
+    val diameter: Double? = null,
+    val color: String = "#FFFFFF",
+    val massKg: Double = 1.0,
+    val movable: Boolean = false
+)
+
+data class RobotFieldElementInstance(
+    val id: String = "",
+    val elementTypeId: String = "",
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val rotation: Double = 0.0
 )
 
 data class RobotFieldConfig(
@@ -65,7 +89,9 @@ data class RobotFieldConfig(
     val redDriverStation: DriverStationSide = DriverStationSide.SOUTH,
     val blueDriverStation: DriverStationSide = DriverStationSide.NORTH,
     val obstacles: List<RobotFieldObstacle> = emptyList(),
-    val apriltags: List<RobotFieldAprilTag> = emptyList()
+    val apriltags: List<RobotFieldAprilTag> = emptyList(),
+    val elementTypes: List<RobotFieldElementType> = emptyList(),
+    val elements: List<RobotFieldElementInstance> = emptyList()
 ) {
     /**
      * Resolves the starting pose based on the alliance's driver station wall.

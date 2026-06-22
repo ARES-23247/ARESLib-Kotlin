@@ -54,6 +54,7 @@ def includeDesktopSupport = true
 
 dependencies {
     implementation project(':core')
+    implementation project(':simulator')
     implementation 'org.dyn4j:dyn4j:4.2.2'
     
     implementation wpi.java.deps.wpilib()

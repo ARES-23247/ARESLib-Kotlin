@@ -117,7 +117,13 @@ data class PoseEstimatorState(
     val history: HistoryBuffer = HistoryBuffer(50), // Max size typically ~50
     val isBeached: Boolean = false,
     val lastUnbeachedTimeMs: Long = 0L,
-    val gyroBiasRadPerSec: Double = 0.0
+    val gyroBiasRadPerSec: Double = 0.0,
+    val lastInnovationX: Double = 0.0,
+    val lastInnovationY: Double = 0.0,
+    val lastInnovationTheta: Double = 0.0,
+    val lastKalmanGain: List<Double> = emptyList(),
+    val lastMeasurementAccepted: Boolean = false,
+    val lastRejectionReason: String? = null
 )
 
 /**
@@ -318,16 +324,16 @@ object PoseEstimator {
         mahalanobisThreshold: Double = 12.0,
         maxAmbiguity: Double = 0.2
     ): PoseEstimatorState {
-        if (state.history.isEmpty()) return state
+        if (state.history.isEmpty()) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "empty_history")
         
         // Outlier rejection: Reject high-ambiguity decodes instantly to prevent "pose-flipping"
-        if (measurement.ambiguity > maxAmbiguity) return state
+        if (measurement.ambiguity > maxAmbiguity) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "high_ambiguity")
         
-        if (numTags <= 0) return state
+        if (numTags <= 0) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "no_tags")
         if (visionStdDevs.x.isNaN() || visionStdDevs.x.isInfinite() || 
             visionStdDevs.y.isNaN() || visionStdDevs.y.isInfinite() || 
-            visionStdDevs.z.isNaN() || visionStdDevs.z.isInfinite()) return state
-        if (mahalanobisThreshold.isNaN() || mahalanobisThreshold.isInfinite() || mahalanobisThreshold <= 0.0) return state
+            visionStdDevs.z.isNaN() || visionStdDevs.z.isInfinite()) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "invalid_std_devs")
+        if (mahalanobisThreshold.isNaN() || mahalanobisThreshold.isInfinite() || mahalanobisThreshold <= 0.0) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "invalid_threshold")
 
         // Find the index of the closest history entry before the vision measurement
         var closestIndex = -1
@@ -340,7 +346,7 @@ object PoseEstimator {
 
         if (closestIndex == -1) {
             // Vision measurement is too old or we have no history, ignore it
-            return state
+            return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "vision_too_old")
         }
 
         val baseEntry = state.history[closestIndex]
@@ -430,7 +436,13 @@ object PoseEstimator {
         if (useMahalanobisRejection) {
             val dMSquared = yX * sInvYX + yY * sInvYY + yZ * sInvYZ
             if (dMSquared > mahalanobisThreshold) {
-                return state // Outlier rejected autonomously!
+                return state.copy(
+                    lastMeasurementAccepted = false,
+                    lastRejectionReason = "mahalanobis_rejected",
+                    lastInnovationX = yX,
+                    lastInnovationY = yY,
+                    lastInnovationTheta = yZ
+                )
             }
         }
 
@@ -525,7 +537,17 @@ object PoseEstimator {
         return state.copy(
             estimatedPose = Pose2d(currentX, currentY, Rotation2d(currentHeadingRad)),
             covariance = Matrix3x3(currentCov.m00, currentCov.m01, currentCov.m02, currentCov.m10, currentCov.m11, currentCov.m12, currentCov.m20, currentCov.m21, currentCov.m22),
-            history = newHistory
+            history = newHistory,
+            lastInnovationX = yX,
+            lastInnovationY = yY,
+            lastInnovationTheta = yZ,
+            lastKalmanGain = listOf(
+                scratchK.m00, scratchK.m01, scratchK.m02,
+                scratchK.m10, scratchK.m11, scratchK.m12,
+                scratchK.m20, scratchK.m21, scratchK.m22
+            ),
+            lastMeasurementAccepted = true,
+            lastRejectionReason = null
         )
     }
 }

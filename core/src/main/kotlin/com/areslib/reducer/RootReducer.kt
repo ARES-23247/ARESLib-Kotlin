@@ -47,22 +47,65 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 }
                 found
             }
+
+            var acceptedCountDelta = 0
+            var rejectedCountDelta = 0
+            var lastCovBefore: List<Double>? = null
+            var lastCovAfter: List<Double>? = null
+            var lastAccepted = false
+            var lastReason: String? = null
+
             if (!hasTag1) {
                 for (i in 0 until validMeasurements.size) {
                     val measurement = validMeasurements[i]
+                    val covBefore = listOf(
+                        currentEstimator.covariance.m00, currentEstimator.covariance.m01, currentEstimator.covariance.m02,
+                        currentEstimator.covariance.m10, currentEstimator.covariance.m11, currentEstimator.covariance.m12,
+                        currentEstimator.covariance.m20, currentEstimator.covariance.m21, currentEstimator.covariance.m22
+                    )
                     currentEstimator = PoseEstimator.addVisionMeasurement(
                         state = currentEstimator,
                         measurement = measurement,
                         visionStdDevs = stdDevs,
                         numTags = validMeasurements.size
                     )
+                    lastAccepted = currentEstimator.lastMeasurementAccepted
+                    lastReason = currentEstimator.lastRejectionReason
+                    if (lastAccepted) {
+                        acceptedCountDelta++
+                        lastCovBefore = covBefore
+                        lastCovAfter = listOf(
+                            currentEstimator.covariance.m00, currentEstimator.covariance.m01, currentEstimator.covariance.m02,
+                            currentEstimator.covariance.m10, currentEstimator.covariance.m11, currentEstimator.covariance.m12,
+                            currentEstimator.covariance.m20, currentEstimator.covariance.m21, currentEstimator.covariance.m22
+                        )
+                    } else {
+                        rejectedCountDelta++
+                    }
                 }
             }
 
             val filteredAction = action.copy(measurements = validMeasurements)
+            val reducedVision = VisionReducer.reduce(state.vision, filteredAction)
+            val updatedVision = reducedVision.copy(
+                lastMeasurementAccepted = lastAccepted,
+                lastRejectionReason = lastReason,
+                covarianceBeforeUpdate = lastCovBefore ?: reducedVision.covarianceBeforeUpdate,
+                covarianceAfterUpdate = lastCovAfter ?: reducedVision.covarianceAfterUpdate,
+                measurementCount = reducedVision.measurementCount + acceptedCountDelta,
+                rejectionCount = reducedVision.rejectionCount + rejectedCountDelta
+            )
+
+            val updatedDrive = state.drive.updateDiagnostics(
+                state.drive.odometryX,
+                state.drive.odometryY,
+                state.drive.odometryHeading,
+                currentEstimator
+            )
+
             state.copy(
-                vision = VisionReducer.reduce(state.vision, filteredAction),
-                drive = state.drive.copy(poseEstimator = currentEstimator),
+                vision = updatedVision,
+                drive = updatedDrive,
                 timestampMs = action.timestampMs
             )
         }

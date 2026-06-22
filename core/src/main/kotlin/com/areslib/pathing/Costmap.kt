@@ -190,4 +190,57 @@ class Costmap(
             }
         }
     }
+
+    /**
+     * Rasterizes and registers static field elements into the costmap.
+     */
+    fun setStaticElements(
+        elementTypes: List<com.areslib.state.RobotFieldElementType>,
+        elements: List<com.areslib.state.RobotFieldElementInstance>
+    ) {
+        val typesMap = elementTypes.associateBy { it.id }
+        for (el in elements) {
+            val type = typesMap[el.elementTypeId] ?: continue
+            if (type.movable) continue // Only static elements go into the costmap
+
+            val halfW = if (type.shape.lowercase() == "box") type.width / 2.0 else (type.diameter ?: 0.15) / 2.0
+            val halfH = if (type.shape.lowercase() == "box") type.height / 2.0 else (type.diameter ?: 0.15) / 2.0
+
+            val minX = el.x - halfH
+            val maxX = el.x + halfH
+            val minY = el.y - halfW
+            val maxY = el.y + halfW
+
+            val startCellX = (((minX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
+            val endCellX = (((maxX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
+            val startCellY = (((minY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
+            val endCellY = (((maxY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
+
+            for (cx in startCellX..endCellX) {
+                for (cy in startCellY..endCellY) {
+                    setObstacle(cx, cy, true)
+                }
+            }
+        }
+    }
+
+    companion object {
+        /**
+         * Factory to create and inflate a Costmap directly from a RobotFieldConfig.
+         */
+        fun fromFieldConfig(config: com.areslib.state.RobotFieldConfig, robotRadiusMeters: Double): Costmap {
+            val width = if (config.fieldType == com.areslib.state.FieldType.FRC) 16.0 else 3.66
+            val height = if (config.fieldType == com.areslib.state.FieldType.FRC) 8.0 else 3.66
+            val origin = if (config.fieldType == com.areslib.state.FieldType.FRC) {
+                Translation2d(0.0, 0.0)
+            } else {
+                Translation2d(-width / 2.0, -height / 2.0)
+            }
+            val costmap = Costmap(width, height, 0.1, origin)
+            costmap.setStaticObstacles(config.obstacles)
+            costmap.setStaticElements(config.elementTypes, config.elements)
+            costmap.inflate(robotRadiusMeters)
+            return costmap
+        }
+    }
 }

@@ -188,4 +188,161 @@ class RobotFieldConfigTest {
         assertEquals(-1.0, redMapping.first, 0.001)
         assertEquals(-0.5, redMapping.second, 0.001)
     }
+
+    @Test
+    fun testNewFieldsJsonParsing() {
+        val json = """
+            {
+              "id": "config_new",
+              "name": "Championship 2026 Elements",
+              "fieldType": "ftc",
+              "obstacles": [
+                {
+                  "id": "obs_poly",
+                  "name": "Poly Obstacle",
+                  "x": 0.0,
+                  "y": 0.0,
+                  "width": 0.5,
+                  "height": 0.5,
+                  "isBlocking": true,
+                  "shape": "polygon",
+                  "points": [
+                    {"x": -0.25, "y": -0.25},
+                    {"x": 0.25, "y": -0.25},
+                    {"x": 0.25, "y": 0.25},
+                    {"x": -0.25, "y": 0.25}
+                  ],
+                  "friction": 0.65,
+                  "restitution": 0.25,
+                  "rotation": 90.0
+                }
+              ],
+              "elementTypes": [
+                {
+                  "id": "type_ball",
+                  "name": "Game Ball",
+                  "shape": "sphere",
+                  "width": 0.2,
+                  "height": 0.2,
+                  "depth": 0.2,
+                  "diameter": 0.2,
+                  "color": "#FF0000",
+                  "massKg": 0.1,
+                  "movable": true
+                }
+              ],
+              "elements": [
+                {
+                  "id": "ball_1",
+                  "elementTypeId": "type_ball",
+                  "x": 1.0,
+                  "y": 1.0,
+                  "rotation": 0.0
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val tempFile = java.io.File.createTempFile("field_config_elements_test", ".json")
+        tempFile.writeText(json)
+
+        try {
+            val success = RobotFieldManager.loadFromJsonFile(tempFile.absolutePath)
+            assertTrue(success)
+
+            val config = RobotFieldManager.activeConfig
+            assertEquals("config_new", config.id)
+            
+            // Check custom physics obstacle properties
+            assertEquals(1, config.obstacles.size)
+            val obs = config.obstacles[0]
+            assertEquals("obs_poly", obs.id)
+            assertEquals("polygon", obs.shape)
+            assertEquals(4, obs.points.size)
+            assertEquals(-0.25, obs.points[0].x, 0.001)
+            assertEquals(0.65, obs.friction, 0.001)
+            assertEquals(0.25, obs.restitution, 0.001)
+            assertEquals(90.0, obs.rotation, 0.001)
+
+            // Check element types
+            assertEquals(1, config.elementTypes.size)
+            val type = config.elementTypes[0]
+            assertEquals("type_ball", type.id)
+            assertEquals("Game Ball", type.name)
+            assertEquals("sphere", type.shape)
+            assertEquals(0.2, type.width, 0.001)
+            assertEquals(0.2, type.diameter ?: 0.0, 0.001)
+            assertTrue(type.movable)
+
+            // Check elements
+            assertEquals(1, config.elements.size)
+            val el = config.elements[0]
+            assertEquals("ball_1", el.id)
+            assertEquals("type_ball", el.elementTypeId)
+            assertEquals(1.0, el.x, 0.001)
+            assertEquals(1.0, el.y, 0.001)
+            assertEquals(0.0, el.rotation, 0.001)
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    @Test
+    fun testCostmapFromFieldConfig() {
+        val obstacle = RobotFieldObstacle(
+            x = 0.5,
+            y = 0.5,
+            width = 0.2,
+            height = 0.2,
+            isBlocking = true
+        )
+        
+        val elementType = RobotFieldElementType(
+            id = "static_pillar_type",
+            name = "Static Pillar",
+            shape = "box",
+            width = 0.4,
+            height = 0.4,
+            depth = 1.0,
+            massKg = 10.0,
+            movable = false
+        )
+        
+        val elementInstance = RobotFieldElementInstance(
+            id = "pillar_1",
+            elementTypeId = "static_pillar_type",
+            x = -0.5,
+            y = -0.5,
+            rotation = 0.0
+        )
+
+        val config = RobotFieldConfig(
+            fieldType = FieldType.FTC,
+            obstacles = listOf(obstacle),
+            elementTypes = listOf(elementType),
+            elements = listOf(elementInstance)
+        )
+
+        // Bumper radius is 0.1m, Resolution is 0.1m.
+        val costmap = Costmap.fromFieldConfig(config, robotRadiusMeters = 0.1)
+
+        // Verify bounds & sizes for FTC config (3.66m)
+        assertEquals(3.66, costmap.widthMeters, 0.001)
+        assertEquals(3.66, costmap.heightMeters, 0.001)
+        assertEquals(-1.83, costmap.origin.x, 0.001)
+        assertEquals(-1.83, costmap.origin.y, 0.001)
+
+        // Verify obstacle is rasterized
+        assertTrue(costmap.isOccupied(0.5, 0.5))
+
+        // Verify static element is rasterized
+        assertTrue(costmap.isOccupied(-0.5, -0.5))
+
+        // Verify inflation (robotRadius = 0.1m, so cell at (0.5+0.1, 0.5) is inflated/blocked)
+        assertFalse(costmap.isTraversable(0.6, 0.5))
+        // Center cell (occupied) should be non-traversable
+        assertFalse(costmap.isTraversable(0.5, 0.5))
+        // Point far away should be traversable
+        assertTrue(costmap.isTraversable(0.0, 0.0))
+    }
 }

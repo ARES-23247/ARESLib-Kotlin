@@ -28,20 +28,22 @@ object DriveReducer {
                     pitchDegrees = action.pitchDegrees,
                     rollDegrees = action.rollDegrees
                 )
+                val nextOdomX = state.odometryX + action.deltaX
+                val nextOdomY = state.odometryY + action.deltaY
+                val nextOdomHeading = state.odometryHeading + action.deltaHeading
                 state.copy(
                     xVelocityMetersPerSecond = action.xVelocity,
                     yVelocityMetersPerSecond = action.yVelocity,
                     angularVelocityRadiansPerSecond = action.angularVelocity,
-                    odometryX = state.odometryX + action.deltaX,
-                    odometryY = state.odometryY + action.deltaY,
-                    odometryHeading = state.odometryHeading + action.deltaHeading,
-                    poseEstimator = updatedEstimator,
+                    odometryX = nextOdomX,
+                    odometryY = nextOdomY,
+                    odometryHeading = nextOdomHeading,
                     pitchDegrees = action.pitchDegrees,
                     rollDegrees = action.rollDegrees,
                     xAccelerationG = action.xAccelerationG,
                     yAccelerationG = action.yAccelerationG,
                     zAccelerationG = action.zAccelerationG
-                )
+                ).updateDiagnostics(nextOdomX, nextOdomY, nextOdomHeading, updatedEstimator)
             }
             is RobotAction.PoseUpdate -> {
                 val updatedEstimator = if (action.isReset) {
@@ -76,13 +78,12 @@ object DriveReducer {
                     odometryX = action.xMeters,
                     odometryY = action.yMeters,
                     odometryHeading = action.headingRadians,
-                    poseEstimator = updatedEstimator,
                     pitchDegrees = action.pitchDegrees,
                     rollDegrees = action.rollDegrees,
                     xAccelerationG = action.xAccelerationG,
                     yAccelerationG = action.yAccelerationG,
                     zAccelerationG = action.zAccelerationG
-                )
+                ).updateDiagnostics(action.xMeters, action.yMeters, action.headingRadians, updatedEstimator)
             }
             is RobotAction.SetDriveMode -> {
                 state.copy(driveMode = action.mode)

@@ -54,8 +54,40 @@ data class DriveState(
     val driveMode: DriveMode = DriveMode.TELEOP,
     val headingLockTargetRadians: Double? = null,
     val isFieldCentric: Boolean = true,
-    val alliance: Alliance = Alliance.BLUE
-)
+    val alliance: Alliance = Alliance.BLUE,
+    // EKF diagnostics:
+    val covarianceMatrix: List<Double> = emptyList(),
+    val ekfDriftX: Double = 0.0,
+    val ekfDriftY: Double = 0.0,
+    val lastInnovationX: Double = 0.0,
+    val lastInnovationY: Double = 0.0,
+    val lastInnovationTheta: Double = 0.0,
+    val lastKalmanGain: List<Double> = emptyList(),
+    val rawOdometryX: Double = 0.0,
+    val rawOdometryY: Double = 0.0,
+    val rawOdometryHeading: Double = 0.0
+) {
+    fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
+        val covMatrix = listOf(
+            updatedEstimator.covariance.m00, updatedEstimator.covariance.m01, updatedEstimator.covariance.m02,
+            updatedEstimator.covariance.m10, updatedEstimator.covariance.m11, updatedEstimator.covariance.m12,
+            updatedEstimator.covariance.m20, updatedEstimator.covariance.m21, updatedEstimator.covariance.m22
+        )
+        return this.copy(
+            poseEstimator = updatedEstimator,
+            covarianceMatrix = covMatrix,
+            ekfDriftX = odomX - updatedEstimator.estimatedPose.x,
+            ekfDriftY = odomY - updatedEstimator.estimatedPose.y,
+            rawOdometryX = odomX,
+            rawOdometryY = odomY,
+            rawOdometryHeading = odomHeading,
+            lastInnovationX = updatedEstimator.lastInnovationX,
+            lastInnovationY = updatedEstimator.lastInnovationY,
+            lastInnovationTheta = updatedEstimator.lastInnovationTheta,
+            lastKalmanGain = updatedEstimator.lastKalmanGain
+        )
+    }
+}
 
 /**
  * Superstructure finite state machine states.
@@ -133,7 +165,14 @@ data class VisionState(
     val targetY: Double = 0.0,
     val hasTarget: Boolean = false,
     val measurements: List<VisionMeasurement> = emptyList(),
-    val filterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
+    val filterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
+    // EKF diagnostics:
+    val lastMeasurementAccepted: Boolean = false,
+    val lastRejectionReason: String? = null,
+    val covarianceBeforeUpdate: List<Double>? = null,
+    val covarianceAfterUpdate: List<Double>? = null,
+    val measurementCount: Int = 0,
+    val rejectionCount: Int = 0
 )
 
 enum class Alliance {

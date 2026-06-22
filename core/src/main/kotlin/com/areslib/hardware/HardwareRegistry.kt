@@ -47,6 +47,20 @@ object HardwareRegistry {
     }
 
     /**
+     * Retrieves all registered motor wrappers mapped by their registered names.
+     */
+    fun getRegisteredMotorsWithNames(): Map<String, MotorIO> {
+        val result = HashMap<String, MotorIO>()
+        for ((key, value) in devices) {
+            if (value is MotorIO) {
+                val name = if (key.startsWith("Motors/")) key.substring("Motors/".length) else key
+                result[name] = value
+            }
+        }
+        return result
+    }
+
+    /**
      * Batches status updates and read transactions across all registered SubsystemIO components.
      */
     fun refreshAll() {

@@ -25,6 +25,75 @@ object DesktopSimLauncher {
     fun main(args: Array<String>) {
         println("Starting ARESLib Desktop Simulation...")
 
+        var activeConfig: com.areslib.state.RobotFieldConfig? = null
+        var watchFieldConfig = false
+        var fieldConfigArg: String? = null
+        var replayCloudId: String? = null
+
+        var argIdx = 0
+        while (argIdx < args.size) {
+            when (args[argIdx]) {
+                "--field-config" -> {
+                    if (argIdx + 1 < args.size) {
+                        fieldConfigArg = args[argIdx + 1]
+                        argIdx++
+                    }
+                }
+                "--watch" -> {
+                    watchFieldConfig = true
+                }
+                "--replay-cloud" -> {
+                    if (argIdx + 1 < args.size) {
+                        replayCloudId = args[argIdx + 1]
+                        argIdx++
+                    }
+                }
+            }
+            argIdx++
+        }
+
+        fun loadConfigContent(arg: String): String? {
+            val file = java.io.File(arg)
+            if (file.exists()) {
+                return file.readText()
+            }
+            val envBaseUrl = System.getenv("ARESWEB_API_URL") ?: System.getProperty("aresweb.api.url")
+            val baseUrl = envBaseUrl ?: "http://localhost:5001/aresfirst-portal/us-central1/api"
+            return try {
+                val url = java.net.URL("$baseUrl/simulations/field-config/$arg")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+                val code = conn.responseCode
+                if (code == 200) {
+                    conn.inputStream.bufferedReader().use { it.readText() }
+                } else {
+                    System.err.println("Failed to fetch field config $arg from ARESWEB: HTTP $code")
+                    null
+                }
+            } catch (e: java.lang.Exception) {
+                System.err.println("Error fetching field config $arg: ${e.message}")
+                null
+            }
+        }
+
+        if (fieldConfigArg != null) {
+            val content = loadConfigContent(fieldConfigArg)
+            if (content != null) {
+                try {
+                    val gson = com.google.gson.Gson()
+                    activeConfig = gson.fromJson(content, com.areslib.state.RobotFieldConfig::class.java)
+                    if (activeConfig != null) {
+                        println("[Simulator] Successfully loaded field config: ${activeConfig.name}")
+                        com.areslib.state.RobotFieldManager.setActiveConfig(activeConfig)
+                    }
+                } catch (e: java.lang.Exception) {
+                    System.err.println("Failed to parse loaded field config: ${e.message}")
+                }
+            }
+        }
+
         // Read EKF config overrides if present
         var customVisionStdDevs: com.areslib.math.Vector3? = null
         var configFile = java.io.File("config_override.json")
@@ -49,6 +118,22 @@ object DesktopSimLauncher {
             } catch (e: Exception) {
                 println("[Simulator Config] Failed to parse config_override.json: ${e.message}")
             }
+        }
+
+        if (replayCloudId != null) {
+            println("[Simulator] Replaying cloud run $replayCloudId...")
+            try {
+                TelemetryPublisher.javaClass // Make sure NT4 is initialized
+                val nt4Telemetry = com.areslib.telemetry.NT4Telemetry()
+                val publisher = com.areslib.telemetry.ReplayPublisher(nt4Telemetry)
+                val summary = com.areslib.logging.CloudReplayProvider.loadRun(replayCloudId, customVisionStdDevs)
+                println("[Simulator] Fetched cloud run summary: ${summary.steps.size} steps. Streaming to NetworkTables...")
+                publisher.publishReplay(summary)
+                println("[Simulator] Cloud replay completed.")
+            } catch (e: Exception) {
+                System.err.println("Failed to replay cloud run: ${e.message}")
+            }
+            return
         }
 
         // 1. Initialize WPILib Telemetry
@@ -112,79 +197,95 @@ object DesktopSimLauncher {
         world.addBody(robotBody)
 
         val balls = mutableListOf<Body>()
-
-        // Load dynamic elements: either from config_override.json or fallback to hardcoded mock game pieces (balls)
-        var loadedCustomElements = false
-        if (configFile.exists()) {
-            try {
-                val configContent = configFile.readText()
-                val gson = com.google.gson.Gson()
-                val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
-                if (root != null && root.has("elements") && !root.get("elements").isJsonNull) {
-                    println("Loading custom game elements from config_override.json into physics world...")
-                    val elements = FieldElementLoader.loadElements(world, configContent)
-                    println("Loaded ${elements.size} custom game elements successfully.")
-                    balls.addAll(elements)
-                    loadedCustomElements = true
-                }
-            } catch (e: Exception) {
-                println("[Simulator Config] Failed to parse custom elements from config_override.json: ${e.message}")
-            }
-        }
-
-        if (!loadedCustomElements) {
-            // Add Default Game Pieces (Decode balls: 5in diameter -> 0.0635m radius, 0.165lbs -> 0.075kg)
-            for (i in 0..2) {
-                val ball = Body()
-                val fixture = ball.addFixture(Geometry.createCircle(0.0635))
-                fixture.friction = 0.6
-                fixture.restitution = 0.4 // Moderate bounce
-                // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
-                fixture.density = 5.92
-                ball.setMass(MassType.NORMAL)
-                ball.linearDamping = 2.0 // Carpet friction for balls
-                ball.angularDamping = 2.0
-                // Spawn balls somewhat randomly in front of the robot
-                ball.translate(1.0, -1.0 + i * 1.0)
-                world.addBody(ball)
-                balls.add(ball)
-            }
-            println("Loaded default DECODE balls into physics world.")
-        }
-
-        // Add walls (static bodies)
-        createWalls(world)
-
-        // Load obstacles: either from config_override.json (if obstacles are defined there) or fallback to decode_obstacles.json
         val activeObstacles = mutableListOf<Body>()
-        var loadedCustomObstacles = false
-        if (configFile.exists()) {
-            try {
-                val configContent = configFile.readText()
-                val gson = com.google.gson.Gson()
-                val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
-                if (root != null && root.has("obstacles") && !root.get("obstacles").isJsonNull) {
-                    println("Loading custom obstacles from config_override.json into physics world...")
-                    val obstacles = FieldObstacleLoader.loadObstacles(world, configContent, inMeters = true)
-                    activeObstacles.addAll(obstacles)
-                    println("Loaded ${obstacles.size} custom obstacles successfully.")
-                    loadedCustomObstacles = true
-                }
-            } catch (e: Exception) {
-                println("[Simulator Config] Failed to parse custom obstacles from config_override.json: ${e.message}")
-            }
-        }
 
-        if (!loadedCustomObstacles) {
-            // Load default DECODE season obstacles if available as resources
-            val decodeJson = DesktopSimLauncher::class.java.getResource("/decode_obstacles.json")?.readText()
-            if (decodeJson != null) {
-                println("Loading DECODE season obstacles into physics world...")
-                val obstacles = FieldObstacleLoader.loadObstacles(world, decodeJson)
-                activeObstacles.addAll(obstacles)
-                println("Loaded ${obstacles.size} obstacles successfully.")
-            } else {
-                println("No decode_obstacles.json resource found, skipping field obstacle generation.")
+        if (activeConfig != null) {
+            println("Loading obstacles and elements from command-line activeConfig...")
+            createWalls(world)
+            val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)
+            activeObstacles.addAll(obstacles)
+            val elements = FieldElementLoader.loadElements(world, activeConfig.elementTypes, activeConfig.elements)
+            balls.addAll(elements)
+
+            NT4FieldPublisher.publishConfigId(activeConfig.id)
+            NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
+        } else {
+            createWalls(world)
+            // Load obstacles: either from config_override.json (if obstacles are defined there) or fallback to decode_obstacles.json
+            var loadedCustomObstacles = false
+            if (configFile.exists()) {
+                try {
+                    val configContent = configFile.readText()
+                    val gson = com.google.gson.Gson()
+                    val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
+                    if (root != null && root.has("obstacles") && !root.get("obstacles").isJsonNull) {
+                        println("Loading custom obstacles from config_override.json into physics world...")
+                        val obstacles = FieldObstacleLoader.loadObstacles(world, configContent, inMeters = true)
+                        activeObstacles.addAll(obstacles)
+                        println("Loaded ${obstacles.size} custom obstacles successfully.")
+                        loadedCustomObstacles = true
+                    }
+                } catch (e: Exception) {
+                    println("[Simulator Config] Failed to parse custom obstacles from config_override.json: ${e.message}")
+                }
+            }
+
+            if (!loadedCustomObstacles) {
+                // Load default DECODE season obstacles if available as resources
+                val decodeJson = DesktopSimLauncher::class.java.getResource("/decode_obstacles.json")?.readText()
+                if (decodeJson != null) {
+                    println("Loading DECODE season obstacles into physics world...")
+                    val obstacles = FieldObstacleLoader.loadObstacles(world, decodeJson)
+                    activeObstacles.addAll(obstacles)
+                    println("Loaded ${obstacles.size} obstacles successfully.")
+                    
+                    val gson = com.google.gson.Gson()
+                    val loaded = gson.fromJson(decodeJson, com.areslib.state.RobotFieldConfig::class.java)
+                    if (loaded != null) {
+                        NT4FieldPublisher.publishObstacles(loaded.obstacles)
+                    }
+                } else {
+                    println("No decode_obstacles.json resource found, skipping field obstacle generation.")
+                }
+            }
+
+            // Load dynamic elements: either from config_override.json or fallback to hardcoded mock game pieces (balls)
+            var loadedCustomElements = false
+            if (configFile.exists()) {
+                try {
+                    val configContent = configFile.readText()
+                    val gson = com.google.gson.Gson()
+                    val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
+                    if (root != null && root.has("elements") && !root.get("elements").isJsonNull) {
+                        println("Loading custom game elements from config_override.json into physics world...")
+                        val elements = FieldElementLoader.loadElements(world, configContent)
+                        println("Loaded ${elements.size} custom game elements successfully.")
+                        balls.addAll(elements)
+                        loadedCustomElements = true
+                    }
+                } catch (e: Exception) {
+                    println("[Simulator Config] Failed to parse custom elements from config_override.json: ${e.message}")
+                }
+            }
+
+            if (!loadedCustomElements) {
+                // Add Default Game Pieces (Decode balls: 5in diameter -> 0.0635m radius, 0.165lbs -> 0.075kg)
+                for (i in 0..2) {
+                    val ball = Body()
+                    val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+                    fixture.friction = 0.6
+                    fixture.restitution = 0.4 // Moderate bounce
+                    // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
+                    fixture.density = 5.92
+                    ball.setMass(MassType.NORMAL)
+                    ball.linearDamping = 2.0 // Carpet friction for balls
+                    ball.angularDamping = 2.0
+                    // Spawn balls somewhat randomly in front of the robot
+                    ball.translate(1.0, -1.0 + i * 1.0)
+                    world.addBody(ball)
+                    balls.add(ball)
+                }
+                println("Loaded default DECODE balls into physics world.")
             }
         }
 
@@ -240,9 +341,61 @@ object DesktopSimLauncher {
         val visionSimulator = com.areslib.hardware.vision.VisionSimulator(visionTags)
         var lastObstaclesTimestamp = 0L
 
+        var watchTicks = 0
+        var needsRebuild = false
+
         while (true) {
             org.lwjgl.glfw.GLFW.glfwPollEvents()
             TelemetryPublisher.pollWebInputs(driverStation)
+
+            if (watchFieldConfig && fieldConfigArg != null) {
+                watchTicks++
+                if (watchTicks >= 250) { // 5 seconds at 50Hz
+                    watchTicks = 0
+                    Thread {
+                        val content = loadConfigContent(fieldConfigArg)
+                        if (content != null) {
+                            try {
+                                val gson = com.google.gson.Gson()
+                                val latest = gson.fromJson(content, com.areslib.state.RobotFieldConfig::class.java)
+                                if (latest != null && latest != activeConfig) {
+                                    activeConfig = latest
+                                    com.areslib.state.RobotFieldManager.setActiveConfig(latest)
+                                    println("[Simulator] Hot-reloaded field config: ${latest.name}")
+                                    needsRebuild = true
+                                }
+                            } catch (e: Exception) {
+                                // Ignore
+                            }
+                        }
+                    }.start()
+                }
+            }
+
+            if (needsRebuild) {
+                needsRebuild = false
+                val config = activeConfig
+                if (config != null) {
+                    val bodiesToClear = world.bodies.toList()
+                    for (b in bodiesToClear) {
+                        if (b != robotBody) {
+                            world.removeBody(b)
+                        }
+                    }
+                    activeObstacles.clear()
+                    balls.clear()
+
+                    createWalls(world)
+                    val obstacles = FieldObstacleLoader.loadObstacles(world, config.obstacles)
+                    activeObstacles.addAll(obstacles)
+                    val elements = FieldElementLoader.loadElements(world, config.elementTypes, config.elements)
+                    balls.addAll(elements)
+
+                    NT4FieldPublisher.publishConfigId(config.id)
+                    NT4FieldPublisher.publishObstacles(config.obstacles)
+                    println("[Simulator] Rebuilt physics world with ${obstacles.size} obstacles and ${elements.size} elements.")
+                }
+            }
 
             // Check if we received updated obstacles from the web client
             val obstaclesEntry = TelemetryPublisher.obstaclesSub.getAtomic()
@@ -583,6 +736,17 @@ object DesktopSimLauncher {
             }
             TelemetryPublisher.publishGamePieces(gamePieceData)
 
+            val dynamicElementPoses = balls.mapIndexed { idx, ball ->
+                val id = (ball.userData as? String) ?: "ball_$idx"
+                DynamicElementPose(
+                    id = id,
+                    x = ball.transform.translationX,
+                    y = ball.transform.translationY,
+                    rotation = Math.toDegrees(ball.transform.rotationAngle)
+                )
+            }
+            NT4FieldPublisher.publishElements(dynamicElementPoses)
+
             // Loop timing
             val elapsed = System.currentTimeMillis() - startTime
             val sleepTime = TIMESTEP_MS - elapsed
@@ -593,31 +757,30 @@ object DesktopSimLauncher {
     }
 
     private fun createWalls(world: World<Body>) {
-        // Center is (0,0), so walls are at +/- 1.825
-        val halfWidth = FIELD_WIDTH / 2.0
-        
-        val topWall = Body()
-        topWall.addFixture(Geometry.createRectangle(FIELD_WIDTH, 0.1))
-        topWall.setMass(MassType.INFINITE)
-        topWall.translate(0.0, halfWidth)
-        world.addBody(topWall)
+        val fType = com.areslib.state.RobotFieldManager.activeConfig.fieldType
+        if (fType == com.areslib.state.FieldType.FRC) {
+            val width = 16.541
+            val height = 8.069
+            // FRC origin is bottom-left (0,0)
+            addWall(world, width / 2.0, height, width, 0.1)   // Top
+            addWall(world, width / 2.0, 0.0, width, 0.1)      // Bottom
+            addWall(world, 0.0, height / 2.0, 0.1, height)     // Left
+            addWall(world, width, height / 2.0, 0.1, height)   // Right
+        } else {
+            // FTC standard field size, origin at center (0,0)
+            val halfWidth = 3.6576 / 2.0
+            addWall(world, 0.0, halfWidth, 3.6576, 0.1)   // Top
+            addWall(world, 0.0, -halfWidth, 3.6576, 0.1)  // Bottom
+            addWall(world, -halfWidth, 0.0, 0.1, 3.6576)  // Left
+            addWall(world, halfWidth, 0.0, 0.1, 3.6576)   // Right
+        }
+    }
 
-        val bottomWall = Body()
-        bottomWall.addFixture(Geometry.createRectangle(FIELD_WIDTH, 0.1))
-        bottomWall.setMass(MassType.INFINITE)
-        bottomWall.translate(0.0, -halfWidth)
-        world.addBody(bottomWall)
-
-        val leftWall = Body()
-        leftWall.addFixture(Geometry.createRectangle(0.1, FIELD_HEIGHT))
-        leftWall.setMass(MassType.INFINITE)
-        leftWall.translate(-halfWidth, 0.0)
-        world.addBody(leftWall)
-
-        val rightWall = Body()
-        rightWall.addFixture(Geometry.createRectangle(0.1, FIELD_HEIGHT))
-        rightWall.setMass(MassType.INFINITE)
-        rightWall.translate(halfWidth, 0.0)
-        world.addBody(rightWall)
+    private fun addWall(world: World<Body>, x: Double, y: Double, w: Double, h: Double) {
+        val wall = Body()
+        wall.addFixture(Geometry.createRectangle(w, h))
+        wall.setMass(MassType.INFINITE)
+        wall.translate(x, y)
+        world.addBody(wall)
     }
 }

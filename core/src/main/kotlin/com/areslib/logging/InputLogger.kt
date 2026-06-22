@@ -45,7 +45,7 @@ class InputLogger(customLogFile: File? = null) {
                 val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
                 
                 val logDir = if (isAndroid) {
-                    File("/sdcard/FIRST/input_logs/")
+                    File("/sdcard/FIRST/telemetry_logs/")
                 } else {
                     File("./logs/")
                 }

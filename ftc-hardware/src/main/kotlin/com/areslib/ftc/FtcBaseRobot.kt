@@ -143,6 +143,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             // 6. Record frame inputs for deterministic replay
             val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent().apply {
                 populate(
+                    telemetryManager.runId,
+                    telemetryManager.robotId,
                     timestamp,
                     poseUpdate,
                     store.state.drive,

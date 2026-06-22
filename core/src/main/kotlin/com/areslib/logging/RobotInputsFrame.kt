@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * all active robot subsystem hardware inputs at a single time step.
  */
 data class RobotInputsFrame(
+    @SerializedName("runId") var runId: String = "",
+    @SerializedName("robotId") var robotId: String = "",
     @SerializedName("timestampMs") var timestampMs: Long = 0L,
     @SerializedName("swerveInputs") val swerveInputs: List<SwerveModuleInputs> = List(4) { SwerveModuleInputs() },
     @SerializedName("imuInputs") val imuInputs: ImuInputs = ImuInputs(),
@@ -23,6 +25,8 @@ data class RobotInputsFrame(
      * Prevents stale telemetry leakage when recycling the frame.
      */
     fun clear() {
+        runId = ""
+        robotId = ""
         timestampMs = 0L
         for (module in swerveInputs) {
             module.drivePositionRads = 0.0
@@ -94,12 +98,16 @@ object RobotInputsFramePool {
  * Asynchronously populates the current RobotInputsFrame with drive, imu, odometry, and vision states.
  */
 fun RobotInputsFrame.populate(
+    runId: String,
+    robotId: String,
     timestamp: Long,
     poseUpdate: com.areslib.action.RobotAction.PoseUpdate,
     driveState: com.areslib.state.DriveState,
     hasVision: Boolean,
     measurements: List<com.areslib.state.VisionMeasurement>
 ) {
+    this.runId = runId
+    this.robotId = robotId
     this.timestampMs = timestamp
     
     this.odometryInputs.posX = poseUpdate.xMeters
