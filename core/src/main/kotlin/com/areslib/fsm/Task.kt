@@ -291,11 +291,13 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     override val name = "FollowPath(${path.points.size} points)"
     private var lastTimeMs = 0L
     private lateinit var activePath: com.areslib.pathing.Path
+    private val triggeredEvents = mutableSetOf<String>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = state.drive.alliance
         activePath = com.areslib.math.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
+        triggeredEvents.clear()
         return listOf(
             RobotAction.SwitchPath(activePath, isDetour = false, timestampMs = lastTimeMs)
         )
@@ -317,9 +319,18 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         follower.update(targetPoint, dt)
 
         val nextDistance = currentDistance + targetPoint.velocityMps * dt
-        return listOf(
-            RobotAction.UpdatePathProgress(nextDistance, currentTimestamp)
-        )
+        val actions = mutableListOf<RobotAction>()
+        actions.add(RobotAction.UpdatePathProgress(nextDistance, currentTimestamp))
+
+        // Check path events
+        for (event in activePath.events) {
+            if (event.eventName !in triggeredEvents && event.triggerDistanceMeters <= nextDistance) {
+                triggeredEvents.add(event.eventName)
+                actions.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
+            }
+        }
+
+        return actions
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {

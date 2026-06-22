@@ -9,4 +9,5 @@ open class AresRobot(
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) {
     val store = Store(initialState, reducer)
+    val superstructure = SuperstructureFacade(store)
 }
