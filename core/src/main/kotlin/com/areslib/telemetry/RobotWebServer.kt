@@ -220,6 +220,7 @@ object RobotWebServer {
         out.write("Access-Control-Allow-Origin: *\r\n".toByteArray())
         out.write("Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n".toByteArray())
         out.write("Access-Control-Allow-Headers: Content-Type, Authorization\r\n".toByteArray())
+        out.write("Access-Control-Allow-Private-Network: true\r\n".toByteArray())
     }
 
     private fun sendOptionsResponse(client: Socket) {
