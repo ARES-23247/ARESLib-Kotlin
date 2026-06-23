@@ -71,6 +71,16 @@ class FtcLimelightIO(
                             val posTargetMeters = robotPoseTargetSpaceFTC.position.toUnit(DistanceUnit.METER)
                             val orientTarget = robotPoseTargetSpaceFTC.orientation
                             
+                            // IMPORTANT: Unlike botpose (lines 44-58), target-space rotation is
+                            // NOT coordinate-transformed from FTC→WPI. The Limelight SDK's
+                            // roll/pitch/yaw are passed directly to Rotation3d(roll, pitch, yaw).
+                            //
+                            // In target-space (Y-up, Z-forward), the robot's HEADING rotation
+                            // (left/right turning) is around the Y axis. The Limelight SDK reports
+                            // this as getPitch() (not getYaw()), which maps to Rotation3d.y.
+                            //
+                            // Consumers should use: -rotation.y for heading, NOT rotation.z.
+                            // See VisionMeasurement KDoc for the full axis mapping table.
                             val robotPoseTargetSpaceWpi = Pose3d(
                                 translation = com.areslib.math.Translation3d(
                                     x = posTargetMeters.x,

@@ -141,11 +141,38 @@ data class SuperstructureState(
  * @property ambiguity PnP pose ambiguity score (0.0 = perfect, >0.2 = unreliable).
  * @property robotPoseTargetSpace The robot's 3D pose expressed in **target-space** coordinates.
  *
- *   Target-space coordinate frame (origin at the center of the AprilTag face):
+ *   ## Target-Space Coordinate Frame
+ *   Origin is at the center of the AprilTag face:
  *   - **X+**: to the right of the tag (when facing the tag)
- *   - **Y+**: upward from the tag
- *   - **Z+**: outward from the tag face (toward the observer/camera)
- *   - **Yaw+**: counter-clockwise rotation when viewed from above
+ *   - **Y+**: upward from the tag (vertical axis)
+ *   - **Z+**: outward from the tag face (toward the observer/camera) — this is the depth/distance axis
+ *
+ *   ## Translation Access
+ *   - `robotPoseTargetSpace.x` → lateral offset (positive = robot is right of tag center)
+ *   - `robotPoseTargetSpace.y` → vertical offset (usually near 0 for ground robots)
+ *   - `robotPoseTargetSpace.z` → distance from tag face (always positive, in meters)
+ *
+ *   ## ⚠️ CRITICAL: Rotation Axis Mapping (Limelight → Rotation3d)
+ *   The Limelight SDK reports roll/pitch/yaw in FTC conventions, but target-space
+ *   has a **different vertical axis** (Y-up) than FTC field space (Z-up). The raw
+ *   Limelight euler angles are passed directly into `Rotation3d(roll, pitch, yaw)`
+ *   WITHOUT a coordinate transform (see [FtcLimelightIO]). This creates a mismatch:
+ *
+ *   | Physical Rotation          | Limelight SDK Call | Rotation3d Property | Euler Axis |
+ *   |----------------------------|--------------------|---------------------|------------|
+ *   | Robot tilting sideways     | `getRoll()`        | `rotation.x`        | X (roll)   |
+ *   | **Robot heading (yaw)**    | `getPitch()`       | **`rotation.y`**    | Y (pitch)  |
+ *   | Robot tilting forward/back | `getYaw()`         | `rotation.z`        | Z (yaw)    |
+ *
+ *   **The robot's heading rotation relative to the tag (left/right turning) is in
+ *   `rotation.y`, NOT `rotation.z`.** This is because in target-space the vertical
+ *   axis is Y, so heading rotation is around Y. The Limelight SDK's `getPitch()`
+ *   returns this value, which maps to `Rotation3d.y`.
+ *
+ *   **Sign convention:** Negate `rotation.y` for standard CCW-positive heading:
+ *   ```kotlin
+ *   val robotYaw = -robotPoseTargetSpace.rotation.y  // heading relative to tag
+ *   ```
  *
  *   This pose is the raw output from Limelight's `robotPoseTargetSpace` pipeline result.
  *   It is used by the alignment controller to compute translational and rotational errors
