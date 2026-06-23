@@ -116,6 +116,31 @@ class FullStateLogger(
             lastStateLogTimeMs = now
             queue.offer(LogPayload.State(state))
         }
+        // 3. Log vision events if there are new measurements
+        if (config.logVision && state.vision.measurements.isNotEmpty()) {
+            val lastMeasurement = state.vision.measurements.last()
+            if (lastMeasurement.timestampMs > lastLoggedMeasurementTimestamp) {
+                lastLoggedMeasurementTimestamp = lastMeasurement.timestampMs
+                
+                val rawPoseJson = gson.toJson(lastMeasurement.targetPose)
+                val entry = VisionEventEntry(
+                    timestampMs = lastMeasurement.timestampMs,
+                    tagId = lastMeasurement.tagId,
+                    cameraId = "limelight", // default camera_id
+                    rawPoseJson = rawPoseJson,
+                    accepted = state.vision.lastMeasurementAccepted,
+                    rejectionReason = state.vision.lastRejectionReason,
+                    covarianceBefore = state.vision.covarianceBeforeUpdate,
+                    covarianceAfter = state.vision.covarianceAfterUpdate
+                )
+                queue.offer(LogPayload.Vision(entry))
+            }
+        }
+    }
+
+    fun logMotorsTick(batteryVoltage: Double) {
+        if (!isRunning) return
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
 
         // 2. Log motor telemetry at the same rate
         if (config.logMotors && (now - lastMotorLogTimeMs >= minStateLogIntervalMs)) {
@@ -137,27 +162,6 @@ class FullStateLogger(
             }
             if (entries.isNotEmpty()) {
                 queue.offer(LogPayload.Motors(entries))
-            }
-        }
-
-        // 3. Log vision events if there are new measurements
-        if (config.logVision && state.vision.measurements.isNotEmpty()) {
-            val lastMeasurement = state.vision.measurements.last()
-            if (lastMeasurement.timestampMs > lastLoggedMeasurementTimestamp) {
-                lastLoggedMeasurementTimestamp = lastMeasurement.timestampMs
-                
-                val rawPoseJson = gson.toJson(lastMeasurement.targetPose)
-                val entry = VisionEventEntry(
-                    timestampMs = lastMeasurement.timestampMs,
-                    tagId = lastMeasurement.tagId,
-                    cameraId = "limelight", // default camera_id
-                    rawPoseJson = rawPoseJson,
-                    accepted = state.vision.lastMeasurementAccepted,
-                    rejectionReason = state.vision.lastRejectionReason,
-                    covarianceBefore = state.vision.covarianceBeforeUpdate,
-                    covarianceAfter = state.vision.covarianceAfterUpdate
-                )
-                queue.offer(LogPayload.Vision(entry))
             }
         }
     }

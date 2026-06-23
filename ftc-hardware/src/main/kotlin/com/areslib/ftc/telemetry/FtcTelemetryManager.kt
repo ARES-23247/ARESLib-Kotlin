@@ -113,6 +113,14 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
     }
 
     /**
+     * Captures motor telemetry. This MUST be called at the end of the OpMode loop,
+     * after all motor powers have been written to the hardware.
+     */
+    fun publishMotors(batteryVoltage: Double) {
+        fullStateLogger.logMotorsTick(batteryVoltage)
+    }
+
+    /**
      * Gracefully stops file logging threads and closes network streams.
      */
     override fun close() {

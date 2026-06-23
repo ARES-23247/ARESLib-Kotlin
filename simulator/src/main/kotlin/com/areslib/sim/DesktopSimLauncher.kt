@@ -421,7 +421,7 @@ object DesktopSimLauncher {
                     }
                 }
             }
-            val startTime = System.currentTimeMillis()
+            val startTime = RobotClock.currentTimeMillis()
 
             // Current Simulated Pose
             val simTransform = robotBody.transform
@@ -645,7 +645,7 @@ object DesktopSimLauncher {
             TelemetryPublisher.publishSuperstructure(state)
 
             // Print highly detailed current and thermal warning metrics periodically
-            if (System.currentTimeMillis() % 1000 < 20) {
+            if (RobotClock.currentTimeMillis() % 1000 < 20) {
                 println(String.format(
                     "| FLOODGATE LOAD | Current: %.2f A | Temp: %.1f%% | Energy: %.4f Wh | Fuse Alert: %b |",
                     floodgateCurrentSensor.current,
@@ -749,7 +749,7 @@ object DesktopSimLauncher {
             NT4FieldPublisher.publishElements(dynamicElementPoses)
 
             // Loop timing
-            val elapsed = System.currentTimeMillis() - startTime
+            val elapsed = RobotClock.currentTimeMillis() - startTime
             val sleepTime = TIMESTEP_MS - elapsed
             if (sleepTime > 0) {
                 Thread.sleep(sleepTime)
