@@ -38,6 +38,8 @@ const PORT_SECURE = process.env.PORT_SECURE || 8443;
 const REPO_ROOT = path.resolve(daemonDir, "../..");
 const ALLOWED_ORIGINS = [
   "https://aresfirst-portal.web.app",
+  "https://aresfirst.org",
+  "https://www.aresfirst.org",
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:8080"
