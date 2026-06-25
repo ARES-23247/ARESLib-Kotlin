@@ -76,4 +76,25 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
         telemetry.update()
     }
+
+    fun publishTopology(topologyJson: String) {
+        telemetry.putString("Topology/HardwareMap", topologyJson)
+        telemetry.update()
+    }
+
+    fun publishCalibration(
+        isActive: Boolean,
+        gyroHeading: Double,
+        tagIndex: Int,
+        cameraIndex: Int,
+        cameraToTag: DoubleArray
+    ) {
+        telemetry.putBoolean("Calibration/IsActive", isActive)
+        telemetry.putNumber("Calibration/GyroHeading", gyroHeading)
+        telemetry.putNumber("Calibration/TagIndex", tagIndex.toDouble())
+        telemetry.putNumber("Calibration/CameraIndex", cameraIndex.toDouble())
+        telemetry.putDoubleArray("Calibration/CameraToTag", cameraToTag)
+        telemetry.update()
+    }
 }
+

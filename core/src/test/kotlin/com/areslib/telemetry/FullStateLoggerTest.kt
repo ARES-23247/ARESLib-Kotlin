@@ -47,6 +47,7 @@ class FullStateLoggerTest {
         // Log a few ticks
         for (i in 0..5) {
             logger.logTick(state, 12.0)
+            logger.logMotorsTick(12.0)
             Thread.sleep(30)
         }
 
