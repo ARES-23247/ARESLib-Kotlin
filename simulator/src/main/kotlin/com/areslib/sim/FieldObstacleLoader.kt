@@ -60,7 +60,7 @@ object FieldObstacleLoader {
                 val name = obj.get("name")?.asString ?: ""
                 val type = obj.get("type")?.asString ?: ""
 
-                if (type.contains("Circle") || obj.has("centerX")) {
+                if (type.contains("Circle") || (obj.has("radius") && !obj.has("width"))) {
                     val centerX = obj.get("centerX")?.asDouble ?: 0.0
                     val centerY = obj.get("centerY")?.asDouble ?: 0.0
                     val radius = obj.get("radius")?.asDouble ?: 0.25
@@ -73,6 +73,24 @@ object FieldObstacleLoader {
                             width = radius, // use width as radius for circle shape
                             height = radius,
                             shape = "circle"
+                        )
+                    )
+                } else if (type.contains("Rectangle") || (obj.has("width") && obj.has("height"))) {
+                    val centerX = obj.get("centerX")?.asDouble ?: 0.0
+                    val centerY = obj.get("centerY")?.asDouble ?: 0.0
+                    val width = obj.get("width")?.asDouble ?: 0.5
+                    val height = obj.get("height")?.asDouble ?: 0.5
+                    val rotation = obj.get("rotation")?.asDouble ?: 0.0
+                    list.add(
+                        RobotFieldObstacle(
+                            id = id,
+                            name = name,
+                            x = centerX,
+                            y = centerY,
+                            width = width,
+                            height = height,
+                            rotation = rotation,
+                            shape = "rectangle"
                         )
                     )
                 } else if (type.contains("Polygon") || obj.has("vertices")) {
