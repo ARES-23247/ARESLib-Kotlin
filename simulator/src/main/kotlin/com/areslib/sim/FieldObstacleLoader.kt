@@ -47,6 +47,69 @@ object FieldObstacleLoader {
     }
 
     /**
+     * Parses the obstacles.json format exported from the ARES-Analytics Field Editor.
+     * Maps polymorphic Circle and Polygon models to RobotFieldObstacle.
+     */
+    fun loadObstaclesFromAnalyticsJson(jsonString: String): List<RobotFieldObstacle> {
+        val list = mutableListOf<RobotFieldObstacle>()
+        try {
+            val array = gson.fromJson(jsonString, com.google.gson.JsonArray::class.java) ?: return emptyList()
+            for (i in 0 until array.size()) {
+                val obj = array.get(i).asJsonObject
+                val id = obj.get("id")?.asString ?: ""
+                val name = obj.get("name")?.asString ?: ""
+                val type = obj.get("type")?.asString ?: ""
+
+                if (type.contains("Circle") || obj.has("centerX")) {
+                    val centerX = obj.get("centerX")?.asDouble ?: 0.0
+                    val centerY = obj.get("centerY")?.asDouble ?: 0.0
+                    val radius = obj.get("radius")?.asDouble ?: 0.25
+                    list.add(
+                        RobotFieldObstacle(
+                            id = id,
+                            name = name,
+                            x = centerX,
+                            y = centerY,
+                            width = radius, // use width as radius for circle shape
+                            height = radius,
+                            shape = "circle"
+                        )
+                    )
+                } else if (type.contains("Polygon") || obj.has("vertices")) {
+                    val verticesArray = obj.getAsJsonArray("vertices")
+                    val pointsList = mutableListOf<RobotFieldPoint>()
+                    var sumX = 0.0
+                    var sumY = 0.0
+                    for (j in 0 until verticesArray.size()) {
+                        val ptObj = verticesArray.get(j).asJsonObject
+                        val px = ptObj.get("x")?.asDouble ?: 0.0
+                        val py = ptObj.get("y")?.asDouble ?: 0.0
+                        pointsList.add(RobotFieldPoint(px, py))
+                        sumX += px
+                        sumY += py
+                    }
+                    val count = verticesArray.size().toDouble()
+                    val cx = if (count > 0) sumX / count else 0.0
+                    val cy = if (count > 0) sumY / count else 0.0
+                    list.add(
+                        RobotFieldObstacle(
+                            id = id,
+                            name = name,
+                            x = cx,
+                            y = cy,
+                            shape = "polygon",
+                            points = pointsList
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            System.err.println("Failed to parse obstacles.json from ARES-Analytics: ${e.message}")
+        }
+        return list
+    }
+
+    /**
      * Loads a list of RobotFieldObstacle directly into the dyn4j World.
      */
     fun loadObstacles(world: World<Body>, obstacles: List<RobotFieldObstacle>): List<Body> {
@@ -67,6 +130,8 @@ object FieldObstacleLoader {
                 Vector2(p.x - obs.x, p.y - obs.y)
             }.toTypedArray()
             Geometry.createPolygon(*vertices)
+        } else if (obs.shape.lowercase() == "circle") {
+            Geometry.createCircle(obs.width) // width holds the radius
         } else {
             Geometry.createRectangle(obs.width, obs.height)
         }

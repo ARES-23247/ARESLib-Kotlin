@@ -199,6 +199,8 @@ object DesktopSimLauncher {
 
         val balls = mutableListOf<Body>()
         val activeObstacles = mutableListOf<Body>()
+        var obstaclesFile: java.io.File? = null
+        var lastObstaclesFileModified = 0L
 
         if (activeConfig != null) {
             println("Loading obstacles and elements from command-line activeConfig...")
@@ -212,9 +214,40 @@ object DesktopSimLauncher {
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
         } else {
             createWalls(world)
-            // Load obstacles: either from config_override.json (if obstacles are defined there) or fallback to decode_obstacles.json
+            // Load obstacles: either from obstacles.json, config_override.json (if obstacles are defined there) or fallback to decode_obstacles.json
             var loadedCustomObstacles = false
-            if (configFile.exists()) {
+
+            val paths = listOf(
+                "src/main/assets/paths/obstacles.json",
+                "TeamCode/src/main/assets/paths/obstacles.json",
+                "src/main/deploy/paths/obstacles.json",
+                "frc-app/src/main/deploy/paths/obstacles.json"
+            )
+            for (p in paths) {
+                val f = java.io.File(p)
+                if (f.exists()) {
+                    obstaclesFile = f
+                    break
+                }
+            }
+
+            if (obstaclesFile != null) {
+                try {
+                    println("Loading custom obstacles from ${obstaclesFile!!.path} into physics world...")
+                    val content = obstaclesFile!!.readText()
+                    val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
+                    val bodies = FieldObstacleLoader.loadObstacles(world, obstacles)
+                    activeObstacles.addAll(bodies)
+                    println("Loaded ${bodies.size} custom obstacles from Field Editor successfully.")
+                    loadedCustomObstacles = true
+                    lastObstaclesFileModified = obstaclesFile!!.lastModified()
+                    NT4FieldPublisher.publishObstacles(obstacles)
+                } catch (e: Exception) {
+                    println("[Simulator Config] Failed to parse custom obstacles from ${obstaclesFile!!.path}: ${e.message}")
+                }
+            }
+
+            if (!loadedCustomObstacles && configFile.exists()) {
                 try {
                     val configContent = configFile.readText()
                     val gson = com.google.gson.Gson()
@@ -341,6 +374,7 @@ object DesktopSimLauncher {
         }
         val visionSimulator = com.areslib.hardware.vision.VisionSimulator(visionTags)
         var lastObstaclesTimestamp = 0L
+        var checkObstaclesTicks = 0
 
         var watchTicks = 0
         var needsRebuild = false
@@ -348,6 +382,54 @@ object DesktopSimLauncher {
         while (true) {
             org.lwjgl.glfw.GLFW.glfwPollEvents()
             TelemetryPublisher.pollWebInputs(driverStation)
+
+            // Check for obstacles.json file modifications (every 1 second / 50 ticks)
+            checkObstaclesTicks++
+            if (checkObstaclesTicks >= 50) {
+                checkObstaclesTicks = 0
+                if (obstaclesFile == null) {
+                    val paths = listOf(
+                        "src/main/assets/paths/obstacles.json",
+                        "TeamCode/src/main/assets/paths/obstacles.json",
+                        "src/main/deploy/paths/obstacles.json",
+                        "frc-app/src/main/deploy/paths/obstacles.json"
+                    )
+                    for (p in paths) {
+                        val f = java.io.File(p)
+                        if (f.exists()) {
+                            obstaclesFile = f
+                            lastObstaclesFileModified = 0L // Force reload
+                            break
+                        }
+                    }
+                }
+
+                val currentFile = obstaclesFile
+                if (currentFile != null && currentFile.exists()) {
+                    val lastMod = currentFile.lastModified()
+                    if (lastMod != lastObstaclesFileModified) {
+                        lastObstaclesFileModified = lastMod
+                        println("[Simulator] obstacles.json file modified. Hot-reloading obstacles...")
+                        
+                        // Clear existing active obstacles from dyn4j world
+                        activeObstacles.forEach { body ->
+                            world.removeBody(body)
+                        }
+                        activeObstacles.clear()
+                        
+                        try {
+                            val content = currentFile.readText()
+                            val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
+                            val newObstacles = FieldObstacleLoader.loadObstacles(world, obstacles)
+                            activeObstacles.addAll(newObstacles)
+                            println("[Simulator] Hot-loaded ${newObstacles.size} obstacles from ${currentFile.name}.")
+                            NT4FieldPublisher.publishObstacles(obstacles)
+                        } catch (e: Exception) {
+                            println("[Simulator] Failed to reload obstacles: ${e.message}")
+                        }
+                    }
+                }
+            }
 
             if (watchFieldConfig && fieldConfigArg != null) {
                 watchTicks++
