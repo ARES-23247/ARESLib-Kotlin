@@ -201,6 +201,8 @@ object DesktopSimLauncher {
         val activeObstacles = mutableListOf<Body>()
         var obstaclesFile: java.io.File? = null
         var lastObstaclesFileModified = 0L
+        var gamePiecesFile: java.io.File? = null
+        var lastGamePiecesFileModified = 0L
 
         if (activeConfig != null) {
             println("Loading obstacles and elements from command-line activeConfig...")
@@ -231,19 +233,46 @@ object DesktopSimLauncher {
                 }
             }
 
+            val gpPaths = listOf(
+                "src/main/assets/paths/game_pieces.json",
+                "TeamCode/src/main/assets/paths/game_pieces.json",
+                "src/main/deploy/paths/game_pieces.json",
+                "frc-app/src/main/deploy/paths/game_pieces.json"
+            )
+            for (p in gpPaths) {
+                val f = java.io.File(p)
+                if (f.exists()) {
+                    gamePiecesFile = f
+                    break
+                }
+            }
+
             if (obstaclesFile != null) {
                 try {
-                    println("Loading custom obstacles from ${obstaclesFile!!.path} into physics world...")
-                    val content = obstaclesFile!!.readText()
+                    println("Loading custom obstacles from ${obstaclesFile.path} into physics world...")
+                    val content = obstaclesFile.readText()
                     val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
                     val bodies = FieldObstacleLoader.loadObstacles(world, obstacles)
                     activeObstacles.addAll(bodies)
                     println("Loaded ${bodies.size} custom obstacles from Field Editor successfully.")
                     loadedCustomObstacles = true
-                    lastObstaclesFileModified = obstaclesFile!!.lastModified()
+                    lastObstaclesFileModified = obstaclesFile.lastModified()
                     NT4FieldPublisher.publishObstacles(obstacles)
                 } catch (e: Exception) {
-                    println("[Simulator Config] Failed to parse custom obstacles from ${obstaclesFile!!.path}: ${e.message}")
+                    println("[Simulator Config] Failed to parse custom obstacles from ${obstaclesFile.path}: ${e.message}")
+                }
+            }
+
+            if (gamePiecesFile != null) {
+                try {
+                    println("Loading custom game pieces from ${gamePiecesFile.path} into physics world...")
+                    val content = gamePiecesFile.readText()
+                    val bodies = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
+                    balls.addAll(bodies)
+                    println("Loaded ${bodies.size} custom game pieces from Field Editor successfully.")
+                    lastGamePiecesFileModified = gamePiecesFile.lastModified()
+                } catch (e: Exception) {
+                    println("[Simulator Config] Failed to parse custom game pieces from ${gamePiecesFile.path}: ${e.message}")
                 }
             }
 
@@ -383,7 +412,7 @@ object DesktopSimLauncher {
             org.lwjgl.glfw.GLFW.glfwPollEvents()
             TelemetryPublisher.pollWebInputs(driverStation)
 
-            // Check for obstacles.json file modifications (every 1 second / 50 ticks)
+            // Check for obstacles.json and game_pieces.json file modifications (every 1 second / 50 ticks)
             checkObstaclesTicks++
             if (checkObstaclesTicks >= 50) {
                 checkObstaclesTicks = 0
@@ -426,6 +455,47 @@ object DesktopSimLauncher {
                             NT4FieldPublisher.publishObstacles(obstacles)
                         } catch (e: Exception) {
                             println("[Simulator] Failed to reload obstacles: ${e.message}")
+                        }
+                    }
+                }
+
+                if (gamePiecesFile == null) {
+                    val gpPaths = listOf(
+                        "src/main/assets/paths/game_pieces.json",
+                        "TeamCode/src/main/assets/paths/game_pieces.json",
+                        "src/main/deploy/paths/game_pieces.json",
+                        "frc-app/src/main/deploy/paths/game_pieces.json"
+                    )
+                    for (p in gpPaths) {
+                        val f = java.io.File(p)
+                        if (f.exists()) {
+                            gamePiecesFile = f
+                            lastGamePiecesFileModified = 0L // Force reload
+                            break
+                        }
+                    }
+                }
+
+                val currentGpFile = gamePiecesFile
+                if (currentGpFile != null && currentGpFile.exists()) {
+                    val lastMod = currentGpFile.lastModified()
+                    if (lastMod != lastGamePiecesFileModified) {
+                        lastGamePiecesFileModified = lastMod
+                        println("[Simulator] game_pieces.json file modified. Hot-reloading game pieces...")
+                        
+                        // Clear existing active game pieces from dyn4j world
+                        balls.forEach { body ->
+                            world.removeBody(body)
+                        }
+                        balls.clear()
+                        
+                        try {
+                            val content = currentGpFile.readText()
+                            val newBodies = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
+                            balls.addAll(newBodies)
+                            println("[Simulator] Hot-loaded ${newBodies.size} game pieces from ${currentGpFile.name}.")
+                        } catch (e: Exception) {
+                            println("[Simulator] Failed to reload game pieces: ${e.message}")
                         }
                     }
                 }

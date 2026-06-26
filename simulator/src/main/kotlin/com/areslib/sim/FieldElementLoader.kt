@@ -44,6 +44,51 @@ object FieldElementLoader {
         return spawnedBodies
     }
 
+    private data class SimGamePiece(
+        val id: String = "",
+        val name: String = "",
+        val x: Double = 0.0,
+        val y: Double = 0.0,
+        val type: String = "Custom"
+    )
+
+    fun loadGamePiecesFromAnalyticsJson(world: World<Body>, jsonString: String): List<Body> {
+        val spawnedBodies = mutableListOf<Body>()
+        try {
+            val listType = object : com.google.gson.reflect.TypeToken<List<SimGamePiece>>() {}.type
+            val gamePieces: List<SimGamePiece> = gson.fromJson(jsonString, listType) ?: return emptyList()
+
+            for (gp in gamePieces) {
+                val isSample = gp.type.contains("Sample")
+                val isNote = gp.type.contains("Note")
+                
+                val shape = if (isSample) "box" else "cylinder"
+                val width = if (isSample) 0.15 else 0.1
+                val height = if (isSample) 0.05 else 0.1
+                val diameter = if (isNote) 0.35 else 0.15
+                
+                val typeSpec = com.areslib.state.RobotFieldElementType(
+                    id = gp.type,
+                    name = gp.type,
+                    shape = shape,
+                    width = width,
+                    height = height,
+                    diameter = diameter,
+                    movable = true,
+                    massKg = if (isSample) 0.2 else 0.24
+                )
+                
+                val body = createBodyFromSpec(typeSpec, gp.x, gp.y, 0.0, gp.name)
+                world.addBody(body)
+                spawnedBodies.add(body)
+            }
+        } catch (e: Exception) {
+            System.err.println("Failed to parse game_pieces.json: ${e.message}")
+            e.printStackTrace()
+        }
+        return spawnedBodies
+    }
+
     private fun createBodyFromSpec(
         type: com.areslib.state.RobotFieldElementType,
         x: Double,
