@@ -72,7 +72,7 @@ Compile all findings into a professional, structured markdown document at `repor
 
 ### Audit Quality & Reporting
 - [ ] A complete, comprehensive markdown report is written to `reports/codebase_audit_report.md`.
-- [ ] Every codebase rule violation listed in `CLAUDE.md` and `PROJECT.md` is checked, and either marked as compliant or explicitly cataloged with exact file references and line numbers.
+- [ ] Every codebase rule violation listed in `GEMINI.md` and `PROJECT.md` is checked, and either marked as compliant or explicitly cataloged with exact file references and line numbers.
 - [ ] Refactoring recommendations include clean Kotlin code examples demonstrating the correct zero-allocation, immutable, or safe-math equivalent.
 
 ### Project Integrity & Build Verification
