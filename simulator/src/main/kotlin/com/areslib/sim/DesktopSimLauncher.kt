@@ -30,6 +30,7 @@ object DesktopSimLauncher {
         var watchFieldConfig = false
         var fieldConfigArg: String? = null
         var replayCloudId: String? = null
+        var headless = false
 
         var argIdx = 0
         while (argIdx < args.size) {
@@ -42,6 +43,9 @@ object DesktopSimLauncher {
                 }
                 "--watch" -> {
                     watchFieldConfig = true
+                }
+                "--headless" -> {
+                    headless = true
                 }
                 "--replay-cloud" -> {
                     if (argIdx + 1 < args.size) {
@@ -144,7 +148,11 @@ object DesktopSimLauncher {
 
         // 2. Setup Virtual Driver Station
         val driverStation = VirtualDriverStation()
-        driverStation.isVisible = true
+        if (headless) {
+            driverStation.isTeleopMode = false
+        } else {
+            driverStation.isVisible = true
+        }
 
         // 3. Setup Controllers & Trajectory
         val mockJson = """
@@ -177,8 +185,8 @@ object DesktopSimLauncher {
             }
         """.trimIndent()
         val path = PathPlannerParser.parsePath(mockJson)
-        val xController = PIDController(p = 2.0, i = 0.0, d = 0.1)
-        val yController = PIDController(p = 2.0, i = 0.0, d = 0.1)
+        val xController = PIDController(p = 10.0, i = 0.0, d = 0.4)
+        val yController = PIDController(p = 10.0, i = 0.0, d = 0.4)
         val thetaController = PIDController(p = 3.0, i = 0.0, d = 0.2)
         val driveController = HolonomicDriveController(xController, yController, thetaController)
 
@@ -193,8 +201,10 @@ object DesktopSimLauncher {
         // 35 lbs ~ 15.875 kg. Area = 0.45 * 0.45 = 0.2025. Density = 15.875 / 0.2025 = 78.395
         robotFixture.density = 78.395
         robotBody.setMass(MassType.NORMAL)
-        // Spawn robot in the exact center of the field (0, 0)
-        robotBody.translate(0.0, 0.0)
+        // Spawn robot at the starting waypoint of the trajectory
+        val startPose = path.points.firstOrNull()?.pose ?: Pose2d(0.0, 0.0, Rotation2d())
+        robotBody.translate(startPose.x, startPose.y)
+        robotBody.transform.setRotation(startPose.heading.radians)
         world.addBody(robotBody)
 
         val balls = mutableListOf<Body>()
@@ -377,13 +387,25 @@ object DesktopSimLauncher {
 
         // 5. Simulation Loop
         var state = RobotState()
+        state = com.areslib.reducer.rootReducer(
+            state,
+            com.areslib.action.RobotAction.PoseUpdate(
+                xMeters = startPose.x,
+                yMeters = startPose.y,
+                headingRadians = startPose.heading.radians,
+                timestampMs = RobotClock.currentTimeMillis(),
+                isReset = true
+            )
+        )
         var currentDistance = 0.0
         var lastDistance = 0.0
         var lastShootTime = 0L
+        val headlessRecords = mutableListOf<HeadlessRecord>()
+        var settlingTicks = 0
         
-        var lastX = 0.0
-        var lastY = 0.0
-        var lastHeading = 0.0
+        var lastX = startPose.x
+        var lastY = startPose.y
+        var lastHeading = startPose.heading.radians
         var simLoopCount = 0
         val activeFieldConfig = com.areslib.state.RobotFieldManager.activeConfig
         val visionTags = if (activeFieldConfig.apriltags.isNotEmpty()) {
@@ -409,7 +431,9 @@ object DesktopSimLauncher {
         var needsRebuild = false
 
         while (true) {
-            org.lwjgl.glfw.GLFW.glfwPollEvents()
+            if (!headless) {
+                org.lwjgl.glfw.GLFW.glfwPollEvents()
+            }
             TelemetryPublisher.pollWebInputs(driverStation)
 
             // Check for obstacles.json and game_pieces.json file modifications (every 1 second / 50 ticks)
@@ -616,9 +640,30 @@ object DesktopSimLauncher {
 
                 TelemetryPublisher.publishTargetPose(targetState.pose)
 
+                val totalDistance = path.points.lastOrNull()?.distanceMeters ?: 0.0
+                val nextSampleDistance = kotlin.math.min(currentDistance + 0.05, totalDistance)
+                val nextState = path.sampleAtDistance(nextSampleDistance)
+                val tangentHeading = if (nextSampleDistance - currentDistance > 1e-4) {
+                    val dx = nextState.pose.x - targetState.pose.x
+                    val dy = nextState.pose.y - targetState.pose.y
+                    if (kotlin.math.hypot(dx, dy) > 1e-4) {
+                        Rotation2d(kotlin.math.atan2(dy, dx))
+                    } else {
+                        targetState.pose.heading
+                    }
+                } else {
+                    val lastPoint = path.points.lastOrNull()
+                    val secondLastPoint = path.points.getOrNull(path.points.size - 2)
+                    if (lastPoint != null && secondLastPoint != null) {
+                        Rotation2d(kotlin.math.atan2(lastPoint.pose.y - secondLastPoint.pose.y, lastPoint.pose.x - secondLastPoint.pose.x))
+                    } else {
+                        targetState.pose.heading
+                    }
+                }
+
                 driveController.calculate(
                     currentPose,
-                    targetState.pose,
+                    Pose2d(targetState.pose.x, targetState.pose.y, tangentHeading),
                     targetState.velocityMps,
                     targetState.pose.heading,
                     TIMESTEP_SEC
@@ -658,6 +703,26 @@ object DesktopSimLauncher {
             // Step the digital twin physics forward by 20ms
             robotDouble.update(TIMESTEP_SEC)
 
+            // Raycast mock distance sensors (4 directions: Front, Left, Back, Right relative to heading)
+            val headingRad = currentPose.heading.radians
+            val sensorDirections = doubleArrayOf(0.0, Math.PI / 2.0, Math.PI, -Math.PI / 2.0)
+            val endian = java.nio.ByteOrder.LITTLE_ENDIAN
+            for (port in 0 until 4) {
+                val sensorAngle = headingRad + sensorDirections[port]
+                val dist = raycast(
+                    world = world,
+                    startX = currentPose.x,
+                    startY = currentPose.y,
+                    angleRad = sensorAngle,
+                    maxRange = 2.0,
+                    robotBody = robotBody
+                )
+                val distMm = (dist * 1000.0).toInt().coerceIn(0, 65535)
+                val base = 32 + port * 16
+                val distBytes = java.nio.ByteBuffer.allocate(2).order(endian).putShort(distMm.toShort()).array()
+                System.arraycopy(distBytes, 0, robotDouble.srsHubI2c.registers, base + 8, 2)
+            }
+
             // Read sensors back from virtual registers using production drivers
             srsHub.update()
             floodgateCurrentSensor.update()
@@ -683,7 +748,7 @@ object DesktopSimLauncher {
             robotBody.isAtRest = false
 
             // Apply forces to simulate traction/momentum
-            val kpLinear = 50.0
+            val kpLinear = 150.0
             val kpAngular = 20.0
             val forceX = (worldVx - robotBody.linearVelocity.x) * kpLinear
             val forceY = (worldVy - robotBody.linearVelocity.y) * kpLinear
@@ -806,6 +871,14 @@ object DesktopSimLauncher {
                     floodgateCurrentSensor.isOverloadWarning()
                 ))
                 println(String.format(
+                    "| POSITION       | Distance: %.3f / %.3f m | Pose: X=%.2f, Y=%.2f, H=%.1f deg |",
+                    currentDistance,
+                    path.points.lastOrNull()?.distanceMeters ?: 0.0,
+                    currentPose.x,
+                    currentPose.y,
+                    Math.toDegrees(currentPose.heading.radians)
+                ))
+                println(String.format(
                     "| SUPERSTRUCTURE | Mode: %-15s | Flywheel: %4.0f / %4.0f RPM | Intake: %-3s | Transfer: %-3s | Inventory: %d |",
                     state.superstructure.mode.name,
                     robotDouble.flywheelRPM,
@@ -900,6 +973,69 @@ object DesktopSimLauncher {
             }
             NT4FieldPublisher.publishElements(dynamicElementPoses)
 
+            // If headless, track deviations and check path completion
+            if (!driverStation.isTeleopMode) {
+                val targetState = path.sampleAtDistance(currentDistance)
+                val deviation = kotlin.math.hypot(currentPose.x - targetState.pose.x, currentPose.y - targetState.pose.y)
+                if (headless) {
+                    headlessRecords.add(HeadlessRecord(
+                        timeMs = simLoopCount * TIMESTEP_MS,
+                        targetX = targetState.pose.x,
+                        targetY = targetState.pose.y,
+                        targetHeading = targetState.pose.heading.radians,
+                        actualX = currentPose.x,
+                        actualY = currentPose.y,
+                        actualHeading = currentPose.heading.radians,
+                        deviationM = deviation
+                    ))
+
+                    val totalDistance = path.points.lastOrNull()?.distanceMeters ?: 0.0
+                    if (currentDistance >= totalDistance - 0.001) {
+                        settlingTicks++
+                        if (settlingTicks >= 50) {
+                            println("[Headless Sim] Path tracking completed. Generating performance reports...")
+                            
+                            // Write CSV
+                            val csvFile = java.io.File("sim_headless_report.csv")
+                            csvFile.bufferedWriter().use { writer ->
+                                writer.write("TimestampMs,TargetX,TargetY,TargetHeadingRad,ActualX,ActualY,ActualHeadingRad,DeviationMeters\n")
+                                for (rec in headlessRecords) {
+                                    writer.write(String.format(
+                                        java.util.Locale.US,
+                                        "%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
+                                        rec.timeMs, rec.targetX, rec.targetY, rec.targetHeading, rec.actualX, rec.actualY, rec.actualHeading, rec.deviationM
+                                    ))
+                                }
+                            }
+                            println("[Headless Sim] CSV report written to: ${csvFile.absolutePath}")
+
+                            // Write JSON
+                            val maxDeviation = headlessRecords.maxOfOrNull { it.deviationM } ?: 0.0
+                            val avgDeviation = headlessRecords.map { it.deviationM }.average()
+                            
+                            val jsonReport = """
+                                {
+                                  "totalSteps": ${headlessRecords.size},
+                                  "totalDistanceMeters": $totalDistance,
+                                  "maxDeviationMeters": $maxDeviation,
+                                  "averageDeviationMeters": $avgDeviation,
+                                  "status": "${if (maxDeviation < 0.1) "PASS" else "FAIL"}"
+                                }
+                            """.trimIndent()
+                            
+                            val jsonFile = java.io.File("sim_headless_report.json")
+                            jsonFile.writeText(jsonReport)
+                            println("[Headless Sim] JSON report written to: ${jsonFile.absolutePath}")
+                            
+                            println("[Headless Sim] Max Deviation: %.3f cm | Average Deviation: %.3f cm".format(maxDeviation * 100.0, avgDeviation * 100.0))
+                            println("[Headless Sim] Status: ${if (maxDeviation < 0.1) "SUCCESS (under 10cm limit)" else "FAILURE (exceeded 10cm limit)"}")
+                            
+                            java.lang.System.exit(if (maxDeviation < 0.1) 0 else 1)
+                        }
+                    }
+                }
+            }
+
             // Loop timing
             val elapsed = RobotClock.currentTimeMillis() - startTime
             val sleepTime = TIMESTEP_MS - elapsed
@@ -935,5 +1071,53 @@ object DesktopSimLauncher {
         wall.setMass(MassType.INFINITE)
         wall.translate(x, y)
         world.addBody(wall)
+    }
+
+    data class HeadlessRecord(
+        val timeMs: Long,
+        val targetX: Double,
+        val targetY: Double,
+        val targetHeading: Double,
+        val actualX: Double,
+        val actualY: Double,
+        val actualHeading: Double,
+        val deviationM: Double
+    )
+
+    private fun raycast(
+        world: World<Body>,
+        startX: Double,
+        startY: Double,
+        angleRad: Double,
+        maxRange: Double,
+        robotBody: Body
+    ): Double {
+        var minDistance = maxRange
+        val dx = kotlin.math.cos(angleRad)
+        val dy = kotlin.math.sin(angleRad)
+        val steps = (maxRange / 0.01).toInt()
+        for (step in 1..steps) {
+            val checkDist = step * 0.01
+            val checkX = startX + dx * checkDist
+            val checkY = startY + dy * checkDist
+            
+            val point = org.dyn4j.geometry.Vector2(checkX, checkY)
+            var hit = false
+            for (body in world.bodies) {
+                if (body == robotBody) continue
+                for (fixture in body.fixtures) {
+                    if (fixture.shape.contains(point, body.transform)) {
+                        hit = true
+                        break
+                    }
+                }
+                if (hit) break
+            }
+            if (hit) {
+                minDistance = checkDist
+                break
+            }
+        }
+        return minDistance
     }
 }

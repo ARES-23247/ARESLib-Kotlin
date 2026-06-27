@@ -157,6 +157,9 @@ object FieldObstacleLoader {
         val fixture = BodyFixture(shape)
         fixture.friction = obs.friction
         fixture.restitution = obs.restitution
+        if (!obs.isBlocking) {
+            fixture.isSensor = true
+        }
         body.addFixture(fixture)
 
         body.translate(obs.x, obs.y)
