@@ -8,10 +8,10 @@ import kotlin.math.hypot
  * Represents a single point along a trajectory path.
  */
 data class PathPoint(
-    val pose: Pose2d,
-    val velocityMps: Double,
-    val distanceMeters: Double = 0.0,
-    val curvature: Double = 0.0
+    var pose: Pose2d,
+    var velocityMps: Double,
+    var distanceMeters: Double = 0.0,
+    var curvature: Double = 0.0
 )
 
 class MutablePathPoint {
@@ -28,6 +28,15 @@ class MutablePathPoint {
         distanceMeters,
         curvature
     )
+
+    fun copyInto(out: PathPoint) {
+        out.pose.x = x
+        out.pose.y = y
+        out.pose.heading.rawRadians = headingRad
+        out.velocityMps = velocityMps
+        out.distanceMeters = distanceMeters
+        out.curvature = curvature
+    }
 }
 
 /**

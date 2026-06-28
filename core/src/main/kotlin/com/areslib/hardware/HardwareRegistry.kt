@@ -12,6 +12,7 @@ object HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
     private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
+    private val cachedMotorsWithNames = ConcurrentHashMap<String, MotorIO>()
 
     /**
      * Registers a closeable hardware wrapper to ensure background threads are terminated on close.
@@ -25,6 +26,10 @@ object HardwareRegistry {
      */
     fun registerDevice(name: String, device: LoggableDevice) {
         devices[name] = device
+        if (device is MotorIO) {
+            val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
+            cachedMotorsWithNames[shortName] = device
+        }
     }
 
     /**
@@ -143,14 +148,7 @@ object HardwareRegistry {
      * Retrieves all registered motor wrappers mapped by their registered names.
      */
     fun getRegisteredMotorsWithNames(): Map<String, MotorIO> {
-        val result = HashMap<String, MotorIO>()
-        for ((key, value) in devices) {
-            if (value is MotorIO) {
-                val name = if (key.startsWith("Motors/")) key.substring("Motors/".length) else key
-                result[name] = value
-            }
-        }
-        return result
+        return cachedMotorsWithNames
     }
 
     /**
@@ -197,6 +195,7 @@ object HardwareRegistry {
         }
         devices.clear()
         topologyNodes.clear()
+        cachedMotorsWithNames.clear()
     }
 
     /**

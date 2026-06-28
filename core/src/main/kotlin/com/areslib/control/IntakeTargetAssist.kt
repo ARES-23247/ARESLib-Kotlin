@@ -26,11 +26,15 @@ class IntakeTargetAssist(
         targetVisible: Boolean,
         yawErrorDegrees: Double,
         lateralErrorMeters: Double,
-        dtSeconds: Double
+        dtSeconds: Double,
+        out: ChassisSpeeds = ChassisSpeeds()
     ): ChassisSpeeds {
         if (!targetVisible) {
             // No target visible; return raw driver speeds unmodified
-            return driverManualSpeeds
+            out.vxMetersPerSecond = driverManualSpeeds.vxMetersPerSecond
+            out.vyMetersPerSecond = driverManualSpeeds.vyMetersPerSecond
+            out.omegaRadiansPerSecond = driverManualSpeeds.omegaRadiansPerSecond
+            return out
         }
 
         // Calculate vision-based steering and centering feedback corrections
@@ -47,11 +51,10 @@ class IntakeTargetAssist(
         val blendedVy = driverManualSpeeds.vyMetersPerSecond + lateralCorrection
         val blendedOmega = driverManualSpeeds.omegaRadiansPerSecond + rotCorrection
 
-        return ChassisSpeeds(
-            vxMetersPerSecond = driverManualSpeeds.vxMetersPerSecond,
-            vyMetersPerSecond = blendedVy,
-            omegaRadiansPerSecond = blendedOmega
-        )
+        out.vxMetersPerSecond = driverManualSpeeds.vxMetersPerSecond
+        out.vyMetersPerSecond = blendedVy
+        out.omegaRadiansPerSecond = blendedOmega
+        return out
     }
 }
 

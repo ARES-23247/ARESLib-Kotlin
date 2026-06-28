@@ -167,6 +167,7 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     private var currentIndex = 0
     private var currentTaskStartTimeMs = 0L
     private val pendingActions = mutableListOf<RobotAction>()
+    private val actionsList = mutableListOf<RobotAction>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
         currentIndex = 0
@@ -195,17 +196,17 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        val actions = mutableListOf<RobotAction>()
+        actionsList.clear()
         if (pendingActions.isNotEmpty()) {
-            actions.addAll(pendingActions)
+            actionsList.addAll(pendingActions)
             pendingActions.clear()
         }
         if (currentIndex < tasks.size) {
             val currentTask = tasks[currentIndex]
             val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
-            actions.addAll(currentTask.execute(state, currentTaskElapsed))
+            actionsList.addAll(currentTask.execute(state, currentTaskElapsed))
         }
-        return actions
+        return actionsList
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
@@ -228,6 +229,7 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
     override val name = "Parallel(${tasks.joinToString { it.name }})"
     private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
+    private val actionsList = mutableListOf<RobotAction>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
         completedTasks.clear()
@@ -236,7 +238,8 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        for (task in tasks) {
+        for (i in 0 until tasks.size) {
+            val task = tasks[i]
             if (!completedTasks.contains(task)) {
                 if (task.isCompleted(state, elapsedMs)) {
                     completedTasks.add(task)
@@ -248,17 +251,18 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        val actions = mutableListOf<RobotAction>()
+        actionsList.clear()
         if (pendingActions.isNotEmpty()) {
-            actions.addAll(pendingActions)
+            actionsList.addAll(pendingActions)
             pendingActions.clear()
         }
-        for (task in tasks) {
+        for (i in 0 until tasks.size) {
+            val task = tasks[i]
             if (!completedTasks.contains(task)) {
-                actions.addAll(task.execute(state, elapsedMs))
+                actionsList.addAll(task.execute(state, elapsedMs))
             }
         }
-        return actions
+        return actionsList
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
@@ -268,7 +272,8 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
             pendingActions.clear()
         }
         if (interrupted) {
-            for (task in tasks) {
+            for (i in 0 until tasks.size) {
+                val task = tasks[i]
                 if (!completedTasks.contains(task)) {
                     actions.addAll(task.end(state, interrupted = true))
                 }
@@ -292,6 +297,10 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private var lastTimeMs = 0L
     private lateinit var activePath: com.areslib.pathing.Path
     private val triggeredEvents = mutableSetOf<String>()
+    
+    private val scratchMutablePoint = com.areslib.pathing.MutablePathPoint()
+    private val scratchPathPoint = com.areslib.pathing.PathPoint(com.areslib.math.Pose2d(), 0.0)
+    private val actionsList = mutableListOf<RobotAction>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
@@ -315,22 +324,24 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         lastTimeMs = currentTimestamp
 
         val currentDistance = state.pathState.currentDistanceMeters
-        val targetPoint = activePath.sampleAtDistance(currentDistance)
-        follower.update(targetPoint, dt)
+        activePath.sampleAtDistance(currentDistance, scratchMutablePoint)
+        scratchMutablePoint.copyInto(scratchPathPoint)
+        follower.update(scratchPathPoint, dt)
 
-        val nextDistance = currentDistance + targetPoint.velocityMps * dt
-        val actions = mutableListOf<RobotAction>()
-        actions.add(RobotAction.UpdatePathProgress(nextDistance, currentTimestamp))
+        val nextDistance = currentDistance + scratchPathPoint.velocityMps * dt
+        actionsList.clear()
+        actionsList.add(RobotAction.UpdatePathProgress(nextDistance, currentTimestamp))
 
-        // Check path events
-        for (event in activePath.events) {
+        // Check path events using index-based loop to prevent iterator allocation
+        for (i in 0 until activePath.events.size) {
+            val event = activePath.events[i]
             if (event.eventName !in triggeredEvents && event.triggerDistanceMeters <= nextDistance) {
                 triggeredEvents.add(event.eventName)
-                actions.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
+                actionsList.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
             }
         }
 
-        return actions
+        return actionsList
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {

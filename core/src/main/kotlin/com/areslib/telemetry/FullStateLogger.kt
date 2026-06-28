@@ -51,7 +51,7 @@ class FullStateLogger(
         val timestampMs: Long,
         val tagId: Int,
         val cameraId: String,
-        val rawPoseJson: String,
+        val targetPose: com.areslib.math.Pose3d,
         val accepted: Boolean,
         val rejectionReason: String?,
         val covarianceBefore: List<Double>?,
@@ -122,12 +122,11 @@ class FullStateLogger(
             if (lastMeasurement.timestampMs > lastLoggedMeasurementTimestamp) {
                 lastLoggedMeasurementTimestamp = lastMeasurement.timestampMs
                 
-                val rawPoseJson = gson.toJson(lastMeasurement.targetPose)
                 val entry = VisionEventEntry(
                     timestampMs = lastMeasurement.timestampMs,
                     tagId = lastMeasurement.tagId,
                     cameraId = "limelight", // default camera_id
-                    rawPoseJson = rawPoseJson,
+                    targetPose = lastMeasurement.targetPose,
                     accepted = state.vision.lastMeasurementAccepted,
                     rejectionReason = state.vision.lastRejectionReason,
                     covarianceBefore = state.vision.covarianceBeforeUpdate,

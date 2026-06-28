@@ -335,9 +335,8 @@ object PoseEstimator {
             visionStdDevs.z.isNaN() || visionStdDevs.z.isInfinite()) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "invalid_std_devs")
         if (mahalanobisThreshold.isNaN() || mahalanobisThreshold.isInfinite() || mahalanobisThreshold <= 0.0) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "invalid_threshold")
 
-        // Find the index of the closest history entry before the vision measurement
         var closestIndex = -1
-        for (i in state.history.indices.reversed()) {
+        for (i in state.history.size - 1 downTo 0) {
             if (state.history[i].timestampMs <= measurement.timestampMs) {
                 closestIndex = i
                 break
