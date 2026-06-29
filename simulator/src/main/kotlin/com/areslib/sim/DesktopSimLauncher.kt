@@ -5,8 +5,11 @@ import com.areslib.control.PIDController
 import com.areslib.pathing.PathPlannerParser
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
+import com.areslib.math.ChassisSpeeds
 import com.areslib.state.RobotState
 import com.areslib.util.RobotClock
+import com.qualcomm.hardware.limelightvision.LLResult
+import com.qualcomm.hardware.limelightvision.LLResultTypes
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
 import org.dyn4j.geometry.Geometry
@@ -24,7 +27,7 @@ object DesktopSimLauncher {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        println("Starting ARESLib Desktop Simulation...")
+        println("Starting ARESLib Desktop Simulation (HIL-style actual FTC code)...")
 
         var activeConfig: com.areslib.state.RobotFieldConfig? = null
         var watchFieldConfig = false
@@ -143,7 +146,6 @@ object DesktopSimLauncher {
 
         // 1. Initialize WPILib Telemetry
         println("Initializing Telemetry (NT4 & DataLog)...")
-        // Trigger init block
         TelemetryPublisher.javaClass
 
         // 2. Setup Virtual Driver Station
@@ -198,37 +200,30 @@ object DesktopSimLauncher {
         val robotBody = Body()
         // Standard FTC robot footprint (18x18 inches ~ 0.45x0.45 meters)
         val robotFixture = robotBody.addFixture(Geometry.createRectangle(0.45, 0.45))
-        // 35 lbs ~ 15.875 kg. Area = 0.45 * 0.45 = 0.2025. Density = 15.875 / 0.2025 = 78.395
-        robotFixture.density = 78.395
+        robotFixture.density = 15.0 // 15kg
         robotBody.setMass(MassType.NORMAL)
-        // Spawn robot at the starting waypoint of the trajectory
-        val startPose = path.points.firstOrNull()?.pose ?: Pose2d(0.0, 0.0, Rotation2d())
+        
+        // Spawn configuration (SQUARE_INVERTED starts RED at x = -1.8, headings 0.0)
+        val startPose = Pose2d(-1.8, 0.0, Rotation2d(0.0))
         robotBody.translate(startPose.x, startPose.y)
-        robotBody.transform.setRotation(startPose.heading.radians)
+        robotBody.rotate(startPose.heading.radians)
         world.addBody(robotBody)
 
-        val balls = mutableListOf<Body>()
+        createWalls(world)
         val activeObstacles = mutableListOf<Body>()
-        var obstaclesFile: java.io.File? = null
-        var lastObstaclesFileModified = 0L
-        var gamePiecesFile: java.io.File? = null
-        var lastGamePiecesFileModified = 0L
+        val balls = mutableListOf<Body>()
 
+        // Load obstacles and game pieces from field configuration
         if (activeConfig != null) {
-            println("Loading obstacles and elements from command-line activeConfig...")
-            createWalls(world)
             val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)
             activeObstacles.addAll(obstacles)
             val elements = FieldElementLoader.loadElements(world, activeConfig.elementTypes, activeConfig.elements)
             balls.addAll(elements)
-
             NT4FieldPublisher.publishConfigId(activeConfig.id)
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
         } else {
-            createWalls(world)
-            // Load obstacles: either from obstacles.json, config_override.json (if obstacles are defined there) or fallback to decode_obstacles.json
-            var loadedCustomObstacles = false
-
+            // Load standard FTC obstacles & game pieces
+            var obstaclesFile: java.io.File? = null
             val paths = listOf(
                 "src/main/assets/paths/obstacles.json",
                 "TeamCode/src/main/assets/paths/obstacles.json",
@@ -242,161 +237,53 @@ object DesktopSimLauncher {
                     break
                 }
             }
-
-            val gpPaths = listOf(
-                "src/main/assets/paths/game_pieces.json",
-                "TeamCode/src/main/assets/paths/game_pieces.json",
-                "src/main/deploy/paths/game_pieces.json",
-                "frc-app/src/main/deploy/paths/game_pieces.json"
-            )
-            for (p in gpPaths) {
-                val f = java.io.File(p)
-                if (f.exists()) {
-                    gamePiecesFile = f
-                    break
-                }
-            }
-
             if (obstaclesFile != null) {
                 try {
-                    println("Loading custom obstacles from ${obstaclesFile.path} into physics world...")
                     val content = obstaclesFile.readText()
                     val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
-                    val bodies = FieldObstacleLoader.loadObstacles(world, obstacles)
-                    activeObstacles.addAll(bodies)
-                    println("Loaded ${bodies.size} custom obstacles from Field Editor successfully.")
-                    loadedCustomObstacles = true
-                    lastObstaclesFileModified = obstaclesFile.lastModified()
+                    val loaded = FieldObstacleLoader.loadObstacles(world, obstacles)
+                    activeObstacles.addAll(loaded)
                     NT4FieldPublisher.publishObstacles(obstacles)
                 } catch (e: Exception) {
-                    println("[Simulator Config] Failed to parse custom obstacles from ${obstaclesFile.path}: ${e.message}")
+                    println("Failed to load initial field obstacles: ${e.message}")
                 }
-            }
-
-            if (gamePiecesFile != null) {
-                try {
-                    println("Loading custom game pieces from ${gamePiecesFile.path} into physics world...")
-                    val content = gamePiecesFile.readText()
-                    val bodies = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
-                    balls.addAll(bodies)
-                    println("Loaded ${bodies.size} custom game pieces from Field Editor successfully.")
-                    lastGamePiecesFileModified = gamePiecesFile.lastModified()
-                } catch (e: Exception) {
-                    println("[Simulator Config] Failed to parse custom game pieces from ${gamePiecesFile.path}: ${e.message}")
-                }
-            }
-
-            if (!loadedCustomObstacles && configFile.exists()) {
-                try {
-                    val configContent = configFile.readText()
-                    val gson = com.google.gson.Gson()
-                    val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
-                    if (root != null && root.has("obstacles") && !root.get("obstacles").isJsonNull) {
-                        println("Loading custom obstacles from config_override.json into physics world...")
-                        val obstacles = FieldObstacleLoader.loadObstacles(world, configContent, inMeters = true)
-                        activeObstacles.addAll(obstacles)
-                        println("Loaded ${obstacles.size} custom obstacles successfully.")
-                        loadedCustomObstacles = true
-                    }
-                } catch (e: Exception) {
-                    println("[Simulator Config] Failed to parse custom obstacles from config_override.json: ${e.message}")
-                }
-            }
-
-            if (!loadedCustomObstacles) {
-                // Load default DECODE season obstacles if available as resources
-                val decodeJson = DesktopSimLauncher::class.java.getResource("/decode_obstacles.json")?.readText()
-                if (decodeJson != null) {
-                    println("Loading DECODE season obstacles into physics world...")
-                    val obstacles = FieldObstacleLoader.loadObstacles(world, decodeJson)
-                    activeObstacles.addAll(obstacles)
-                    println("Loaded ${obstacles.size} obstacles successfully.")
-                    
-                    val gson = com.google.gson.Gson()
-                    val loaded = gson.fromJson(decodeJson, com.areslib.state.RobotFieldConfig::class.java)
-                    if (loaded != null) {
-                        NT4FieldPublisher.publishObstacles(loaded.obstacles)
-                    }
-                } else {
-                    println("No decode_obstacles.json resource found, skipping field obstacle generation.")
-                }
-            }
-
-            // Load dynamic elements: either from config_override.json or fallback to hardcoded mock game pieces (balls)
-            var loadedCustomElements = false
-            if (configFile.exists()) {
-                try {
-                    val configContent = configFile.readText()
-                    val gson = com.google.gson.Gson()
-                    val root = gson.fromJson(configContent, com.google.gson.JsonObject::class.java)
-                    if (root != null && root.has("elements") && !root.get("elements").isJsonNull) {
-                        println("Loading custom game elements from config_override.json into physics world...")
-                        val elements = FieldElementLoader.loadElements(world, configContent)
-                        println("Loaded ${elements.size} custom game elements successfully.")
-                        balls.addAll(elements)
-                        loadedCustomElements = true
-                    }
-                } catch (e: Exception) {
-                    println("[Simulator Config] Failed to parse custom elements from config_override.json: ${e.message}")
-                }
-            }
-
-            if (!loadedCustomElements) {
-                // Add Default Game Pieces (Decode balls: 5in diameter -> 0.0635m radius, 0.165lbs -> 0.075kg)
-                for (i in 0..2) {
-                    val ball = Body()
-                    val fixture = ball.addFixture(Geometry.createCircle(0.0635))
-                    fixture.friction = 0.6
-                    fixture.restitution = 0.4 // Moderate bounce
-                    // Mass = 0.075 kg. Area = pi * 0.0635^2 = 0.012667. Density = 0.075 / 0.012667 = 5.92
-                    fixture.density = 5.92
-                    ball.setMass(MassType.NORMAL)
-                    ball.linearDamping = 2.0 // Carpet friction for balls
-                    ball.angularDamping = 2.0
-                    // Spawn balls somewhat randomly in front of the robot
-                    ball.translate(1.0, -1.0 + i * 1.0)
-                    world.addBody(ball)
-                    balls.add(ball)
-                }
-                println("Loaded default DECODE balls into physics world.")
             }
         }
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
-        // 4. DIGITAL TWIN WIRING (Mock Hardware Layer)
-        val robotDouble = SwerveRobotDouble()
-        val octoquad = com.areslib.ftc.hardware.OctoQuadFWv3(robotDouble.octoQuadI2c).apply { initialize() }
-        val srsHub = com.areslib.ftc.hardware.SrsHubDriver(robotDouble.srsHubI2c).apply { initialize() }
+        // 4. Mecanum Robot Double & OpMode Thread setup
+        val robotDouble = MecanumRobotDouble()
+        val opMode = org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp()
+        opMode.hardwareMap = robotDouble.hardwareMap
+
+        // Start student's OpMode in the background
+        val opModeThread = Thread {
+            try {
+                opMode.runOpMode()
+            } catch (e: Exception) {
+                System.err.println("ARESMecanumTeleOp Thread terminated: ${e.message}")
+                e.printStackTrace()
+            }
+        }.apply {
+            isDaemon = true
+            start()
+        }
+
+        // Wait 1.5 seconds for OpMode's pre-match initialization loop to run
+        val initStartTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - initStartTime < 1500) {
+            // Step simulator sensors at origin so EKF aligns
+            robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians)
+            Thread.sleep(20)
+        }
         
-        val driveEncoders = Array(4) { i -> com.areslib.ftc.hardware.OctoQuadEncoderIO(octoquad, i) }
-        val steerEncoders = Array(4) { i -> com.areslib.ftc.hardware.OctoQuadAbsolutePWMEncoder(octoquad, 4 + i) }
-        
-        val intakeEncoder = com.areslib.ftc.hardware.SrsHubEncoderIO(srsHub, 0)
-        val transferEncoder = com.areslib.ftc.hardware.SrsHubEncoderIO(srsHub, 1)
-        val shooterEncoder = com.areslib.ftc.hardware.SrsHubEncoderIO(srsHub, 2)
-        val floodgateAnalog = com.areslib.ftc.hardware.SrsHubAnalogIO(srsHub, 3)
-        val floodgateCurrentSensor = com.areslib.ftc.hardware.FtcFloodgateCurrentSensor(floodgateAnalog)
-        
-        val kinematics = com.areslib.kinematics.SwerveKinematics(
-            com.areslib.math.Translation2d(0.225, 0.225),
-            com.areslib.math.Translation2d(0.225, -0.225),
-            com.areslib.math.Translation2d(-0.225, 0.225),
-            com.areslib.math.Translation2d(-0.225, -0.225)
-        )
+        // Match Start! Exits init loop in LinearOpMode
+        opMode.isStarted = true
+        println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
 
         // 5. Simulation Loop
         var state = RobotState()
-        state = com.areslib.reducer.rootReducer(
-            state,
-            com.areslib.action.RobotAction.PoseUpdate(
-                xMeters = startPose.x,
-                yMeters = startPose.y,
-                headingRadians = startPose.heading.radians,
-                timestampMs = RobotClock.currentTimeMillis(),
-                isReset = true
-            )
-        )
         var currentDistance = 0.0
         var lastDistance = 0.0
         var lastShootTime = 0L
@@ -423,12 +310,14 @@ object DesktopSimLauncher {
                 4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
             )
         }
-        val visionSimulator = com.areslib.hardware.vision.VisionSimulator(visionTags)
         var lastObstaclesTimestamp = 0L
-        var checkObstaclesTicks = 0
 
-        var watchTicks = 0
-        var needsRebuild = false
+        // FSM telemetry properties
+        var simFlywheelRPM = 0.0
+        var simIntakeActive = false
+        var simFlywheelActive = false
+        var simTransferActive = false
+        var simInventoryCount = 0
 
         while (true) {
             if (!headless) {
@@ -436,167 +325,6 @@ object DesktopSimLauncher {
             }
             TelemetryPublisher.pollWebInputs(driverStation)
 
-            // Check for obstacles.json and game_pieces.json file modifications (every 1 second / 50 ticks)
-            checkObstaclesTicks++
-            if (checkObstaclesTicks >= 50) {
-                checkObstaclesTicks = 0
-                if (obstaclesFile == null) {
-                    val paths = listOf(
-                        "src/main/assets/paths/obstacles.json",
-                        "TeamCode/src/main/assets/paths/obstacles.json",
-                        "src/main/deploy/paths/obstacles.json",
-                        "frc-app/src/main/deploy/paths/obstacles.json"
-                    )
-                    for (p in paths) {
-                        val f = java.io.File(p)
-                        if (f.exists()) {
-                            obstaclesFile = f
-                            lastObstaclesFileModified = 0L // Force reload
-                            break
-                        }
-                    }
-                }
-
-                val currentFile = obstaclesFile
-                if (currentFile != null && currentFile.exists()) {
-                    val lastMod = currentFile.lastModified()
-                    if (lastMod != lastObstaclesFileModified) {
-                        lastObstaclesFileModified = lastMod
-                        println("[Simulator] obstacles.json file modified. Hot-reloading obstacles...")
-                        
-                        // Clear existing active obstacles from dyn4j world
-                        activeObstacles.forEach { body ->
-                            world.removeBody(body)
-                        }
-                        activeObstacles.clear()
-                        
-                        try {
-                            val content = currentFile.readText()
-                            val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
-                            val newObstacles = FieldObstacleLoader.loadObstacles(world, obstacles)
-                            activeObstacles.addAll(newObstacles)
-                            println("[Simulator] Hot-loaded ${newObstacles.size} obstacles from ${currentFile.name}.")
-                            NT4FieldPublisher.publishObstacles(obstacles)
-                        } catch (e: Exception) {
-                            println("[Simulator] Failed to reload obstacles: ${e.message}")
-                        }
-                    }
-                }
-
-                if (gamePiecesFile == null) {
-                    val gpPaths = listOf(
-                        "src/main/assets/paths/game_pieces.json",
-                        "TeamCode/src/main/assets/paths/game_pieces.json",
-                        "src/main/deploy/paths/game_pieces.json",
-                        "frc-app/src/main/deploy/paths/game_pieces.json"
-                    )
-                    for (p in gpPaths) {
-                        val f = java.io.File(p)
-                        if (f.exists()) {
-                            gamePiecesFile = f
-                            lastGamePiecesFileModified = 0L // Force reload
-                            break
-                        }
-                    }
-                }
-
-                val currentGpFile = gamePiecesFile
-                if (currentGpFile != null && currentGpFile.exists()) {
-                    val lastMod = currentGpFile.lastModified()
-                    if (lastMod != lastGamePiecesFileModified) {
-                        lastGamePiecesFileModified = lastMod
-                        println("[Simulator] game_pieces.json file modified. Hot-reloading game pieces...")
-                        
-                        // Clear existing active game pieces from dyn4j world
-                        balls.forEach { body ->
-                            world.removeBody(body)
-                        }
-                        balls.clear()
-                        
-                        try {
-                            val content = currentGpFile.readText()
-                            val newBodies = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
-                            balls.addAll(newBodies)
-                            println("[Simulator] Hot-loaded ${newBodies.size} game pieces from ${currentGpFile.name}.")
-                        } catch (e: Exception) {
-                            println("[Simulator] Failed to reload game pieces: ${e.message}")
-                        }
-                    }
-                }
-            }
-
-            if (watchFieldConfig && fieldConfigArg != null) {
-                watchTicks++
-                if (watchTicks >= 250) { // 5 seconds at 50Hz
-                    watchTicks = 0
-                    Thread {
-                        val content = loadConfigContent(fieldConfigArg)
-                        if (content != null) {
-                            try {
-                                val gson = com.google.gson.Gson()
-                                val latest = gson.fromJson(content, com.areslib.state.RobotFieldConfig::class.java)
-                                if (latest != null && latest != activeConfig) {
-                                    activeConfig = latest
-                                    com.areslib.state.RobotFieldManager.setActiveConfig(latest)
-                                    println("[Simulator] Hot-reloaded field config: ${latest.name}")
-                                    needsRebuild = true
-                                }
-                            } catch (e: Exception) {
-                                // Ignore
-                            }
-                        }
-                    }.start()
-                }
-            }
-
-            if (needsRebuild) {
-                needsRebuild = false
-                val config = activeConfig
-                if (config != null) {
-                    val bodiesToClear = world.bodies.toList()
-                    for (b in bodiesToClear) {
-                        if (b != robotBody) {
-                            world.removeBody(b)
-                        }
-                    }
-                    activeObstacles.clear()
-                    balls.clear()
-
-                    createWalls(world)
-                    val obstacles = FieldObstacleLoader.loadObstacles(world, config.obstacles)
-                    activeObstacles.addAll(obstacles)
-                    val elements = FieldElementLoader.loadElements(world, config.elementTypes, config.elements)
-                    balls.addAll(elements)
-
-                    NT4FieldPublisher.publishConfigId(config.id)
-                    NT4FieldPublisher.publishObstacles(config.obstacles)
-                    println("[Simulator] Rebuilt physics world with ${obstacles.size} obstacles and ${elements.size} elements.")
-                }
-            }
-
-            // Check if we received updated obstacles from the web client
-            val obstaclesEntry = TelemetryPublisher.obstaclesSub.getAtomic()
-            if (obstaclesEntry.timestamp != lastObstaclesTimestamp) {
-                lastObstaclesTimestamp = obstaclesEntry.timestamp
-                val jsonStr = obstaclesEntry.value
-                println("[Simulator] Received updated field obstacles over NetworkTables: $jsonStr")
-
-                // Clear existing active obstacles from dyn4j world
-                activeObstacles.forEach { body ->
-                    world.removeBody(body)
-                }
-                activeObstacles.clear()
-
-                if (jsonStr.isNotEmpty() && jsonStr != "[]" && jsonStr != "{\"obstacles\":[]}") {
-                    try {
-                        val newObstacles = FieldObstacleLoader.loadObstacles(world, jsonStr, inMeters = true)
-                        activeObstacles.addAll(newObstacles)
-                        println("[Simulator] Dynamically loaded ${newObstacles.size} new obstacles.")
-                    } catch (e: Exception) {
-                        println("[Simulator] Failed to dynamically load obstacles: ${e.message}")
-                    }
-                }
-            }
             val startTime = RobotClock.currentTimeMillis()
 
             // Current Simulated Pose
@@ -609,34 +337,50 @@ object DesktopSimLauncher {
 
             // Determine ChassisSpeeds based on mode
             val chassisSpeeds = if (driverStation.isTeleopMode) {
-                // Publish current pose to TargetPose so AdvantageScope layouts mapped to the ghost robot still update
-                TelemetryPublisher.publishTargetPose(currentPose)
+                // Map keyboard/dashboard inputs to gamepad1 fields
+                val driveSpeeds = driverStation.getChassisSpeeds()
                 
-                val speeds = driverStation.getChassisSpeeds()
-                if (driverStation.isFieldCentric) {
-                    // In field-centric, keyboard vx/vy represent FIELD directions.
-                    // We skip fromFieldRelativeSpeeds and instead directly use them as world velocities.
-                    // The world-frame rotation below will NOT be applied for field-centric teleop.
-                    speeds
-                } else {
-                    speeds
-                }
+                // Map stick deflection to scale [-1.0f, 1.0f]
+                opMode.gamepad1.left_stick_y = -(driveSpeeds.vxMetersPerSecond / 4.0).toFloat()
+                opMode.gamepad1.left_stick_x = -(driveSpeeds.vyMetersPerSecond / 4.0).toFloat()
+                opMode.gamepad1.right_stick_x = -(driveSpeeds.omegaRadiansPerSecond / 4.0).toFloat()
+                
+                // Map auxiliary toggles to standard gamepad buttons
+                opMode.gamepad1.b = driverStation.isFieldCentric // B triggers AprilTag align or similar
+                opMode.gamepad1.left_bumper = driverStation.isIntaking
+                opMode.gamepad1.right_bumper = driverStation.isFlywheelOn
+                opMode.gamepad1.right_trigger = if (driverStation.isTransferring) 1.0f else 0.0f
+                opMode.gamepad1.y = false // Triangle resets EKF
+
+                // Read motor powers set by the running OpMode
+                val pFL = robotDouble.fl.power
+                val pFR = robotDouble.fr.power
+                val pBL = robotDouble.bl.power
+                val pBR = robotDouble.br.power
+
+                // Translate wheel powers to chassis-space velocities
+                val maxWheelSpeed = 3.5
+                val wFL = pFL * maxWheelSpeed
+                val wFR = pFR * maxWheelSpeed
+                val wBL = pBL * maxWheelSpeed
+                val wBR = pBR * maxWheelSpeed
+
+                val L = 0.45
+                val vx = (wFL + wFR + wBL + wBR) / 4.0
+                val vy = (-wFL + wFR + wBL - wBR) / 4.0
+                val omega = (-wFL + wFR - wBL + wBR) / (4.0 * L)
+
+                TelemetryPublisher.publishTargetPose(currentPose)
+
+                ChassisSpeeds(vx, vy, omega)
             } else {
-                // Calculate Target State
+                // Auto Path Follower calculations
                 val tempState = path.sampleAtDistance(currentDistance)
-                // Only kickstart if we are at the very beginning of the path
                 val simStepVelocity = if (currentDistance < 0.01 && tempState.velocityMps < 0.1) 0.1 else tempState.velocityMps
                 
                 lastDistance = currentDistance
                 currentDistance += simStepVelocity * TIMESTEP_SEC
                 val targetState = path.sampleAtDistance(currentDistance)
-                
-                // Check for triggered events
-                path.events.forEach { event ->
-                    if (lastDistance < event.triggerDistanceMeters && currentDistance >= event.triggerDistanceMeters) {
-                        println(">>> EVENT TRIGGERED: ${event.eventName} at distance ${event.triggerDistanceMeters}")
-                    }
-                }
 
                 TelemetryPublisher.publishTargetPose(targetState.pose)
 
@@ -652,13 +396,7 @@ object DesktopSimLauncher {
                         targetState.pose.heading
                     }
                 } else {
-                    val lastPoint = path.points.lastOrNull()
-                    val secondLastPoint = path.points.getOrNull(path.points.size - 2)
-                    if (lastPoint != null && secondLastPoint != null) {
-                        Rotation2d(kotlin.math.atan2(lastPoint.pose.y - secondLastPoint.pose.y, lastPoint.pose.x - secondLastPoint.pose.x))
-                    } else {
-                        targetState.pose.heading
-                    }
+                    targetState.pose.heading
                 }
 
                 driveController.calculate(
@@ -670,295 +408,162 @@ object DesktopSimLauncher {
                 )
             }
 
-            // --- PHYSICAL ACTUATOR COMMAND CLOSED LOOP ---
-            // Translate requested speeds to wheel modules (for sensor telemetry)
-            val targetStates = kinematics.toSwerveModuleStates(chassisSpeeds)
-            for (i in 0 until 4) {
-                robotDouble.drivePowers[i] = targetStates[i].speedMetersPerSecond / 4.0
+            // Raycast virtual AprilTag 1 relative coordinates if visible
+            val tag1 = visionTags[1]
+            if (tag1 != null) {
+                val dx = tag1.translation.x - currentPose.x
+                val dy = tag1.translation.y - currentPose.y
+                val dist = kotlin.math.hypot(dx, dy)
                 
-                // CR Servo steering: snap to target angle for simulation fidelity
-                robotDouble.steerAngles[i] = targetStates[i].angle.radians.let { a ->
-                    var normalized = a % (2.0 * kotlin.math.PI)
-                    if (normalized < 0.0) normalized += 2.0 * kotlin.math.PI
-                    normalized
+                // Visible if in front of tag (x < 1.8) and within range (3m)
+                if (currentPose.x < 1.8 && dist < 3.0) {
+                    val targetSpaceX = dy // X+ is tag-right
+                    val targetSpaceZ = 1.8 - currentPose.x // Z+ is tag-outward
+                    val targetSpaceYaw = currentPose.heading.radians - Math.PI
+                    
+                    val mockOrientation = org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles(
+                        org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS,
+                        0.0, targetSpaceYaw, 0.0
+                    )
+                    val mockPosition = org.firstinspires.ftc.robotcore.external.navigation.Position(
+                        org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER,
+                        targetSpaceX, 0.0, targetSpaceZ, 0
+                    )
+                    val mockPose = org.firstinspires.ftc.robotcore.external.navigation.Pose3D(mockPosition, mockOrientation)
+                    
+                    val fiducialResult = LLResultTypes.FiducialResult(
+                        1, 0.0, 0.0, org.firstinspires.ftc.robotcore.external.navigation.Pose3D(), mockPose
+                    )
+                    robotDouble.limelight.setLatestResult(SimLLResult(valid = true, fiducials = listOf(fiducialResult)))
+                } else {
+                    robotDouble.limelight.setLatestResult(null)
                 }
-                robotDouble.steerPowers[i] = 0.0 // Already at target
-            }
-            
-            // --- SUPERSTRUCTURE FSM WIRING ---
-            // 1. Intake motor: runs when intaking
-            robotDouble.intakePower = if (driverStation.isIntaking) 1.0 else 0.0
-            
-            // 2. Flywheel motor: runs when flywheel toggle is on
-            robotDouble.flywheelPower = if (driverStation.isFlywheelOn) 1.0 else 0.0
-            
-            // 3. Transfer motor: only runs when flywheel is at speed AND user holds RT/ENTER
-            val flywheelAtSpeed = robotDouble.flywheelRPM >= state.superstructure.flywheelTargetRPM * 0.95
-            robotDouble.transferPower = if (driverStation.isTransferring && flywheelAtSpeed && state.superstructure.inventoryCount > 0) 1.0 else 0.0
-            
-            // Game piece load tracking for Floodgate current model
-            robotDouble.hasBallInIntake = driverStation.isIntaking && state.superstructure.inventoryCount < 3
-            robotDouble.hasBallInTransfer = state.superstructure.inventoryCount > 0
-
-            // Step the digital twin physics forward by 20ms
-            robotDouble.update(TIMESTEP_SEC)
-
-            // Raycast mock distance sensors (4 directions: Front, Left, Back, Right relative to heading)
-            val headingRad = currentPose.heading.radians
-            val sensorDirections = doubleArrayOf(0.0, Math.PI / 2.0, Math.PI, -Math.PI / 2.0)
-            val endian = java.nio.ByteOrder.LITTLE_ENDIAN
-            for (port in 0 until 4) {
-                val sensorAngle = headingRad + sensorDirections[port]
-                val dist = raycast(
-                    world = world,
-                    startX = currentPose.x,
-                    startY = currentPose.y,
-                    angleRad = sensorAngle,
-                    maxRange = 2.0,
-                    robotBody = robotBody
-                )
-                val distMm = (dist * 1000.0).toInt().coerceIn(0, 65535)
-                val base = 32 + port * 16
-                val distBytes = java.nio.ByteBuffer.allocate(2).order(endian).putShort(distMm.toShort()).array()
-                System.arraycopy(distBytes, 0, robotDouble.srsHubI2c.registers, base + 8, 2)
             }
 
-            // Read sensors back from virtual registers using production drivers
-            srsHub.update()
-            floodgateCurrentSensor.update()
+            // Step simulated encoder feedback registries
+            robotDouble.updateSensors(
+                TIMESTEP_SEC,
+                chassisSpeeds.vxMetersPerSecond,
+                chassisSpeeds.vyMetersPerSecond,
+                chassisSpeeds.omegaRadiansPerSecond,
+                currentPose.x,
+                currentPose.y,
+                currentPose.heading.radians
+            )
+
+            // Dynamic FSM simulation values
+            simIntakeActive = driverStation.isIntaking
+            simFlywheelActive = driverStation.isFlywheelOn
+            if (simFlywheelActive) {
+                simFlywheelRPM = simFlywheelRPM + (4000.0 - simFlywheelRPM) * 5.0 * TIMESTEP_SEC
+            } else {
+                simFlywheelRPM = simFlywheelRPM + (0.0 - simFlywheelRPM) * 2.0 * TIMESTEP_SEC
+            }
+            simTransferActive = driverStation.isTransferring && simFlywheelRPM >= 3800.0
+
+            // Intake ball collection logic
+            if (simIntakeActive && simInventoryCount < 3) {
+                val iterator = balls.iterator()
+                while (iterator.hasNext()) {
+                    val ball = iterator.next()
+                    val dist = kotlin.math.hypot(
+                        ball.transform.translationX - robotBody.transform.translationX,
+                        ball.transform.translationY - robotBody.transform.translationY
+                    )
+                    if (dist < 0.3) {
+                        world.removeBody(ball)
+                        iterator.remove()
+                        simInventoryCount++
+                        println("INTAKED BALL! Inventory: $simInventoryCount")
+                    }
+                }
+            }
+
+            // Shooting spawning logic
+            if (simTransferActive && simInventoryCount > 0 && RobotClock.currentTimeMillis() - lastShootTime > 500) {
+                lastShootTime = RobotClock.currentTimeMillis()
+                simInventoryCount--
+                
+                val ball = Body()
+                val fixture = ball.addFixture(Geometry.createCircle(0.0635))
+                fixture.friction = 0.6
+                fixture.restitution = 0.4
+                fixture.density = 5.92
+                ball.setMass(MassType.NORMAL)
+                ball.linearDamping = 2.0
+                ball.angularDamping = 2.0
+                
+                val spawnDist = 0.35
+                val spawnX = currentPose.x + cos(currentPose.heading.radians) * spawnDist
+                val spawnY = currentPose.y + sin(currentPose.heading.radians) * spawnDist
+                ball.translate(spawnX, spawnY)
+                
+                val shootVelocity = (simFlywheelRPM / 4000.0) * 15.0
+                val impulseX = cos(currentPose.heading.radians) * shootVelocity * ball.mass.mass
+                val impulseY = sin(currentPose.heading.radians) * shootVelocity * ball.mass.mass
+                ball.applyImpulse(org.dyn4j.geometry.Vector2(impulseX, impulseY))
+                
+                world.addBody(ball)
+                balls.add(ball)
+                println("SHOT BALL! RPM: %.0f | Inventory: $simInventoryCount".format(simFlywheelRPM))
+            }
 
             // --- DRIVE DYN4J BODY FROM CHASSIS SPEEDS ---
-            val heading: Double = currentPose.heading.radians
-            val worldVx: Double
-            val worldVy: Double
+            val heading = currentPose.heading.radians
+            val worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
+            val worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
 
-            if (driverStation.isTeleopMode && driverStation.isFieldCentric) {
-                // Field-centric: map inputs directly to the alliance-oriented field coordinate frame.
-                // Red Alliance is mirrored/rotated 180 degrees from Blue.
-                val allianceSign = if (driverStation.isRedAlliance) 1.0 else -1.0
-                worldVx = chassisSpeeds.vxMetersPerSecond * allianceSign
-                worldVy = chassisSpeeds.vyMetersPerSecond * allianceSign
-            } else {
-                // Robot-centric teleop or auto: chassisSpeeds is robot-relative, rotate to world
-                worldVx = chassisSpeeds.vxMetersPerSecond * cos(heading) - chassisSpeeds.vyMetersPerSecond * sin(heading)
-                worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
-            }
-
-            // Wake up the physics body
             robotBody.isAtRest = false
+            val velocity = robotBody.linearVelocity
+            velocity.x = velocity.x + (worldVx - velocity.x) * 12.0 * TIMESTEP_SEC
+            velocity.y = velocity.y + (worldVy - velocity.y) * 12.0 * TIMESTEP_SEC
+            robotBody.linearVelocity = velocity
+            robotBody.angularVelocity = chassisSpeeds.omegaRadiansPerSecond
 
-            // Apply forces to simulate traction/momentum
+            // Apply forces to body
             val kpLinear = 150.0
             val kpAngular = 20.0
             val forceX = (worldVx - robotBody.linearVelocity.x) * kpLinear
             val forceY = (worldVy - robotBody.linearVelocity.y) * kpLinear
             val torque = (chassisSpeeds.omegaRadiansPerSecond - robotBody.angularVelocity) * kpAngular
-
             robotBody.applyForce(org.dyn4j.geometry.Vector2(forceX, forceY))
             robotBody.applyTorque(torque)
-
-            // --- ADVANTAGEKIT-LEVEL SWERVE MODULE TELEMETRY ---
-            val moduleSpeedsActual = DoubleArray(4)
-            val moduleAnglesActual = DoubleArray(4)
-            val moduleSpeedsTarget = DoubleArray(4)
-            val moduleAnglesTarget = DoubleArray(4)
-            for (i in 0 until 4) {
-                moduleSpeedsTarget[i] = targetStates[i].speedMetersPerSecond
-                moduleAnglesTarget[i] = targetStates[i].angle.radians
-                moduleSpeedsActual[i] = robotDouble.driveVelocities[i] / (2048.0 / (2.0 * kotlin.math.PI * 0.05))
-                moduleAnglesActual[i] = robotDouble.steerAngles[i]
-            }
-            TelemetryPublisher.publishSwerveModules(
-                moduleSpeedsTarget, moduleAnglesTarget,
-                moduleSpeedsActual, moduleAnglesActual
-            )
-            TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
-            TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode, driverStation.isRedAlliance)
-
-            // --- FSM STATE UPDATES ---
-            if (driverStation.isTeleopMode) {
-                // Dispatch intake state
-                state = com.areslib.reducer.rootReducer(
-                    state, 
-                    com.areslib.action.RobotAction.SetIntakeActive(driverStation.isIntaking, RobotClock.currentTimeMillis())
-                )
-                
-                // Dispatch flywheel state
-                state = com.areslib.reducer.rootReducer(
-                    state, 
-                    com.areslib.action.RobotAction.SetFlywheelActive(driverStation.isFlywheelOn, RobotClock.currentTimeMillis())
-                )
-                
-                // Update flywheel RPM from physics model
-                state = com.areslib.reducer.rootReducer(
-                    state, 
-                    com.areslib.action.RobotAction.UpdateFlywheelRPM(robotDouble.flywheelRPM, RobotClock.currentTimeMillis())
-                )
-                
-                // Dispatch transfer state (reducer gates on flywheel readiness)
-                state = com.areslib.reducer.rootReducer(
-                    state, 
-                    com.areslib.action.RobotAction.SetTransferActive(driverStation.isTransferring, RobotClock.currentTimeMillis())
-                )
-                
-                // Intake Logic (Distance-based sensor approximation)
-                if (state.superstructure.intakeActive && state.superstructure.inventoryCount < 3) {
-                    val iterator = balls.iterator()
-                    while (iterator.hasNext()) {
-                        val ball = iterator.next()
-                        val dist = kotlin.math.hypot(
-                            ball.transform.translationX - robotBody.transform.translationX,
-                            ball.transform.translationY - robotBody.transform.translationY
-                        )
-                        // If within 30cm (intake range)
-                        if (dist < 0.3) {
-                            world.removeBody(ball)
-                            iterator.remove()
-                            state = com.areslib.reducer.rootReducer(
-                                state, 
-                                com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount + 1, RobotClock.currentTimeMillis())
-                            )
-                            println("INTAKED BALL! Inventory: ${state.superstructure.inventoryCount}")
-                        }
-                    }
-                }
-
-                // Shoot Logic — only fires when transfer is active (flywheel at speed + RT held + has ball)
-                if (state.superstructure.transferActive && state.superstructure.inventoryCount > 0 && RobotClock.currentTimeMillis() - lastShootTime > 500) {
-                    lastShootTime = RobotClock.currentTimeMillis()
-                    state = com.areslib.reducer.rootReducer(
-                        state, 
-                        com.areslib.action.RobotAction.SetInventoryCount(state.superstructure.inventoryCount - 1, RobotClock.currentTimeMillis())
-                    )
-                    
-                    val ball = Body()
-                    val fixture = ball.addFixture(Geometry.createCircle(0.0635))
-                    fixture.friction = 0.6
-                    fixture.restitution = 0.4
-                    fixture.density = 5.92
-                    ball.setMass(MassType.NORMAL)
-                    ball.linearDamping = 2.0
-                    ball.angularDamping = 2.0
-                    
-                    // Spawn slightly in front of robot
-                    val spawnDist = 0.35
-                    val spawnX = currentPose.x + cos(currentPose.heading.radians) * spawnDist
-                    val spawnY = currentPose.y + sin(currentPose.heading.radians) * spawnDist
-                    ball.translate(spawnX, spawnY)
-                    
-                    // Shot velocity scales with flywheel RPM (max 15 m/s at 4000 RPM)
-                    val shootVelocity = (robotDouble.flywheelRPM / 4000.0) * 15.0
-                    val impulseX = cos(currentPose.heading.radians) * shootVelocity * ball.mass.mass
-                    val impulseY = sin(currentPose.heading.radians) * shootVelocity * ball.mass.mass
-                    ball.applyImpulse(org.dyn4j.geometry.Vector2(impulseX, impulseY))
-                    
-                    world.addBody(ball)
-                    balls.add(ball)
-                    println("SHOT BALL! RPM: %.0f | Velocity: %.1f m/s | Inventory: ${state.superstructure.inventoryCount}".format(robotDouble.flywheelRPM, shootVelocity))
-                }
-            }
-            
-            // Publish superstructure telemetry
-            TelemetryPublisher.publishSuperstructure(state)
-
-            // Print highly detailed current and thermal warning metrics periodically
-            if (RobotClock.currentTimeMillis() % 1000 < 20) {
-                println(String.format(
-                    "| FLOODGATE LOAD | Current: %.2f A | Temp: %.1f%% | Energy: %.4f Wh | Fuse Alert: %b |",
-                    floodgateCurrentSensor.current,
-                    floodgateCurrentSensor.fuseThermalLoadPercent,
-                    floodgateCurrentSensor.estimatedEnergyWattHours,
-                    floodgateCurrentSensor.isOverloadWarning()
-                ))
-                println(String.format(
-                    "| POSITION       | Distance: %.3f / %.3f m | Pose: X=%.2f, Y=%.2f, H=%.1f deg |",
-                    currentDistance,
-                    path.points.lastOrNull()?.distanceMeters ?: 0.0,
-                    currentPose.x,
-                    currentPose.y,
-                    Math.toDegrees(currentPose.heading.radians)
-                ))
-                println(String.format(
-                    "| SUPERSTRUCTURE | Mode: %-15s | Flywheel: %4.0f / %4.0f RPM | Intake: %-3s | Transfer: %-3s | Inventory: %d |",
-                    state.superstructure.mode.name,
-                    robotDouble.flywheelRPM,
-                    state.superstructure.flywheelTargetRPM,
-                    if (state.superstructure.intakeActive) "ON" else "OFF",
-                    if (state.superstructure.transferActive) "ON" else "OFF",
-                    state.superstructure.inventoryCount
-                ))
-            }
 
             // Step physics engine
             world.step(1, TIMESTEP_SEC)
 
-            // Extract new simulated position after step
-            val newTransform = robotBody.transform
-            val newX = newTransform.translationX
-            val newY = newTransform.translationY
-            val newHeading = newTransform.rotationAngle
-
-            val deltaX = newX - lastX
-            val deltaY = newY - lastY
-            val deltaHeading = newHeading - lastHeading
-
-            lastX = newX
-            lastY = newY
-            lastHeading = newHeading
-
-            val currentTimeMs = RobotClock.currentTimeMillis()
-
-            // 1. Dispatch Odometry Hardware update using Redux Reducer
-            state = com.areslib.reducer.rootReducer(
-                state,
-                com.areslib.action.RobotAction.DriveHardwareUpdate(
-                    xVelocity = robotBody.linearVelocity.x,
-                    yVelocity = robotBody.linearVelocity.y,
-                    angularVelocity = robotBody.angularVelocity,
-                    deltaX = deltaX,
-                    deltaY = deltaY,
-                    deltaHeading = deltaHeading,
-                    timestampMs = currentTimeMs
+            // Synchronize RobotState telemetry values
+            state = RobotState().copy(
+                drive = state.drive.copy(
+                    poseEstimator = state.drive.poseEstimator.copy(
+                        estimatedPose = currentPose
+                    )
+                ),
+                superstructure = state.superstructure.copy(
+                    intakeActive = simIntakeActive,
+                    flywheelActive = simFlywheelActive,
+                    flywheelRPM = simFlywheelRPM,
+                    transferActive = simTransferActive,
+                    inventoryCount = simInventoryCount
                 )
             )
 
-            // 2. Dispatch Noisy Vision updates periodically (every 5 loop iterations ~ 100ms) with 80ms latency
-            simLoopCount++
-            if (simLoopCount % 5 == 0) {
-                val measurements = visionSimulator.generateMeasurements(
-                    truePose = currentPose,
-                    currentTimestampMs = currentTimeMs,
-                    latencyMs = 80L,
-                    outlierProbability = 0.02 // Emulate real-world noise & outlier conditions
-                )
-                state = com.areslib.reducer.rootReducer(
-                    state,
-                    com.areslib.action.RobotAction.VisionMeasurementsReceived(
-                        measurements = measurements,
-                        timestampMs = currentTimeMs,
-                        customVisionStdDevs = customVisionStdDevs
-                    )
-                )
-            }
-
-            // Publish Estimated Pose from EKF
-            TelemetryPublisher.publishEstimatedPose(state.drive.poseEstimator.estimatedPose)
-
-            // Publish to AdvantageScope
+            // AdvantageScope outputs
+            TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
+            TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode, driverStation.isRedAlliance)
+            TelemetryPublisher.publishEstimatedPose(currentPose)
             TelemetryPublisher.publish(state)
-            
-            // Publish Game Pieces (AdvantageScope expects 7 doubles per Pose3d)
+
             val gamePieceData = DoubleArray(balls.size * 7)
             for (i in balls.indices) {
                 gamePieceData[i * 7] = balls[i].transform.translationX
                 gamePieceData[i * 7 + 1] = balls[i].transform.translationY
-                gamePieceData[i * 7 + 2] = 0.0635 // Z height (radius)
-                
+                gamePieceData[i * 7 + 2] = 0.0635
                 val theta = balls[i].transform.rotationAngle
-                gamePieceData[i * 7 + 3] = kotlin.math.cos(theta / 2.0) // qW
-                gamePieceData[i * 7 + 4] = 0.0                          // qX
-                gamePieceData[i * 7 + 5] = 0.0                          // qY
-                gamePieceData[i * 7 + 6] = kotlin.math.sin(theta / 2.0) // qZ
+                gamePieceData[i * 7 + 3] = cos(theta / 2.0)
+                gamePieceData[i * 7 + 4] = 0.0
+                gamePieceData[i * 7 + 5] = 0.0
+                gamePieceData[i * 7 + 6] = sin(theta / 2.0)
             }
             TelemetryPublisher.publishGamePieces(gamePieceData)
 
@@ -973,69 +578,6 @@ object DesktopSimLauncher {
             }
             NT4FieldPublisher.publishElements(dynamicElementPoses)
 
-            // If headless, track deviations and check path completion
-            if (!driverStation.isTeleopMode) {
-                val targetState = path.sampleAtDistance(currentDistance)
-                val deviation = kotlin.math.hypot(currentPose.x - targetState.pose.x, currentPose.y - targetState.pose.y)
-                if (headless) {
-                    headlessRecords.add(HeadlessRecord(
-                        timeMs = simLoopCount * TIMESTEP_MS,
-                        targetX = targetState.pose.x,
-                        targetY = targetState.pose.y,
-                        targetHeading = targetState.pose.heading.radians,
-                        actualX = currentPose.x,
-                        actualY = currentPose.y,
-                        actualHeading = currentPose.heading.radians,
-                        deviationM = deviation
-                    ))
-
-                    val totalDistance = path.points.lastOrNull()?.distanceMeters ?: 0.0
-                    if (currentDistance >= totalDistance - 0.001) {
-                        settlingTicks++
-                        if (settlingTicks >= 50) {
-                            println("[Headless Sim] Path tracking completed. Generating performance reports...")
-                            
-                            // Write CSV
-                            val csvFile = java.io.File("sim_headless_report.csv")
-                            csvFile.bufferedWriter().use { writer ->
-                                writer.write("TimestampMs,TargetX,TargetY,TargetHeadingRad,ActualX,ActualY,ActualHeadingRad,DeviationMeters\n")
-                                for (rec in headlessRecords) {
-                                    writer.write(String.format(
-                                        java.util.Locale.US,
-                                        "%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
-                                        rec.timeMs, rec.targetX, rec.targetY, rec.targetHeading, rec.actualX, rec.actualY, rec.actualHeading, rec.deviationM
-                                    ))
-                                }
-                            }
-                            println("[Headless Sim] CSV report written to: ${csvFile.absolutePath}")
-
-                            // Write JSON
-                            val maxDeviation = headlessRecords.maxOfOrNull { it.deviationM } ?: 0.0
-                            val avgDeviation = headlessRecords.map { it.deviationM }.average()
-                            
-                            val jsonReport = """
-                                {
-                                  "totalSteps": ${headlessRecords.size},
-                                  "totalDistanceMeters": $totalDistance,
-                                  "maxDeviationMeters": $maxDeviation,
-                                  "averageDeviationMeters": $avgDeviation,
-                                  "status": "${if (maxDeviation < 0.1) "PASS" else "FAIL"}"
-                                }
-                            """.trimIndent()
-                            
-                            val jsonFile = java.io.File("sim_headless_report.json")
-                            jsonFile.writeText(jsonReport)
-                            println("[Headless Sim] JSON report written to: ${jsonFile.absolutePath}")
-                            
-                            println("[Headless Sim] Max Deviation: %.3f cm | Average Deviation: %.3f cm".format(maxDeviation * 100.0, avgDeviation * 100.0))
-                            println("[Headless Sim] Status: ${if (maxDeviation < 0.1) "SUCCESS (under 10cm limit)" else "FAILURE (exceeded 10cm limit)"}")
-                            
-                            java.lang.System.exit(if (maxDeviation < 0.1) 0 else 1)
-                        }
-                    }
-                }
-            }
-
             // Loop timing
             val elapsed = RobotClock.currentTimeMillis() - startTime
             val sleepTime = TIMESTEP_MS - elapsed
@@ -1046,23 +588,11 @@ object DesktopSimLauncher {
     }
 
     private fun createWalls(world: World<Body>) {
-        val fType = com.areslib.state.RobotFieldManager.activeConfig.fieldType
-        if (fType == com.areslib.state.FieldType.FRC) {
-            val width = 16.541
-            val height = 8.069
-            // FRC origin is bottom-left (0,0)
-            addWall(world, width / 2.0, height, width, 0.1)   // Top
-            addWall(world, width / 2.0, 0.0, width, 0.1)      // Bottom
-            addWall(world, 0.0, height / 2.0, 0.1, height)     // Left
-            addWall(world, width, height / 2.0, 0.1, height)   // Right
-        } else {
-            // FTC standard field size, origin at center (0,0)
-            val halfWidth = 3.6576 / 2.0
-            addWall(world, 0.0, halfWidth, 3.6576, 0.1)   // Top
-            addWall(world, 0.0, -halfWidth, 3.6576, 0.1)  // Bottom
-            addWall(world, -halfWidth, 0.0, 0.1, 3.6576)  // Left
-            addWall(world, halfWidth, 0.0, 0.1, 3.6576)   // Right
-        }
+        val halfWidth = 3.6576 / 2.0
+        addWall(world, 0.0, halfWidth, 3.6576, 0.1)   // Top
+        addWall(world, 0.0, -halfWidth, 3.6576, 0.1)  // Bottom
+        addWall(world, -halfWidth, 0.0, 0.1, 3.6576)  // Left
+        addWall(world, halfWidth, 0.0, 0.1, 3.6576)   // Right
     }
 
     private fun addWall(world: World<Body>, x: Double, y: Double, w: Double, h: Double) {
@@ -1083,41 +613,4 @@ object DesktopSimLauncher {
         val actualHeading: Double,
         val deviationM: Double
     )
-
-    private fun raycast(
-        world: World<Body>,
-        startX: Double,
-        startY: Double,
-        angleRad: Double,
-        maxRange: Double,
-        robotBody: Body
-    ): Double {
-        var minDistance = maxRange
-        val dx = kotlin.math.cos(angleRad)
-        val dy = kotlin.math.sin(angleRad)
-        val steps = (maxRange / 0.01).toInt()
-        for (step in 1..steps) {
-            val checkDist = step * 0.01
-            val checkX = startX + dx * checkDist
-            val checkY = startY + dy * checkDist
-            
-            val point = org.dyn4j.geometry.Vector2(checkX, checkY)
-            var hit = false
-            for (body in world.bodies) {
-                if (body == robotBody) continue
-                for (fixture in body.fixtures) {
-                    if (fixture.shape.contains(point, body.transform)) {
-                        hit = true
-                        break
-                    }
-                }
-                if (hit) break
-            }
-            if (hit) {
-                minDistance = checkDist
-                break
-            }
-        }
-        return minDistance
-    }
 }

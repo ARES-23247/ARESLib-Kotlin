@@ -70,6 +70,11 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
+    sourceSets {
+        main {
+            kotlin.srcDirs("src/main/kotlin", "../ftc-app/TeamCode/src/main/java")
+        }
+    }
 }
 
 tasks.named<JavaExec>("run") {
