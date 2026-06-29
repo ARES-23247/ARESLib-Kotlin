@@ -56,6 +56,24 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val cachedPulseWidths = IntArray(8)
     private var cachedLocalizerData = LocalizerDataBlock()
 
+    // Preallocated thread-local buffers to guarantee zero dynamic allocations in loop
+    private val threadPos = IntArray(8)
+    private val threadVel = IntArray(8)
+    private val threadPw = IntArray(8)
+    private val threadLocalizer = LocalizerDataBlock()
+
+    private fun readIntLE(bytes: ByteArray, offset: Int): Int {
+        return (bytes[offset].toInt() and 0xFF) or
+               ((bytes[offset + 1].toInt() and 0xFF) shl 8) or
+               ((bytes[offset + 2].toInt() and 0xFF) shl 16) or
+               ((bytes[offset + 3].toInt() and 0xFF) shl 24)
+    }
+
+    private fun readShortLE(bytes: ByteArray, offset: Int): Short {
+        return ((bytes[offset].toInt() and 0xFF) or
+                ((bytes[offset + 1].toInt() and 0xFF) shl 8)).toShort()
+    }
+    
     private val lock = Any()
     private var running = true
 
@@ -64,19 +82,16 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         val thread = Thread {
             while (running) {
                 if (isInitialized) {
-                    val pos = IntArray(8)
-                    val vel = IntArray(8)
-                    val pw = IntArray(8)
                     var posSuccess = false
                     var velSuccess = false
                     var pwSuccess = false
+                    var locSuccess = false
 
                     try {
                         val posBytes = deviceClient.read(REG_ENC_0, 32)
                         if (posBytes.size >= 32) {
-                            val buf = ByteBuffer.wrap(posBytes).order(OCTOQUAD_ENDIAN)
                             for (i in 0 until 8) {
-                                pos[i] = buf.int
+                                threadPos[i] = readIntLE(posBytes, i * 4)
                             }
                             posSuccess = true
                         }
@@ -85,9 +100,8 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                     try {
                         val velBytes = deviceClient.read(REG_VEL_0, 32)
                         if (velBytes.size >= 32) {
-                            val buf = ByteBuffer.wrap(velBytes).order(OCTOQUAD_ENDIAN)
                             for (i in 0 until 8) {
-                                vel[i] = buf.int
+                                threadVel[i] = readIntLE(velBytes, i * 4)
                             }
                             velSuccess = true
                         }
@@ -96,34 +110,38 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                     try {
                         val pwBytes = deviceClient.read(REG_PULSE_WIDTH_0, 16)
                         if (pwBytes.size >= 16) {
-                            val buf = ByteBuffer.wrap(pwBytes).order(OCTOQUAD_ENDIAN)
                             for (i in 0 until 8) {
-                                pw[i] = buf.short.toInt() and 0xFFFF
+                                threadPw[i] = readShortLE(pwBytes, i * 2).toInt() and 0xFFFF
                             }
                             pwSuccess = true
                         }
                     } catch (_: Exception) {}
 
-                    val loc = try {
+                    try {
                         val bytes = deviceClient.read(REG_LOC_X, 12)
-                        val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-                        val block = LocalizerDataBlock()
-                        block.posX_mm = buf.short
-                        block.posY_mm = buf.short
-                        block.velX_mmS = buf.short
-                        block.velY_mmS = buf.short
-                        block.heading_rad = buf.short * SCALAR_LOCALIZER_HEADING
-                        block.velHeading_radS = buf.short * SCALAR_LOCALIZER_HEADING_VELOCITY
-                        block
-                    } catch (_: Exception) {
-                        null
-                    }
+                        if (bytes.size >= 12) {
+                            threadLocalizer.posX_mm = readShortLE(bytes, 0)
+                            threadLocalizer.posY_mm = readShortLE(bytes, 2)
+                            threadLocalizer.velX_mmS = readShortLE(bytes, 4)
+                            threadLocalizer.velY_mmS = readShortLE(bytes, 6)
+                            threadLocalizer.heading_rad = readShortLE(bytes, 8) * SCALAR_LOCALIZER_HEADING
+                            threadLocalizer.velHeading_radS = readShortLE(bytes, 10) * SCALAR_LOCALIZER_HEADING_VELOCITY
+                            locSuccess = true
+                        }
+                    } catch (_: Exception) {}
 
                     synchronized(lock) {
-                        if (posSuccess) System.arraycopy(pos, 0, cachedPositions, 0, 8)
-                        if (velSuccess) System.arraycopy(vel, 0, cachedVelocities, 0, 8)
-                        if (pwSuccess) System.arraycopy(pw, 0, cachedPulseWidths, 0, 8)
-                        if (loc != null) cachedLocalizerData = loc
+                        if (posSuccess) System.arraycopy(threadPos, 0, cachedPositions, 0, 8)
+                        if (velSuccess) System.arraycopy(threadVel, 0, cachedVelocities, 0, 8)
+                        if (pwSuccess) System.arraycopy(threadPw, 0, cachedPulseWidths, 0, 8)
+                        if (locSuccess) {
+                            cachedLocalizerData.posX_mm = threadLocalizer.posX_mm
+                            cachedLocalizerData.posY_mm = threadLocalizer.posY_mm
+                            cachedLocalizerData.heading_rad = threadLocalizer.heading_rad
+                            cachedLocalizerData.velX_mmS = threadLocalizer.velX_mmS
+                            cachedLocalizerData.velY_mmS = threadLocalizer.velY_mmS
+                            cachedLocalizerData.velHeading_radS = threadLocalizer.velHeading_radS
+                        }
                         lastUpdateTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
                     }
                 }

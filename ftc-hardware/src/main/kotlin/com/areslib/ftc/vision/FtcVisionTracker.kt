@@ -58,18 +58,26 @@ class FtcVisionTracker(
 
         val robotPose = store.state.drive.poseEstimator.estimatedPose
         val robotHeading = robotPose.heading.radians
-        val tagPose3d = measurement.targetPose
-        val tagPose2d = tagPose3d.toPose2d()
-        val dx = tagPose2d.x - robotPose.x
-        val dy = tagPose2d.y - robotPose.y
+        val fieldPose3d = measurement.targetPose
+        val fieldPose2d = fieldPose3d.toPose2d()
+        val dx = fieldPose2d.x - robotPose.x
+        val dy = fieldPose2d.y - robotPose.y
         val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-        val tagYaw = tagPose3d.rotation.z
-        val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeading)
+        val fieldYaw = fieldPose3d.rotation.z
+        val headingDiff = com.areslib.math.InputMath.wrapAngle(fieldYaw - robotHeading)
 
         lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
 
         // 1. One-time absolute snap during initialization to bypass outlier lockout
-        val hasTag1 = visionInputs.measurements.any { it.tagId == 1 }
+        var hasTag1 = false
+        val measurementsList = visionInputs.measurements
+        val measurementCount = measurementsList.size
+        for (i in 0 until measurementCount) {
+            if (measurementsList[i].tagId == 1) {
+                hasTag1 = true
+                break
+            }
+        }
         if (isInInit) {
             if (!hasInitializedPoseWithVision && measurement.ambiguity < 0.05 && !hasTag1) {
                 val snapPose = measurement.targetPose.toPose2d()
@@ -127,18 +135,18 @@ class FtcVisionTracker(
         distance: Double,
         headingDiff: Double
     ): String {
-        val tagPose3d = measurement.targetPose
-        val tagPose2d = tagPose3d.toPose2d()
+        val fieldPose3d = measurement.targetPose
+        val fieldPose2d = fieldPose3d.toPose2d()
         val filterConfig = store.state.vision.filterConfig
 
         return when {
             measurement.ambiguity > filterConfig.maxAmbiguity -> {
                 String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, filterConfig.maxAmbiguity)
             }
-            tagPose3d.x < filterConfig.minFieldX || tagPose3d.x > filterConfig.maxFieldX ||
-            tagPose3d.y < filterConfig.minFieldY || tagPose3d.y > filterConfig.maxFieldY ||
-            tagPose3d.z < filterConfig.minFieldZ || tagPose3d.z > filterConfig.maxFieldZ -> {
-                String.format("REJ_BOUNDS (Z: %.2f)", tagPose3d.z)
+            fieldPose3d.x < filterConfig.minFieldX || fieldPose3d.x > filterConfig.maxFieldX ||
+            fieldPose3d.y < filterConfig.minFieldY || fieldPose3d.y > filterConfig.maxFieldY ||
+            fieldPose3d.z < filterConfig.minFieldZ || fieldPose3d.z > filterConfig.maxFieldZ -> {
+                String.format("REJ_BOUNDS (Z: %.2f)", fieldPose3d.z)
             }
             distance > filterConfig.maxDistanceMeters -> {
                 String.format("REJ_DIST (%.2fm > %.2fm)", distance, filterConfig.maxDistanceMeters)
@@ -150,9 +158,14 @@ class FtcVisionTracker(
                 // Dry run of EKF Mahalanobis distance checks using pre-allocated stdDev vector
                 val currentEstimator = store.state.drive.poseEstimator
                 if (currentEstimator.history.isNotEmpty()) {
-                    val closestIndex = currentEstimator.history.indices.reversed().firstOrNull {
-                        currentEstimator.history[it].timestampMs <= measurement.timestampMs
-                    } ?: -1
+                    var closestIndex = -1
+                    val history = currentEstimator.history
+                    for (i in history.size - 1 downTo 0) {
+                        if (history[i].timestampMs <= measurement.timestampMs) {
+                            closestIndex = i
+                            break
+                        }
+                    }
                     if (closestIndex != -1) {
                         val baseEntry = currentEstimator.history[closestIndex]
                         val numTags = visionInputs.measurements.size
@@ -171,9 +184,9 @@ class FtcVisionTracker(
                         val sYY = baseEntry.covariance.m11 + rYY
                         val sZZ = baseEntry.covariance.m22 + rZZ
                         
-                        val yX = tagPose2d.x - baseEntry.pose.x
-                        val yY = tagPose2d.y - baseEntry.pose.y
-                        val yZ = com.areslib.math.InputMath.wrapAngle(tagPose2d.heading.radians - baseEntry.pose.heading.radians)
+                        val yX = fieldPose2d.x - baseEntry.pose.x
+                        val yY = fieldPose2d.y - baseEntry.pose.y
+                        val yZ = com.areslib.math.InputMath.wrapAngle(fieldPose2d.heading.radians - baseEntry.pose.heading.radians)
                         
                         val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
                         if (dMSquared > 12.0) {

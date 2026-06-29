@@ -3,16 +3,16 @@
         "type": "com.ares.analytics.shared.Obstacle.Circle",
         "id": "circle_1782441271576",
         "name": "Circle Obstacle 1",
-        "centerX": -0.1264379009604454,
-        "centerY": 0.9280065350234509,
+        "centerX": -1.0165545674040974,
+        "centerY": 0.9016719694714989,
         "radius": 0.25
     },
     {
         "type": "com.ares.analytics.shared.Obstacle.Circle",
         "id": "circle_1782441273198",
         "name": "Circle Obstacle 2",
-        "centerX": -0.0023856207728385924,
-        "centerY": 0.7276143357157707,
+        "centerX": 0.29783100932836387,
+        "centerY": 0.5380037695169445,
         "radius": 0.25
     },
     {
@@ -28,8 +28,8 @@
         "type": "com.ares.analytics.shared.Obstacle.Rectangle",
         "id": "rect_1782499594974",
         "name": "Rectangle Obstacle 4",
-        "centerX": -1.399673001468181,
-        "centerY": 1.4821344293653964,
+        "centerX": -1.4207408769056198,
+        "centerY": 1.482134442962706,
         "width": 0.5,
         "height": 0.5
     }

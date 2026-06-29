@@ -30,9 +30,7 @@ class MutablePathPoint {
     )
 
     fun copyInto(out: PathPoint) {
-        out.pose.x = x
-        out.pose.y = y
-        out.pose.heading.rawRadians = headingRad
+        out.pose = Pose2d(x, y, Rotation2d(headingRad))
         out.velocityMps = velocityMps
         out.distanceMeters = distanceMeters
         out.curvature = curvature

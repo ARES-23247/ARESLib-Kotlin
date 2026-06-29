@@ -1,6 +1,7 @@
 package com.areslib.ftc.hardware
 
 import com.areslib.hardware.ColorSensorIO
+import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.ColorSensor
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor
 
@@ -8,7 +9,7 @@ import com.qualcomm.robotcore.hardware.NormalizedColorSensor
  * Wraps a generic FTC Color Sensor.
  * Automatically attempts to use NormalizedColorSensor telemetry for accurate, lighting-invariant detection.
  */
-class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO {
+class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoCloseable {
     
     private val normalizedSensor = sensor as? NormalizedColorSensor
 
@@ -19,9 +20,11 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO {
     private var cachedGreen = 0
     private var cachedBlue = 0
     private var cachedAlpha = 0
-    private var cachedNormalized = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+    private val cachedNormalized = DoubleArray(4)
+    private val threadBuffer = DoubleArray(4)
 
     init {
+        HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 var r = 0
@@ -35,30 +38,39 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO {
                     a = sensor.alpha()
                 } catch (_: Exception) {}
 
-                var normalized = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
                 try {
                     val colors = normalizedSensor?.normalizedColors
                     if (colors != null) {
-                        normalized = doubleArrayOf(
-                            colors.red.toDouble(),
-                            colors.green.toDouble(),
-                            colors.blue.toDouble(),
-                            colors.alpha.toDouble()
-                        )
+                        threadBuffer[0] = colors.red.toDouble()
+                        threadBuffer[1] = colors.green.toDouble()
+                        threadBuffer[2] = colors.blue.toDouble()
+                        threadBuffer[3] = colors.alpha.toDouble()
                     } else {
                         val sum = (r + g + b + a).toDouble()
-                        normalized = if (sum < 0.1) {
-                            doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                        if (sum < 0.1) {
+                            threadBuffer[0] = 0.0
+                            threadBuffer[1] = 0.0
+                            threadBuffer[2] = 0.0
+                            threadBuffer[3] = 0.0
                         } else {
-                            doubleArrayOf(r / sum, g / sum, b / sum, a / sum)
+                            threadBuffer[0] = r / sum
+                            threadBuffer[1] = g / sum
+                            threadBuffer[2] = b / sum
+                            threadBuffer[3] = a / sum
                         }
                     }
                 } catch (_: Exception) {
                     val sum = (r + g + b + a).toDouble()
-                    normalized = if (sum < 0.1) {
-                        doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                    if (sum < 0.1) {
+                        threadBuffer[0] = 0.0
+                        threadBuffer[1] = 0.0
+                        threadBuffer[2] = 0.0
+                        threadBuffer[3] = 0.0
                     } else {
-                        doubleArrayOf(r / sum, g / sum, b / sum, a / sum)
+                        threadBuffer[0] = r / sum
+                        threadBuffer[1] = g / sum
+                        threadBuffer[2] = b / sum
+                        threadBuffer[3] = a / sum
                     }
                 }
 
@@ -67,7 +79,7 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO {
                     cachedGreen = g
                     cachedBlue = b
                     cachedAlpha = a
-                    cachedNormalized = normalized
+                    System.arraycopy(threadBuffer, 0, cachedNormalized, 0, 4)
                 }
 
                 try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
@@ -90,7 +102,7 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO {
     override val normalizedRgb: DoubleArray
         get() = synchronized(lock) { cachedNormalized }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

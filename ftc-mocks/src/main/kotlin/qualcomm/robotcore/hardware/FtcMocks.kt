@@ -83,9 +83,35 @@ open class Telemetry {
     fun update() {}
 }
 open class ElapsedTime {
-    private var startTime: Long = System.nanoTime()
-    fun reset() { startTime = System.nanoTime() }
-    fun seconds(): Double = (System.nanoTime() - startTime) / 1e9
+    private companion object {
+        private val robotClockClass: Class<*>? = try {
+            Class.forName("com.areslib.util.RobotClock")
+        } catch (_: ClassNotFoundException) {
+            null
+        }
+
+        private val currentTimeMillisMethod = try {
+            robotClockClass?.getMethod("currentTimeMillis")
+        } catch (_: Exception) {
+            null
+        }
+
+        fun getVirtualTimeMs(): Long {
+            return if (currentTimeMillisMethod != null) {
+                try {
+                    currentTimeMillisMethod.invoke(null) as Long
+                } catch (_: Exception) {
+                    System.currentTimeMillis()
+                }
+            } else {
+                System.currentTimeMillis()
+            }
+        }
+    }
+
+    private var startTime: Long = getVirtualTimeMs()
+    fun reset() { startTime = getVirtualTimeMs() }
+    fun seconds(): Double = (getVirtualTimeMs() - startTime) / 1000.0
 }
 
 interface DistanceSensor {

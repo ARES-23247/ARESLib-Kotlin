@@ -71,3 +71,9 @@ dependencies {
 kotlin {
     jvmToolchain(21)
 }
+
+tasks.named<JavaExec>("run") {
+    if (project.hasProperty("appArgs")) {
+        args(project.property("appArgs").toString().split(" "))
+    }
+}

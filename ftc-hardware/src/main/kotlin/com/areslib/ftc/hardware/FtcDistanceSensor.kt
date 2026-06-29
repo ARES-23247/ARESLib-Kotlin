@@ -1,18 +1,20 @@
 package com.areslib.ftc.hardware
 
 import com.areslib.hardware.DistanceSensorIO
+import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.DistanceSensor
 import org.firstinspires.ftc.robotcore.external.navigation.Distance
 
 /**
  * Wraps a standard FTC I2C/ToF/LiDAR distance sensor (e.g. REV 2m Distance Sensor, goBILDA ToF Sensor).
  */
-class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO {
+class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, AutoCloseable {
     private val lock = Any()
     private var running = true
     private var cachedDistance = Double.NaN
 
     init {
+        HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 val d = try {
@@ -34,7 +36,7 @@ class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO {
     override val distanceMeters: Double
         get() = synchronized(lock) { cachedDistance }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

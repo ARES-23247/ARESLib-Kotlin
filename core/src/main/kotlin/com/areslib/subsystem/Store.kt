@@ -11,7 +11,7 @@ class Store(
     var state: RobotState = initialState
         private set
 
-    private val listeners = mutableListOf<(RobotState) -> Unit>()
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<(RobotState) -> Unit>()
     
     /**
      * Intercepts all dispatched actions (useful for telemetry logging and sequence recorders).
@@ -21,13 +21,30 @@ class Store(
     fun dispatch(action: RobotAction) {
         actionListener?.invoke(action)
         state = reducer(state, action)
-        listeners.forEach { it(state) }
+        val size = listeners.size
+        for (i in 0 until size) {
+            try {
+                listeners[i](state)
+            } catch (_: IndexOutOfBoundsException) {
+                break
+            }
+        }
     }
 
     fun dispatchAll(vararg actions: RobotAction) {
-        actions.forEach { actionListener?.invoke(it) }
-        state = actions.fold(state) { acc, action -> reducer(acc, action) }
-        listeners.forEach { it(state) }
+        val actionCount = actions.size
+        for (i in 0 until actionCount) {
+            actionListener?.invoke(actions[i])
+            state = reducer(state, actions[i])
+        }
+        val size = listeners.size
+        for (i in 0 until size) {
+            try {
+                listeners[i](state)
+            } catch (_: IndexOutOfBoundsException) {
+                break
+            }
+        }
     }
 
     fun subscribe(listener: (RobotState) -> Unit): () -> Unit {

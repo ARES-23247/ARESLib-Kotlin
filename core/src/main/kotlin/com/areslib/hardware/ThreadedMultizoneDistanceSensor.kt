@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 class ThreadedMultizoneDistanceSensor(
     private val physicalSensor: MultizoneDistanceSensorIO,
     pollIntervalMs: Long = 33 // ~30 Hz poll rate (ideal for VL53L5CX native framerates)
-) : MultizoneDistanceSensorIO {
+) : MultizoneDistanceSensorIO, AutoCloseable {
 
     override val rows: Int get() = physicalSensor.rows
     override val columns: Int get() = physicalSensor.columns
@@ -24,6 +24,7 @@ class ThreadedMultizoneDistanceSensor(
     }
 
     init {
+        HardwareRegistry.registerCloseable(this)
         scheduler.scheduleAtFixedRate({
             try {
                 cachedDistances = physicalSensor.distancesMeters
@@ -37,12 +38,16 @@ class ThreadedMultizoneDistanceSensor(
      * Instantly returns the latest cached zone readings from memory (0.0 ms execution time).
      */
     override val distancesMeters: DoubleArray
-        get() = cachedDistances.clone()
+        get() = cachedDistances
 
     /**
      * Safely shuts down the polling background thread.
      */
     fun shutdown() {
-        scheduler.shutdown()
+        scheduler.shutdownNow()
+    }
+
+    override fun close() {
+        shutdown()
     }
 }

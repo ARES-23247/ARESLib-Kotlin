@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 class ThreadedDistanceSensor(
     private val physicalSensor: DistanceSensorIO,
     pollIntervalMs: Long = 20 // 50 Hz poll rate by default
-) : DistanceSensorIO {
+) : DistanceSensorIO, AutoCloseable {
 
     @Volatile
     private var cachedDistance: Double = Double.NaN
@@ -21,6 +21,7 @@ class ThreadedDistanceSensor(
     }
 
     init {
+        HardwareRegistry.registerCloseable(this)
         scheduler.scheduleAtFixedRate({
             try {
                 cachedDistance = physicalSensor.distanceMeters
@@ -40,6 +41,10 @@ class ThreadedDistanceSensor(
      * Safely shuts down the polling background thread.
      */
     fun shutdown() {
-        scheduler.shutdown()
+        scheduler.shutdownNow()
+    }
+
+    override fun close() {
+        shutdown()
     }
 }

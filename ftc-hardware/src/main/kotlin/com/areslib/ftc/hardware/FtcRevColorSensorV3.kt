@@ -4,6 +4,7 @@ import com.areslib.util.RobotClock
 
 import com.areslib.hardware.ColorSensorIO
 import com.areslib.hardware.DistanceSensorIO
+import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.ColorSensor
 import com.qualcomm.robotcore.hardware.DistanceSensor
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor
@@ -16,7 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Distance
  * and an infrared proximity/rangefinder, this class implements both ColorSensorIO 
  * and DistanceSensorIO for unified, frictionless reading.
  */
-class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, DistanceSensorIO {
+class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, DistanceSensorIO, AutoCloseable {
     
     private val normalizedSensor = device as? NormalizedColorSensor
     private val distanceSensor = device as? DistanceSensor
@@ -28,10 +29,12 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     private var cachedGreen = 0
     private var cachedBlue = 0
     private var cachedAlpha = 0
-    private var cachedNormalized = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+    private val cachedNormalized = DoubleArray(4)
     private var cachedDistance = Double.NaN
+    private val threadBuffer = DoubleArray(4)
 
     init {
+        HardwareRegistry.registerCloseable(this)
         val thread = Thread {
             while (running) {
                 var red = 0
@@ -45,30 +48,39 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
                     alpha = device.alpha()
                 } catch (_: Exception) {}
 
-                var normalized = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
                 try {
                     val colors = normalizedSensor?.normalizedColors
                     if (colors != null) {
-                        normalized = doubleArrayOf(
-                            colors.red.toDouble(),
-                            colors.green.toDouble(),
-                            colors.blue.toDouble(),
-                            colors.alpha.toDouble()
-                        )
+                        threadBuffer[0] = colors.red.toDouble()
+                        threadBuffer[1] = colors.green.toDouble()
+                        threadBuffer[2] = colors.blue.toDouble()
+                        threadBuffer[3] = colors.alpha.toDouble()
                     } else {
                         val sum = (red + green + blue + alpha).toDouble()
-                        normalized = if (sum < 0.1) {
-                            doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                        if (sum < 0.1) {
+                            threadBuffer[0] = 0.0
+                            threadBuffer[1] = 0.0
+                            threadBuffer[2] = 0.0
+                            threadBuffer[3] = 0.0
                         } else {
-                            doubleArrayOf(red / sum, green / sum, blue / sum, alpha / sum)
+                            threadBuffer[0] = red / sum
+                            threadBuffer[1] = green / sum
+                            threadBuffer[2] = blue / sum
+                            threadBuffer[3] = alpha / sum
                         }
                     }
                 } catch (_: Exception) {
                     val sum = (red + green + blue + alpha).toDouble()
-                    normalized = if (sum < 0.1) {
-                        doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+                    if (sum < 0.1) {
+                        threadBuffer[0] = 0.0
+                        threadBuffer[1] = 0.0
+                        threadBuffer[2] = 0.0
+                        threadBuffer[3] = 0.0
                     } else {
-                        doubleArrayOf(red / sum, green / sum, blue / sum, alpha / sum)
+                        threadBuffer[0] = red / sum
+                        threadBuffer[1] = green / sum
+                        threadBuffer[2] = blue / sum
+                        threadBuffer[3] = alpha / sum
                     }
                 }
 
@@ -82,7 +94,7 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
                     cachedGreen = green
                     cachedBlue = blue
                     cachedAlpha = alpha
-                    cachedNormalized = normalized
+                    System.arraycopy(threadBuffer, 0, cachedNormalized, 0, 4)
                     cachedDistance = distance
                 }
 
@@ -112,7 +124,7 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     override val distanceMeters: Double
         get() = synchronized(lock) { cachedDistance }
 
-    fun close() {
+    override fun close() {
         running = false
     }
 }

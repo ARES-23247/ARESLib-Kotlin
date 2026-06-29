@@ -46,8 +46,7 @@ class HolonomicDriveController(
         curvature: Double = 0.0,
         maxCentripetalAccel: Double = 2.5,
         obstacles: List<Obstacle> = emptyList(),
-        progressPercentage: Double = 0.0,
-        out: ChassisSpeeds = ChassisSpeeds()
+        progressPercentage: Double = 0.0
     ): ChassisSpeeds {
         // Calculate raw error components
         val xError = targetPose.x - currentPose.x
@@ -114,8 +113,7 @@ class HolonomicDriveController(
             fieldRelativeX,
             fieldRelativeY,
             thetaFeedback,
-            currentPose.heading,
-            out
+            currentPose.heading
         )
     }
 }

@@ -47,6 +47,8 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     private val activePinpoints = BooleanArray(4)
     private val pendingServoPositions = DoubleArray(4) { Double.NaN }
+    private val pingBuffers = Array(4) { byteArrayOf(1) }
+    private val servoWriteBuffers = Array(4) { ByteArray(2) }
 
     private val lock = Any()
     private var running = true
@@ -72,7 +74,9 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                             if (!pos.isNaN()) {
                                 try {
                                     val raw = (pos.coerceIn(0.0, 1.0) * 65535.0).toInt()
-                                    val buffer = byteArrayOf((raw and 0xFF).toByte(), ((raw shl 8) and 0xFF).toByte())
+                                    val buffer = servoWriteBuffers[port]
+                                    buffer[0] = (raw and 0xFF).toByte()
+                                    buffer[1] = ((raw shr 8) and 0xFF).toByte()
                                     deviceClient.write(16 + port * 2, buffer)
                                     pendingServoPositions[port] = Double.NaN
                                 } catch (_: Exception) {}
@@ -85,7 +89,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                         for (port in 0 until 4) {
                             if (activePinpoints[port]) {
                                 try {
-                                    deviceClient.write(124 + port, byteArrayOf(1))
+                                    deviceClient.write(124 + port, pingBuffers[port])
                                 } catch (_: Exception) {}
                             }
                         }

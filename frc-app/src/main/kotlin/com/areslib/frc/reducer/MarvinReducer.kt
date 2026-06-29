@@ -14,7 +14,7 @@ object MarvinReducer {
         c = 45.0,  // Minimum 45.0 deg deployment for any climber extension
         alpha = 5.0
     )
-    private val cbfOutput = CBFFilteredOutput()
+    private val cbfOutputThreadLocal = ThreadLocal.withInitial { CBFFilteredOutput() }
 
     fun reduce(state: RobotState, action: RobotAction): RobotState {
         // First run standard core reducer (handles drive, vision, path, costmap, and generic FSM)
@@ -93,39 +93,38 @@ object MarvinReducer {
 
     private fun enforceSafetyInterlocks(state: com.areslib.state.SuperstructureState): com.areslib.state.SuperstructureState {
         val marvin = state.marvinXIX
-        synchronized(cbfOutput) {
-            val activeC = if (marvin.climber.extensionMeters > 0.005 || marvin.climber.targetExtensionMeters > 0.005) 45.0 else 0.0
-            cbf.filter(
-                x1Target = marvin.intake.targetAngleDegrees,
-                x2Target = marvin.climber.targetExtensionMeters,
-                x1Current = marvin.intake.pivotAngleDegrees,
-                x2Current = marvin.climber.extensionMeters,
-                dtSeconds = 1.0 / cbf.alpha, // Bypass velocity-rate-limiting for static setpoint actions while strictly maintaining safe invariant set boundaries
-                cOverride = activeC,
-                outBuffer = cbfOutput
+        val cbfOutput = cbfOutputThreadLocal.get()
+        val activeC = if (marvin.climber.extensionMeters > 0.005 || marvin.climber.targetExtensionMeters > 0.005) 45.0 else 0.0
+        cbf.filter(
+            x1Target = marvin.intake.targetAngleDegrees,
+            x2Target = marvin.climber.targetExtensionMeters,
+            x1Current = marvin.intake.pivotAngleDegrees,
+            x2Current = marvin.climber.extensionMeters,
+            dtSeconds = 1.0 / cbf.alpha, // Bypass velocity-rate-limiting for static setpoint actions while strictly maintaining safe invariant set boundaries
+            cOverride = activeC,
+            outBuffer = cbfOutput
+        )
+
+        var finalIntake = marvin.intake
+        var finalClimber = marvin.climber
+
+        if (cbfOutput.x1Filtered != marvin.intake.targetAngleDegrees) {
+            finalIntake = finalIntake.copy(
+                targetAngleDegrees = cbfOutput.x1Filtered,
+                isDeployed = cbfOutput.x1Filtered >= 45.0
             )
-
-            var finalIntake = marvin.intake
-            var finalClimber = marvin.climber
-
-            if (cbfOutput.x1Filtered != marvin.intake.targetAngleDegrees) {
-                finalIntake = finalIntake.copy(
-                    targetAngleDegrees = cbfOutput.x1Filtered,
-                    isDeployed = cbfOutput.x1Filtered >= 45.0
-                )
-            }
-
-            if (cbfOutput.x2Filtered != marvin.climber.targetExtensionMeters) {
-                finalClimber = finalClimber.copy(
-                    targetExtensionMeters = cbfOutput.x2Filtered
-                )
-            }
-
-            if (finalIntake === marvin.intake && finalClimber === marvin.climber) {
-                return state
-            }
-            val updatedMarvin = marvin.copy(intake = finalIntake, climber = finalClimber)
-            return state.copy(custom = updatedMarvin)
         }
+
+        if (cbfOutput.x2Filtered != marvin.climber.targetExtensionMeters) {
+            finalClimber = finalClimber.copy(
+                targetExtensionMeters = cbfOutput.x2Filtered
+            )
+        }
+
+        if (finalIntake === marvin.intake && finalClimber === marvin.climber) {
+            return state
+        }
+        val updatedMarvin = marvin.copy(intake = finalIntake, climber = finalClimber)
+        return state.copy(custom = updatedMarvin)
     }
 }
