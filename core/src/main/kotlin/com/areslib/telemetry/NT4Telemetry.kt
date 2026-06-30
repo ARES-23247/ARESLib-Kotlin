@@ -9,8 +9,24 @@ import org.frcforftc.networktables.NetworkTablesInstance
 class NT4Telemetry : ITelemetry {
     private val inst = NetworkTablesInstance.getDefaultInstance()
     private var isInitialized = false
+    private var reflectHelper: ReflectionWpilibTelemetry? = null
 
     init {
+        val isWpilibAvailable = try {
+            Class.forName("edu.wpi.first.networktables.NetworkTableInstance")
+            true
+        } catch (e: Exception) {
+            false
+        }
+
+        if (isWpilibAvailable) {
+            try {
+                reflectHelper = ReflectionWpilibTelemetry()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         try {
             // Start the server on port 5810 (Standard NT4 port)
             // Check if server is already running to avoid exceptions in persistent environments
@@ -24,21 +40,37 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun putNumber(key: String, value: Double) {
+        reflectHelper?.let { helper ->
+            helper.putNumber(key, value)
+            return
+        }
         if (!isInitialized) return
         try { inst.putNumber(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putBoolean(key: String, value: Boolean) {
+        reflectHelper?.let { helper ->
+            helper.putBoolean(key, value)
+            return
+        }
         if (!isInitialized) return
         try { inst.putBoolean(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putString(key: String, value: String) {
+        reflectHelper?.let { helper ->
+            helper.putString(key, value)
+            return
+        }
         if (!isInitialized) return
         try { inst.putString(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putDoubleArray(key: String, value: DoubleArray) {
+        reflectHelper?.let { helper ->
+            helper.putDoubleArray(key, value)
+            return
+        }
         if (!isInitialized) return
         try { inst.putNumberArray(key, value) } catch (e: Exception) { /* swallow */ }
     }
