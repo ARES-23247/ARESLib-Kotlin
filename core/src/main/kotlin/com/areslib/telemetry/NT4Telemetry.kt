@@ -22,20 +22,21 @@ class NT4Telemetry : ITelemetry {
         if (isWpilibAvailable) {
             try {
                 reflectHelper = ReflectionWpilibTelemetry()
+                isInitialized = true
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-        }
-
-        try {
-            // Start the server on port 5810 (Standard NT4 port)
-            // Check if server is already running to avoid exceptions in persistent environments
-            if (inst.server == null) {
-                inst.startNT4Server("0.0.0.0", 5810)
+        } else {
+            try {
+                // Start the server on port 5810 (Standard NT4 port)
+                // Check if server is already running to avoid exceptions in persistent environments
+                if (inst.server == null) {
+                    inst.startNT4Server("0.0.0.0", 5810)
+                }
+                isInitialized = true
+            } catch (e: Exception) {
+                System.err.println("NT4Telemetry: Failed to initialize NT4 Server! ${e.message}")
             }
-            isInitialized = true
-        } catch (e: Exception) {
-            System.err.println("NT4Telemetry: Failed to initialize NT4 Server! ${e.message}")
         }
     }
 
