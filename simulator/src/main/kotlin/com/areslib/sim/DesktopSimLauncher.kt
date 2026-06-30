@@ -151,7 +151,7 @@ object DesktopSimLauncher {
         // 2. Setup Virtual Driver Station
         val driverStation = VirtualDriverStation()
         if (headless) {
-            driverStation.isTeleopMode = false
+            // Headless defaults to teleop mode — dashboard keyboard widget drives via NT4 input topics
         } else {
             driverStation.isVisible = true
         }

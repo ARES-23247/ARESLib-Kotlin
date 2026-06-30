@@ -56,6 +56,9 @@ object TelemetryPublisher {
     private val transferActivePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Superstructure/TransferActive").publish()
     private val inventoryCountPub = ntInst.getIntegerTopic("AdvantageKit/RealOutputs/Superstructure/InventoryCount").publish()
 
+    // Session log file path publisher
+    private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
+
     init {
         // Start DataLogManager for offline .wpilog generation
         DataLogManager.start()
@@ -65,6 +68,14 @@ object TelemetryPublisher {
         
         // Register the custom struct so NT4 knows how to serialize it
         statePublisher = ntInst.getStructTopic("AdvantageKit/RealOutputs/ARES/RobotState", RobotStateStruct()).publish()
+
+        // Publish the log file path once so dashboard/analytics can locate the .wpilog
+        val logDir = java.io.File(DataLogManager.getLogDir())
+        val logFile = logDir.listFiles { _, name -> name.endsWith(".wpilog") }
+            ?.maxByOrNull { it.lastModified() }
+        val logPath = logFile?.absolutePath ?: logDir.absolutePath
+        logFilePathPub.set(logPath)
+        println("[TelemetryPublisher] Published log file path: $logPath")
     }
 
     /**
