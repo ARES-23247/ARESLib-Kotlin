@@ -77,8 +77,22 @@ kotlin {
     }
 }
 
+val javaToolchains = project.extensions.getByType<JavaToolchainService>()
+
 tasks.named<JavaExec>("run") {
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    })
     if (project.hasProperty("appArgs")) {
         args(project.property("appArgs").toString().split(" "))
     }
+}
+
+tasks.register<JavaExec>("runFakeController") {
+    group = "application"
+    mainClass.set("com.areslib.sim.FakeControllerClient")
+    classpath = sourceSets.main.get().runtimeClasspath
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    })
 }
