@@ -27,6 +27,17 @@ object DesktopSimLauncher {
 
     @JvmStatic
     fun main(args: Array<String>) {
+        try {
+            realMain(args)
+        } catch (t: Throwable) {
+            System.err.println("FATAL CRASH IN SIMULATOR:")
+            t.printStackTrace()
+            System.err.flush()
+            throw t
+        }
+    }
+
+    private fun realMain(args: Array<String>) {
         println("Starting ARESLib Desktop Simulation (HIL-style actual FTC code)...")
 
         var activeConfig: com.areslib.state.RobotFieldConfig? = null
