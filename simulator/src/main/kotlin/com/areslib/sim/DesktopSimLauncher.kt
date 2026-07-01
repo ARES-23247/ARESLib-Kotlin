@@ -203,8 +203,8 @@ object DesktopSimLauncher {
         robotFixture.density = 15.0 // 15kg
         robotBody.setMass(MassType.NORMAL)
         
-        // Spawn configuration (SQUARE_INVERTED starts RED at x = -1.55, headings 0.0)
-        val startPose = Pose2d(-1.55, 0.0, Rotation2d(0.0))
+        // Spawn configuration (starts at the center of the field: 0.0, 0.0)
+        val startPose = Pose2d(0.0, 0.0, Rotation2d(0.0))
         robotBody.translate(startPose.x, startPose.y)
         robotBody.rotate(startPose.heading.radians)
         world.addBody(robotBody)
