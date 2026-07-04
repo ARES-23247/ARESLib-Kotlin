@@ -79,6 +79,13 @@ object CloudExporter {
         isUploading = true
         try {
             for (file in uploadableFiles) {
+                // Reject massive files (e.g., >50MB) to prevent billing/database bloat
+                if (file.length() > 50L * 1024 * 1024) {
+                    System.err.println("CloudExporter: File ${file.name} is too large (${file.length() / (1024*1024)} MB). Max limit is 50MB. Archiving locally without upload.")
+                    archiveFile(file)
+                    continue
+                }
+
                 val route = when {
                     file.name.startsWith("state_log_") -> "/upload/states"
                     file.name.startsWith("action_log_") -> "/upload/actions"
