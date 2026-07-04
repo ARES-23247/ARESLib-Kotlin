@@ -10,20 +10,25 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 object CloudExporter {
+    val isAndroid: Boolean by lazy {
+        val javaVendor = System.getProperty("java.vendor") ?: ""
+        javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
+    }
+
     @Volatile
-    var areswebServerUrl: String = "http://localhost:5001/aresfirst-portal/us-central1/api"
+    var areswebServerUrl: String = ""
 
     init {
+        areswebServerUrl = if (isAndroid) {
+            "https://ares-analytics-gateway-staging-205869391101.us-central1.run.app/api"
+        } else {
+            "http://localhost:5001/aresfirst-portal/us-central1/api"
+        }
         System.getenv("ARESWEB_API_URL")?.let { areswebServerUrl = it }
     }
 
     @Volatile
     private var executor: ScheduledExecutorService? = null
-
-    val isAndroid: Boolean by lazy {
-        val javaVendor = System.getProperty("java.vendor") ?: ""
-        javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
-    }
 
     private val logDir: File by lazy {
         if (isAndroid) File("/sdcard/FIRST/telemetry_logs/") else File("./logs/")
