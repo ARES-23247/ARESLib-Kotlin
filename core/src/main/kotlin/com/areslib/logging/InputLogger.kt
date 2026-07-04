@@ -22,6 +22,9 @@ class InputLogger(customLogFile: File? = null) {
     private val queue = LinkedBlockingQueue<RobotInputsFrame>(1000)
     private var writer: BufferedWriter? = null
     private var isRunning = false
+    private var currentLogFile: File? = null
+    private var bytesWritten = 0L
+    private val MAX_FILE_SIZE = 25L * 1024 * 1024 // 25 MB
     
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -56,6 +59,7 @@ class InputLogger(customLogFile: File? = null) {
 
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                 val logFile = File(logDir, "input_log_$timestamp.jsonl")
+                currentLogFile = logFile
 
                 writer = BufferedWriter(FileWriter(logFile))
                 isRunning = true
@@ -106,11 +110,31 @@ class InputLogger(customLogFile: File? = null) {
     private fun writeFrame(frame: RobotInputsFrame) {
         val w = writer ?: return
         try {
-            w.write(gson.toJson(frame))
+            val jsonLine = gson.toJson(frame)
+            w.write(jsonLine)
             w.newLine()
             w.flush()
+            
+            bytesWritten += jsonLine.length + 1
+            if (bytesWritten > MAX_FILE_SIZE && currentLogFile != null) {
+                rotateLog()
+            }
         } catch (e: IOException) {
             System.err.println("InputLogger: Failed to write JSONL: ${e.message}")
+        }
+    }
+
+    private fun rotateLog() {
+        try {
+            writer?.close()
+            bytesWritten = 0L
+            val logDir = currentLogFile?.parentFile ?: return
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val newLogFile = File(logDir, "input_log_$timestamp.jsonl")
+            currentLogFile = newLogFile
+            writer = BufferedWriter(FileWriter(newLogFile))
+        } catch (e: IOException) {
+            System.err.println("InputLogger: Failed to rotate log file: ${e.message}")
         }
     }
 
