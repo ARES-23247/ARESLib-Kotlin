@@ -5,11 +5,4 @@ include("ftc-mocks")
 include("ftc-hardware")
 include("simulator")
 
-include("FtcRobotController")
-project(":FtcRobotController").projectDir = file("ftc-app/FtcRobotController")
-
-include("TeamCode")
-project(":TeamCode").projectDir = file("ftc-app/TeamCode")
-
-include("frc-app")
 include("tools:replay-gui")

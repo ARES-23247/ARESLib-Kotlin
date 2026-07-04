@@ -3,6 +3,8 @@ package com.areslib.ftc.hardware
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.areslib.ftc.FtcAresRobot
+import com.areslib.ftc.toState
+import com.areslib.telemetry.AresGamepad
 
 /**
  * Standard TeleOp demonstrating how novice students write code using ARESLib.
@@ -25,6 +27,16 @@ class AresHardwareTestOpMode : LinearOpMode() {
 
         // Centrally initialize the robot container and all subsystem facades
         val robot = FtcAresRobot(hardwareMap)
+        
+        // Define declarative bindings
+        val driver = AresGamepad()
+        driver.leftStick.label("Robot Translation (X/Y)")
+        driver.rightStickX.label("Robot Rotation")
+        
+        driver.a.onPress("Spin up shooter") { robot.shooter.spinUp(3500.0) }
+        driver.b.onPress("Stop shooter") { robot.shooter.stop() }
+        driver.x.onPress("Deploy intake") { robot.intake.deploy() }
+        driver.y.onPress("Retract intake") { robot.intake.retract() }
 
         telemetry.addData("Status", "Initialized. Ready for match!")
         telemetry.update()
@@ -40,26 +52,14 @@ class AresHardwareTestOpMode : LinearOpMode() {
 
                 // 1. Coordinates sensor reading, Redux updates, and motor command execution in the background
                 robot.update()
+                driver.update(gamepad1.toState())
 
-                // 2. Simple student-level drive control
+                // 2. Simple student-level drive control using the mapped stick values
                 robot.drive.joystickDrive(
-                    x = gamepad1.left_stick_x.toDouble(),
-                    y = gamepad1.left_stick_y.toDouble(),
-                    rot = gamepad1.right_stick_x.toDouble()
+                    x = driver.leftStick.x.toDouble(),
+                    y = driver.leftStick.y.toDouble(),
+                    rot = driver.rightStickX.value.toDouble()
                 )
-
-                // 3. High-level subsystem interactions
-                if (gamepad1.a) {
-                    robot.shooter.spinUp(3500.0) // Automatic state and target RPM updates
-                } else if (gamepad1.b) {
-                    robot.shooter.stop()
-                }
-
-                if (gamepad1.x) {
-                    robot.intake.deploy()
-                } else if (gamepad1.y) {
-                    robot.intake.retract()
-                }
 
                 // 4. Loop time watchdog
                 val loopElapsedMs = com.areslib.util.RobotClock.currentTimeMillis() - loopStartMs

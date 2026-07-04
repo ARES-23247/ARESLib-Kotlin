@@ -71,6 +71,12 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             }
             t.addData("Current Draw", currentStr)
         }
+
+        // Detailed hardware analytics logging
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("fl", mecanumIO.flIO)
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("fr", mecanumIO.frIO)
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("bl", mecanumIO.blIO)
+        telemetryManager.dataLoggingTelemetry.logDriveMotor("br", mecanumIO.brIO)
     }
 
     override fun safeHardware() {

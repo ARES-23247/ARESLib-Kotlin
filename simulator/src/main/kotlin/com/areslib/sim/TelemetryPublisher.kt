@@ -153,6 +153,8 @@ object TelemetryPublisher {
             println("[TelemetryPublisher] Heartbeat updated: val=${heartbeatEntry.value}, ts=${heartbeatEntry.timestamp}, lastTs=$lastWebHeartbeatTimestamp")
             lastWebHeartbeatTimestamp = heartbeatEntry.timestamp
             lastWebInputReceiveTime = now
+        } else if (now % 2000 < 50) {
+            println("[TelemetryPublisher] NT4 Server Heartbeat unchanged: val=${heartbeatEntry.value}, ts=${heartbeatEntry.timestamp}, now=$now, lastRecvTime=$lastWebInputReceiveTime")
         }
 
         // Only apply web inputs if we've received an update within the last 1.0 seconds

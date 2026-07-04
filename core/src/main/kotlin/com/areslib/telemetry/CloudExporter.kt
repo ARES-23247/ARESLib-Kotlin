@@ -20,9 +20,12 @@ object CloudExporter {
     @Volatile
     private var executor: ScheduledExecutorService? = null
 
-    private val logDir: File by lazy {
+    val isAndroid: Boolean by lazy {
         val javaVendor = System.getProperty("java.vendor") ?: ""
-        val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
+        javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
+    }
+
+    private val logDir: File by lazy {
         if (isAndroid) File("/sdcard/FIRST/telemetry_logs/") else File("./logs/")
     }
 
@@ -62,7 +65,7 @@ object CloudExporter {
             (name.startsWith("vision_log_") && name.endsWith(".jsonl"))
         } ?: return
 
-        val now = System.currentTimeMillis()
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
         val uploadableFiles = files.filter { file ->
             // Skip files modified in the last 5 seconds to avoid uploading active logs
             now - file.lastModified() > 5000L
@@ -164,7 +167,8 @@ object CloudExporter {
             conn.connectTimeout = 5000
             conn.readTimeout = 15000
             conn.setRequestProperty("Content-Type", contentType)
-            conn.setRequestProperty("X-FileName", file.name)
+            val uploadFileName = if (isAndroid) file.name else "sim_${file.name}"
+            conn.setRequestProperty("X-FileName", uploadFileName)
             
             // Stream in 1MB chunks to avoid loading whole file into memory (OOM safety)
             val chunkSize = 1024 * 1024

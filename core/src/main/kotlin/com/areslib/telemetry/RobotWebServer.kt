@@ -382,11 +382,12 @@ object RobotWebServer {
         }
 
         val limelightUrl = java.net.URL("http://$ip:5800/stream.mjpeg")
+        var headersSent = false
         try {
             val connection = limelightUrl.openConnection() as java.net.HttpURLConnection
             connection.requestMethod = "GET"
             connection.connectTimeout = 1000
-            connection.readTimeout = 5000
+            connection.readTimeout = 15000
 
             val out = client.getOutputStream()
             out.write("HTTP/1.1 ${connection.responseCode} OK\r\n".toByteArray())
@@ -402,6 +403,7 @@ object RobotWebServer {
             }
             out.write("Connection: close\r\n\r\n".toByteArray())
             out.flush()
+            headersSent = true
 
             val input = connection.inputStream
             val buffer = ByteArray(4096)
@@ -413,7 +415,9 @@ object RobotWebServer {
             input.close()
         } catch (e: Exception) {
             RobotStatusTracker.resolvedLimelightIp = null
-            sendErrorResponse(client, 502, "Bad Gateway: Failed to stream from Limelight at $ip:5800. Error: ${e.message}")
+            if (!headersSent) {
+                sendErrorResponse(client, 502, "Bad Gateway: Failed to stream from Limelight at $ip:5800. Error: ${e.message}")
+            }
         }
     }
 

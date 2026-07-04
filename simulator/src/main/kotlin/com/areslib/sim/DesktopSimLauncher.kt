@@ -28,7 +28,7 @@ object DesktopSimLauncher {
     @JvmStatic
     fun main(args: Array<String>) {
         try {
-            realMain(args)
+            launch(args, NoOpInteractionModel())
         } catch (t: Throwable) {
             System.err.println("FATAL CRASH IN SIMULATOR:")
             t.printStackTrace()
@@ -37,7 +37,7 @@ object DesktopSimLauncher {
         }
     }
 
-    private fun realMain(args: Array<String>) {
+    fun launch(args: Array<String>, interactionModel: SimInteractionModel, opModeArg: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode? = null) {
         println("Starting ARESLib Desktop Simulation (HIL-style actual FTC code)...")
 
         var activeConfig: com.areslib.state.RobotFieldConfig? = null
@@ -45,6 +45,7 @@ object DesktopSimLauncher {
         var fieldConfigArg: String? = null
         var replayCloudId: String? = null
         var headless = false
+        var opModeClassName: String? = null
 
         var argIdx = 0
         while (argIdx < args.size) {
@@ -60,6 +61,12 @@ object DesktopSimLauncher {
                 }
                 "--headless" -> {
                     headless = true
+                }
+                "--opmode" -> {
+                    if (argIdx + 1 < args.size) {
+                        opModeClassName = args[argIdx + 1]
+                        argIdx++
+                    }
                 }
                 "--replay-cloud" -> {
                     if (argIdx + 1 < args.size) {
@@ -98,7 +105,7 @@ object DesktopSimLauncher {
         }
 
         if (fieldConfigArg != null) {
-            val content = loadConfigContent(fieldConfigArg)
+            val content = loadConfigContent(fieldConfigArg!!)
             if (content != null) {
                 try {
                     val gson = com.google.gson.Gson()
@@ -160,11 +167,82 @@ object DesktopSimLauncher {
         TelemetryPublisher.javaClass
 
         // 2. Setup Virtual Driver Station
+        val serverMode = opModeArg == null && opModeClassName == null
         val driverStation = VirtualDriverStation()
-        if (headless) {
+        if (headless || serverMode) {
             // Headless defaults to teleop mode — dashboard keyboard widget drives via NT4 input topics
         } else {
             driverStation.isVisible = true
+        }
+
+        var teleOpsJson = "[]"
+        var autosJson = "[]"
+        
+        if (serverMode) {
+            println("[Simulator] Running in Driver Station Server Mode")
+            val ntInst = edu.wpi.first.networktables.NetworkTableInstance.getDefault()
+            val teleOpTopic = ntInst.getStringTopic("ARES/DriverStation/TeleOpList")
+            val teleOpListPub = teleOpTopic.publish()
+            teleOpListPub.set("[]")
+            teleOpTopic.setRetained(true)
+            
+            val autoTopic = ntInst.getStringTopic("ARES/DriverStation/AutonomousList")
+            val autoListPub = autoTopic.publish()
+            autoListPub.set("[]")
+            autoTopic.setRetained(true)
+            
+            try {
+                val urls = mutableListOf<java.net.URL>()
+                urls.addAll(org.reflections.util.ClasspathHelper.forJavaClassPath())
+                urls.addAll(org.reflections.util.ClasspathHelper.forClassLoader(Thread.currentThread().contextClassLoader))
+                
+                val reflections = org.reflections.Reflections(org.reflections.util.ConfigurationBuilder()
+                    .setUrls(urls)
+                    .setScanners(org.reflections.scanners.Scanners.TypesAnnotated)
+                )
+                
+                val disabledClass = try {
+                    @Suppress("UNCHECKED_CAST")
+                    Class.forName("com.qualcomm.robotcore.eventloop.opmode.Disabled") as Class<out Annotation>
+                } catch (e: Exception) {
+                    null
+                }
+                
+                val disabledOpModes = disabledClass?.let { reflections.getTypesAnnotatedWith(it).map { opMode -> opMode.name }.toSet() } ?: emptySet()
+                
+                val teleOpClass = try {
+                    @Suppress("UNCHECKED_CAST")
+                    Class.forName("com.qualcomm.robotcore.eventloop.opmode.TeleOp") as Class<out Annotation>
+                } catch (e: Exception) { null }
+                
+                val autonomousClass = try {
+                    @Suppress("UNCHECKED_CAST")
+                    Class.forName("com.qualcomm.robotcore.eventloop.opmode.Autonomous") as Class<out Annotation>
+                } catch (e: Exception) { null }
+                
+                val teleops = teleOpClass?.let {
+                    reflections.getTypesAnnotatedWith(it)
+                        .filter { opMode -> !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") }
+                        .filter { opMode -> disabledClass == null || (!opMode.isAnnotationPresent(disabledClass) && opMode.name !in disabledOpModes) }
+                        .map { opMode -> opMode.name }
+                } ?: emptyList()
+                
+                val autos = autonomousClass?.let {
+                    reflections.getTypesAnnotatedWith(it)
+                        .filter { opMode -> !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") }
+                        .filter { opMode -> disabledClass == null || (!opMode.isAnnotationPresent(disabledClass) && opMode.name !in disabledOpModes) }
+                        .map { opMode -> opMode.name }
+                } ?: emptyList()
+                
+                val gson = com.google.gson.Gson()
+                teleOpsJson = gson.toJson(teleops)
+                autosJson = gson.toJson(autos)
+                teleOpListPub.set(teleOpsJson)
+                autoListPub.set(autosJson)
+                println("[Simulator] Published ${teleops.size} TeleOps and ${autos.size} Autos to NT4")
+            } catch (e: Exception) {
+                println("[Simulator] Error scanning OpModes: ${e.message}")
+            }
         }
 
         // 3. Setup Controllers & Trajectory
@@ -222,16 +300,17 @@ object DesktopSimLauncher {
 
         createWalls(world)
         val activeObstacles = mutableListOf<Body>()
-        val balls = mutableListOf<Body>()
+        val gamePieces = mutableListOf<Body>()
 
         // Load obstacles and game pieces from field configuration
         if (activeConfig != null) {
             val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)
             activeObstacles.addAll(obstacles)
             val elements = FieldElementLoader.loadElements(world, activeConfig.elementTypes, activeConfig.elements)
-            balls.addAll(elements)
+            gamePieces.addAll(elements)
             NT4FieldPublisher.publishConfigId(activeConfig.id)
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
+            NT4FieldPublisher.publishAprilTags(activeConfig.apriltags)
         } else {
             // Load standard FTC obstacles & game pieces
             var obstaclesFile: java.io.File? = null
@@ -260,38 +339,70 @@ object DesktopSimLauncher {
                 }
             }
         }
+        
+        var loadedAprilTagsJson: String? = null
+        if (activeConfig == null) {
+            var aprilTagsFile: java.io.File? = null
+            val atPaths = listOf(
+                "src/main/assets/paths/apriltags.json",
+                "TeamCode/src/main/assets/paths/apriltags.json",
+                "src/main/deploy/paths/apriltags.json",
+                "frc-app/src/main/deploy/paths/apriltags.json"
+            )
+            for (p in atPaths) {
+                val f = java.io.File(p)
+                if (f.exists()) {
+                    aprilTagsFile = f
+                    break
+                }
+            }
+            if (aprilTagsFile != null) {
+                try {
+                    loadedAprilTagsJson = aprilTagsFile.readText()
+                } catch (e: Exception) {
+                    println("Failed to load apriltags.json: ${e.message}")
+                }
+            }
+        }
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
         // 4. Mecanum Robot Double & OpMode Thread setup
         val robotDouble = MecanumRobotDouble()
-        val opMode = org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp()
-        opMode.hardwareMap = robotDouble.hardwareMap
-
-        // Start student's OpMode in the background
-        val opModeThread = Thread {
-            try {
-                opMode.runOpMode()
-            } catch (e: Exception) {
-                System.err.println("ARESMecanumTeleOp Thread terminated: ${e.message}")
-                e.printStackTrace()
-            }
-        }.apply {
-            isDaemon = true
-            start()
-        }
-
-        // Wait 1.5 seconds for OpMode's pre-match initialization loop to run
-        val initStartTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - initStartTime < 1500) {
-            // Step simulator sensors at origin so EKF aligns
-            robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians)
-            Thread.sleep(20)
-        }
         
-        // Match Start! Exits init loop in LinearOpMode
-        opMode.isStarted = true
-        println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
+        var activeOpMode: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode? = null
+        var activeOpModeThread: Thread? = null
+
+        if (!serverMode) {
+            val opMode = opModeArg ?: Class.forName(opModeClassName).getDeclaredConstructor().newInstance() as com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
+            opMode.hardwareMap = robotDouble.hardwareMap
+            activeOpMode = opMode
+            activeOpModeThread = Thread {
+                try {
+                    opMode.runOpMode()
+                } catch (e: InterruptedException) {
+                    // Normal termination
+                } catch (e: Exception) {
+                    System.err.println("OpMode Thread terminated: ${e.message}")
+                    e.printStackTrace()
+                }
+            }.apply {
+                isDaemon = true
+                start()
+            }
+
+            // Wait 1.5 seconds for OpMode's pre-match initialization loop to run
+            val initStartTime = System.currentTimeMillis()
+            while (System.currentTimeMillis() - initStartTime < 1500) {
+                // Step simulator sensors at origin so EKF aligns
+                robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians)
+                Thread.sleep(20)
+            }
+            
+            // Match Start! Exits init loop in LinearOpMode
+            opMode.isStarted = true
+            println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
+        }
 
         // 5. Simulation Loop
         var state = RobotState()
@@ -313,6 +424,26 @@ object DesktopSimLauncher {
                     com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
                 )
             }
+        } else if (loadedAprilTagsJson != null) {
+            try {
+                val gson = com.google.gson.Gson()
+                val tagsList = gson.fromJson(loadedAprilTagsJson, Array<com.areslib.state.RobotFieldAprilTag>::class.java).toList()
+                NT4FieldPublisher.publishAprilTags(tagsList)
+                tagsList.associate { tag ->
+                    tag.id to com.areslib.math.Pose3d(
+                        com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
+                        com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                    )
+                }
+            } catch (e: Exception) {
+                println("Failed to parse apriltags.json: ${e.message}")
+                mapOf(
+                    1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
+                    2 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
+                    3 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0)),
+                    4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
+                )
+            }
         } else {
             mapOf(
                 1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
@@ -329,12 +460,84 @@ object DesktopSimLauncher {
         var simFlywheelActive = false
         var simTransferActive = false
         var simInventoryCount = 0
+        var gamePieceDataBuffer = DoubleArray(0)
+        var lastBallsHash = 0
+
+        val ntInst = edu.wpi.first.networktables.NetworkTableInstance.getDefault()
+        val dsCommandSub = ntInst.getStringTopic("ARES/DriverStation/Command").subscribe("")
+        val dsSelectedOpModeSub = ntInst.getStringTopic("ARES/DriverStation/SelectedOpMode").subscribe("")
+        val dsTelemetryPub = ntInst.getStringArrayTopic("ARES/DriverStation/Telemetry").publish()
+        var lastCommand = ""
+
+        val loopTeleOpPub = ntInst.getStringTopic("ARES/DriverStation/TeleOpList").publish()
+        val loopAutoPub = ntInst.getStringTopic("ARES/DriverStation/AutonomousList").publish()
 
         while (true) {
-            if (!headless) {
+            if (!headless && !serverMode) {
                 org.lwjgl.glfw.GLFW.glfwPollEvents()
             }
             TelemetryPublisher.pollWebInputs(driverStation)
+
+            if (serverMode) {
+                loopTeleOpPub.set(teleOpsJson)
+                loopAutoPub.set(autosJson)
+                
+                val cmd = dsCommandSub.get()
+                if (cmd != lastCommand && cmd.isNotEmpty()) {
+                    lastCommand = cmd
+                    when (cmd) {
+                        "INIT" -> {
+                            val selected = dsSelectedOpModeSub.get()
+                            if (selected.isNotEmpty()) {
+                                println("[Simulator] Received INIT for $selected")
+                                activeOpModeThread?.interrupt()
+                                activeOpMode?.isStopRequested = true
+                                
+                                edu.wpi.first.wpilibj.DataLogManager.stop()
+                                edu.wpi.first.wpilibj.DataLogManager.start("logs", "sim_", 0.25)
+                                
+                                try {
+                                    val opMode = Class.forName(selected).getDeclaredConstructor().newInstance() as com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
+                                    opMode.hardwareMap = robotDouble.hardwareMap
+                                    activeOpMode = opMode
+                                    
+                                    activeOpModeThread = Thread {
+                                        try {
+                                            opMode.runOpMode()
+                                        } catch (e: InterruptedException) {
+                                            // normal stop
+                                        } catch (e: Exception) {
+                                            System.err.println("OpMode Thread terminated: ${e.message}")
+                                        }
+                                    }.apply {
+                                        isDaemon = true
+                                        start()
+                                    }
+                                } catch (e: Exception) {
+                                    println("[Simulator] Failed to instantiate OpMode $selected: ${e.message}")
+                                }
+                            }
+                        }
+                        "START" -> {
+                            println("[Simulator] Received START")
+                            activeOpMode?.isStarted = true
+                        }
+                        "STOP" -> {
+                            println("[Simulator] Received STOP")
+                            activeOpMode?.isStopRequested = true
+                            activeOpModeThread?.interrupt()
+                        }
+                    }
+                }
+                
+                val mockTelemetry = activeOpMode?.telemetry as? org.firstinspires.ftc.robotcore.external.MockTelemetry
+                if (mockTelemetry != null) {
+                    val lines = mockTelemetry.displayLines.toTypedArray()
+                    if (lines.isNotEmpty()) {
+                        dsTelemetryPub.set(lines)
+                    }
+                }
+            }
 
             val startTime = RobotClock.currentTimeMillis()
 
@@ -352,18 +555,18 @@ object DesktopSimLauncher {
                 val driveSpeeds = driverStation.getChassisSpeeds()
                 
                 // Map stick deflection to scale [-1.0f, 1.0f]
-                opMode.gamepad1.left_stick_y = -(driveSpeeds.vxMetersPerSecond / 4.0).toFloat()
-                opMode.gamepad1.left_stick_x = -(driveSpeeds.vyMetersPerSecond / 4.0).toFloat()
-                opMode.gamepad1.right_stick_x = -(driveSpeeds.omegaRadiansPerSecond / 4.0).toFloat()
+                activeOpMode?.gamepad1?.left_stick_y = -(driveSpeeds.vxMetersPerSecond / 4.0).toFloat()
+                activeOpMode?.gamepad1?.left_stick_x = -(driveSpeeds.vyMetersPerSecond / 4.0).toFloat()
+                activeOpMode?.gamepad1?.right_stick_x = -(driveSpeeds.omegaRadiansPerSecond / 4.0).toFloat()
                 
-                // Map auxiliary toggles to standard gamepad buttons
-                opMode.gamepad1.b = driverStation.isFieldCentric // B triggers AprilTag align or similar
-                opMode.gamepad1.left_bumper = driverStation.isIntaking
-                opMode.gamepad1.right_bumper = driverStation.isFlywheelOn
-                opMode.gamepad1.right_trigger = if (driverStation.isTransferring) 1.0f else 0.0f
-                opMode.gamepad1.y = false // Triangle resets EKF
-
-                // Read motor powers set by the running OpMode
+                // Buttons
+                activeOpMode?.gamepad1?.b = driverStation.isFieldCentric // B triggers AprilTag align or similar
+                activeOpMode?.gamepad1?.left_bumper = driverStation.isIntaking
+                activeOpMode?.gamepad1?.right_bumper = driverStation.isFlywheelOn
+                activeOpMode?.gamepad1?.right_trigger = if (driverStation.isTransferring) 1.0f else 0.0f
+                activeOpMode?.gamepad1?.y = false // Triangle resets EKF
+                
+                // Read motor powers set by the running OpModede
                 val pFL = robotDouble.fl.power
                 val pFR = robotDouble.fr.power
                 val pBL = robotDouble.bl.power
@@ -419,19 +622,28 @@ object DesktopSimLauncher {
                 )
             }
 
-            // Raycast virtual AprilTag 1 relative coordinates if visible
-            val tag1 = visionTags[1]
-            if (tag1 != null) {
-                val dx = tag1.translation.x - currentPose.x
-                val dy = tag1.translation.y - currentPose.y
-                val dist = kotlin.math.hypot(dx, dy)
+            // Raycast all virtual AprilTags
+            val visibleFiducials = mutableListOf<LLResultTypes.FiducialResult>()
+            for ((tagId, tagPose) in visionTags) {
+                val vecX = currentPose.x - tagPose.translation.x
+                val vecY = currentPose.y - tagPose.translation.y
+                val dist = kotlin.math.hypot(vecX, vecY)
                 
-                // Visible if in front of tag (x < 1.8) and within range (3m)
-                if (currentPose.x < 1.8 && dist < 3.0) {
-                    val targetSpaceX = dy // X+ is tag-right
-                    val targetSpaceZ = 1.8 - currentPose.x // Z+ is tag-outward
-                    val targetSpaceYaw = currentPose.heading.radians - Math.PI
-                    
+                // Calculate angle from robot to tag to check FOV
+                val angleToTag = kotlin.math.atan2(tagPose.translation.y - currentPose.y, tagPose.translation.x - currentPose.x)
+                var angleDiff = angleToTag - currentPose.heading.radians
+                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI
+                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI
+                
+                // Calculate Target Space coordinates
+                val tagYaw = tagPose.rotation.z
+                val targetSpaceX = vecX * -kotlin.math.sin(tagYaw) + vecY * kotlin.math.cos(tagYaw)
+                val targetSpaceZ = vecX * kotlin.math.cos(tagYaw) + vecY * kotlin.math.sin(tagYaw)
+                val targetSpaceYaw = currentPose.heading.radians - tagYaw
+
+                // Visible if within range (4m) and within FOV (60 degrees => +/- 30 degrees)
+                // Also require tag to be facing robot (i.e. targetSpaceZ > 0)
+                if (dist < 4.0 && kotlin.math.abs(angleDiff) < Math.toRadians(30.0) && targetSpaceZ > 0.1) {
                     val mockOrientation = org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles(
                         org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS,
                         0.0, targetSpaceYaw, 0.0
@@ -443,12 +655,16 @@ object DesktopSimLauncher {
                     val mockPose = org.firstinspires.ftc.robotcore.external.navigation.Pose3D(mockPosition, mockOrientation)
                     
                     val fiducialResult = LLResultTypes.FiducialResult(
-                        1, 0.0, 0.0, org.firstinspires.ftc.robotcore.external.navigation.Pose3D(), mockPose
+                        tagId, 0.0, 0.0, org.firstinspires.ftc.robotcore.external.navigation.Pose3D(), mockPose
                     )
-                    robotDouble.limelight.setLatestResult(SimLLResult(valid = true, fiducials = listOf(fiducialResult)))
-                } else {
-                    robotDouble.limelight.setLatestResult(null)
+                    visibleFiducials.add(fiducialResult)
                 }
+            }
+
+            if (visibleFiducials.isNotEmpty()) {
+                robotDouble.limelight.setLatestResult(SimLLResult(valid = true, fiducials = visibleFiducials))
+            } else {
+                robotDouble.limelight.setLatestResult(null)
             }
 
             // Step simulated encoder feedback registries
@@ -472,52 +688,17 @@ object DesktopSimLauncher {
             }
             simTransferActive = driverStation.isTransferring && simFlywheelRPM >= 3800.0
 
-            // Intake ball collection logic
-            if (simIntakeActive && simInventoryCount < 3) {
-                val iterator = balls.iterator()
-                while (iterator.hasNext()) {
-                    val ball = iterator.next()
-                    val dist = kotlin.math.hypot(
-                        ball.transform.translationX - robotBody.transform.translationX,
-                        ball.transform.translationY - robotBody.transform.translationY
-                    )
-                    if (dist < 0.3) {
-                        world.removeBody(ball)
-                        iterator.remove()
-                        simInventoryCount++
-                        println("INTAKED BALL! Inventory: $simInventoryCount")
-                    }
-                }
-            }
-
-            // Shooting spawning logic
-            if (simTransferActive && simInventoryCount > 0 && RobotClock.currentTimeMillis() - lastShootTime > 500) {
-                lastShootTime = RobotClock.currentTimeMillis()
-                simInventoryCount--
-                
-                val ball = Body()
-                val fixture = ball.addFixture(Geometry.createCircle(0.0635))
-                fixture.friction = 0.6
-                fixture.restitution = 0.4
-                fixture.density = 5.92
-                ball.setMass(MassType.NORMAL)
-                ball.linearDamping = 2.0
-                ball.angularDamping = 2.0
-                
-                val spawnDist = 0.35
-                val spawnX = currentPose.x + cos(currentPose.heading.radians) * spawnDist
-                val spawnY = currentPose.y + sin(currentPose.heading.radians) * spawnDist
-                ball.translate(spawnX, spawnY)
-                
-                val shootVelocity = (simFlywheelRPM / 4000.0) * 15.0
-                val impulseX = cos(currentPose.heading.radians) * shootVelocity * ball.mass.mass
-                val impulseY = sin(currentPose.heading.radians) * shootVelocity * ball.mass.mass
-                ball.applyImpulse(org.dyn4j.geometry.Vector2(impulseX, impulseY))
-                
-                world.addBody(ball)
-                balls.add(ball)
-                println("SHOT BALL! RPM: %.0f | Inventory: $simInventoryCount".format(simFlywheelRPM))
-            }
+            // Apply modular interaction model
+            simInventoryCount = interactionModel.update(
+                world,
+                robotBody,
+                gamePieces, // (Wait, I need to rename gamePieces to gamePieces across the file first. Let me just use gamePieces here for this chunk and then rename all gamePieces to gamePieces)
+                driverStation,
+                simInventoryCount,
+                currentPose.heading.radians,
+                currentPose.x,
+                currentPose.y
+            )
 
             // --- DRIVE DYN4J BODY FROM CHASSIS SPEEDS ---
             val heading = currentPose.heading.radians
@@ -544,7 +725,7 @@ object DesktopSimLauncher {
             world.step(1, TIMESTEP_SEC)
 
             // Synchronize RobotState telemetry values
-            state = RobotState().copy(
+            state = state.copy(
                 drive = state.drive.copy(
                     poseEstimator = state.drive.poseEstimator.copy(
                         estimatedPose = currentPose
@@ -565,29 +746,43 @@ object DesktopSimLauncher {
             TelemetryPublisher.publishEstimatedPose(currentPose)
             TelemetryPublisher.publish(state)
 
-            val gamePieceData = DoubleArray(balls.size * 7)
-            for (i in balls.indices) {
-                gamePieceData[i * 7] = balls[i].transform.translationX
-                gamePieceData[i * 7 + 1] = balls[i].transform.translationY
-                gamePieceData[i * 7 + 2] = 0.0635
-                val theta = balls[i].transform.rotationAngle
-                gamePieceData[i * 7 + 3] = cos(theta / 2.0)
-                gamePieceData[i * 7 + 4] = 0.0
-                gamePieceData[i * 7 + 5] = 0.0
-                gamePieceData[i * 7 + 6] = sin(theta / 2.0)
+            var currentBallsHash = gamePieces.size.hashCode()
+            for (ball in gamePieces) {
+                currentBallsHash = 31 * currentBallsHash + ball.transform.translationX.hashCode()
+                currentBallsHash = 31 * currentBallsHash + ball.transform.translationY.hashCode()
             }
-            TelemetryPublisher.publishGamePieces(gamePieceData)
 
-            val dynamicElementPoses = balls.mapIndexed { idx, ball ->
-                val id = (ball.userData as? String) ?: "ball_$idx"
-                DynamicElementPose(
-                    id = id,
-                    x = ball.transform.translationX,
-                    y = ball.transform.translationY,
-                    rotation = Math.toDegrees(ball.transform.rotationAngle)
-                )
+            if (currentBallsHash != lastBallsHash) {
+                lastBallsHash = currentBallsHash
+
+                if (gamePieceDataBuffer.size != gamePieces.size * 7) {
+                    gamePieceDataBuffer = DoubleArray(gamePieces.size * 7)
+                }
+                for (i in gamePieces.indices) {
+                    gamePieceDataBuffer[i * 7] = gamePieces[i].transform.translationX
+                    gamePieceDataBuffer[i * 7 + 1] = gamePieces[i].transform.translationY
+                    gamePieceDataBuffer[i * 7 + 2] = 0.0635
+                    val theta = gamePieces[i].transform.rotationAngle
+                    gamePieceDataBuffer[i * 7 + 3] = cos(theta / 2.0)
+                    gamePieceDataBuffer[i * 7 + 4] = 0.0
+                    gamePieceDataBuffer[i * 7 + 5] = 0.0
+                    gamePieceDataBuffer[i * 7 + 6] = sin(theta / 2.0)
+                }
+                TelemetryPublisher.publishGamePieces(gamePieceDataBuffer)
+
+                val dynamicElementPoses = mutableListOf<DynamicElementPose>()
+                for (idx in gamePieces.indices) {
+                    val ball = gamePieces[idx]
+                    val id = (ball.userData as? String) ?: "ball_$idx"
+                    dynamicElementPoses.add(DynamicElementPose(
+                        id = id,
+                        x = ball.transform.translationX,
+                        y = ball.transform.translationY,
+                        rotation = Math.toDegrees(ball.transform.rotationAngle)
+                    ))
+                }
+                NT4FieldPublisher.publishElements(dynamicElementPoses)
             }
-            NT4FieldPublisher.publishElements(dynamicElementPoses)
 
             // Loop timing
             val elapsed = RobotClock.currentTimeMillis() - startTime

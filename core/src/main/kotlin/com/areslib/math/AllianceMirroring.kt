@@ -92,15 +92,20 @@ object AllianceMirroring {
         fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE
     ): Path {
         if (alliance == Alliance.BLUE) return path
-        val mirroredPoints = path.points.map { point ->
+        val numPoints = path.points.size
+        val mirroredPoints = ArrayList<PathPoint>(numPoints)
+        for (i in 0 until numPoints) {
+            val point = path.points[i]
             val mirroredPose = mirror(point.pose, alliance, symmetry, fieldLength, fieldWidth)
             val mirroredCurvature = when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> point.curvature
                 FieldSymmetry.MIRRORED -> -point.curvature
             }
-            point.copy(
-                pose = mirroredPose,
-                curvature = mirroredCurvature
+            mirroredPoints.add(
+                point.copy(
+                    pose = mirroredPose,
+                    curvature = mirroredCurvature
+                )
             )
         }
         return path.copy(points = mirroredPoints)

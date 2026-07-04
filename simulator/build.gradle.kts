@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     application
+    `maven-publish`
 }
 
 repositories {
@@ -66,13 +67,16 @@ dependencies {
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-windows")
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-linux")
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos")
+    
+    // Reflections for finding OpModes
+    implementation("org.reflections:reflections:0.10.2")
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
     sourceSets {
         main {
-            kotlin.srcDirs("src/main/kotlin", "../ftc-app/TeamCode/src/main/java")
+            kotlin.srcDirs("src/main/kotlin")
         }
     }
 }
@@ -81,7 +85,7 @@ val javaToolchains = project.extensions.getByType<JavaToolchainService>()
 
 tasks.named<JavaExec>("run") {
     javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(17))
     })
     if (project.hasProperty("appArgs")) {
         args(project.property("appArgs").toString().split(" "))
@@ -93,6 +97,17 @@ tasks.register<JavaExec>("runFakeController") {
     mainClass.set("com.areslib.sim.FakeControllerClient")
     classpath = sourceSets.main.get().runtimeClasspath
     javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(17))
     })
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            groupId = "com.areslib"
+            artifactId = "simulator"
+            version = "1.0-SNAPSHOT"
+        }
+    }
 }

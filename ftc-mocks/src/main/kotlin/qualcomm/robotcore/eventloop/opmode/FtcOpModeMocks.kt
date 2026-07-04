@@ -9,7 +9,7 @@ annotation class Autonomous(val name: String = "", val group: String = "")
 
 abstract class LinearOpMode {
     abstract fun runOpMode()
-    var hardwareMap: HardwareMap = object : HardwareMap() {
+    @JvmField var hardwareMap: HardwareMap = object : HardwareMap() {
         override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
             throw NotImplementedError()
         }
@@ -17,9 +17,9 @@ abstract class LinearOpMode {
             return emptyList()
         }
     }
-    val gamepad1 = Gamepad()
-    val gamepad2 = Gamepad()
-    val telemetry: Telemetry = org.firstinspires.ftc.robotcore.external.MockTelemetry()
+    @JvmField val gamepad1 = Gamepad()
+    @JvmField val gamepad2 = Gamepad()
+    @JvmField val telemetry: Telemetry = org.firstinspires.ftc.robotcore.external.MockTelemetry()
     
     @Volatile var isStarted = false
     @Volatile var isStopRequested = false

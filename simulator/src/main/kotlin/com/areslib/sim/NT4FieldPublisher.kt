@@ -16,10 +16,16 @@ object NT4FieldPublisher {
     private val elementsPub = ntInst.getStringTopic("ARES/Field/Elements").publish()
     private val scoresPub = ntInst.getStringTopic("ARES/Field/Scores").publish()
     private val configIdPub = ntInst.getStringTopic("ARES/Field/ConfigId").publish()
+    private val apriltagsPub = ntInst.getStringTopic("ARES/Field/AprilTags").publish()
     private val gson = Gson()
 
     fun publishConfigId(configId: String) {
         configIdPub.set(configId)
+    }
+
+    fun publishAprilTags(tags: List<com.areslib.state.RobotFieldAprilTag>) {
+        val json = gson.toJson(tags)
+        apriltagsPub.set(json)
     }
 
     fun publishObstacles(obstacles: List<com.areslib.state.RobotFieldObstacle>) {

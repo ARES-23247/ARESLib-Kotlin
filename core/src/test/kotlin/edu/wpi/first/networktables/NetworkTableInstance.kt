@@ -1,5 +1,7 @@
 package edu.wpi.first.networktables
 
+class PubSubOption
+
 class NetworkTableInstance {
     companion object {
         @JvmStatic
@@ -13,7 +15,7 @@ class NetworkTableInstance {
 }
 
 class DoubleTopic(val name: String) {
-    fun publish(): DoublePublisher = DoublePublisher(name)
+    fun publish(vararg options: PubSubOption): DoublePublisher = DoublePublisher(name)
 }
 class DoublePublisher(val name: String) {
     companion object {
@@ -25,7 +27,7 @@ class DoublePublisher(val name: String) {
 }
 
 class BooleanTopic(val name: String) {
-    fun publish(): BooleanPublisher = BooleanPublisher(name)
+    fun publish(vararg options: PubSubOption): BooleanPublisher = BooleanPublisher(name)
 }
 class BooleanPublisher(val name: String) {
     companion object {
@@ -37,7 +39,7 @@ class BooleanPublisher(val name: String) {
 }
 
 class StringTopic(val name: String) {
-    fun publish(): StringPublisher = StringPublisher(name)
+    fun publish(vararg options: PubSubOption): StringPublisher = StringPublisher(name)
 }
 class StringPublisher(val name: String) {
     companion object {
@@ -49,7 +51,7 @@ class StringPublisher(val name: String) {
 }
 
 class DoubleArrayTopic(val name: String) {
-    fun publish(): DoubleArrayPublisher = DoubleArrayPublisher(name)
+    fun publish(vararg options: PubSubOption): DoubleArrayPublisher = DoubleArrayPublisher(name)
 }
 class DoubleArrayPublisher(val name: String) {
     companion object {

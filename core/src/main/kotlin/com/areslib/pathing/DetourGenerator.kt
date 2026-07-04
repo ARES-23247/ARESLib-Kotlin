@@ -84,28 +84,34 @@ object DetourGenerator {
         val transitionEndDistance = finalStitchedPoints.last().distanceMeters
 
         // Add remaining points of targetPath, shifting their distanceMeters
-        val remainingPathPoints = targetPath.points.filter { it.distanceMeters > interceptDist }
-        for (pt in remainingPathPoints) {
-            val relativeDistance = pt.distanceMeters - interceptDist
-            finalStitchedPoints.add(
-                PathPoint(
-                    pose = pt.pose,
-                    velocityMps = pt.velocityMps,
-                    distanceMeters = transitionEndDistance + relativeDistance,
-                    curvature = pt.curvature
+        for (i in 0 until targetPath.points.size) {
+            val pt = targetPath.points[i]
+            if (pt.distanceMeters > interceptDist) {
+                val relativeDistance = pt.distanceMeters - interceptDist
+                finalStitchedPoints.add(
+                    PathPoint(
+                        pose = pt.pose,
+                        velocityMps = pt.velocityMps,
+                        distanceMeters = transitionEndDistance + relativeDistance,
+                        curvature = pt.curvature
+                    )
                 )
-            )
+            }
         }
 
         // 4. Stitched path events
-        val finalStitchedEvents = targetPath.events
-            .filter { it.triggerDistanceMeters > interceptDist }
-            .map {
-                PathEvent(
-                    it.eventName,
-                    transitionEndDistance + (it.triggerDistanceMeters - interceptDist)
+        val finalStitchedEvents = ArrayList<PathEvent>()
+        for (i in 0 until targetPath.events.size) {
+            val event = targetPath.events[i]
+            if (event.triggerDistanceMeters > interceptDist) {
+                finalStitchedEvents.add(
+                    PathEvent(
+                        event.eventName,
+                        transitionEndDistance + (event.triggerDistanceMeters - interceptDist)
+                    )
                 )
             }
+        }
 
         return Path(finalStitchedPoints, finalStitchedEvents)
     }

@@ -127,6 +127,14 @@ class FtcLimelightIO(
                 System.err.println("FtcLimelightIO: Error reading from Limelight hardware. Error: ${e.message}")
                 e.printStackTrace()
                 lastWarningTime = now
+                
+                // Attempt to restart the Limelight polling thread
+                try {
+                    limelight.start()
+                    System.out.println("FtcLimelightIO: Attempted to restart Limelight driver streaming.")
+                } catch (ex: Throwable) {
+                    System.err.println("FtcLimelightIO: Failed to restart Limelight driver.")
+                }
             }
         }
     }
