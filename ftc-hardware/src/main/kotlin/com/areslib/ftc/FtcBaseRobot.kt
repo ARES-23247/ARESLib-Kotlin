@@ -34,6 +34,13 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
     }
 
+    companion object {
+        val isAndroid: Boolean by lazy {
+            val javaVendor = System.getProperty("java.vendor") ?: ""
+            javaVendor.contains("Android", ignoreCase = true) || java.io.File("/sdcard").exists()
+        }
+    }
+
     // Telemetry & recording pipelines
     val telemetryManager = FtcTelemetryManager(store)
 
@@ -153,6 +160,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 )
             }
             telemetryManager.inputLogger.logFrame(inputsFrame)
+
+            // 7. Throttle the loop to ~50Hz (20ms) when running in desktop simulation
+            if (!isAndroid) {
+                val elapsed = com.areslib.util.RobotClock.currentTimeMillis() - timestamp
+                val sleepTime = 20L - elapsed
+                if (sleepTime > 0) {
+                    Thread.sleep(sleepTime)
+                }
+            }
 
         } catch (e: Throwable) {
             System.err.println("FtcBaseRobot: Exception in update loop: ${e.message}")
