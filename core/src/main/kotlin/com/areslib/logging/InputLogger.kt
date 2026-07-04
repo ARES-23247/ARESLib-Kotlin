@@ -22,6 +22,8 @@ class InputLogger(customLogFile: File? = null) {
     private val queue = LinkedBlockingQueue<RobotInputsFrame>(1000)
     private var writer: BufferedWriter? = null
     private var isRunning = false
+    @Volatile
+    private var rotationRequested = false
     private var currentLogFile: File? = null
     private var bytesWritten = 0L
     private val MAX_FILE_SIZE = 25L * 1024 * 1024 // 25 MB
@@ -92,6 +94,11 @@ class InputLogger(customLogFile: File? = null) {
         executor.submit {
             while (isRunning || queue.isNotEmpty()) {
                 try {
+                    if (rotationRequested && currentLogFile != null) {
+                        rotationRequested = false
+                        rotateLog()
+                    }
+
                     val frame = queue.poll(100, TimeUnit.MILLISECONDS) ?: continue
                     writeFrame(frame)
                     // Automatically recycle the frame to the pool for reuse!
@@ -144,6 +151,14 @@ class InputLogger(customLogFile: File? = null) {
         } catch (e: IOException) {
             System.err.println("InputLogger: Failed to close writer: ${e.message}")
         }
+    }
+
+    /**
+     * Publicly requests the logger to rotate to a new file.
+     * Thread-safe. Actual rotation happens asynchronously on the logger thread.
+     */
+    fun requestRotation() {
+        rotationRequested = true
     }
 
     /**
