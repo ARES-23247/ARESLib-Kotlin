@@ -4,7 +4,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.hypot
 
-data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
+data class Translation2d(var x: Double = 0.0, var y: Double = 0.0) {
     val norm: Double get() = hypot(x, y)
 }
 

@@ -4,7 +4,17 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.action.RobotAction
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
+/**
+ * Interface to the GoBilda Pinpoint Odometry Computer.
+ * 
+ * COORDINATE SYSTEM NOTE:
+ * We explicitly maintain the standard FTC coordinate system (X-forward, Y-left) 
+ * here and pass the raw GoBilda coordinates directly. We will NOT translate this 
+ * to WPILib format, intentionally bypassing the TAG-F04 audit recommendation.
+ */
 class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
     private var offsetX = 0.0
     private var offsetY = 0.0
@@ -85,29 +95,37 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
      */
     @kotlin.jvm.JvmOverloads
     fun initialize(pose: com.areslib.math.Pose2d = com.areslib.math.Pose2d(), resetHardware: Boolean = false) {
-        synchronized(lock) {
+        kotlinx.coroutines.GlobalScope.launch {
             try {
                 if (resetHardware) {
                     driver.resetPosAndIMU()
-                    offsetX = pose.x
-                    offsetY = pose.y
-                    offsetHeading = pose.heading.radians
+                    synchronized(lock) {
+                        offsetX = pose.x
+                        offsetY = pose.y
+                        offsetHeading = pose.heading.radians
+                        lastX = pose.x
+                        lastY = pose.y
+                        lastHeading = pose.heading.radians
+                        lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                    }
                 } else {
                     driver.update()
                     val rawX = driver.getPosX(DistanceUnit.METER)
                     val rawY = driver.getPosY(DistanceUnit.METER)
                     val rawHeading = driver.getHeading(AngleUnit.RADIANS)
 
-                    offsetHeading = com.areslib.math.InputMath.wrapAngle(pose.heading.radians - rawHeading)
-                    val cosH = kotlin.math.cos(offsetHeading)
-                    val sinH = kotlin.math.sin(offsetHeading)
-                    offsetX = pose.x - (rawX * cosH - rawY * sinH)
-                    offsetY = pose.y - (rawX * sinH + rawY * cosH)
+                    synchronized(lock) {
+                        offsetHeading = com.areslib.math.InputMath.wrapAngle(pose.heading.radians - rawHeading)
+                        val cosH = kotlin.math.cos(offsetHeading)
+                        val sinH = kotlin.math.sin(offsetHeading)
+                        offsetX = pose.x - (rawX * cosH - rawY * sinH)
+                        offsetY = pose.y - (rawX * sinH + rawY * cosH)
+                        lastX = pose.x
+                        lastY = pose.y
+                        lastHeading = pose.heading.radians
+                        lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                    }
                 }
-                lastX = pose.x
-                lastY = pose.y
-                lastHeading = pose.heading.radians
-                lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
             } catch (_: Exception) {}
         }
     }

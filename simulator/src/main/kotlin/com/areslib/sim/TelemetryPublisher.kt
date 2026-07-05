@@ -10,26 +10,26 @@ import edu.wpi.first.wpilibj.DataLogManager
 object TelemetryPublisher {
     private val ntInst = NetworkTableInstance.getDefault()
     private val statePublisher: StructPublisher<RobotState>
-    private val targetPosePublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/TargetPose").publish()
-    private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/EstimatedPose").publish()
-    private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/GamePieces").publish()
+    private val targetPosePublisher = ntInst.getDoubleArrayTopic("ARES/TargetPose").publish()
+    private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").publish()
+    private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("ARES/GamePieces").publish()
     private val timestampPub = ntInst.getIntegerTopic("TimestampMs").publish()
 
     // --- AdvantageKit-level Swerve Module Telemetry ---
-    private val moduleSpeedsTargetPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleSpeedsTarget").publish()
-    private val moduleAnglesTargetPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleAnglesTarget").publish()
-    private val moduleSpeedsActualPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleSpeedsActual").publish()
-    private val moduleAnglesActualPub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/Swerve/ModuleAnglesActual").publish()
+    private val moduleSpeedsTargetPub = ntInst.getDoubleArrayTopic("Swerve/ModuleSpeedsTarget").publish()
+    private val moduleAnglesTargetPub = ntInst.getDoubleArrayTopic("Swerve/ModuleAnglesTarget").publish()
+    private val moduleSpeedsActualPub = ntInst.getDoubleArrayTopic("Swerve/ModuleSpeedsActual").publish()
+    private val moduleAnglesActualPub = ntInst.getDoubleArrayTopic("Swerve/ModuleAnglesActual").publish()
     
     // Chassis Speeds
-    private val chassisVxPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Swerve/ChassisSpeeds/vx").publish()
-    private val chassisVyPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Swerve/ChassisSpeeds/vy").publish()
-    private val chassisOmegaPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Swerve/ChassisSpeeds/omega").publish()
+    private val chassisVxPub = ntInst.getDoubleTopic("Swerve/ChassisSpeeds/vx").publish()
+    private val chassisVyPub = ntInst.getDoubleTopic("Swerve/ChassisSpeeds/vy").publish()
+    private val chassisOmegaPub = ntInst.getDoubleTopic("Swerve/ChassisSpeeds/omega").publish()
 
     // Drive mode
-    private val fieldCentricPub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/FieldCentric").publish()
-    private val teleopModePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/TeleopMode").publish()
-    private val redAlliancePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Drive/RedAlliance").publish()
+    private val fieldCentricPub = ntInst.getBooleanTopic("Drive/FieldCentric").publish()
+    private val teleopModePub = ntInst.getBooleanTopic("Drive/TeleopMode").publish()
+    private val redAlliancePub = ntInst.getBooleanTopic("Drive/RedAlliance").publish()
 
     // --- Web Dashboard Inputs Subscribers ---
     private val webVxSub = ntInst.getDoubleTopic("ARES/Input/vx").subscribe(0.0)
@@ -48,34 +48,27 @@ object TelemetryPublisher {
     private var lastWebInputReceiveTime = 0L
 
     // Superstructure telemetry
-    private val flywheelRPMPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Superstructure/FlywheelRPM").publish()
-    private val flywheelTargetRPMPub = ntInst.getDoubleTopic("AdvantageKit/RealOutputs/Superstructure/FlywheelTargetRPM").publish()
-    private val superstructureModePub = ntInst.getStringTopic("AdvantageKit/RealOutputs/Superstructure/Mode").publish()
-    private val intakeActivePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Superstructure/IntakeActive").publish()
-    private val flywheelActivePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Superstructure/FlywheelActive").publish()
-    private val transferActivePub = ntInst.getBooleanTopic("AdvantageKit/RealOutputs/Superstructure/TransferActive").publish()
-    private val inventoryCountPub = ntInst.getIntegerTopic("AdvantageKit/RealOutputs/Superstructure/InventoryCount").publish()
+    private val flywheelRPMPub = ntInst.getDoubleTopic("Superstructure/FlywheelRPM").publish()
+    private val flywheelTargetRPMPub = ntInst.getDoubleTopic("Superstructure/FlywheelTargetRPM").publish()
+    private val superstructureModePub = ntInst.getStringTopic("Superstructure/Mode").publish()
+    private val intakeActivePub = ntInst.getBooleanTopic("Superstructure/IntakeActive").publish()
+    private val flywheelActivePub = ntInst.getBooleanTopic("Superstructure/FlywheelActive").publish()
+    private val transferActivePub = ntInst.getBooleanTopic("Superstructure/TransferActive").publish()
+    private val inventoryCountPub = ntInst.getIntegerTopic("Superstructure/InventoryCount").publish()
 
     // Session log file path publisher
     private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
 
     init {
-        // Start DataLogManager for offline .wpilog generation
-        DataLogManager.start()
+        // DataLogManager.start() removed to maintain log format parity with the physical FTC robot.
 
         // Configure NT4 for live streaming
         ntInst.startServer()
         
         // Register the custom struct so NT4 knows how to serialize it
-        statePublisher = ntInst.getStructTopic("AdvantageKit/RealOutputs/ARES/RobotState", RobotStateStruct()).publish()
+        statePublisher = ntInst.getStructTopic("ARES/RobotState", RobotStateStruct()).publish()
 
-        // Publish the log file path once so dashboard/analytics can locate the .wpilog
-        val logDir = java.io.File(DataLogManager.getLogDir())
-        val logFile = logDir.listFiles { _, name -> name.endsWith(".wpilog") }
-            ?.maxByOrNull { it.lastModified() }
-        val logPath = logFile?.absolutePath ?: logDir.absolutePath
-        logFilePathPub.set(logPath)
-        println("[TelemetryPublisher] Published log file path: $logPath")
+        // Log path publishing removed since we no longer generate .wpilog files in the simulator
     }
 
     /**
@@ -146,7 +139,7 @@ object TelemetryPublisher {
      */
     fun pollWebInputs(driverStation: VirtualDriverStation) {
         val heartbeatEntry = webHeartbeatSub.getAtomic()
-        val now = System.currentTimeMillis()
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
 
         // Check if the NetworkTables heartbeat timestamp has changed since our last poll
         if (heartbeatEntry.timestamp != lastWebHeartbeatTimestamp) {
@@ -205,3 +198,4 @@ object TelemetryPublisher {
         DataLogManager.stop()
     }
 }
+

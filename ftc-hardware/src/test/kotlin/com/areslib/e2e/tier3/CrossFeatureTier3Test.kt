@@ -177,6 +177,7 @@ class CrossFeatureTier3Test {
 
         // 2. Calibrate error: mock motor actually draws MORE current (e.g. 5A more than estimated)
         mockMotor.mockCurrentAmps = initialEstimate + 5.0
+        Thread.sleep(200) // Wait for EstimateMotorIO background coroutine to poll current
         repeat(10) { estimateIO.updateInputs() }
         
         // Update with calibration enabled to learn the offset round-robin style

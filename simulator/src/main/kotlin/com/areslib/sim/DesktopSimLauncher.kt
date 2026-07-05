@@ -165,6 +165,7 @@ object DesktopSimLauncher {
         // 1. Initialize WPILib Telemetry
         println("Initializing Telemetry (NT4 & DataLog)...")
         TelemetryPublisher.javaClass
+        com.areslib.telemetry.LogManagerServer.startServer()
 
         // 2. Setup Virtual Driver Station
         val serverMode = opModeArg == null && opModeClassName == null
@@ -392,8 +393,8 @@ object DesktopSimLauncher {
             }
 
             // Wait 1.5 seconds for OpMode's pre-match initialization loop to run
-            val initStartTime = System.currentTimeMillis()
-            while (System.currentTimeMillis() - initStartTime < 1500) {
+            val initStartTime = com.areslib.util.RobotClock.currentTimeMillis()
+            while (com.areslib.util.RobotClock.currentTimeMillis() - initStartTime < 1500) {
                 // Step simulator sensors at origin so EKF aligns
                 robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians)
                 Thread.sleep(20)
@@ -463,6 +464,11 @@ object DesktopSimLauncher {
         var gamePieceDataBuffer = DoubleArray(0)
         var lastBallsHash = 0
 
+        // Zero-allocation cached lists for loop
+        val visionTagsArray = visionTags.toList().toTypedArray()
+        val visibleFiducials = ArrayList<LLResultTypes.FiducialResult>(16)
+        val dynamicElementPoses = ArrayList<DynamicElementPose>(64)
+
         val ntInst = edu.wpi.first.networktables.NetworkTableInstance.getDefault()
         val dsCommandSub = ntInst.getStringTopic("ARES/DriverStation/Command").subscribe("")
         val dsSelectedOpModeSub = ntInst.getStringTopic("ARES/DriverStation/SelectedOpMode").subscribe("")
@@ -473,6 +479,8 @@ object DesktopSimLauncher {
         val loopAutoPub = ntInst.getStringTopic("ARES/DriverStation/AutonomousList").publish()
 
         while (true) {
+            val startTime = RobotClock.currentTimeMillis()
+            try {
             if (!headless && !serverMode) {
                 org.lwjgl.glfw.GLFW.glfwPollEvents()
             }
@@ -493,14 +501,18 @@ object DesktopSimLauncher {
                                 activeOpModeThread?.interrupt()
                                 activeOpMode?.isStopRequested = true
                                 
-                                edu.wpi.first.wpilibj.DataLogManager.stop()
-                                edu.wpi.first.wpilibj.DataLogManager.start("logs", "sim_", 0.25)
-                                
                                 try {
                                     val opMode = Class.forName(selected).getDeclaredConstructor().newInstance() as com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
                                     opMode.hardwareMap = robotDouble.hardwareMap
                                     activeOpMode = opMode
                                     
+                                    if (selected.contains("ARESMecanumTeleOp")) {
+                                        val initialX = 0.0
+                                        val initialHeading = 0.0
+                                        robotBody.transform.setTranslation(initialX, 0.0)
+                                        robotBody.transform.setRotation(initialHeading)
+                                    }
+
                                     activeOpModeThread = Thread {
                                         try {
                                             opMode.runOpMode()
@@ -539,7 +551,7 @@ object DesktopSimLauncher {
                 }
             }
 
-            val startTime = RobotClock.currentTimeMillis()
+            // startTime moved to top of loop
 
             // Current Simulated Pose
             val simTransform = robotBody.transform
@@ -623,17 +635,17 @@ object DesktopSimLauncher {
             }
 
             // Raycast all virtual AprilTags
-            val visibleFiducials = mutableListOf<LLResultTypes.FiducialResult>()
-            for ((tagId, tagPose) in visionTags) {
+            visibleFiducials.clear()
+            for (i in visionTagsArray.indices) {
+                val tagId = visionTagsArray[i].first
+                val tagPose = visionTagsArray[i].second
                 val vecX = currentPose.x - tagPose.translation.x
                 val vecY = currentPose.y - tagPose.translation.y
                 val dist = kotlin.math.hypot(vecX, vecY)
                 
                 // Calculate angle from robot to tag to check FOV
                 val angleToTag = kotlin.math.atan2(tagPose.translation.y - currentPose.y, tagPose.translation.x - currentPose.x)
-                var angleDiff = angleToTag - currentPose.heading.radians
-                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI
-                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI
+                val angleDiff = com.areslib.math.InputMath.wrapAngle(angleToTag - currentPose.heading.radians)
                 
                 // Calculate Target Space coordinates
                 val tagYaw = tagPose.rotation.z
@@ -706,15 +718,10 @@ object DesktopSimLauncher {
             val worldVy = chassisSpeeds.vxMetersPerSecond * sin(heading) + chassisSpeeds.vyMetersPerSecond * cos(heading)
 
             robotBody.isAtRest = false
-            val velocity = robotBody.linearVelocity
-            velocity.x = velocity.x + (worldVx - velocity.x) * 12.0 * TIMESTEP_SEC
-            velocity.y = velocity.y + (worldVy - velocity.y) * 12.0 * TIMESTEP_SEC
-            robotBody.linearVelocity = velocity
-            robotBody.angularVelocity = chassisSpeeds.omegaRadiansPerSecond
 
-            // Apply forces to body
-            val kpLinear = 150.0
-            val kpAngular = 20.0
+            // Apply critically damped forces to body
+            val kpLinear = robotBody.mass.mass / TIMESTEP_SEC
+            val kpAngular = robotBody.mass.inertia / TIMESTEP_SEC
             val forceX = (worldVx - robotBody.linearVelocity.x) * kpLinear
             val forceY = (worldVy - robotBody.linearVelocity.y) * kpLinear
             val torque = (chassisSpeeds.omegaRadiansPerSecond - robotBody.angularVelocity) * kpAngular
@@ -726,11 +733,6 @@ object DesktopSimLauncher {
 
             // Synchronize RobotState telemetry values
             state = state.copy(
-                drive = state.drive.copy(
-                    poseEstimator = state.drive.poseEstimator.copy(
-                        estimatedPose = currentPose
-                    )
-                ),
                 superstructure = state.superstructure.copy(
                     intakeActive = simIntakeActive,
                     flywheelActive = simFlywheelActive,
@@ -743,13 +745,17 @@ object DesktopSimLauncher {
             // AdvantageScope outputs
             TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
             TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode, driverStation.isRedAlliance)
-            TelemetryPublisher.publishEstimatedPose(currentPose)
+            TelemetryPublisher.publishEstimatedPose(state.drive.poseEstimator.estimatedPose)
+            TelemetryPublisher.publishTargetPose(currentPose)
             TelemetryPublisher.publish(state)
 
-            var currentBallsHash = gamePieces.size.hashCode()
-            for (ball in gamePieces) {
-                currentBallsHash = 31 * currentBallsHash + ball.transform.translationX.hashCode()
-                currentBallsHash = 31 * currentBallsHash + ball.transform.translationY.hashCode()
+            var currentBallsHash = gamePieces.size
+            for (i in gamePieces.indices) {
+                val ball = gamePieces[i]
+                val xBits = ball.transform.translationX.toBits()
+                val yBits = ball.transform.translationY.toBits()
+                currentBallsHash = 31 * currentBallsHash + (xBits xor (xBits ushr 32)).toInt()
+                currentBallsHash = 31 * currentBallsHash + (yBits xor (yBits ushr 32)).toInt()
             }
 
             if (currentBallsHash != lastBallsHash) {
@@ -770,7 +776,7 @@ object DesktopSimLauncher {
                 }
                 TelemetryPublisher.publishGamePieces(gamePieceDataBuffer)
 
-                val dynamicElementPoses = mutableListOf<DynamicElementPose>()
+                dynamicElementPoses.clear()
                 for (idx in gamePieces.indices) {
                     val ball = gamePieces[idx]
                     val id = (ball.userData as? String) ?: "ball_$idx"
@@ -782,6 +788,11 @@ object DesktopSimLauncher {
                     ))
                 }
                 NT4FieldPublisher.publishElements(dynamicElementPoses)
+            }
+
+            } catch (e: Throwable) {
+                System.err.println("Physics watchdog caught exception: ${e.message}")
+                e.printStackTrace()
             }
 
             // Loop timing

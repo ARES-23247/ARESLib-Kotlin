@@ -35,7 +35,7 @@ object FakeControllerClient {
         val omegaPub = ntInst.getDoubleTopic("ARES/Input/omega").publish()
         val teleopPub = ntInst.getBooleanTopic("ARES/Input/isTeleopMode").publish()
         
-        val poseSub = ntInst.getDoubleArrayTopic("AdvantageKit/RealOutputs/ARES/EstimatedPose").subscribe(doubleArrayOf(0.0, 0.0, 0.0))
+        val poseSub = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").subscribe(doubleArrayOf(0.0, 0.0, 0.0))
         
         teleopPub.set(true)
         
@@ -77,3 +77,4 @@ object FakeControllerClient {
         ntInst.stopClient()
     }
 }
+

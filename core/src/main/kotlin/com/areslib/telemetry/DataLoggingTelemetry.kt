@@ -79,8 +79,5 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
      */
     fun close() {
         logger.stop()
-        if (ntTelemetry is NT4Telemetry) {
-            ntTelemetry.close()
-        }
     }
 }

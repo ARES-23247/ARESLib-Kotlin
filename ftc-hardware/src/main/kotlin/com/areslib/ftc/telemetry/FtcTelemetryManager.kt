@@ -4,9 +4,7 @@ import com.areslib.subsystem.Store
 import com.areslib.telemetry.NT4Telemetry
 import com.areslib.telemetry.DataLoggingTelemetry
 import com.areslib.telemetry.ARESNetworkStatePublisher
-import com.areslib.logging.InputLogger
 import com.areslib.action.ActionLogger
-import com.areslib.telemetry.FullStateLogger
 import com.areslib.telemetry.CloudExporter
 import com.areslib.state.RobotState
 import com.areslib.telemetry.GamepadState
@@ -30,15 +28,12 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
     val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
 
-    val inputLogger = InputLogger()
     val actionLogger = ActionLogger(runId, robotId, 0, "BLUE")
-    val fullStateLogger = FullStateLogger(runId, robotId, 0, "BLUE")
 
     init {
         // Intercept and record all dispatched store actions asynchronously
         store.actionListener = { actionLogger.logAction(it) }
         HardwareRegistry.registerCloseable(this)
-        CloudExporter.start()
     }
 
     /**
@@ -72,7 +67,7 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
         publisher.publish(state, gamepad1, gamepad2)
 
         // Log the complete state, motor currents, and EKF vision updates
-        fullStateLogger.logTick(state, batteryVoltage)
+        // Obsolete: Handled by Unified ARESDataLogger
 
         // Vision telemetry
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
@@ -117,7 +112,7 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
      * after all motor powers have been written to the hardware.
      */
     fun publishMotors(batteryVoltage: Double) {
-        fullStateLogger.logMotorsTick(batteryVoltage)
+        // Obsolete: Handled by Unified ARESDataLogger
     }
 
     /**
@@ -125,9 +120,6 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
      */
     override fun close() {
         dataLoggingTelemetry.close()
-        inputLogger.stop()
         actionLogger.stop()
-        fullStateLogger.stop()
-        CloudExporter.stop()
     }
 }

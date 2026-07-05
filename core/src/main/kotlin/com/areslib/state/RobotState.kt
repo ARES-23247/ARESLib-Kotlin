@@ -56,19 +56,19 @@ data class DriveState(
     val isFieldCentric: Boolean = true,
     val alliance: Alliance = Alliance.BLUE,
     // EKF diagnostics:
-    val covarianceMatrix: List<Double> = emptyList(),
+    val covarianceMatrix: DoubleArray = DoubleArray(0),
     val ekfDriftX: Double = 0.0,
     val ekfDriftY: Double = 0.0,
     val lastInnovationX: Double = 0.0,
     val lastInnovationY: Double = 0.0,
     val lastInnovationTheta: Double = 0.0,
-    val lastKalmanGain: List<Double> = emptyList(),
+    val lastKalmanGain: DoubleArray = DoubleArray(0),
     val rawOdometryX: Double = 0.0,
     val rawOdometryY: Double = 0.0,
     val rawOdometryHeading: Double = 0.0
 ) {
     fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
-        val covMatrix = listOf(
+        val covMatrix = doubleArrayOf(
             updatedEstimator.covariance.m00, updatedEstimator.covariance.m01, updatedEstimator.covariance.m02,
             updatedEstimator.covariance.m10, updatedEstimator.covariance.m11, updatedEstimator.covariance.m12,
             updatedEstimator.covariance.m20, updatedEstimator.covariance.m21, updatedEstimator.covariance.m22

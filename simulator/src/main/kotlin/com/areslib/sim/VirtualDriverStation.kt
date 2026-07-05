@@ -176,6 +176,15 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
             override fun windowOpened(e: java.awt.event.WindowEvent?) {
                 requestFocus()
             }
+            override fun windowLostFocus(e: java.awt.event.WindowEvent?) {
+                pressedKeys.clear()
+            }
+        })
+
+        addFocusListener(object : java.awt.event.FocusAdapter() {
+            override fun focusLost(e: java.awt.event.FocusEvent?) {
+                pressedKeys.clear()
+            }
         })
 
         // Initialize GLFW for Gamepad Support
@@ -209,21 +218,35 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                         var rtPressedThisFrame = false
 
                         val isBluetoothXbox = gamepadName.contains("Bluetooth", ignoreCase = true) || 
-                                              gamepadName.contains("Wireless Controller", ignoreCase = true) ||
                                               gamepadName.contains("LE XINPUT", ignoreCase = true)
+                        val isDS4 = gamepadName.contains("Wireless Controller", ignoreCase = true) ||
+                                    gamepadName.contains("DualShock", ignoreCase = true) ||
+                                    gamepadName.contains("PS4", ignoreCase = true)
 
-                        if (isBluetoothXbox) {
-                            // Direct, manual DirectInput mapping for Bluetooth Xbox/Wireless controllers
+                        if (isBluetoothXbox || isDS4) {
+                            // DirectInput mapping
                             val axes = glfwGetJoystickAxes(activeJoy)
                             val buttons = glfwGetJoystickButtons(activeJoy)
                             
-                            if (axes != null && axes.capacity() >= 5) {
-                                gamepadLx = axes[0]
-                                gamepadLy = axes[1]
-                                gamepadRx = axes[3] // Right Stick X is raw axis 3
-                                gamepadRy = axes[4] // Right Stick Y is raw axis 4
+                            if (isBluetoothXbox) {
+                                if (axes != null && axes.capacity() >= 5) {
+                                    gamepadLx = axes[0]
+                                    gamepadLy = axes[1]
+                                    gamepadRx = axes[3] // Right Stick X is raw axis 3
+                                    gamepadRy = axes[4] // Right Stick Y is raw axis 4
+                                } else {
+                                    gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                                }
                             } else {
-                                gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                                // isDS4
+                                if (axes != null && axes.capacity() >= 6) {
+                                    gamepadLx = axes[0]
+                                    gamepadLy = axes[1]
+                                    gamepadRx = axes[2] // Right Stick X is raw axis 2
+                                    gamepadRy = axes[5] // Right Stick Y is raw axis 5
+                                } else {
+                                    gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                                }
                             }
 
                             if (buttons != null) {

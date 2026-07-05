@@ -6,6 +6,9 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
 import com.areslib.hardware.MotorIO
 import com.areslib.math.SlewRateLimiter
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
@@ -236,7 +239,17 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO {
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
     private var cachedAmps = 0.0
-    private var updateCount = 0
+
+    init {
+        kotlinx.coroutines.GlobalScope.launch {
+            while (true) {
+                try {
+                    cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+                } catch (_: Exception) {}
+                kotlinx.coroutines.delay(100)
+            }
+        }
+    }
 
     /** Updates local caches from the bulk-cached register maps */
     fun updateInputs() {
@@ -245,13 +258,6 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO {
         } catch (_: Exception) {}
         try {
             cachedVelocity = motor.velocity
-        } catch (_: Exception) {}
-        try {
-            // Read current draw at 10Hz/100ms rate to further minimize serial packet congestion
-            if (updateCount % 10 == 0) {
-                cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
-            }
-            updateCount++
         } catch (_: Exception) {}
     }
 

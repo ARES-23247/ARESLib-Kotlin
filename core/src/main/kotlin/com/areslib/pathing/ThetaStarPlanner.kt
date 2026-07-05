@@ -64,6 +64,7 @@ object ThetaStarPlanner {
         var parents = IntArray(capacity) { -1 }
         var closedSet = BooleanArray(capacity)
         var openQueue = LongHeap(capacity)
+        var pathPool = Array(capacity) { Translation2d() }
 
         fun ensureCapacity(capacity: Int) {
             if (gCosts.size < capacity) {
@@ -76,6 +77,11 @@ object ThetaStarPlanner {
                 closedSet.fill(false, 0, capacity)
             }
             openQueue.clear()
+            if (pathPool.size < capacity) {
+                val newPool = Array(capacity) { Translation2d() }
+                System.arraycopy(pathPool, 0, newPool, 0, pathPool.size)
+                pathPool = newPool
+            }
         }
     }
 
@@ -275,11 +281,13 @@ object ThetaStarPlanner {
         end: Translation2d,
         parents: IntArray
     ): List<Translation2d> {
-        val path = mutableListOf<Translation2d>()
+        val state = threadLocalState.get()
         var currKey = endKey
 
         var iterations = 0
         val maxIterations = costmap.widthCells * costmap.heightCells
+        var pathSize = 0
+
         while (iterations < maxIterations) {
             iterations++
             val currX = currKey % costmap.widthCells
@@ -287,7 +295,15 @@ object ThetaStarPlanner {
 
             val fx = currX * costmap.resolutionMeters + costmap.origin.x
             val fy = currY * costmap.resolutionMeters + costmap.origin.y
-            path.add(Translation2d(fx, fy))
+            
+            if (pathSize >= state.pathPool.size) {
+                val newPool = Array(state.pathPool.size * 2) { Translation2d() }
+                System.arraycopy(state.pathPool, 0, newPool, 0, state.pathPool.size)
+                state.pathPool = newPool
+            }
+            state.pathPool[pathSize].x = fx
+            state.pathPool[pathSize].y = fy
+            pathSize++
 
             val parentKey = parents[currKey]
             if (parentKey == currKey || parentKey == -1) break
@@ -297,14 +313,25 @@ object ThetaStarPlanner {
             System.err.println("ThetaStarPlanner: Cyclic parents detected during path reconstruction! Breaking loop safely.")
         }
 
-        path.reverse()
-
-        // Snap start and end points perfectly to their true exact physical starting coordinates
-        if (path.isNotEmpty()) {
-            path[0] = start
-            path[path.size - 1] = end
+        // Reverse path in place
+        for (i in 0 until pathSize / 2) {
+            val opp = pathSize - 1 - i
+            val tempX = state.pathPool[i].x
+            val tempY = state.pathPool[i].y
+            state.pathPool[i].x = state.pathPool[opp].x
+            state.pathPool[i].y = state.pathPool[opp].y
+            state.pathPool[opp].x = tempX
+            state.pathPool[opp].y = tempY
         }
 
-        return path
+        // Snap start and end points perfectly to their true exact physical starting coordinates
+        if (pathSize > 0) {
+            state.pathPool[0].x = start.x
+            state.pathPool[0].y = start.y
+            state.pathPool[pathSize - 1].x = end.x
+            state.pathPool[pathSize - 1].y = end.y
+        }
+
+        return state.pathPool.asList().subList(0, pathSize)
     }
 }

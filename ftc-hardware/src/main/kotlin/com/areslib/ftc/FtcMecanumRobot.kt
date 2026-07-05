@@ -11,6 +11,10 @@ import com.areslib.math.ChassisSpeeds
 import com.areslib.telemetry.logDriveMotor
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.MecanumDriveFacade
+import com.areslib.action.RobotAction
+import com.areslib.control.VisionAlignController
+import com.areslib.ftc.telemetry.LimelightProxyAutoStart
+import com.areslib.ftc.telemetry.ZulipLogUploader
 
 /**
  * Concrete Mecanum Drive robot facade.
@@ -35,6 +39,13 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     // Subsystem Facades
     val drive = DriveSubsystem(store)
     val mecanumDrive = MecanumDriveFacade(store)
+
+    private val visionAlignController = VisionAlignController()
+    private val uploader = ZulipLogUploader.createAutoConfigured()
+
+    init {
+        LimelightProxyAutoStart.start()
+    }
 
     // 1. Physical Hardware IO & Kinematics Controllers
     val mecanumIO = MecanumHardwareIO(
@@ -81,5 +92,37 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     override fun safeHardware() {
         com.areslib.hardware.HardwareRegistry.safeAll()
+    }
+
+    /**
+     * Beginner API: Drive the robot field-centric
+     */
+    fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
+        store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = true))
+    }
+
+    /**
+     * Beginner API: Drive the robot from the robot's local frame of reference
+     */
+    fun driveRobotCentric(x: Double, y: Double, rotation: Double) {
+        store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = false))
+    }
+
+    /**
+     * Beginner API: Auto-align the robot to a specific AprilTag ID
+     */
+    fun alignToTag(tagId: Int) {
+        val intent = visionAlignController.calculate(store.state, tagId, true)
+        if (intent != null) {
+            store.dispatch(intent)
+        }
+    }
+
+    override fun close() {
+        super.close()
+        // Ensure proxy restarts for wireless tuning after the OpMode ends
+        LimelightProxyAutoStart.start()
+        // Check and upload logs to Zulip
+        uploader.checkAndUpload()
     }
 }

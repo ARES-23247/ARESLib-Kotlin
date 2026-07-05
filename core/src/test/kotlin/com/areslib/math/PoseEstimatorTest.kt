@@ -135,7 +135,7 @@ class PoseEstimatorTest {
         stateClose = PoseEstimator.addOdometryObservation(
             stateClose,
             100L,
-            Translation2d(1.8, 1.8), // Robot is right on top of Tag 1 (1.8, 1.8)
+            Translation2d(1.8, 1.0), // Robot is right in front of Tag 1
             Rotation2d(0.0)
         )
 

@@ -147,7 +147,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 onSubclassPublish = { publishRobotTelemetry(timestamp) }
             )
 
-            // 6. Record frame inputs for deterministic replay
+            // 6. Record frame inputs for deterministic replay (Disabled: ActionLogger handles Redux replay natively)
+            /*
             val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent().apply {
                 populate(
                     telemetryManager.runId,
@@ -160,6 +161,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 )
             }
             telemetryManager.inputLogger.logFrame(inputsFrame)
+            */
 
             // 7. Throttle the loop to ~50Hz (20ms) when running in desktop simulation
             if (!isAndroid) {

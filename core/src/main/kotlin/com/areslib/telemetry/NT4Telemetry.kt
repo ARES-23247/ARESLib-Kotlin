@@ -107,9 +107,4 @@ class NT4Telemetry : ITelemetry {
     fun putPose2d(key: String, xMeters: Double, yMeters: Double, rotationRadians: Double) {
         putDoubleArray(key, doubleArrayOf(xMeters, yMeters, rotationRadians))
     }
-    
-    fun close() {
-        if (!isInitialized) return
-        try { inst.closeServer() } catch (e: Exception) { /* swallow */ }
-    }
 }

@@ -41,3 +41,7 @@ The Limelight's Y-axis rotation convention is opposite to the controller's CCW-p
 - Always use `.\gradlew.bat :TeamCode:assembleDebug` (Windows) to build
 - Deploy via ADB: `adb connect 192.168.43.1:5555` then `adb install -r ftc-app\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`
 - The `ftc-app` directory is a **git submodule** — commit changes inside it, not from the parent repo
+
+## Local API Requirements (LogManagerServer)
+- Because the robot Control Hub lacks external internet access, do NOT attempt to upload files directly from the robot to the cloud (`aresfirst-portal`).
+- Expose endpoints via `LogManagerServer` (port 5002) such as `/api/download` to allow the Desktop Dashboard to pull `.jsonl` files locally over the robot's local Wi-Fi.

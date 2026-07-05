@@ -121,7 +121,7 @@ data class PoseEstimatorState(
     val lastInnovationX: Double = 0.0,
     val lastInnovationY: Double = 0.0,
     val lastInnovationTheta: Double = 0.0,
-    val lastKalmanGain: List<Double> = emptyList(),
+    val lastKalmanGain: DoubleArray = DoubleArray(0),
     val lastMeasurementAccepted: Boolean = false,
     val lastRejectionReason: String? = null
 )
@@ -540,7 +540,7 @@ object PoseEstimator {
             lastInnovationX = yX,
             lastInnovationY = yY,
             lastInnovationTheta = yZ,
-            lastKalmanGain = listOf(
+            lastKalmanGain = doubleArrayOf(
                 scratchK.m00, scratchK.m01, scratchK.m02,
                 scratchK.m10, scratchK.m11, scratchK.m12,
                 scratchK.m20, scratchK.m21, scratchK.m22

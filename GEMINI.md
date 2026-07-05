@@ -92,3 +92,16 @@ Always default to using the local Gradle wrapper (`gradlew.bat` on Windows, `./g
 3. **Redux Reducer Safety**:
    * Reducer logic must be pure. No side-effects, I/O calls, or clock calls inside reducers.
    * Use `.copy()` on state data classes to transition values.
+
+---
+
+## 5. Cloud Telemetry & Networking Guidelines
+
+1. **ARES-Analytics Gateway Architecture**:
+   * The backend gateway (`aresfirst-portal`) runs on Ktor in Google Cloud Run. It accepts high-throughput payloads (Parquet) via secure GCS Signed URLs.
+   * The gateway **does not** accept raw `.jsonl` files directly from robots.
+2. **Offline-First Robot Operations**:
+   * FTC Control Hubs and FRC RoboRIOs operate without internet access during competition matches.
+   * Log uploading must follow the **Desktop Pull Architecture**:
+     * The `LogManagerServer` (NanoHTTPD) running on port `5002` must expose local endpoints (like `/api/download`) to serve raw log files locally.
+     * The ARES-Analytics desktop application pulls these logs to the driver station laptop, parses them into SQLite, and then the laptop handles the delta-sync and GCS uploads to the cloud.

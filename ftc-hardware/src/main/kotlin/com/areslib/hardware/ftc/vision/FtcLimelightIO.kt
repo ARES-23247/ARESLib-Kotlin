@@ -9,6 +9,8 @@ import com.areslib.math.Rotation3d
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class FtcLimelightIO(
     private val limelight: Limelight3A,
@@ -130,10 +132,16 @@ class FtcLimelightIO(
                 
                 // Attempt to restart the Limelight polling thread
                 try {
-                    limelight.start()
-                    System.out.println("FtcLimelightIO: Attempted to restart Limelight driver streaming.")
+                    kotlinx.coroutines.GlobalScope.launch {
+                        try {
+                            limelight.start()
+                            System.out.println("FtcLimelightIO: Attempted to restart Limelight driver streaming.")
+                        } catch (ex: Throwable) {
+                            System.err.println("FtcLimelightIO: Failed to restart Limelight driver.")
+                        }
+                    }
                 } catch (ex: Throwable) {
-                    System.err.println("FtcLimelightIO: Failed to restart Limelight driver.")
+                    System.err.println("FtcLimelightIO: Failed to launch restart coroutine.")
                 }
             }
         }

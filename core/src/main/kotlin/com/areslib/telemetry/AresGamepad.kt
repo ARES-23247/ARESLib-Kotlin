@@ -99,6 +99,8 @@ class AresGamepad {
     }
 
     class BindableButton(val stateSelector: (GamepadState) -> Boolean) {
+        var isPressed: Boolean = false
+            internal set
         private var onPressAction: (() -> Unit)? = null
         private var onReleaseAction: (() -> Unit)? = null
         private var whilePressedAction: (() -> Unit)? = null

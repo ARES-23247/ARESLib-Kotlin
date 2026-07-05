@@ -5,9 +5,6 @@ import java.io.FileInputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 object CloudExporter {
     val isAndroid: Boolean by lazy {
@@ -19,113 +16,57 @@ object CloudExporter {
     var areswebServerUrl: String = ""
 
     init {
-        areswebServerUrl = if (isAndroid) {
-            "https://ares-analytics-gateway-staging-205869391101.us-central1.run.app/api"
-        } else {
-            "http://localhost:5001/aresfirst-portal/us-central1/api"
-        }
+        areswebServerUrl = "https://ares-analytics-gateway-staging-205869391101.us-central1.run.app/api"
         System.getenv("ARESWEB_API_URL")?.let { areswebServerUrl = it }
     }
 
-    @Volatile
-    private var executor: ScheduledExecutorService? = null
-
-    private val logDir: File by lazy {
+    val logDir: File by lazy {
         if (isAndroid) File("/sdcard/FIRST/telemetry_logs/") else File("./logs/")
     }
 
-    @Volatile
-    private var isUploading = false
-
     /**
-     * Start background log checker and exporter task.
+     * Manually upload a single log file to the cloud.
+     * @return true if successful, false otherwise.
      */
-    @Synchronized
-    fun start() {
-        val current = executor
-        if (current == null || current.isShutdown) {
-            val newExecutor = Executors.newSingleThreadScheduledExecutor { thread ->
-                Thread(thread, "ARES-CloudExporter-Thread").apply { isDaemon = true }
-            }
-            newExecutor.scheduleWithFixedDelay({
-                try {
-                    exportLogs()
-                } catch (e: Exception) {
-                    System.err.println("CloudExporter: Error in background export task: ${e.message}")
-                }
-            }, 5, 10, TimeUnit.SECONDS)
-            executor = newExecutor
+    fun uploadFile(file: File): String? {
+        if (!file.exists()) return "File not found"
+
+        // If file is older than 4 hours, auto-archive instead of uploading to save cloud costs
+        if (System.currentTimeMillis() - file.lastModified() > 4 * 60 * 60 * 1000) {
+            println("CloudExporter: File ${file.name} is too old. Auto-archiving without upload.")
+            archiveFile(file)
+            return null // Considered success
         }
-    }
 
-    private fun exportLogs() {
-        if (isUploading) return
-        if (!logDir.exists()) return
-
-        val files = logDir.listFiles { _, name ->
-            (name.startsWith("state_log_") && name.endsWith(".jsonl")) ||
-            (name.startsWith("action_log_") && name.endsWith(".jsonl")) ||
-            (name.startsWith("input_log_") && name.endsWith(".jsonl")) ||
-            (name.startsWith("motor_log_") && name.endsWith(".csv")) ||
-            (name.startsWith("vision_log_") && name.endsWith(".jsonl"))
-        } ?: return
-
-        val now = com.areslib.util.RobotClock.currentTimeMillis()
-        val uploadableFiles = files.filter { file ->
-            // Skip files modified in the last 5 seconds to avoid uploading active logs
-            now - file.lastModified() > 5000L
-        }.sortedBy { it.lastModified() }
-
-        if (uploadableFiles.isEmpty()) return
-
-        // Check if server is reachable before attempting uploads
-        if (!isServerReachable()) return
-
-        isUploading = true
-        try {
-            for (file in uploadableFiles) {
-                // Reject massive files (e.g., >50MB) to prevent billing/database bloat
-                if (file.length() > 50L * 1024 * 1024) {
-                    System.err.println("CloudExporter: File ${file.name} is too large (${file.length() / (1024*1024)} MB). Max limit is 50MB. Archiving locally without upload.")
-                    archiveFile(file)
-                    continue
-                }
-
-                val route = when {
-                    file.name.startsWith("state_log_") -> "/upload/states"
-                    file.name.startsWith("action_log_") -> "/upload/actions"
-                    file.name.startsWith("input_log_") -> "/upload/inputs"
-                    file.name.startsWith("motor_log_") -> "/upload/motors"
-                    file.name.startsWith("vision_log_") -> "/upload/vision"
-                    else -> continue
-                }
-                
-                val contentType = if (file.name.endsWith(".jsonl")) "application/x-jsonlines" else "text/csv"
-                
-                RobotStatusTracker.activeUploadFile = file.name
-                RobotStatusTracker.uploadProgress = 0.0
-
-                println("CloudExporter: Starting upload of ${file.name} to $route...")
-                val success = uploadFileWithRetry(file, "$areswebServerUrl$route", contentType)
-                
-                if (success) {
-                    println("CloudExporter: Successfully uploaded ${file.name}. Archiving locally...")
-                    archiveFile(file)
-                } else {
-                    System.err.println("CloudExporter: Failed to upload ${file.name}. Will retry later.")
-                    break // Stop uploading further files if one fails
-                }
-            }
-        } finally {
-            RobotStatusTracker.activeUploadFile = null
-            RobotStatusTracker.uploadProgress = 0.0
-            isUploading = false
+        val route = when {
+            file.name.startsWith("ares_log_") -> "/upload/telemetry"
+            file.name.startsWith("action_log_") -> "/upload/actions"
+            else -> "/upload/generic"
         }
+        val targetUrl = "$areswebServerUrl$route"
+        val contentType = if (file.name.endsWith(".jsonl")) "application/x-jsonlines" else "text/csv"
+        
+        RobotStatusTracker.activeUploadFile = file.name
+        RobotStatusTracker.uploadProgress = 0.0
+
+        println("CloudExporter: Starting manual upload of ${file.name} to $targetUrl...")
+        val error = uploadFileWithRetry(file, targetUrl, contentType)
+        
+        if (error == null) {
+            println("CloudExporter: Successfully uploaded ${file.name}. Archiving locally...")
+            archiveFile(file)
+        } else {
+            System.err.println("CloudExporter: Failed to upload ${file.name}: $error")
+        }
+        
+        RobotStatusTracker.activeUploadFile = null
+        RobotStatusTracker.uploadProgress = 0.0
+        return error
     }
 
     private fun isServerReachable(): Boolean {
         return try {
-            val url = URL("$areswebServerUrl/status") // Assuming status or simple endpoint exists
+            val url = URL("/status") // Assuming status or simple endpoint exists
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 1500
             conn.readTimeout = 1500
@@ -134,7 +75,6 @@ object CloudExporter {
             conn.disconnect()
             code in 200..399
         } catch (_: Exception) {
-            // Check fallback base url connectivity
             try {
                 val url = URL(areswebServerUrl.substringBefore("/api"))
                 val conn = url.openConnection() as HttpURLConnection
@@ -149,26 +89,29 @@ object CloudExporter {
         }
     }
 
-    private fun uploadFileWithRetry(file: File, targetUrl: String, contentType: String): Boolean {
+    private fun uploadFileWithRetry(file: File, targetUrl: String, contentType: String): String? {
         var backoffMs = 1000L
+        var lastError: String? = null
         for (attempt in 1..3) {
-            if (performUpload(file, targetUrl, contentType)) {
-                return true
+            val error = performUpload(file, targetUrl, contentType)
+            if (error == null) {
+                return null
             }
+            lastError = error
             if (attempt < 3) {
                 try {
                     Thread.sleep(backoffMs)
                 } catch (_: InterruptedException) {
                     Thread.currentThread().interrupt()
-                    return false
+                    return "Interrupted: $lastError"
                 }
                 backoffMs *= 2 // Exponential backoff (1s -> 2s -> 4s)
             }
         }
-        return false
+        return lastError
     }
 
-    private fun performUpload(file: File, targetUrl: String, contentType: String): Boolean {
+    private fun performUpload(file: File, targetUrl: String, contentType: String): String? {
         var conn: HttpURLConnection? = null
         var fis: FileInputStream? = null
         try {
@@ -204,10 +147,14 @@ object CloudExporter {
             os.close()
 
             val responseCode = conn.responseCode
-            return responseCode in 200..299
+            return if (responseCode in 200..299) {
+                null
+            } else {
+                "HTTP $responseCode from $targetUrl"
+            }
         } catch (e: Exception) {
             System.err.println("CloudExporter: upload error: ${e.message}")
-            return false
+            return "Exception: ${e.message}"
         } finally {
             try { fis?.close() } catch (_: Exception) {}
             conn?.disconnect()
@@ -233,21 +180,5 @@ object CloudExporter {
         } catch (e: Exception) {
             System.err.println("CloudExporter: Failed to archive file ${file.name}: ${e.message}")
         }
-    }
-
-    @Synchronized
-    fun stop() {
-        val current = executor
-        if (current != null && !current.isShutdown) {
-            current.shutdown()
-            try {
-                if (!current.awaitTermination(2, TimeUnit.SECONDS)) {
-                    current.shutdownNow()
-                }
-            } catch (_: InterruptedException) {
-                current.shutdownNow()
-            }
-        }
-        executor = null
     }
 }

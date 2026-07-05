@@ -103,7 +103,7 @@ class AppFailsafeTier1Test {
             }
         }
 
-        val robot = FtcMecanumRobot(hardwareMap)
+        FtcMecanumRobot(hardwareMap)
 
         // Set initial motors power to non-zero
         fl.currentPower = 0.5

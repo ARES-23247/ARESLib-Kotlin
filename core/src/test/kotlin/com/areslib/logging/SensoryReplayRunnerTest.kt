@@ -154,6 +154,5 @@ class SensoryReplayRunnerTest {
         assertDoesNotThrow {
             publisher.publishReplay(summary, speedMultiplier = 100.0)
         }
-        telemetry.close()
     }
 }

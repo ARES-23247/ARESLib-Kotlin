@@ -18,6 +18,7 @@ class PinpointIOTest {
         // 1. Initialize with an offset pose (e.g. Red alliance start: facing PI)
         val initialPose = Pose2d(x = 1.0, y = -1.0, heading = Rotation2d(Math.PI))
         pinpointIO.initialize(initialPose)
+        Thread.sleep(50) // Wait for async initialization
 
         // Immediately after initialize (before raw movement), it should return the offset pose
         val initialUpdate = pinpointIO.getPoseUpdate()
@@ -68,6 +69,7 @@ class PinpointIOTest {
         // Initialize with a snap pose (e.g. at (3.0, 4.0, 1.5)) without resetting hardware
         val snapPose = Pose2d(x = 3.0, y = 4.0, heading = Rotation2d(1.5))
         pinpointIO.initialize(snapPose, resetHardware = false)
+        Thread.sleep(50) // Wait for async initialization
 
         // Immediately after initialize (before raw movement changes), it should return the snapPose
         val snapUpdate = pinpointIO.getPoseUpdate()
