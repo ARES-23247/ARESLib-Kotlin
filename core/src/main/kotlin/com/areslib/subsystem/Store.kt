@@ -8,7 +8,7 @@ class Store(
     initialState: RobotState = RobotState(),
     private val reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) {
-    var state: RobotState = initialState
+    @Volatile var state: RobotState = initialState
         private set
 
     private val listeners = java.util.concurrent.CopyOnWriteArrayList<(RobotState) -> Unit>()

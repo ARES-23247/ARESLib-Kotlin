@@ -35,16 +35,24 @@ class ThreadedMultizoneDistanceSensor(
     }
 
     /**
-     * Instantly returns the latest cached zone readings from memory (0.0 ms execution time).
+     * Instantly returns a defensive copy of the latest cached zone readings from memory (0.0 ms execution time).
      */
     override val distancesMeters: DoubleArray
-        get() = cachedDistances
+        get() = cachedDistances.copyOf()
 
     /**
-     * Safely shuts down the polling background thread.
+     * Safely shuts down the polling background thread and waits for termination.
      */
     fun shutdown() {
-        scheduler.shutdownNow()
+        scheduler.shutdown()
+        try {
+            if (!scheduler.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                scheduler.shutdownNow()
+            }
+        } catch (_: InterruptedException) {
+            scheduler.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     override fun close() {

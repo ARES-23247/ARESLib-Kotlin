@@ -38,10 +38,18 @@ class ThreadedDistanceSensor(
         get() = cachedDistance
 
     /**
-     * Safely shuts down the polling background thread.
+     * Safely shuts down the polling background thread and waits for termination.
      */
     fun shutdown() {
-        scheduler.shutdownNow()
+        scheduler.shutdown()
+        try {
+            if (!scheduler.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                scheduler.shutdownNow()
+            }
+        } catch (_: InterruptedException) {
+            scheduler.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     override fun close() {

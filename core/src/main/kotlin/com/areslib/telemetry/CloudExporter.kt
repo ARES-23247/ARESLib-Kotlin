@@ -66,7 +66,7 @@ object CloudExporter {
 
     private fun isServerReachable(): Boolean {
         return try {
-            val url = URL("/status") // Assuming status or simple endpoint exists
+            val url = URL(areswebServerUrl.substringBefore("/api") + "/status")
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 1500
             conn.readTimeout = 1500

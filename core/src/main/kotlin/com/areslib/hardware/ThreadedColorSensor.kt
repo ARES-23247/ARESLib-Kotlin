@@ -42,13 +42,23 @@ class ThreadedColorSensor(
     override val green: Int get() = cachedGreen
     override val blue: Int get() = cachedBlue
     override val alpha: Int get() = cachedAlpha
-    override val normalizedRgb: DoubleArray get() = cachedNormalized
+
+    /** Returns a defensive copy so consumers cannot mutate the cached array */
+    override val normalizedRgb: DoubleArray get() = cachedNormalized.copyOf()
 
     /**
-     * Safely shuts down the polling background thread.
+     * Safely shuts down the polling background thread and waits for termination.
      */
     fun shutdown() {
         scheduler.shutdown()
+        try {
+            if (!scheduler.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                scheduler.shutdownNow()
+            }
+        } catch (_: InterruptedException) {
+            scheduler.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     override fun close() {
