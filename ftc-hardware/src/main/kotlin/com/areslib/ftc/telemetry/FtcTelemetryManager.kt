@@ -71,9 +71,16 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
 
         // Vision telemetry
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
-        visionTracker.lastLimelightPose?.let { pose ->
+        if (visionTracker.lastLimelightPose != null) {
+            val pose = visionTracker.lastLimelightPose!!
             dataLoggingTelemetry.logPoseArray2d("AdvantageScope/VisionPose", pose)
             dataLoggingTelemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
+        } else {
+            // Log empty arrays/zeros on first frame so CSV headers are correctly generated
+            dataLoggingTelemetry.putDoubleArray("AdvantageScope/VisionPose", doubleArrayOf())
+            dataLoggingTelemetry.putNumber("Vision/Pose_x", 0.0)
+            dataLoggingTelemetry.putNumber("Vision/Pose_y", 0.0)
+            dataLoggingTelemetry.putNumber("Vision/Pose_theta", 0.0)
         }
         if (visionTracker.visionInputs.measurements.isNotEmpty()) {
             val primaryMeasurement = visionTracker.visionInputs.measurements[0]
@@ -105,6 +112,9 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
             t.addData("Vision Status", visionTracker.lastVisionStatus)
             t.update()
         }
+
+        // Finalize frame and flush to loggers/network
+        dataLoggingTelemetry.update()
     }
 
     /**

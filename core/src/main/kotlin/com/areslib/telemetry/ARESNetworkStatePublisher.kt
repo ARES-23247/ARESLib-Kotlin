@@ -69,12 +69,10 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Vision/MeasurementCount", state.vision.measurements.size.toDouble())
 
         // ── Gamepad 1 ──
-        gamepad1?.let { telemetry.logGamepad("Gamepad1", it) }
+        telemetry.logGamepad("Gamepad1", gamepad1 ?: GamepadState())
 
         // ── Gamepad 2 ──
-        gamepad2?.let { telemetry.logGamepad("Gamepad2", it) }
-
-        telemetry.update()
+        telemetry.logGamepad("Gamepad2", gamepad2 ?: GamepadState())
     }
 
     fun publishTopology(topologyJson: String) {

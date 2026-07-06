@@ -294,7 +294,7 @@ object DesktopSimLauncher {
         robotBody.setMass(MassType.NORMAL)
         
         // Spawn configuration (starts at the center of the field: 0.0, 0.0)
-        val startPose = Pose2d(0.0, 0.0, Rotation2d(0.0))
+        var startPose = Pose2d(0.0, 0.0, Rotation2d(0.0))
         robotBody.translate(startPose.x, startPose.y)
         robotBody.rotate(startPose.heading.radians)
         world.addBody(robotBody)
@@ -313,15 +313,16 @@ object DesktopSimLauncher {
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
             NT4FieldPublisher.publishAprilTags(activeConfig.apriltags)
         } else {
-            // Load standard FTC obstacles & game pieces
             var obstaclesFile: java.io.File? = null
-            val paths = listOf(
+            val obsPaths = listOf(
                 "src/main/assets/paths/obstacles.json",
                 "TeamCode/src/main/assets/paths/obstacles.json",
+                "../src/main/assets/paths/obstacles.json",
                 "src/main/deploy/paths/obstacles.json",
-                "frc-app/src/main/deploy/paths/obstacles.json"
+                "frc-app/src/main/deploy/paths/obstacles.json",
+                "../src/main/deploy/paths/obstacles.json"
             )
-            for (p in paths) {
+            for (p in obsPaths) {
                 val f = java.io.File(p)
                 if (f.exists()) {
                     obstaclesFile = f
@@ -330,6 +331,7 @@ object DesktopSimLauncher {
             }
             if (obstaclesFile != null) {
                 try {
+                    println("[Simulator] Loading obstacles from: ${obstaclesFile.absolutePath}")
                     val content = obstaclesFile.readText()
                     val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
                     val loaded = FieldObstacleLoader.loadObstacles(world, obstacles)
@@ -347,8 +349,10 @@ object DesktopSimLauncher {
             val atPaths = listOf(
                 "src/main/assets/paths/apriltags.json",
                 "TeamCode/src/main/assets/paths/apriltags.json",
+                "../src/main/assets/paths/apriltags.json",
                 "src/main/deploy/paths/apriltags.json",
-                "frc-app/src/main/deploy/paths/apriltags.json"
+                "frc-app/src/main/deploy/paths/apriltags.json",
+                "../src/main/deploy/paths/apriltags.json"
             )
             for (p in atPaths) {
                 val f = java.io.File(p)
@@ -359,9 +363,38 @@ object DesktopSimLauncher {
             }
             if (aprilTagsFile != null) {
                 try {
+                    println("[Simulator] Loading apriltags from: ${aprilTagsFile.absolutePath}")
                     loadedAprilTagsJson = aprilTagsFile.readText()
                 } catch (e: Exception) {
                     println("Failed to load apriltags.json: ${e.message}")
+                }
+            }
+            
+            // Load Game Pieces 
+            var gamePiecesFile: java.io.File? = null
+            val gpPaths = listOf(
+                "src/main/assets/paths/game_pieces.json",
+                "TeamCode/src/main/assets/paths/game_pieces.json",
+                "../src/main/assets/paths/game_pieces.json",
+                "src/main/deploy/paths/game_pieces.json",
+                "frc-app/src/main/deploy/paths/game_pieces.json",
+                "../src/main/deploy/paths/game_pieces.json"
+            )
+            for (p in gpPaths) {
+                val f = java.io.File(p)
+                if (f.exists()) {
+                    gamePiecesFile = f
+                    break
+                }
+            }
+            if (gamePiecesFile != null) {
+                try {
+                    println("[Simulator] Loading game_pieces from: ${gamePiecesFile.absolutePath}")
+                    val content = gamePiecesFile.readText()
+                    val loaded = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
+                    gamePieces.addAll(loaded)
+                } catch (e: Exception) {
+                    println("Failed to load game_pieces.json: ${e.message}")
                 }
             }
         }
@@ -371,6 +404,11 @@ object DesktopSimLauncher {
         // 4. Mecanum Robot Double & OpMode Thread setup
         val robotDouble = MecanumRobotDouble()
         
+        var activeInteractionModel = interactionModel
+        if (activeInteractionModel is NoOpInteractionModel) {
+            activeInteractionModel = MecanumInteractionModel(robotDouble)
+        }
+        
         var activeOpMode: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode? = null
         var activeOpModeThread: Thread? = null
 
@@ -378,6 +416,25 @@ object DesktopSimLauncher {
             val opMode = opModeArg ?: Class.forName(opModeClassName).getDeclaredConstructor().newInstance() as com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
             opMode.hardwareMap = robotDouble.hardwareMap
             activeOpMode = opMode
+
+            // Intercept path start pose if it's an ARES auto mode
+            try {
+                val method = opMode.javaClass.getMethod("getPathName")
+                val pName = method.invoke(opMode) as? String
+                if (pName != null) {
+                    val p = com.areslib.pathing.DynamicPathLoader.loadPath(pName)
+                    if (p.points.isNotEmpty()) {
+                        val firstWp = p.points.first().pose
+                        startPose = Pose2d(firstWp.x, firstWp.y, Rotation2d(firstWp.heading.radians))
+                        robotBody.transform.setTranslation(startPose.x, startPose.y)
+                        robotBody.transform.setRotation(startPose.heading.radians)
+                        println("[Simulator] Teleported physics body to auto path start: $startPose")
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore, opmode doesn't expose pathName
+            }
+
             activeOpModeThread = Thread {
                 try {
                     opMode.runOpMode()
@@ -463,6 +520,7 @@ object DesktopSimLauncher {
         var simInventoryCount = 0
         var gamePieceDataBuffer = DoubleArray(0)
         var lastBallsHash = 0
+        var gamePiecePublishCounter = 0
 
         // Zero-allocation cached lists for loop
         val visionTagsArray = visionTags.toList().toTypedArray()
@@ -690,7 +748,8 @@ object DesktopSimLauncher {
                 currentPose.heading.radians
             )
 
-            // Dynamic FSM simulation values
+            // Dynamic FSM simulation values — prefer motor state from OpMode over driver station flags
+            // so the OpMode's toggle logic (via AresGamepad.onPress) is authoritative
             simIntakeActive = driverStation.isIntaking
             simFlywheelActive = driverStation.isFlywheelOn
             if (simFlywheelActive) {
@@ -701,7 +760,7 @@ object DesktopSimLauncher {
             simTransferActive = driverStation.isTransferring && simFlywheelRPM >= 3800.0
 
             // Apply modular interaction model
-            simInventoryCount = interactionModel.update(
+            simInventoryCount = activeInteractionModel.update(
                 world,
                 robotBody,
                 gamePieces, // (Wait, I need to rename gamePieces to gamePieces across the file first. Let me just use gamePieces here for this chunk and then rename all gamePieces to gamePieces)
@@ -758,7 +817,10 @@ object DesktopSimLauncher {
                 currentBallsHash = 31 * currentBallsHash + (yBits xor (yBits ushr 32)).toInt()
             }
 
-            if (currentBallsHash != lastBallsHash) {
+            gamePiecePublishCounter++
+            val forcePublish = gamePiecePublishCounter % 10 == 0
+
+            if (currentBallsHash != lastBallsHash || forcePublish) {
                 lastBallsHash = currentBallsHash
 
                 if (gamePieceDataBuffer.size != gamePieces.size * 7) {
@@ -779,7 +841,14 @@ object DesktopSimLauncher {
                 dynamicElementPoses.clear()
                 for (idx in gamePieces.indices) {
                     val ball = gamePieces[idx]
-                    val id = (ball.userData as? String) ?: "ball_$idx"
+                    
+                    // Assign a stable ID if it lacks one to prevent phantom balls when array shifts
+                    var id = ball.userData as? String
+                    if (id.isNullOrEmpty()) {
+                        id = "ball_${java.util.UUID.randomUUID()}"
+                        ball.userData = id
+                    }
+                    
                     dynamicElementPoses.add(DynamicElementPose(
                         id = id,
                         x = ball.transform.translationX,

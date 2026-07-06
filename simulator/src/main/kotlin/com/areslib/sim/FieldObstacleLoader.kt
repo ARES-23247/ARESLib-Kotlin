@@ -143,24 +143,74 @@ object FieldObstacleLoader {
     private fun createBodyFromObstacle(obs: RobotFieldObstacle): Body {
         val body = Body()
 
-        val shape = if (obs.shape.lowercase() == "polygon" && obs.points.isNotEmpty()) {
-            val vertices = obs.points.map { p ->
+        if (obs.shape.lowercase() == "polygon" && obs.points.isNotEmpty()) {
+            val rawVertices = obs.points.map { p ->
                 Vector2(p.x - obs.x, p.y - obs.y)
             }.toTypedArray()
-            Geometry.createPolygon(*vertices)
-        } else if (obs.shape.lowercase() == "circle") {
-            Geometry.createCircle(obs.width) // width holds the radius
-        } else {
-            Geometry.createRectangle(obs.width, obs.height)
-        }
+            
+            var decomposed = false
+            try {
+                // Remove the last vertex if it's identical or extremely close to the first (ARES-Analytics drawing artifact)
+                var cleanedVertices = if (rawVertices.size > 3 && rawVertices.first().distance(rawVertices.last()) < 0.02) {
+                    rawVertices.dropLast(1).toTypedArray()
+                } else {
+                    rawVertices
+                }
 
-        val fixture = BodyFixture(shape)
-        fixture.friction = obs.friction
-        fixture.restitution = obs.restitution
-        if (!obs.isBlocking) {
-            fixture.isSensor = true
+                // Dyn4j decomposers strictly require CCW winding. Compute signed area to verify/correct winding.
+                var crossArea = 0.0
+                for (i in cleanedVertices.indices) {
+                    val p1 = cleanedVertices[i]
+                    val p2 = cleanedVertices[(i + 1) % cleanedVertices.size]
+                    crossArea += (p1.x * p2.y - p2.x * p1.y)
+                }
+                if (crossArea < 0) { // Clockwise
+                    cleanedVertices = cleanedVertices.reversedArray()
+                }
+
+                val decomposer = org.dyn4j.geometry.decompose.Bayazit()
+                val convexShapes = decomposer.decompose(*cleanedVertices)
+                for (convex in convexShapes) {
+                    val fixture = BodyFixture(convex)
+                    fixture.friction = obs.friction
+                    fixture.restitution = obs.restitution
+                    if (!obs.isBlocking) fixture.isSensor = true
+                    body.addFixture(fixture)
+                }
+                decomposed = true
+            } catch (e: Exception) {
+                System.err.println("Failed to decompose solid polygon ${obs.name}, falling back to edge links: ${e.message}")
+            }
+
+            if (!decomposed) {
+                try {
+                    val links = Geometry.createLinks(rawVertices, true)
+                    for (link in links) {
+                        val fixture = BodyFixture(link)
+                        fixture.friction = obs.friction
+                        fixture.restitution = obs.restitution
+                        if (!obs.isBlocking) fixture.isSensor = true
+                        body.addFixture(fixture)
+                    }
+                } catch (e: Exception) {
+                    System.err.println("Failed to create polygon links for ${obs.name}: ${e.message}")
+                }
+            }
+        } else {
+            val shape = if (obs.shape.lowercase() == "circle") {
+                Geometry.createCircle(obs.width) // width holds the radius
+            } else {
+                Geometry.createRectangle(obs.width, obs.height)
+            }
+
+            val fixture = BodyFixture(shape)
+            fixture.friction = obs.friction
+            fixture.restitution = obs.restitution
+            if (!obs.isBlocking) {
+                fixture.isSensor = true
+            }
+            body.addFixture(fixture)
         }
-        body.addFixture(fixture)
 
         body.translate(obs.x, obs.y)
 

@@ -20,7 +20,11 @@ object DynamicPathLoader {
         "deploy/pathplanner/paths",
         "src/main/resources/deploy/pathplanner/paths",
         "../deploy/pathplanner/paths",
-        "../../deploy/pathplanner/paths"
+        "../../deploy/pathplanner/paths",
+        "src/main/assets/pathplanner/paths",
+        "TeamCode/src/main/assets/pathplanner/paths",
+        "../TeamCode/src/main/assets/pathplanner/paths",
+        "../../TeamCode/src/main/assets/pathplanner/paths"
     )
 
     /**

@@ -345,16 +345,15 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                             }
                         }
 
-                        // Intake Toggle Edge Detection (Left Bumper)
+                        // Edge-detect LB/RB for toggle behavior
                         if (lbPressedThisFrame && !lastGamepadShift) {
                             isIntaking = !isIntaking
                         }
-                        lastGamepadShift = lbPressedThisFrame
-
-                        // Flywheel Toggle Edge Detection (Right Bumper)
                         if (rbPressedThisFrame && !lastGamepadRb) {
                             isFlywheelOn = !isFlywheelOn
                         }
+                        
+                        lastGamepadShift = lbPressedThisFrame
                         lastGamepadRb = rbPressedThisFrame
 
                         // Transfer/Shoot Momentary (Right Trigger)
@@ -459,8 +458,8 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     override fun keyReleased(e: KeyEvent?) {
         e?.let {
             pressedKeys.remove(it.keyCode)
-            if (it.keyCode == KeyEvent.VK_ENTER) {
-                isTransferring = false
+            when (it.keyCode) {
+                KeyEvent.VK_ENTER -> isTransferring = false
             }
             repaint()
         }

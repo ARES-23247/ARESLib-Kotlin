@@ -73,7 +73,10 @@ class MecanumRobotDouble {
                 "rr", "br" -> br as T
                 "pinpoint" -> pinpoint as T
                 "limelight" -> limelight as T
-                else -> throw IllegalArgumentException("Unknown simulated device name: $deviceName")
+                else -> {
+                    println("[SimHardwareMap] Unknown device '$deviceName' requested. Returning default SimDcMotorEx.")
+                    SimDcMotorEx() as T
+                }
             }
         }
 

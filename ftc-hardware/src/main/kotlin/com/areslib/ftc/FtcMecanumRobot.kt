@@ -8,6 +8,8 @@ import com.areslib.kinematics.MecanumWheelSpeeds
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
 import com.areslib.math.ChassisSpeeds
+import com.qualcomm.robotcore.hardware.DcMotor
+import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.areslib.telemetry.logDriveMotor
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.MecanumDriveFacade
@@ -43,6 +45,9 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val visionAlignController = VisionAlignController()
     private val uploader = ZulipLogUploader.createAutoConfigured()
 
+    // 0. Superstructure Hardware (Optional)
+    // Removed intake and shooter as they belong in TeamCode
+
     init {
         LimelightProxyAutoStart.start()
     }
@@ -55,6 +60,10 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         blDirection = blDirection,
         brDirection = brDirection
     )
+
+    init {
+        // Core initializations
+    }
 
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
 
@@ -92,6 +101,14 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     override fun safeHardware() {
         com.areslib.hardware.HardwareRegistry.safeAll()
+        stopAll()
+    }
+
+    /**
+     * Beginner API: Standard drive method (defaults to field-centric)
+     */
+    fun drive(x: Double, y: Double, rotation: Double) {
+        driveFieldCentric(x, y, rotation)
     }
 
     /**
@@ -116,6 +133,13 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         if (intent != null) {
             store.dispatch(intent)
         }
+    }
+
+    /**
+     * Beginner API: Stop all mechanisms
+     */
+    fun stopAll() {
+        com.areslib.hardware.HardwareRegistry.safeAll()
     }
 
     override fun close() {

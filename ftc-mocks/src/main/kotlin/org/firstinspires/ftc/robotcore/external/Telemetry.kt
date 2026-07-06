@@ -11,26 +11,33 @@ class MockTelemetry : Telemetry {
     private val buffer = mutableListOf<String>()
     
     // Exposed so DesktopSimLauncher can read and publish to NT4
-    val displayLines = mutableListOf<String>()
+    @Volatile
+    var displayLines: List<String> = emptyList()
+        private set
 
     override fun addData(caption: String, value: Any?): Telemetry.Item? {
-        buffer.add("$caption: $value")
+        synchronized(buffer) {
+            buffer.add("$caption: $value")
+        }
         return null
     }
     
     override fun addData(caption: String, format: String, vararg args: Any?): Telemetry.Item? {
-        try {
-            buffer.add("$caption: ${String.format(format, *args)}")
-        } catch (e: Exception) {
-            buffer.add("$caption: [Format Error]")
+        synchronized(buffer) {
+            try {
+                buffer.add("$caption: ${String.format(format, *args)}")
+            } catch (e: Exception) {
+                buffer.add("$caption: [Format Error]")
+            }
         }
         return null
     }
     
     override fun update(): Boolean {
-        displayLines.clear()
-        displayLines.addAll(buffer)
-        buffer.clear()
+        synchronized(buffer) {
+            displayLines = buffer.toList()
+            buffer.clear()
+        }
         return true
     }
 }

@@ -85,6 +85,7 @@ class AresGamepad {
             val button = allButtons[i]
             val wasPressed = button.stateSelector(previousState)
             val isPressed = button.stateSelector(currentState)
+            button.isPressed = isPressed
             
             if (isPressed && !wasPressed) {
                 button.firePress()

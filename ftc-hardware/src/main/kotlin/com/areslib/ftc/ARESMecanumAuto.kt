@@ -15,6 +15,8 @@ import com.areslib.util.RobotClock
 @Autonomous(name = "ARES Mecanum Auto", group = "ARES")
 open class ARESMecanumAuto : LinearOpMode() {
 
+    open val pathName: String = "Example Path"
+
     companion object {
         /** Threshold above which we log a loop overrun warning (50 Hz = 20ms) */
         private const val OVERRUN_THRESHOLD_MS = 30L
@@ -46,7 +48,7 @@ open class ARESMecanumAuto : LinearOpMode() {
         var path: Path? = null
         var pathLoadError: String? = null
         try {
-            path = DynamicPathLoader.loadPath("Example Path")
+            path = DynamicPathLoader.loadPath(pathName)
         } catch (e: Exception) {
             pathLoadError = e.message ?: "Unknown error"
         }
@@ -68,6 +70,20 @@ open class ARESMecanumAuto : LinearOpMode() {
                 telemetry.update()
                 sleep(2000L)
                 return
+            }
+
+            // Spawn the robot at the starting waypoint
+            if (path.points.isNotEmpty()) {
+                val startState = path.points.first()
+                robot.store.dispatch(
+                    com.areslib.action.RobotAction.PoseUpdate(
+                        xMeters = startState.pose.x,
+                        yMeters = startState.pose.y,
+                        headingRadians = startState.pose.heading.radians,
+                        timestampMs = RobotClock.currentTimeMillis(),
+                        isReset = true
+                    )
+                )
             }
 
             val startMs = RobotClock.currentTimeMillis()

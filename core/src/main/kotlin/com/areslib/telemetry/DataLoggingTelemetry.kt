@@ -26,7 +26,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     }
 
     override fun putBoolean(key: String, value: Boolean) {
-        currentFrame[key] = value
+        currentFrame[key] = if (value) 1.0 else 0.0
         ntTelemetry?.putBoolean(key, value)
     }
 
