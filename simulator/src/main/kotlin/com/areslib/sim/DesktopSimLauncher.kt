@@ -668,27 +668,13 @@ object DesktopSimLauncher {
 
                 TelemetryPublisher.publishTargetPose(targetState.pose)
 
-                val totalDistance = path.points.lastOrNull()?.distanceMeters ?: 0.0
-                val nextSampleDistance = kotlin.math.min(currentDistance + 0.05, totalDistance)
-                val nextState = path.sampleAtDistance(nextSampleDistance)
-                val tangentHeading = if (nextSampleDistance - currentDistance > 1e-4) {
-                    val dx = nextState.pose.x - targetState.pose.x
-                    val dy = nextState.pose.y - targetState.pose.y
-                    if (kotlin.math.hypot(dx, dy) > 1e-4) {
-                        Rotation2d(kotlin.math.atan2(dy, dx))
-                    } else {
-                        targetState.pose.heading
-                    }
-                } else {
-                    targetState.pose.heading
-                }
-
                 driveController.calculate(
                     currentPose,
-                    Pose2d(targetState.pose.x, targetState.pose.y, tangentHeading),
+                    targetState.pose,
                     targetState.velocityMps,
                     targetState.pose.heading,
-                    TIMESTEP_SEC
+                    TIMESTEP_SEC,
+                    pathTangentRadians = targetState.tangentRadians
                 )
             }
 

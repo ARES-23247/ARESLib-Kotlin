@@ -91,6 +91,7 @@ open class ARESMecanumAuto : LinearOpMode() {
             val totalLength = if (path.points.isNotEmpty()) path.points.last().distanceMeters else 0.0
             var loopCount = 0L
             var overrunCount = 0L
+            var currentDistance = 0.0
 
             // --- 2. Autonomous Loop ---
             while (opModeIsActive()) {
@@ -104,7 +105,26 @@ open class ARESMecanumAuto : LinearOpMode() {
                     // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
                     robot.update()
 
-                    val currentDistance = currentTime * 0.5 // Progress at 0.5 m/s
+                    // Find closest point on path to robot's actual position
+                    val robotPose = robot.drive.odometryPose
+                    var bestDist = Double.MAX_VALUE
+                    var bestIdx = 0
+                    for (i in path.points.indices) {
+                        val pp = path.points[i]
+                        val dx = pp.pose.x - robotPose.x
+                        val dy = pp.pose.y - robotPose.y
+                        val d = dx * dx + dy * dy
+                        // Only search forward from our current progress to avoid going backwards
+                        if (d < bestDist && pp.distanceMeters >= currentDistance - 0.3) {
+                            bestDist = d
+                            bestIdx = i
+                        }
+                    }
+
+                    // Advance currentDistance to the closest point, plus a small lookahead
+                    val closestDist = path.points[bestIdx].distanceMeters
+                    val lookahead = path.points[bestIdx].velocityMps * dt * 2.0 + 0.05
+                    currentDistance = kotlin.math.min(closestDist + lookahead, totalLength)
 
                     if (currentDistance >= totalLength) {
                         break
@@ -134,6 +154,7 @@ open class ARESMecanumAuto : LinearOpMode() {
                 telemetry.addData("EKF Pose Y", robot.drive.odometryPose.y)
                 telemetry.addData("Pinpoint X", robot.drive.odometryX)
                 telemetry.addData("Pinpoint Y", robot.drive.odometryY)
+                telemetry.addData("Path Distance", "%.2f / %.2f".format(currentDistance, totalLength))
                 telemetry.addData("Loop ms", loopElapsedMs)
                 telemetry.addData("Overruns", "$overrunCount / $loopCount")
                 telemetry.update()
