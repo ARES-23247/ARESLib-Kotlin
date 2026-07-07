@@ -12,12 +12,17 @@ import kotlin.math.sin
  * A purely mathematical implementation of a holonomic drive controller.
  * Given a target pose (e.g. from a PathPlanner point) and current pose,
  * outputs ChassisSpeeds that can be fed into mecanum kinematics.
+ *
+ * @param maxOutputMps Maximum translational output velocity magnitude (m/s).
+ *        The combined feedforward + feedback output is clamped to this value
+ *        to prevent commanding speeds beyond the robot's physical capabilities.
  */
 class HolonomicDriveController(
     private val xController: PIDController,
     private val yController: PIDController,
     private val thetaController: PIDController,
-    private val telemetry: com.areslib.telemetry.ITelemetry? = null
+    private val telemetry: com.areslib.telemetry.ITelemetry? = null,
+    private val maxOutputMps: Double = 4.0
 ) {
     private val vfh = VFHPlanner()
 
@@ -119,6 +124,14 @@ class HolonomicDriveController(
             val speedMagnitude = kotlin.math.hypot(fieldRelativeX, fieldRelativeY)
             fieldRelativeX = speedMagnitude * cos(detourHeading)
             fieldRelativeY = speedMagnitude * sin(detourHeading)
+        }
+
+        // Clamp total velocity to physical limits
+        val outputMagnitude = kotlin.math.hypot(fieldRelativeX, fieldRelativeY)
+        if (outputMagnitude > maxOutputMps && outputMagnitude > 1e-4) {
+            val scale = maxOutputMps / outputMagnitude
+            fieldRelativeX *= scale
+            fieldRelativeY *= scale
         }
 
         // Convert field-relative speeds to robot-relative speeds

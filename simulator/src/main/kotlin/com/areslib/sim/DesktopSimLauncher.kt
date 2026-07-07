@@ -1,8 +1,7 @@
 package com.areslib.sim
 
-import com.areslib.control.HolonomicDriveController
-import com.areslib.control.PIDController
-import com.areslib.pathing.PathPlannerParser
+
+
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
 import com.areslib.math.ChassisSpeeds
@@ -246,41 +245,8 @@ object DesktopSimLauncher {
             }
         }
 
-        // 3. Setup Controllers & Trajectory
-        val mockJson = """
-            {
-              "waypoints": [
-                {
-                  "anchor": {"x": -1.5, "y": -1.0},
-                  "nextControl": {"x": -0.5, "y": -1.0}
-                },
-                {
-                  "anchor": {"x": 0.0, "y": 0.0},
-                  "prevControl": {"x": -0.5, "y": 0.0},
-                  "nextControl": {"x": 0.5, "y": 0.0}
-                },
-                {
-                  "anchor": {"x": 1.5, "y": 1.0},
-                  "prevControl": {"x": 0.5, "y": 1.0}
-                }
-              ],
-              "eventMarkers": [
-                {
-                  "name": "IntakeOn",
-                  "waypointRelativePos": 1.5,
-                  "command": {
-                    "type": "named",
-                    "name": "IntakeOn"
-                  }
-                }
-              ]
-            }
-        """.trimIndent()
-        val path = PathPlannerParser.parsePath(mockJson)
-        val xController = PIDController(p = 10.0, i = 0.0, d = 0.4)
-        val yController = PIDController(p = 10.0, i = 0.0, d = 0.4)
-        val thetaController = PIDController(p = 3.0, i = 0.0, d = 0.2)
-        val driveController = HolonomicDriveController(xController, yController, thetaController)
+
+
 
         // 3. Setup Dyn4j World
         val world = World<Body>()
@@ -428,11 +394,13 @@ object DesktopSimLauncher {
                         startPose = Pose2d(firstWp.x, firstWp.y, Rotation2d(firstWp.heading.radians))
                         robotBody.transform.setTranslation(startPose.x, startPose.y)
                         robotBody.transform.setRotation(startPose.heading.radians)
+                        robotBody.setLinearVelocity(0.0, 0.0)
+                        robotBody.angularVelocity = 0.0
                         println("[Simulator] Teleported physics body to auto path start: $startPose")
                     }
                 }
             } catch (e: Exception) {
-                // Ignore, opmode doesn't expose pathName
+                println("[Simulator] OpMode does not expose pathName (teleop mode): ${e.javaClass.simpleName}")
             }
 
             activeOpModeThread = Thread {
@@ -464,8 +432,7 @@ object DesktopSimLauncher {
 
         // 5. Simulation Loop
         var state = RobotState()
-        var currentDistance = 0.0
-        var lastDistance = 0.0
+
         var lastShootTime = 0L
         val headlessRecords = mutableListOf<HeadlessRecord>()
         var settlingTicks = 0
@@ -564,11 +531,33 @@ object DesktopSimLauncher {
                                     opMode.hardwareMap = robotDouble.hardwareMap
                                     activeOpMode = opMode
                                     
-                                    if (selected.contains("ARESMecanumTeleOp")) {
-                                        val initialX = 0.0
-                                        val initialHeading = 0.0
-                                        robotBody.transform.setTranslation(initialX, 0.0)
-                                        robotBody.transform.setRotation(initialHeading)
+                                    // Detect auto path start and teleport physics body
+                                    var teleported = false
+                                    try {
+                                        val method = opMode.javaClass.getMethod("getPathName")
+                                        val pName = method.invoke(opMode) as? String
+                                        if (pName != null) {
+                                            val p = com.areslib.pathing.DynamicPathLoader.loadPath(pName)
+                                            if (p.points.isNotEmpty()) {
+                                                val firstWp = p.points.first().pose
+                                                startPose = Pose2d(firstWp.x, firstWp.y, Rotation2d(firstWp.heading.radians))
+                                                robotBody.transform.setTranslation(startPose.x, startPose.y)
+                                                robotBody.transform.setRotation(startPose.heading.radians)
+                                                robotBody.setLinearVelocity(0.0, 0.0)
+                                                robotBody.angularVelocity = 0.0
+                                                teleported = true
+                                                println("[Simulator] Teleported physics body to auto path start: $startPose")
+                                            }
+                                        }
+                                    } catch (_: Exception) {
+                                        // Not an auto OpMode with pathName, or path failed to load
+                                    }
+                                    if (!teleported) {
+                                        // Teleop or unknown mode: reset to origin
+                                        robotBody.transform.setTranslation(0.0, 0.0)
+                                        robotBody.transform.setRotation(0.0)
+                                        robotBody.setLinearVelocity(0.0, 0.0)
+                                        robotBody.angularVelocity = 0.0
                                     }
 
                                     activeOpModeThread = Thread {
@@ -619,9 +608,8 @@ object DesktopSimLauncher {
                 heading = Rotation2d(simTransform.rotationAngle)
             )
 
-            // Determine ChassisSpeeds based on mode
-            val chassisSpeeds = if (driverStation.isTeleopMode) {
-                // Map keyboard/dashboard inputs to gamepad1 fields
+            // Map dashboard inputs to gamepad fields (only for teleop)
+            if (driverStation.isTeleopMode) {
                 val driveSpeeds = driverStation.getChassisSpeeds()
                 
                 // Map stick deflection to scale [-1.0f, 1.0f]
@@ -635,48 +623,31 @@ object DesktopSimLauncher {
                 activeOpMode?.gamepad1?.right_bumper = driverStation.isFlywheelOn
                 activeOpMode?.gamepad1?.right_trigger = if (driverStation.isTransferring) 1.0f else 0.0f
                 activeOpMode?.gamepad1?.y = false // Triangle resets EKF
-                
-                // Read motor powers set by the running OpModede
-                val pFL = robotDouble.fl.power
-                val pFR = robotDouble.fr.power
-                val pBL = robotDouble.bl.power
-                val pBR = robotDouble.br.power
-
-                // Translate wheel powers to chassis-space velocities
-                val maxWheelSpeed = 3.5
-                val wFL = pFL * maxWheelSpeed
-                val wFR = pFR * maxWheelSpeed
-                val wBL = pBL * maxWheelSpeed
-                val wBR = pBR * maxWheelSpeed
-
-                val L = 0.45
-                val vx = (wFL + wFR + wBL + wBR) / 4.0
-                val vy = (-wFL + wFR + wBL - wBR) / 4.0
-                val omega = (-wFL + wFR - wBL + wBR) / (4.0 * L)
-
-                TelemetryPublisher.publishTargetPose(currentPose)
-
-                ChassisSpeeds(vx, vy, omega)
-            } else {
-                // Auto Path Follower calculations
-                val tempState = path.sampleAtDistance(currentDistance)
-                val simStepVelocity = if (currentDistance < 0.01 && tempState.velocityMps < 0.1) 0.1 else tempState.velocityMps
-                
-                lastDistance = currentDistance
-                currentDistance += simStepVelocity * TIMESTEP_SEC
-                val targetState = path.sampleAtDistance(currentDistance)
-
-                TelemetryPublisher.publishTargetPose(targetState.pose)
-
-                driveController.calculate(
-                    currentPose,
-                    targetState.pose,
-                    targetState.velocityMps,
-                    targetState.pose.heading,
-                    TIMESTEP_SEC,
-                    pathTangentRadians = targetState.tangentRadians
-                )
             }
+
+            // Unified motor power readout — always read from OpMode (teleop and auto alike)
+            // The OpMode thread sets motor powers through the real robot stack:
+            //   FtcMecanumPathFollower → joystickDrive → DriveReducer → MecanumHardwareIO → SimMotor.power
+            val pFL = robotDouble.fl.power
+            val pFR = robotDouble.fr.power
+            val pBL = robotDouble.bl.power
+            val pBR = robotDouble.br.power
+
+            // Forward kinematics: wheel powers → chassis-space velocities
+            val maxWheelSpeed = 3.5
+            val wFL = pFL * maxWheelSpeed
+            val wFR = pFR * maxWheelSpeed
+            val wBL = pBL * maxWheelSpeed
+            val wBR = pBR * maxWheelSpeed
+
+            val L = 0.45
+            val chassisSpeeds = ChassisSpeeds(
+                vxMetersPerSecond = (wFL + wFR + wBL + wBR) / 4.0,
+                vyMetersPerSecond = (-wFL + wFR + wBL - wBR) / 4.0,
+                omegaRadiansPerSecond = (-wFL + wFR - wBL + wBR) / (4.0 * L)
+            )
+
+            TelemetryPublisher.publishTargetPose(currentPose)
 
             // Raycast all virtual AprilTags
             visibleFiducials.clear()
