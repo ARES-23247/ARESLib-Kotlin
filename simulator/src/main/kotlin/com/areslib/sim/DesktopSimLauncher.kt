@@ -622,7 +622,7 @@ object DesktopSimLauncher {
                 activeOpMode?.gamepad1?.left_bumper = driverStation.isIntaking
                 activeOpMode?.gamepad1?.right_bumper = driverStation.isFlywheelOn
                 activeOpMode?.gamepad1?.right_trigger = if (driverStation.isTransferring) 1.0f else 0.0f
-                activeOpMode?.gamepad1?.y = false // Triangle resets EKF
+                activeOpMode?.gamepad1?.y = driverStation.isPoseReset
             }
 
             // Unified motor power readout — always read from OpMode (teleop and auto alike)

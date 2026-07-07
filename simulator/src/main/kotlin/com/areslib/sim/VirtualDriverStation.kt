@@ -39,6 +39,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     @Volatile var isIntaking = false
     @Volatile var isFlywheelOn = false
     @Volatile var isTransferring = false
+    @Volatile var isPoseReset = false
 
     // Web inputs
     @Volatile var webVx = 0.0
@@ -295,6 +296,9 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                             
                             lbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER) == GLFW_PRESS.toByte()
                             rbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) == GLFW_PRESS.toByte()
+                            
+                            // Y / Triangle button for pose reset (momentary)
+                            isPoseReset = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_Y) == GLFW_PRESS.toByte()
                         } else {
                             // Fallback to raw joystick inputs
                             val axes = glfwGetJoystickAxes(activeJoy)
@@ -450,6 +454,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 KeyEvent.VK_SHIFT -> isIntaking = !isIntaking
                 KeyEvent.VK_F -> isFlywheelOn = !isFlywheelOn
                 KeyEvent.VK_ENTER -> isTransferring = true
+                KeyEvent.VK_Y -> isPoseReset = true
             }
             repaint()
         }
@@ -460,6 +465,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
             pressedKeys.remove(it.keyCode)
             when (it.keyCode) {
                 KeyEvent.VK_ENTER -> isTransferring = false
+                KeyEvent.VK_Y -> isPoseReset = false
             }
             repaint()
         }
