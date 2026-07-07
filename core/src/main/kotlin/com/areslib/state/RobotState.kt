@@ -68,14 +68,23 @@ data class DriveState(
     val rawOdometryHeading: Double = 0.0
 ) {
     fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
-        val covMatrix = doubleArrayOf(
-            updatedEstimator.covariance.m00, updatedEstimator.covariance.m01, updatedEstimator.covariance.m02,
-            updatedEstimator.covariance.m10, updatedEstimator.covariance.m11, updatedEstimator.covariance.m12,
-            updatedEstimator.covariance.m20, updatedEstimator.covariance.m21, updatedEstimator.covariance.m22
-        )
+        var cov = this.covarianceMatrix
+        if (cov.size != 9) {
+            cov = DoubleArray(9)
+        }
+        cov[0] = updatedEstimator.covariance.m00
+        cov[1] = updatedEstimator.covariance.m01
+        cov[2] = updatedEstimator.covariance.m02
+        cov[3] = updatedEstimator.covariance.m10
+        cov[4] = updatedEstimator.covariance.m11
+        cov[5] = updatedEstimator.covariance.m12
+        cov[6] = updatedEstimator.covariance.m20
+        cov[7] = updatedEstimator.covariance.m21
+        cov[8] = updatedEstimator.covariance.m22
+
         return this.copy(
             poseEstimator = updatedEstimator,
-            covarianceMatrix = covMatrix,
+            covarianceMatrix = cov,
             ekfDriftX = odomX - updatedEstimator.estimatedPose.x,
             ekfDriftY = odomY - updatedEstimator.estimatedPose.y,
             rawOdometryX = odomX,
@@ -196,8 +205,8 @@ data class VisionState(
     // EKF diagnostics:
     val lastMeasurementAccepted: Boolean = false,
     val lastRejectionReason: String? = null,
-    val covarianceBeforeUpdate: List<Double>? = null,
-    val covarianceAfterUpdate: List<Double>? = null,
+    val covarianceBeforeUpdate: DoubleArray? = null,
+    val covarianceAfterUpdate: DoubleArray? = null,
     val measurementCount: Int = 0,
     val rejectionCount: Int = 0
 )

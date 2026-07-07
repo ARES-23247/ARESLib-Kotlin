@@ -27,8 +27,9 @@ class MockFtcMotorEx : DcMotorEx {
             currentPower = value
         }
 
-    override val velocity: Double
+    override var velocity: Double
         get() = mockVelocity
+        set(value) { mockVelocity = value }
 
     override fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double {
         return mockCurrentAmps

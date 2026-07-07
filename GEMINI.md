@@ -105,3 +105,12 @@ Always default to using the local Gradle wrapper (`gradlew.bat` on Windows, `./g
    * Log uploading must follow the **Desktop Pull Architecture**:
      * The `LogManagerServer` (NanoHTTPD) running on port `5002` must expose local endpoints (like `/api/download`) to serve raw log files locally.
      * The ARES-Analytics desktop application pulls these logs to the driver station laptop, parses them into SQLite, and then the laptop handles the delta-sync and GCS uploads to the cloud.
+
+
+## 6. Audit-Enforced Invariants
+
+Following the multi-agent swarm audit, the following invariants MUST be strictly observed by AI agents:
+1. **Zero-GC Hot Paths:** Absolutely NO reflection (getMethod) or dynamic heap allocations (DoubleArray, Rotation2d instantiations) inside 50Hz update() loops across FTC or FRC targets.
+2. **Offline-First Networking:** Never write code that attempts to push data directly to Google Cloud or Zulip from the robot. All log uploading MUST go through local subnet fetches.
+3. **Thread Purity:** Never launch un-cancellable GlobalScope.launch jobs for background hardware tasks.
+

@@ -17,8 +17,11 @@ class VisionMeasurementBuffer(val maxHistoryMs: Long = 1500L) {
      */
     fun addMeasurement(measurement: VisionMeasurement) {
         synchronized(buffer) {
-            buffer.add(measurement)
-            buffer.sortBy { it.timestampMs }
+            var insertIndex = buffer.size
+            while (insertIndex > 0 && buffer[insertIndex - 1].timestampMs > measurement.timestampMs) {
+                insertIndex--
+            }
+            buffer.add(insertIndex, measurement)
             evictOldEntries()
         }
     }
@@ -28,9 +31,23 @@ class VisionMeasurementBuffer(val maxHistoryMs: Long = 1500L) {
      */
     private fun evictOldEntries() {
         synchronized(buffer) {
-            val latest = buffer.lastOrNull() ?: return
+            if (buffer.isEmpty()) return
+            val latest = buffer[buffer.size - 1]
             val cutoff = latest.timestampMs - maxHistoryMs
-            buffer.removeIf { it.timestampMs < cutoff }
+            
+            var removeCount = 0
+            while (removeCount < buffer.size && buffer[removeCount].timestampMs < cutoff) {
+                removeCount++
+            }
+            
+            if (removeCount > 0) {
+                for (i in 0 until buffer.size - removeCount) {
+                    buffer[i] = buffer[i + removeCount]
+                }
+                for (i in 0 until removeCount) {
+                    buffer.removeAt(buffer.size - 1)
+                }
+            }
         }
     }
 
@@ -39,7 +56,14 @@ class VisionMeasurementBuffer(val maxHistoryMs: Long = 1500L) {
      */
     fun getMeasurementsBetween(startMs: Long, endMs: Long): List<VisionMeasurement> {
         return synchronized(buffer) {
-            buffer.filter { it.timestampMs in startMs..endMs }
+            val result = ArrayList<VisionMeasurement>()
+            for (i in 0 until buffer.size) {
+                val item = buffer[i]
+                if (item.timestampMs in startMs..endMs) {
+                    result.add(item)
+                }
+            }
+            result
         }
     }
 
@@ -48,7 +72,19 @@ class VisionMeasurementBuffer(val maxHistoryMs: Long = 1500L) {
      */
     fun clearBefore(timestampMs: Long) {
         synchronized(buffer) {
-            buffer.removeIf { it.timestampMs < timestampMs }
+            var removeCount = 0
+            while (removeCount < buffer.size && buffer[removeCount].timestampMs < timestampMs) {
+                removeCount++
+            }
+            
+            if (removeCount > 0) {
+                for (i in 0 until buffer.size - removeCount) {
+                    buffer[i] = buffer[i + removeCount]
+                }
+                for (i in 0 until removeCount) {
+                    buffer.removeAt(buffer.size - 1)
+                }
+            }
         }
     }
 

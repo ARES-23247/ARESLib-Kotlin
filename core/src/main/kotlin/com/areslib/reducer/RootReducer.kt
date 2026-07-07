@@ -50,19 +50,28 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
 
             var acceptedCountDelta = 0
             var rejectedCountDelta = 0
-            var lastCovBefore: List<Double>? = null
-            var lastCovAfter: List<Double>? = null
+            var lastCovBefore: DoubleArray? = null
+            var lastCovAfter: DoubleArray? = null
             var lastAccepted = false
             var lastReason: String? = null
+            
+            // Scratchpad arrays for avoiding allocations
+            val scratchBefore = DoubleArray(9)
+            val scratchAfter = DoubleArray(9)
 
             if (!hasTag1) {
                 for (i in 0 until validMeasurements.size) {
                     val measurement = validMeasurements[i]
-                    val covBefore = listOf(
-                        currentEstimator.covariance.m00, currentEstimator.covariance.m01, currentEstimator.covariance.m02,
-                        currentEstimator.covariance.m10, currentEstimator.covariance.m11, currentEstimator.covariance.m12,
-                        currentEstimator.covariance.m20, currentEstimator.covariance.m21, currentEstimator.covariance.m22
-                    )
+                    scratchBefore[0] = currentEstimator.covariance.m00
+                    scratchBefore[1] = currentEstimator.covariance.m01
+                    scratchBefore[2] = currentEstimator.covariance.m02
+                    scratchBefore[3] = currentEstimator.covariance.m10
+                    scratchBefore[4] = currentEstimator.covariance.m11
+                    scratchBefore[5] = currentEstimator.covariance.m12
+                    scratchBefore[6] = currentEstimator.covariance.m20
+                    scratchBefore[7] = currentEstimator.covariance.m21
+                    scratchBefore[8] = currentEstimator.covariance.m22
+
                     currentEstimator = PoseEstimator.addVisionMeasurement(
                         state = currentEstimator,
                         measurement = measurement,
@@ -73,12 +82,18 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                     lastReason = currentEstimator.lastRejectionReason
                     if (lastAccepted) {
                         acceptedCountDelta++
-                        lastCovBefore = covBefore
-                        lastCovAfter = listOf(
-                            currentEstimator.covariance.m00, currentEstimator.covariance.m01, currentEstimator.covariance.m02,
-                            currentEstimator.covariance.m10, currentEstimator.covariance.m11, currentEstimator.covariance.m12,
-                            currentEstimator.covariance.m20, currentEstimator.covariance.m21, currentEstimator.covariance.m22
-                        )
+                        lastCovBefore = scratchBefore
+                        
+                        scratchAfter[0] = currentEstimator.covariance.m00
+                        scratchAfter[1] = currentEstimator.covariance.m01
+                        scratchAfter[2] = currentEstimator.covariance.m02
+                        scratchAfter[3] = currentEstimator.covariance.m10
+                        scratchAfter[4] = currentEstimator.covariance.m11
+                        scratchAfter[5] = currentEstimator.covariance.m12
+                        scratchAfter[6] = currentEstimator.covariance.m20
+                        scratchAfter[7] = currentEstimator.covariance.m21
+                        scratchAfter[8] = currentEstimator.covariance.m22
+                        lastCovAfter = scratchAfter
                     } else {
                         rejectedCountDelta++
                     }

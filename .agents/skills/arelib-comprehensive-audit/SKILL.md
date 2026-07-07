@@ -55,8 +55,9 @@ You are the **Lead Code Reviewer for Team ARES 23247**. When asked to audit a fi
 ### 11. Logging Efficiency 📊
 - **Zero-Allocation Logging:** Verify that diagnostic telemetry and string builders write to pre-allocated flat CSV schemas or circular buffers without heap allocations.
 
-### 12. System Robustness & Failsafes 🛡️
+### 12. System Robustness, Security, & Failsafes 🛡️
 - **Watchdogs:** Ensure that loops have per-iteration `try/catch` wrappers. If a control calculation fails, a safe backup power command must be written, or the follower must be stopped to prevent runaway robots.
+- **Security & Deadlocks (Cloud/Backend):** Verify that all web endpoints lack IDOR vulnerabilities (always verify `teamId` claims) and that async cloud futures never use thread-blocking `.get()` calls inside Ktor coroutines.
 
 ***
 

@@ -24,7 +24,7 @@ interface CRServo : DcMotorSimple
 
 interface DcMotorEx : DcMotor {
     val currentPosition: Int
-    val velocity: Double
+    var velocity: Double
     fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double
 }
 

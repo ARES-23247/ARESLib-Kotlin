@@ -33,8 +33,9 @@ class MockFtcMotorEx : DcMotorEx {
             currentPower = value
         }
 
-    override val velocity: Double
+    override var velocity: Double
         get() = mockVelocity
+        set(value) { mockVelocity = value }
 
     override fun getCurrent(unit: CurrentUnit): Double {
         return mockCurrentAmps

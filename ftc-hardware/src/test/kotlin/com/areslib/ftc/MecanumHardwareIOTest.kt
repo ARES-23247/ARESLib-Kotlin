@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 
 class MockDcMotorEx : DcMotorEx {
     override val currentPosition: Int = 0
-    override val velocity: Double = 0.0
+    override var velocity: Double = 0.0
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
     override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
     var currentPower: Double = 0.0

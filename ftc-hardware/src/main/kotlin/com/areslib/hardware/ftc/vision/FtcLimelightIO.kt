@@ -9,8 +9,10 @@ import com.areslib.math.Rotation3d
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 
 class FtcLimelightIO(
     private val limelight: Limelight3A,
@@ -18,6 +20,9 @@ class FtcLimelightIO(
 ) : VisionIO {
     
     private var lastWarningTime = 0L
+    private val ioScope = CoroutineScope(Dispatchers.IO)
+    private val frameRotation = com.areslib.math.Rotation3d(0.0, 0.0, -Math.PI / 2.0)
+    private val scratchMeasurements = ArrayList<VisionMeasurement>(10)
 
     init {
         try {
@@ -56,7 +61,6 @@ class FtcLimelightIO(
                         pitch = orient.getPitch(AngleUnit.RADIANS),
                         yaw = orient.getYaw(AngleUnit.RADIANS)
                     )
-                    val frameRotation = com.areslib.math.Rotation3d(0.0, 0.0, -Math.PI / 2.0)
                     val wpiRotation = frameRotation * ftcRotation
                     
                     val pose = Pose3d(
@@ -66,7 +70,7 @@ class FtcLimelightIO(
                     
                     val fiducials = result.getFiducialResults()
                     if (fiducials?.isNotEmpty() == true) {
-                        val measurements = ArrayList<VisionMeasurement>(fiducials.size)
+                        scratchMeasurements.clear()
                         for (i in 0 until fiducials.size) {
                             val f = fiducials[i]
                             val robotPoseTargetSpaceFTC = f.getRobotPoseTargetSpace()
@@ -103,9 +107,10 @@ class FtcLimelightIO(
                                 ambiguity = 0.0,
                                 robotPoseTargetSpace = robotPoseTargetSpaceWpi
                             )
-                            measurements.add(measurement)
+                            scratchMeasurements.add(measurement)
                         }
-                        inputs.measurements = measurements
+                        // Copy to avoid mutating the list in the Redux state
+                        inputs.measurements = scratchMeasurements.toList()
                     } else {
                         val measurement = VisionMeasurement(
                             timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
@@ -132,7 +137,7 @@ class FtcLimelightIO(
                 
                 // Attempt to restart the Limelight polling thread
                 try {
-                    kotlinx.coroutines.GlobalScope.launch {
+                    ioScope.launch {
                         try {
                             limelight.start()
                             System.out.println("FtcLimelightIO: Attempted to restart Limelight driver streaming.")
@@ -145,6 +150,10 @@ class FtcLimelightIO(
                 }
             }
         }
+    }
+
+    fun close() {
+        ioScope.cancel()
     }
 }
 

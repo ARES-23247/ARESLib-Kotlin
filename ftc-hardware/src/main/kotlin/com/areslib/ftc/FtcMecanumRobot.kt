@@ -16,7 +16,6 @@ import com.areslib.subsystem.MecanumDriveFacade
 import com.areslib.action.RobotAction
 import com.areslib.control.VisionAlignController
 import com.areslib.ftc.telemetry.LimelightProxyAutoStart
-import com.areslib.ftc.telemetry.ZulipLogUploader
 
 /**
  * Concrete Mecanum Drive robot facade.
@@ -43,7 +42,6 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val mecanumDrive = MecanumDriveFacade(store)
 
     private val visionAlignController = VisionAlignController()
-    private val uploader = ZulipLogUploader.createAutoConfigured()
 
     // 0. Superstructure Hardware (Optional)
     // Removed intake and shooter as they belong in TeamCode
@@ -146,7 +144,5 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         super.close()
         // Ensure proxy restarts for wireless tuning after the OpMode ends
         LimelightProxyAutoStart.start()
-        // Check and upload logs to Zulip
-        uploader.checkAndUpload()
     }
 }

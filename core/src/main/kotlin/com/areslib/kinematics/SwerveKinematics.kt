@@ -15,33 +15,33 @@ class SwerveKinematics(
     private val numModules = moduleTranslations.size
     private val previousSteerVels = DoubleArray(numModules) { 0.0 }
     private var previousStates: Array<SwerveModuleState>? = null
+    private val stoppedStates = Array(numModules) { SwerveModuleState() }
+    private val targetStatesBuffer = Array(numModules) { SwerveModuleState() }
+    private val limitedStatesBuffer = Array(numModules) { SwerveModuleState() }
 
     constructor(vararg moduleTranslations: Translation2d) : this(moduleTranslations.toList())
 
     fun toSwerveModuleStates(chassisSpeeds: ChassisSpeeds, dtSeconds: Double = 0.02): Array<SwerveModuleState> {
         if (!dtSeconds.isFinite() || dtSeconds <= 0.0) {
-            val stopped = Array(numModules) { SwerveModuleState() }
-            previousStates = stopped
-            return stopped
+            previousStates = stoppedStates
+            return stoppedStates
         }
 
         if (!chassisSpeeds.vxMetersPerSecond.isFinite() ||
             !chassisSpeeds.vyMetersPerSecond.isFinite() ||
             !chassisSpeeds.omegaRadiansPerSecond.isFinite()) {
-            val stopped = Array(numModules) { SwerveModuleState() }
-            previousStates = stopped
-            return stopped
+            previousStates = stoppedStates
+            return stoppedStates
         }
 
         if (chassisSpeeds.vxMetersPerSecond == 0.0 && 
             chassisSpeeds.vyMetersPerSecond == 0.0 && 
             chassisSpeeds.omegaRadiansPerSecond == 0.0) {
-            val stopped = Array(numModules) { SwerveModuleState() }
-            previousStates = stopped
-            return stopped
+            previousStates = stoppedStates
+            return stoppedStates
         }
 
-        val targetStates = Array(numModules) { i ->
+        for (i in 0 until numModules) {
             val module = moduleTranslations[i]
             val vx = chassisSpeeds.vxMetersPerSecond - chassisSpeeds.omegaRadiansPerSecond * module.y
             val vy = chassisSpeeds.vyMetersPerSecond + chassisSpeeds.omegaRadiansPerSecond * module.x
@@ -49,14 +49,14 @@ class SwerveKinematics(
             val speed = hypot(vx, vy)
             val angle = atan2(vy, vx)
             
-            SwerveModuleState(speed, Rotation2d(angle))
+            targetStatesBuffer[i] = SwerveModuleState(speed, Rotation2d(angle))
         }
 
         val prev = previousStates
         val limitedStates = if (prev != null && dtSeconds > 1e-6) {
-            Array(numModules) { i ->
+            for (i in 0 until numModules) {
                 val pState = prev[i]
-                val tState = targetStates[i]
+                val tState = targetStatesBuffer[i]
 
                 // Limit drive wheel acceleration
                 val rawMaxSpeedChange = maxDriveAccelMps2 * dtSeconds
@@ -93,10 +93,11 @@ class SwerveKinematics(
                 previousSteerVels[i] = finalSteerVel
 
                 val finalAngle = prevAngleRad + finalSteerVel * dtSeconds
-                SwerveModuleState(limitedSpeed, Rotation2d(finalAngle))
+                limitedStatesBuffer[i] = SwerveModuleState(limitedSpeed, Rotation2d(finalAngle))
             }
+            limitedStatesBuffer
         } else {
-            targetStates
+            targetStatesBuffer
         }
 
         previousStates = limitedStates
