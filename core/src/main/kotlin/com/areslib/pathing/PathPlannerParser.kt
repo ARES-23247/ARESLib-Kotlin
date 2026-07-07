@@ -46,17 +46,35 @@ object PathPlannerParser {
         val defaultMaxVel = globalConstraints?.get("maxVelocity")?.asDouble ?: maxVelocityMps
         val defaultMaxAccel = globalConstraints?.get("maxAcceleration")?.asDouble ?: maxAccelerationMps2
 
-        val idealStartingState = if (root.has("idealStartingState") && !root.get("idealStartingState").isJsonNull) {
+        // Initial heading (tangent) for fallback
+        var initialTangent = Rotation2d(0.0)
+        if (parsedWaypoints.size > 1) {
+            val wp1 = parsedWaypoints[0]
+            val wp2 = parsedWaypoints[1]
+            initialTangent = com.areslib.math.BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 0.0)
+        }
+
+        var finalTangent = Rotation2d(0.0)
+        if (parsedWaypoints.size > 1) {
+            val wp1 = parsedWaypoints[parsedWaypoints.size - 2]
+            val wp2 = parsedWaypoints[parsedWaypoints.size - 1]
+            finalTangent = com.areslib.math.BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 1.0)
+        }
+
+        // Parse starting state (2025 uses idealStartingState, 2024 uses previewStartingState)
+        val startState = if (root.has("idealStartingState") && !root.get("idealStartingState").isJsonNull) {
             root.getAsJsonObject("idealStartingState")
+        } else if (root.has("previewStartingState") && !root.get("previewStartingState").isJsonNull) {
+            root.getAsJsonObject("previewStartingState")
         } else null
-        val startVel = idealStartingState?.get("velocity")?.asDouble ?: 0.0
-        val startRotDeg = idealStartingState?.get("rotation")?.asDouble ?: 0.0
+        val startVel = startState?.get("velocity")?.asDouble ?: 0.0
+        val startRotDeg = startState?.get("rotation")?.asDouble ?: Math.toDegrees(initialTangent.radians)
 
         val goalEndState = if (root.has("goalEndState") && !root.get("goalEndState").isJsonNull) {
             root.getAsJsonObject("goalEndState")
         } else null
         val endVel = goalEndState?.get("velocity")?.asDouble ?: 0.0
-        val endRotDeg = goalEndState?.get("rotation")?.asDouble ?: 0.0
+        val endRotDeg = goalEndState?.get("rotation")?.asDouble ?: Math.toDegrees(finalTangent.radians)
 
         val parsedRotationTargets = mutableListOf<ParsedRotationTarget>()
         if (root.has("rotationTargets") && !root.get("rotationTargets").isJsonNull) {
@@ -101,24 +119,16 @@ object PathPlannerParser {
             }
         }
         
-        // Initial heading check
-        var initialHeading = Rotation2d(0.0)
-        if (parsedWaypoints.size > 1) {
-            val wp1 = parsedWaypoints[0]
-            val wp2 = parsedWaypoints[1]
-            initialHeading = com.areslib.math.BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 0.0)
-        }
-
         val relativePositions = mutableListOf<Double>()
         relativePositions.add(0.0)
-
+        
         // Add the very first point
         pathPoints.add(
             PathPoint(
-                pose = Pose2d(parsedWaypoints[0].anchor.x, parsedWaypoints[0].anchor.y, initialHeading),
+                pose = Pose2d(parsedWaypoints[0].anchor.x, parsedWaypoints[0].anchor.y, initialTangent),
                 velocityMps = defaultMaxVel,
                 distanceMeters = 0.0,
-                tangentRadians = initialHeading.radians
+                tangentRadians = initialTangent.radians
             )
         )
 
