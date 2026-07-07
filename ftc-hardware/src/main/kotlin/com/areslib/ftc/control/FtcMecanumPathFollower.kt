@@ -39,7 +39,8 @@ class FtcMecanumPathFollower @kotlin.jvm.JvmOverloads constructor(
             targetPose = targetState.pose,
             targetVelocityMps = targetState.velocityMps,
             targetHeading = targetState.pose.heading,
-            dtSeconds = dtSeconds
+            dtSeconds = dtSeconds,
+            pathTangentRadians = targetState.tangentRadians
         )
 
         // Normalize velocities against the robot's physical maximum speed capability

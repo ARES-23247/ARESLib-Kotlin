@@ -6,12 +6,21 @@ import kotlin.math.hypot
 
 /**
  * Represents a single point along a trajectory path.
+ *
+ * @param pose The desired robot pose (position + robot orientation heading).
+ * @param velocityMps The target linear velocity at this point in meters per second.
+ * @param distanceMeters Accumulated arc-length distance from the path start.
+ * @param curvature Signed curvature of the path at this point (1/radius, radians/meter).
+ * @param tangentRadians The direction the path is traveling at this point (spline tangent angle).
+ *        This is distinct from [pose.heading], which represents the robot's desired orientation
+ *        (which can differ for holonomic drivetrains that strafe while facing a different direction).
  */
 data class PathPoint(
     var pose: Pose2d,
     var velocityMps: Double,
     var distanceMeters: Double = 0.0,
-    var curvature: Double = 0.0
+    var curvature: Double = 0.0,
+    var tangentRadians: Double = 0.0
 )
 
 class MutablePathPoint {
@@ -21,12 +30,14 @@ class MutablePathPoint {
     var velocityMps: Double = 0.0
     var distanceMeters: Double = 0.0
     var curvature: Double = 0.0
+    var tangentRadians: Double = 0.0
 
     fun toPathPoint(): PathPoint = PathPoint(
         Pose2d(x, y, Rotation2d(headingRad)),
         velocityMps,
         distanceMeters,
-        curvature
+        curvature,
+        tangentRadians
     )
 
     fun copyInto(out: PathPoint) {
@@ -34,6 +45,7 @@ class MutablePathPoint {
         out.velocityMps = velocityMps
         out.distanceMeters = distanceMeters
         out.curvature = curvature
+        out.tangentRadians = tangentRadians
     }
 }
 
@@ -72,11 +84,17 @@ data class Path(
                 val interpVel = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t
                 val interpCurvature = p1.curvature + (p2.curvature - p1.curvature) * t
                 
+                // Interpolate tangent with angle wrapping
+                val deltaTangent = p2.tangentRadians - p1.tangentRadians
+                val normTangentDelta = com.areslib.math.InputMath.wrapAngle(deltaTangent)
+                val interpTangent = p1.tangentRadians + normTangentDelta * t
+                
                 return PathPoint(
                     Pose2d(interpX, interpY, interpHeading),
                     interpVel,
                     distanceMeters,
-                    interpCurvature
+                    interpCurvature,
+                    interpTangent
                 )
             }
         }
@@ -90,18 +108,21 @@ data class Path(
         if (points.isEmpty()) {
             out.x = 0.0; out.y = 0.0; out.headingRad = 0.0
             out.velocityMps = 0.0; out.distanceMeters = distanceMeters; out.curvature = 0.0
+            out.tangentRadians = 0.0
             return
         }
         if (distanceMeters <= points.first().distanceMeters) {
             val first = points.first()
             out.x = first.pose.x; out.y = first.pose.y; out.headingRad = first.pose.heading.radians
             out.velocityMps = first.velocityMps; out.distanceMeters = first.distanceMeters; out.curvature = first.curvature
+            out.tangentRadians = first.tangentRadians
             return
         }
         if (distanceMeters >= points.last().distanceMeters) {
             val last = points.last()
             out.x = last.pose.x; out.y = last.pose.y; out.headingRad = last.pose.heading.radians
             out.velocityMps = last.velocityMps; out.distanceMeters = last.distanceMeters; out.curvature = last.curvature
+            out.tangentRadians = last.tangentRadians
             return
         }
 
@@ -123,11 +144,16 @@ data class Path(
                 out.velocityMps = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t
                 out.distanceMeters = distanceMeters
                 out.curvature = p1.curvature + (p2.curvature - p1.curvature) * t
+                
+                val deltaTangent = p2.tangentRadians - p1.tangentRadians
+                val normTangentDelta = com.areslib.math.InputMath.wrapAngle(deltaTangent)
+                out.tangentRadians = p1.tangentRadians + normTangentDelta * t
                 return
             }
         }
         val last = points.last()
         out.x = last.pose.x; out.y = last.pose.y; out.headingRad = last.pose.heading.radians
         out.velocityMps = last.velocityMps; out.distanceMeters = last.distanceMeters; out.curvature = last.curvature
+        out.tangentRadians = last.tangentRadians
     }
 }

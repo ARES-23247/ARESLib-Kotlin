@@ -117,7 +117,8 @@ object PathPlannerParser {
             PathPoint(
                 pose = Pose2d(parsedWaypoints[0].anchor.x, parsedWaypoints[0].anchor.y, initialHeading),
                 velocityMps = defaultMaxVel,
-                distanceMeters = 0.0
+                distanceMeters = 0.0,
+                tangentRadians = initialHeading.radians
             )
         )
 
@@ -144,7 +145,8 @@ object PathPlannerParser {
                     PathPoint(
                         pose = Pose2d(point.x, point.y, heading),
                         velocityMps = defaultMaxVel,
-                        distanceMeters = accumulatedDistance
+                        distanceMeters = accumulatedDistance,
+                        tangentRadians = heading.radians
                     )
                 )
                 relativePositions.add(i.toDouble() + t)

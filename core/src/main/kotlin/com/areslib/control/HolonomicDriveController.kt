@@ -32,6 +32,10 @@ class HolonomicDriveController(
      * @param targetVelocityMps Feedforward velocity along the path.
      * @param targetHeading The desired field-relative heading to face.
      * @param dtSeconds Time elapsed since last call.
+     * @param pathTangentRadians The direction the path is traveling at the current sample point.
+     *        This is the spline derivative direction and is distinct from [targetHeading]
+     *        (the robot's desired orientation). If not provided, falls back to the angle
+     *        from the current position to the target position.
      * @param curvature Curvature of the path segment (1/radius).
      * @param maxCentripetalAccel Limit for lateral centripetal acceleration.
      * @param obstacles List of dynamic/static obstacles on the field.
@@ -43,6 +47,7 @@ class HolonomicDriveController(
         targetVelocityMps: Double,
         targetHeading: Rotation2d,
         dtSeconds: Double,
+        pathTangentRadians: Double = Double.NaN,
         curvature: Double = 0.0,
         maxCentripetalAccel: Double = 2.5,
         obstacles: List<Obstacle> = emptyList(),
@@ -52,9 +57,21 @@ class HolonomicDriveController(
         val xError = targetPose.x - currentPose.x
         val yError = targetPose.y - currentPose.y
         
-        // Perpendicular (lateral) error calculation relative to path heading
-        val pathHeading = targetPose.heading.radians
-        val lateralError = xError * kotlin.math.sin(pathHeading) - yError * kotlin.math.cos(pathHeading)
+        // Use the explicit spline tangent for feedforward direction.
+        // Only fall back to error-based direction if no tangent was provided.
+        val pathTangent = if (!pathTangentRadians.isNaN()) {
+            pathTangentRadians
+        } else {
+            val distanceToTarget = kotlin.math.hypot(xError, yError)
+            if (distanceToTarget > 0.01) {
+                kotlin.math.atan2(yError, xError)
+            } else {
+                targetHeading.radians
+            }
+        }
+        
+        // Perpendicular (lateral) error calculation relative to path tangent
+        val lateralError = xError * kotlin.math.sin(pathTangent) - yError * kotlin.math.cos(pathTangent)
         
         // Angular error normalized between -PI and PI
         var angularError = targetHeading.radians - currentPose.heading.radians
@@ -74,11 +91,6 @@ class HolonomicDriveController(
         var yFeedback = yController.calculate(currentPose.y, targetPose.y, dtSeconds)
         val thetaFeedback = thetaController.calculate(currentPose.heading.radians, targetHeading.radians, dtSeconds)
 
-        // Calculate velocity feedforward vector
-        // In a real path, the direction is derived from the path's tangent.
-        // We'll approximate the path heading as the angle from current to target
-        
-        
         // Dynamically cap target velocity based on curve centripetal force
         val limitedVelocity = if (kotlin.math.abs(curvature) > 1e-4) {
             val maxVel = kotlin.math.sqrt(maxCentripetalAccel / kotlin.math.abs(curvature))
@@ -89,11 +101,12 @@ class HolonomicDriveController(
 
         // Apply VFH+ to calculate dynamic steering detours
         val detourHeading = if (obstacles.isNotEmpty()) {
-            vfh.computeDetourHeading(currentPose, pathHeading, obstacles)
+            vfh.computeDetourHeading(currentPose, pathTangent, obstacles)
         } else {
-            pathHeading
+            pathTangent
         }
 
+        // Velocity feedforward along the (possibly detoured) path tangent
         val xFF = limitedVelocity * cos(detourHeading)
         val yFF = limitedVelocity * sin(detourHeading)
 
@@ -102,7 +115,7 @@ class HolonomicDriveController(
         var fieldRelativeY = yFF + yFeedback
 
         // If detouring, project the entire desired speed vector along the safe detour direction
-        if (detourHeading != pathHeading) {
+        if (detourHeading != pathTangent) {
             val speedMagnitude = kotlin.math.hypot(fieldRelativeX, fieldRelativeY)
             fieldRelativeX = speedMagnitude * cos(detourHeading)
             fieldRelativeY = speedMagnitude * sin(detourHeading)
@@ -117,3 +130,4 @@ class HolonomicDriveController(
         )
     }
 }
+
