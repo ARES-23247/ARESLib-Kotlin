@@ -102,14 +102,14 @@ This section documents the **canonical coordinate and heading conventions** used
 ### 5.1 Field Coordinate System (FTC)
 - **Origin**: Center of the FTC field
 - **+X axis**: Toward the audience wall
-- **+Y axis**: Toward the red alliance station wall (right when facing audience)
+- **+Y axis**: Toward the blue alliance station wall (left when facing audience)
 - **Units**: Meters
 
 ### 5.2 Heading Convention (CCW-Positive, Math Standard)
 - **0°**: Facing +X (toward audience)
-- **90° (+π/2)**: Facing +Y (toward red alliance wall)
+- **90° (+π/2)**: Facing +Y (toward blue alliance wall)
 - **180° (π)**: Facing -X (away from audience)
-- **-90° (-π/2)**: Facing -Y (toward blue alliance wall)
+- **-90° (-π/2)**: Facing -Y (toward red alliance wall)
 - **Direction**: Counter-clockwise positive (standard math convention)
 - **Units**: Radians internally, degrees for display only
 
