@@ -101,8 +101,9 @@ This section documents the **canonical coordinate and heading conventions** used
 
 ### 5.1 Field Coordinate System (FTC)
 - **Origin**: Center of the FTC field
-- **+X axis**: One of the side walls (e.g., audience or back wall depending on the game year)
-- **+Y axis**: Toward the blue alliance station wall (left when facing from +X)
+- **+X axis**: One of the side walls (e.g., audience or back wall depending on the game year). *Note: In older "diamond" field configurations, +X points toward the blue alliance wall.*
+- **+Y axis**: Toward the blue alliance station wall (in standard rectangular configurations).
+- **-Y axis**: Toward the red alliance station wall (true for both rectangular and diamond configurations).
 - **Units**: Meters
 
 ### 5.2 Heading Convention (CCW-Positive, Math Standard)
