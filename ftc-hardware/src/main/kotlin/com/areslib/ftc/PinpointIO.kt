@@ -10,10 +10,12 @@ import kotlinx.coroutines.launch
 /**
  * Interface to the GoBilda Pinpoint Odometry Computer.
  * 
- * COORDINATE SYSTEM NOTE:
- * We explicitly maintain the standard FTC coordinate system (X-forward, Y-left) 
- * here and pass the raw GoBilda coordinates directly. We will NOT translate this 
- * to WPILib format, intentionally bypassing the TAG-F04 audit recommendation.
+ * COORDINATE SYSTEM:
+ * - Position: X = forward (audience wall), Y = left (blue alliance)
+ * - Heading: 0° = +X (audience wall), CCW-positive (math standard)
+ * - The raw GoBilda Pinpoint outputs CW-positive heading;
+ *   we negate it here at the hardware boundary so all downstream
+ *   consumers (EKF, kinematics, path followers) receive CCW-positive.
  */
 class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
     private var offsetX = 0.0
@@ -37,7 +39,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
                     driver.update()
                     val rawX = driver.getPosX(DistanceUnit.METER)
                     val rawY = driver.getPosY(DistanceUnit.METER)
-                    val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+                    val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
 
                     val cosH = kotlin.math.cos(offsetHeading)
                     val sinH = kotlin.math.sin(offsetHeading)
@@ -112,7 +114,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
                     driver.update()
                     val rawX = driver.getPosX(DistanceUnit.METER)
                     val rawY = driver.getPosY(DistanceUnit.METER)
-                    val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+                    val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
 
                     synchronized(lock) {
                         offsetHeading = com.areslib.math.InputMath.wrapAngle(pose.heading.radians - rawHeading)
