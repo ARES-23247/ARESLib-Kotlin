@@ -95,7 +95,75 @@ Always default to using the local Gradle wrapper (`gradlew.bat` on Windows, `./g
 
 ---
 
-## 5. Cloud Telemetry & Networking Guidelines
+## 5. Coordinate Systems & Heading Convention
+
+This section documents the **canonical coordinate and heading conventions** used across the entire ARES ecosystem (ARESLib-Kotlin, ARES-FTC, ARES-Analytics, simulator). Failure to follow these conventions has caused real bugs. Reference this section before writing any code that touches heading, rotation, or field coordinates.
+
+### 5.1 Field Coordinate System (FTC)
+- **Origin**: Center of the FTC field
+- **+X axis**: Toward the audience wall
+- **+Y axis**: Toward the red alliance station wall (right when facing audience)
+- **Units**: Meters
+
+### 5.2 Heading Convention (CCW-Positive, Math Standard)
+- **0°**: Facing +X (toward audience)
+- **90° (+π/2)**: Facing +Y (toward red alliance wall)
+- **180° (π)**: Facing -X (away from audience)
+- **-90° (-π/2)**: Facing -Y (toward blue alliance wall)
+- **Direction**: Counter-clockwise positive (standard math convention)
+- **Units**: Radians internally, degrees for display only
+
+### 5.3 Hardware Boundary: GoBilda Pinpoint
+The GoBilda Pinpoint odometry computer outputs **clockwise-positive** heading, which is opposite to our convention. The negation happens **once** at the hardware boundary:
+
+```kotlin
+// PinpointIO.kt — hardware boundary negation
+val rawHeading = -driver.getHeading(AngleUnit.RADIANS)  // CW→CCW
+```
+
+**CRITICAL**: Do NOT add additional negations elsewhere in the pipeline. The heading is CCW-positive from `PinpointIO` onward through the EKF, Redux store, telemetry, and dashboard.
+
+### 5.4 Simulator Heading Pipeline
+The Dyn4j physics engine uses CCW-positive heading natively (same as our convention). To simulate the real GoBilda hardware:
+
+```
+Dyn4j body (CCW+) → MecanumRobotDouble.updateSensors() negates to CW+ 
+→ GoBildaPinpointDriver mock (CW+) → PinpointIO negates back to CCW+ 
+→ DriveReducer → EKF → Telemetry
+```
+
+### 5.5 ARES-Analytics Dashboard Field Canvas
+The FTC field-to-canvas coordinate transform **swaps and negates axes**:
+
+```kotlin
+// FieldCanvasUtils.kt
+canvasX = (-fieldY / fieldWidth + 0.5) * canvasWidth
+canvasY = (-fieldX / fieldHeight + 0.5) * canvasHeight
+```
+
+This means:
+- Field +X → Canvas UP
+- Field +Y → Canvas LEFT
+- The robot icon arrow points RIGHT (+canvasX) at zero rotation
+- A **-90° offset** is applied to the heading rotation in `PathRenderer.kt` to compensate
+
+**CRITICAL**: If you modify the field-to-canvas transform or the robot icon drawing, you MUST verify the -90° heading offset is still correct.
+
+### 5.6 Telemetry Topic Map
+
+| NT4 Topic | Source | Content | Units |
+|---|---|---|---|
+| `Drive/Odom_Heading` | OpMode (ARESNetworkStatePublisher) | Raw PinpointIO heading (CCW+) | radians |
+| `Drive/Drive_Heading` | OpMode (ARESNetworkStatePublisher) | EKF-fused heading (CCW+) | radians |
+| `ARES/EstimatedPose/2` | Sim (TelemetryPublisher) | Ground truth Dyn4j heading (CCW+) | radians |
+| `pinpoint_heading` | OpMode (FtcTelemetryManager) | EKF estimated heading (confusing name!) | radians |
+
+### 5.7 Motor Hardware Names
+The FTC robot registers motors with these hardware map names: `fl`, `fr`, `rl`, `rr` (front-left, front-right, **rear-left**, **rear-right**). Note: NOT `bl`/`br`. Dashboard visualizers must handle BOTH naming conventions (`bl`↔`rl`, `br`↔`rr`).
+
+---
+
+## 6. Cloud Telemetry & Networking Guidelines
 
 1. **ARES-Analytics Gateway Architecture**:
    * The backend gateway (`aresfirst-portal`) runs on Ktor in Google Cloud Run. It accepts high-throughput payloads (Parquet) via secure GCS Signed URLs.
@@ -107,7 +175,7 @@ Always default to using the local Gradle wrapper (`gradlew.bat` on Windows, `./g
      * The ARES-Analytics desktop application pulls these logs to the driver station laptop, parses them into SQLite, and then the laptop handles the delta-sync and GCS uploads to the cloud.
 
 
-## 6. Audit-Enforced Invariants
+## 7. Audit-Enforced Invariants
 
 Following the multi-agent swarm audit, the following invariants MUST be strictly observed by AI agents:
 1. **Zero-GC Hot Paths:** Absolutely NO reflection (getMethod) or dynamic heap allocations (DoubleArray, Rotation2d instantiations) inside 50Hz update() loops across FTC or FRC targets.
