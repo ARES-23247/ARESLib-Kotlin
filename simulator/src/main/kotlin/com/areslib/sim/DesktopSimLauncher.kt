@@ -705,6 +705,7 @@ object DesktopSimLauncher {
                 currentPose.heading.radians
             )
 
+
             // Dynamic FSM simulation values — prefer motor state from OpMode over driver station flags
             // so the OpMode's toggle logic (via AresGamepad.onPress) is authoritative
             simIntakeActive = driverStation.isIntaking
@@ -761,7 +762,7 @@ object DesktopSimLauncher {
             // AdvantageScope outputs
             TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
             TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode, driverStation.isRedAlliance)
-            TelemetryPublisher.publishEstimatedPose(state.drive.poseEstimator.estimatedPose)
+            TelemetryPublisher.publishEstimatedPose(currentPose)
             TelemetryPublisher.publishTargetPose(currentPose)
             TelemetryPublisher.publish(state)
 
