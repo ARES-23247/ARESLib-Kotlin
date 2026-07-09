@@ -86,7 +86,14 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     override fun safe() {
-        apply(com.areslib.kinematics.MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0), 12.0, 0.02, 0.0)
+        safeSetPower(frontLeft, 0.0, "frontLeft")
+        safeSetPower(frontRight, 0.0, "frontRight")
+        safeSetPower(backLeft, 0.0, "backLeft")
+        safeSetPower(backRight, 0.0, "backRight")
+        flIO.power = 0.0
+        frIO.power = 0.0
+        blIO.power = 0.0
+        brIO.power = 0.0
     }
 
     /**

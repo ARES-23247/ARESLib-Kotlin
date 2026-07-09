@@ -207,6 +207,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * and clears registries to prevent memory/thread leakage.
      */
     open fun close() {
+        safeHardware()
         com.areslib.telemetry.RobotStatusTracker.isEnabled = false
         com.areslib.telemetry.RobotWebServer.stop()
         telemetryManager.close()

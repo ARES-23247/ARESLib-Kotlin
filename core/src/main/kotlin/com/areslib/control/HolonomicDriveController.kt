@@ -22,12 +22,16 @@ class HolonomicDriveController(
     private val yController: PIDController,
     private val thetaController: PIDController,
     private val telemetry: com.areslib.telemetry.ITelemetry? = null,
-    private val maxOutputMps: Double = 4.0
+    private val maxOutputMps: Double = 4.0,
+    private val xAdrc: LinearADRC? = null,
+    private val yAdrc: LinearADRC? = null,
+    private val thetaAdrc: LinearADRC? = null
 ) {
     private val vfh = VFHPlanner()
 
     init {
         thetaController.enableContinuousInput(-Math.PI, Math.PI)
+        thetaAdrc?.enableContinuousInput(-Math.PI, Math.PI)
     }
 
     /**
@@ -91,10 +95,15 @@ class HolonomicDriveController(
             tel.putNumber("PathError/ProgressPercentage", progressPercentage)
         }
 
-        // Calculate PID output for position error
-        var xFeedback = xController.calculate(currentPose.x, targetPose.x, dtSeconds)
-        var yFeedback = yController.calculate(currentPose.y, targetPose.y, dtSeconds)
-        val thetaFeedback = thetaController.calculate(currentPose.heading.radians, targetHeading.radians, dtSeconds)
+        // Calculate output for position error (ADRC overrides PID if provided)
+        var xFeedback = xAdrc?.calculate(targetPose.x, currentPose.x, dtSeconds)
+            ?: xController.calculate(currentPose.x, targetPose.x, dtSeconds)
+            
+        var yFeedback = yAdrc?.calculate(targetPose.y, currentPose.y, dtSeconds)
+            ?: yController.calculate(currentPose.y, targetPose.y, dtSeconds)
+            
+        val thetaFeedback = thetaAdrc?.calculate(targetHeading.radians, currentPose.heading.radians, dtSeconds)
+            ?: thetaController.calculate(currentPose.heading.radians, targetHeading.radians, dtSeconds)
 
         // Dynamically cap target velocity based on curve centripetal force
         val limitedVelocity = if (kotlin.math.abs(curvature) > 1e-4) {

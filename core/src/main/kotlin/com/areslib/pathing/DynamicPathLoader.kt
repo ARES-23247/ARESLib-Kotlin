@@ -4,6 +4,7 @@ import java.io.File
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.IOException
+import com.areslib.fsm.Task
 
 /**
  * Highly resilient, cross-platform PathPlanner path loader.
@@ -85,5 +86,68 @@ object DynamicPathLoader {
         }
 
         return PathPlannerParser.parsePath(jsonString)
+    }
+
+    /**
+     * Attempts to find and parse a PathPlanner .auto file dynamically by its name.
+     *
+     * @param autoName The name of the auto (without the .auto extension).
+     * @param follower The holonomic path follower to attach to follow path commands.
+     * @param timestampMs Reference base timestamp for FSM task instantiation.
+     * @return The constructed [Task] sequence.
+     */
+    fun loadAuto(autoName: String, follower: HolonomicPathFollower, timestampMs: Long): Task {
+        var jsonString: String? = null
+        val fileName = "$autoName.auto"
+        val autoSearchPaths = SEARCH_PATHS.map {
+            it.replace("/paths", "/autos")
+              .replace("pathplanner/paths", "pathplanner/autos")
+        }
+
+        // 1. Filesystem Search Pass
+        for (dirPath in autoSearchPaths) {
+            val file = File(dirPath, fileName)
+            if (file.exists() && file.isFile) {
+                try {
+                    jsonString = file.readText(Charsets.UTF_8)
+                    break
+                } catch (e: Exception) {
+                    System.err.println("WARN: Failed to read filesystem auto at ${file.absolutePath}: ${e.message}")
+                }
+            }
+        }
+
+        // 2. Classpath Fallback Pass
+        if (jsonString == null) {
+            val classpathCandidates = listOf(
+                "/deploy/pathplanner/autos/$fileName",
+                "/$fileName",
+                "deploy/pathplanner/autos/$fileName"
+            )
+
+            for (resourcePath in classpathCandidates) {
+                val inputStream = javaClass.getResourceAsStream(resourcePath)
+                if (inputStream != null) {
+                    try {
+                        jsonString = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { it.readText() }
+                        break
+                    } catch (e: Exception) {
+                        System.err.println("WARN: Failed to read classpath resource at $resourcePath: ${e.message}")
+                    }
+                }
+            }
+        }
+
+        // 3. Validation
+        if (jsonString == null) {
+            val scannedLocations = autoSearchPaths.map { File(it, fileName).absolutePath } + 
+                                   listOf("/deploy/pathplanner/autos/$fileName", "/$fileName")
+            throw IOException(
+                "Could not locate auto '$autoName' anywhere in search space!\n" +
+                "Scanned locations:\n" + scannedLocations.joinToString("\n") { "  - $it" }
+            )
+        }
+
+        return PathPlannerAutoParser.parseAuto(jsonString, follower, timestampMs)
     }
 }
