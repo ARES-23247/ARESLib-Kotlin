@@ -230,7 +230,7 @@ class Costmap(
          */
         fun fromFieldConfig(
             config: com.areslib.state.RobotFieldConfig,
-            robotRadiusMeters: Double = if (config.fieldType == com.areslib.state.FieldType.FRC) 0.45 else 0.35
+            robotRadiusMeters: Double = if (config.fieldType == com.areslib.state.FieldType.FRC) 0.60 else 0.35
         ): Costmap {
             val width = if (config.fieldType == com.areslib.state.FieldType.FRC) 16.0 else 3.66
             val height = if (config.fieldType == com.areslib.state.FieldType.FRC) 8.0 else 3.66

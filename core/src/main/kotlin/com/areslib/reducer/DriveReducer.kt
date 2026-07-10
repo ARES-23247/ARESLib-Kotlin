@@ -104,7 +104,7 @@ object DriveReducer {
             }
             is RobotAction.JoystickDriveIntent -> {
                 val hasLinearInput = kotlin.math.abs(action.targetXVelocity) > 0.05 || kotlin.math.abs(action.targetYVelocity) > 0.05
-                val hasAngularInput = kotlin.math.abs(action.targetAngularVelocity) > 0.05
+                val hasAngularInput = !action.fromHeadingHold && kotlin.math.abs(action.targetAngularVelocity) > 0.05
                 
                 val currentMode = state.driveMode
                 val newMode = if (currentMode == DriveMode.X_BRAKE && (hasLinearInput || hasAngularInput)) {

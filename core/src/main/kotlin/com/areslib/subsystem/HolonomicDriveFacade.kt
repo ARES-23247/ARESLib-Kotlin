@@ -67,13 +67,14 @@ abstract class HolonomicDriveFacade(protected val store: Store) {
      * @param vy Lateral strafe velocity effort scaled between [-1.0, 1.0].
      * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
      */
-    fun robotRelativeDrive(vx: Double, vy: Double, omega: Double) {
+    fun robotRelativeDrive(vx: Double, vy: Double, omega: Double, fromHeadingHold: Boolean = false) {
         store.dispatch(RobotAction.JoystickDriveIntent(
             targetXVelocity = vx,
             targetYVelocity = vy,
             targetAngularVelocity = omega,
             isFieldCentric = false,
-            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+            fromHeadingHold = fromHeadingHold
         ))
     }
 
@@ -98,6 +99,7 @@ abstract class HolonomicDriveFacade(protected val store: Store) {
         val robotVy = -vx * sin + vy * cos
 
         var finalOmega = omega
+        var fromHeadingHold = false
         if (useHeadingLock) {
             if (kotlin.math.abs(omega) > 0.05) {
                 // If driver is actively rotating, release lock target and disable heading hold mode
@@ -114,6 +116,7 @@ abstract class HolonomicDriveFacade(protected val store: Store) {
                 } else {
                     // Calculate closed-loop PID feedback to hold orientation
                     finalOmega = headingPID.calculate(headingRad, target, 0.02)
+                    fromHeadingHold = true
                 }
             }
         } else {
@@ -122,7 +125,7 @@ abstract class HolonomicDriveFacade(protected val store: Store) {
             }
         }
 
-        robotRelativeDrive(robotVx, robotVy, finalOmega)
+        robotRelativeDrive(robotVx, robotVy, finalOmega, fromHeadingHold)
     }
 
     /**

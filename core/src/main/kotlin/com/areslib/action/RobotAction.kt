@@ -129,7 +129,8 @@ interface RobotAction {
         val targetYVelocity: Double,
         val targetAngularVelocity: Double,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
-        val isFieldCentric: Boolean = true
+        val isFieldCentric: Boolean = true,
+        val fromHeadingHold: Boolean = false
     ) : RobotAction
 
     // Autonomous Events
