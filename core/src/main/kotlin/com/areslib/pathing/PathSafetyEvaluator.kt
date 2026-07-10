@@ -117,7 +117,7 @@ object PathSafetyEvaluator {
         path: List<Translation2d>,
         costmap: Costmap,
         searchRadiusMeters: Double = 0.5,
-        robotRadiusMeters: Double = 0.25
+        robotRadiusMeters: Double = 0.35
     ): SafetyReport {
         if (path.isEmpty()) {
             return SafetyReport(
