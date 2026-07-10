@@ -203,6 +203,21 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
+     * Set direct powers to the 4 drive motors bypassing kinematics.
+     */
+    fun setMotorPowers(fl: Double, fr: Double, bl: Double, br: Double) {
+        safeSetPower(frontLeft, fl, "frontLeft")
+        safeSetPower(frontRight, fr, "frontRight")
+        safeSetPower(backLeft, bl, "backLeft")
+        safeSetPower(backRight, br, "backRight")
+        
+        flIO.power = fl
+        frIO.power = fr
+        blIO.power = bl
+        brIO.power = br
+    }
+
+    /**
      * Updates cached motor sensor readings from the hardware bulk read caches.
      * Call this at the start of every loop iteration to ensure fresh, zero-overhead sensor access.
      */

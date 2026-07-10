@@ -64,14 +64,80 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         drive.maxSpeedMps = mecanumIO.maxWheelSpeedMetersPerSecond
     }
 
+    val sysIdManager = com.areslib.control.SysIdManager()
+    private var lastCommandProcessed = ""
+
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
 
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
+        
+        val command = telemetryManager.nt4.getString("SysId/Command", "")
+        if (command != lastCommandProcessed) {
+            lastCommandProcessed = command
+            if (command.isNotEmpty()) {
+                if (command == "STOP") {
+                    sysIdManager.stop()
+                } else if (command.startsWith("START_")) {
+                    val parts = command.removePrefix("START_").split("_")
+                    if (parts.size >= 2) {
+                        val mechStr = parts[0]
+                        val routineStr = command.removePrefix("START_${mechStr}_")
+                        
+                        val mechanism = try {
+                            com.areslib.control.SysIdMechanism.valueOf(mechStr)
+                        } catch (e: Exception) {
+                            com.areslib.control.SysIdMechanism.LINEAR
+                        }
+                        
+                        val routine = try {
+                            com.areslib.control.SysIdRoutine.valueOf(routineStr)
+                        } catch (e: Exception) {
+                            com.areslib.control.SysIdRoutine.NONE
+                        }
+                        
+                        val pose = store.state.drive.poseEstimator.estimatedPose
+                        sysIdManager.start(
+                            mechanism = mechanism,
+                            routine = routine,
+                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+                            x = pose.x,
+                            y = pose.y,
+                            heading = pose.heading.radians
+                        )
+                    }
+                }
+            }
+        }
     }
 
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
-        mecanumIO.drive(store.state.drive, kinematics, batteryVoltage, dtSeconds)
+        val pose = store.state.drive.poseEstimator.estimatedPose
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        
+        if (sysIdManager.isActive()) {
+            if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                sysIdManager.stop()
+                mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+            } else {
+                val velocity = if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+                    store.state.drive.xVelocityMetersPerSecond
+                } else {
+                    store.state.drive.angularVelocityRadiansPerSecond
+                }
+                
+                val voltage = sysIdManager.update(timestamp, velocity)
+                val power = (voltage / batteryVoltage).coerceIn(-1.0, 1.0)
+                
+                if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+                    mecanumIO.setMotorPowers(power, power, power, power)
+                } else {
+                    mecanumIO.setMotorPowers(-power, power, -power, power)
+                }
+            }
+        } else {
+            mecanumIO.drive(store.state.drive, kinematics, batteryVoltage, dtSeconds)
+        }
     }
 
     override fun publishRobotTelemetry(timestamp: Long) {
@@ -96,6 +162,39 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         telemetryManager.dataLoggingTelemetry.logDriveMotor("fr", mecanumIO.frIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("bl", mecanumIO.blIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("br", mecanumIO.brIO)
+
+        // SysId Telemetry Streaming
+        val dataLogging = telemetryManager.dataLoggingTelemetry
+        dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
+        if (sysIdManager.isActive()) {
+            val pose = store.state.drive.poseEstimator.estimatedPose
+            val position = if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+                val dx = pose.x - sysIdManager.startX
+                val dy = pose.y - sysIdManager.startY
+                kotlin.math.sqrt(dx * dx + dy * dy)
+            } else {
+                sysIdManager.accumulatedHeadingChange
+            }
+            
+            val velocity = if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+                store.state.drive.xVelocityMetersPerSecond
+            } else {
+                store.state.drive.angularVelocityRadiansPerSecond
+            }
+            
+            dataLogging.putDoubleArray(
+                "SysId/Data",
+                doubleArrayOf(
+                    timestamp.toDouble(),
+                    sysIdManager.currentVoltage,
+                    position,
+                    velocity,
+                    sysIdManager.calculatedAcceleration
+                )
+            )
+        } else {
+            dataLogging.putDoubleArray("SysId/Data", doubleArrayOf())
+        }
     }
 
     override fun safeHardware() {

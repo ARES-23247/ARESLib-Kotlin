@@ -81,6 +81,7 @@ fun ITelemetry.logBrownout(brownoutGuard: com.areslib.control.BrownoutGuard, bat
     putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
     putString("Robot/BrownoutState", brownoutGuard.state.name)
     putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
+    putNumber("Diagnostics/Power/BrownoutCount", brownoutGuard.tripCount.toDouble())
 }
 
 /**
@@ -103,4 +104,24 @@ fun ITelemetry.logGamepad(prefix: String, gamepad: GamepadState) {
     putBoolean("$prefix/DpadRight", gamepad.dpadRight)
     putBoolean("$prefix/LeftBumper", gamepad.leftBumper)
     putBoolean("$prefix/RightBumper", gamepad.rightBumper)
+}
+
+/**
+ * Extension to log FRC CANbus status diagnostics.
+ */
+fun ITelemetry.logCanBusStatus(
+    busName: String,
+    busUtilization: Double,
+    errorCount: Int,
+    txErrors: Int,
+    rxErrors: Int,
+    busOffs: Int,
+    signalLatencyMs: Double
+) {
+    putNumber("Diagnostics/CANBus/$busName/Utilization", busUtilization)
+    putNumber("Diagnostics/CANBus/$busName/ErrorCount", errorCount.toDouble())
+    putNumber("Diagnostics/CANBus/$busName/TxErrors", txErrors.toDouble())
+    putNumber("Diagnostics/CANBus/$busName/RxErrors", rxErrors.toDouble())
+    putNumber("Diagnostics/CANBus/$busName/BusOffCount", busOffs.toDouble())
+    putNumber("Diagnostics/CANBus/$busName/SignalLatencyMs", signalLatencyMs)
 }
