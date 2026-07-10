@@ -113,10 +113,10 @@ class LinearADRC(
         var u = (u0 - xHat2) / b0
 
         // Output Clamping
-        if (!minOutput.isNaN() && u < minOutput) {
-            u = minOutput
-        } else if (!maxOutput.isNaN() && u > maxOutput) {
-            u = maxOutput
+        u = when {
+            !minOutput.isNaN() && u < minOutput -> minOutput
+            !maxOutput.isNaN() && u > maxOutput -> maxOutput
+            else -> u
         }
 
         uPrev = u

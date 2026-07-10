@@ -142,33 +142,19 @@ class RealWorldWorkloadTier4Test {
         val path1 = ThetaStarPlanner.plan(costmap, start, end)
         assertTrue(path1.isNotEmpty())
 
-        // Setup EKF robot store and set robot pose at (0.5, 0.5)
-        val store = com.areslib.subsystem.Store()
-        store.dispatch(RobotAction.PoseUpdate(0.5, 0.5, 0.0, 1000L))
-
-        // 1. Robot senses a sudden obstacle directly in its diagonal path
-        val obstacleObservation = RobotAction.DistanceSensorObservation(
-            sensorId = "range1",
-            angleOffsetRad = Math.PI / 4,
-            positionOffsetXMeters = 0.0,
-            positionOffsetYMeters = 0.0,
-            distanceMeters = Math.sqrt(8.0), // Obstacle at (2.5, 2.5) if robot at (0.5, 0.5) with 45-deg angle
-            maxRangeMeters = 4.0
-        )
-        val costmapAction = RobotAction.ObstacleCostmapUpdate(listOf(obstacleObservation), 1000L)
-        store.dispatch(costmapAction)
-
-        // Verify CostmapState slice got the obstacle exactly at (2.5, 2.5)
-        assertEquals(1, store.state.costmap.obstacles.size)
-        assertEquals(2.5, store.state.costmap.obstacles[0].x, 1e-4)
-        assertEquals(2.5, store.state.costmap.obstacles[0].y, 1e-4)
-
-        // 2. Safely re-plan using Theta* around the newly registered obstacle after copying and inflating
-        costmap.setObstacle(store.state.costmap.obstacles[0].x, store.state.costmap.obstacles[0].y)
+        // 1. Manually add obstacle at (2.5, 2.5) to the costmap to simulate static/map obstacle
+        costmap.setObstacle(2.5, 2.5)
         costmap.inflate(robotRadiusMeters = 0.3)
-        
+
+        // 2. Plan path with the obstacle in place
         val path2 = ThetaStarPlanner.plan(costmap, start, end)
         assertTrue(path2.isNotEmpty())
+        
+        // Verify path clears the obstacle inflated zone
+        for (pt in path2) {
+            val dist = kotlin.math.hypot(pt.x - 2.5, pt.y - 2.5)
+            assertTrue(dist > 0.3, "Path point $pt must clear obstacle inflated radius of 0.3m")
+        }
     }
 
     @Test

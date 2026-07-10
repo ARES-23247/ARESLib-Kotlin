@@ -154,30 +154,19 @@ class CurrentBudgetManager(
         // 3. State machine with hysteresis
         val previousState = state
         state = when (state) {
-            CurrentBudgetState.HEALTHY -> {
-                if (totalAmps > criticalCurrentAmps) {
-                    CurrentBudgetState.CRITICAL
-                } else if (totalAmps > warningCurrentAmps) {
-                    CurrentBudgetState.WARNING
-                } else {
-                    CurrentBudgetState.HEALTHY
-                }
+            CurrentBudgetState.HEALTHY -> when {
+                totalAmps > criticalCurrentAmps -> CurrentBudgetState.CRITICAL
+                totalAmps > warningCurrentAmps -> CurrentBudgetState.WARNING
+                else -> CurrentBudgetState.HEALTHY
             }
-            CurrentBudgetState.WARNING -> {
-                if (totalAmps > criticalCurrentAmps) {
-                    CurrentBudgetState.CRITICAL
-                } else if (totalAmps < warningCurrentAmps - hysteresisAmps) {
-                    CurrentBudgetState.HEALTHY
-                } else {
-                    CurrentBudgetState.WARNING
-                }
+            CurrentBudgetState.WARNING -> when {
+                totalAmps > criticalCurrentAmps -> CurrentBudgetState.CRITICAL
+                totalAmps < warningCurrentAmps - hysteresisAmps -> CurrentBudgetState.HEALTHY
+                else -> CurrentBudgetState.WARNING
             }
-            CurrentBudgetState.CRITICAL -> {
-                if (totalAmps < criticalCurrentAmps - hysteresisAmps) {
-                    CurrentBudgetState.WARNING
-                } else {
-                    CurrentBudgetState.CRITICAL
-                }
+            CurrentBudgetState.CRITICAL -> when {
+                totalAmps < criticalCurrentAmps - hysteresisAmps -> CurrentBudgetState.WARNING
+                else -> CurrentBudgetState.CRITICAL
             }
         }
 

@@ -207,11 +207,14 @@ object PoseEstimator {
         var unbeachedTime = state.lastUnbeachedTimeMs
 
         // Hysteresis logic
-        if (!currentlyBeached && tiltDegrees > 15.0) {
-            currentlyBeached = true
-        } else if (currentlyBeached && tiltDegrees < 12.0) {
-            currentlyBeached = false
-            unbeachedTime = timestampMs
+        when {
+            !currentlyBeached && tiltDegrees > 15.0 -> {
+                currentlyBeached = true
+            }
+            currentlyBeached && tiltDegrees < 12.0 -> {
+                currentlyBeached = false
+                unbeachedTime = timestampMs
+            }
         }
 
         // Catastrophic tilt / beaching check: Freeze odometry updates

@@ -442,26 +442,37 @@ object DesktopSimLauncher {
         var lastHeading = startPose.heading.radians
         var simLoopCount = 0
         val activeFieldConfig = com.areslib.state.RobotFieldManager.activeConfig
-        val visionTags = if (activeFieldConfig.apriltags.isNotEmpty()) {
-            activeFieldConfig.apriltags.associate { tag ->
-                tag.id to com.areslib.math.Pose3d(
-                    com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
-                    com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
-                )
-            }
-        } else if (loadedAprilTagsJson != null) {
-            try {
-                val gson = com.google.gson.Gson()
-                val tagsList = gson.fromJson(loadedAprilTagsJson, Array<com.areslib.state.RobotFieldAprilTag>::class.java).toList()
-                NT4FieldPublisher.publishAprilTags(tagsList)
-                tagsList.associate { tag ->
+        val visionTags = when {
+            activeFieldConfig.apriltags.isNotEmpty() -> {
+                activeFieldConfig.apriltags.associate { tag ->
                     tag.id to com.areslib.math.Pose3d(
                         com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
                         com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
                     )
                 }
-            } catch (e: Exception) {
-                println("Failed to parse apriltags.json: ${e.message}")
+            }
+            loadedAprilTagsJson != null -> {
+                try {
+                    val gson = com.google.gson.Gson()
+                    val tagsList = gson.fromJson(loadedAprilTagsJson, Array<com.areslib.state.RobotFieldAprilTag>::class.java).toList()
+                    NT4FieldPublisher.publishAprilTags(tagsList)
+                    tagsList.associate { tag ->
+                        tag.id to com.areslib.math.Pose3d(
+                            com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
+                            com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                        )
+                    }
+                } catch (e: Exception) {
+                    println("Failed to parse apriltags.json: ${e.message}")
+                    mapOf(
+                        1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
+                        2 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
+                        3 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0)),
+                        4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
+                    )
+                }
+            }
+            else -> {
                 mapOf(
                     1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
                     2 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
@@ -469,13 +480,6 @@ object DesktopSimLauncher {
                     4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
                 )
             }
-        } else {
-            mapOf(
-                1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
-                2 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
-                3 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0)),
-                4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
-            )
         }
         var lastObstaclesTimestamp = 0L
 

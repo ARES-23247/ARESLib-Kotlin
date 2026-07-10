@@ -60,65 +60,69 @@ object FieldObstacleLoader {
                 val name = obj.get("name")?.asString ?: ""
                 val type = obj.get("type")?.asString ?: ""
 
-                if (type.contains("Circle") || (obj.has("radius") && !obj.has("width"))) {
-                    val centerX = obj.get("centerX")?.asDouble ?: 0.0
-                    val centerY = obj.get("centerY")?.asDouble ?: 0.0
-                    val radius = obj.get("radius")?.asDouble ?: 0.25
-                    list.add(
-                        RobotFieldObstacle(
-                            id = id,
-                            name = name,
-                            x = centerX,
-                            y = centerY,
-                            width = radius, // use width as radius for circle shape
-                            height = radius,
-                            shape = "circle"
+                when {
+                    type.contains("Circle") || (obj.has("radius") && !obj.has("width")) -> {
+                        val centerX = obj.get("centerX")?.asDouble ?: 0.0
+                        val centerY = obj.get("centerY")?.asDouble ?: 0.0
+                        val radius = obj.get("radius")?.asDouble ?: 0.25
+                        list.add(
+                            RobotFieldObstacle(
+                                id = id,
+                                name = name,
+                                x = centerX,
+                                y = centerY,
+                                width = radius, // use width as radius for circle shape
+                                height = radius,
+                                shape = "circle"
+                            )
                         )
-                    )
-                } else if (type.contains("Rectangle") || (obj.has("width") && obj.has("height"))) {
-                    val centerX = obj.get("centerX")?.asDouble ?: 0.0
-                    val centerY = obj.get("centerY")?.asDouble ?: 0.0
-                    val width = obj.get("width")?.asDouble ?: 0.5
-                    val height = obj.get("height")?.asDouble ?: 0.5
-                    val rotation = obj.get("rotation")?.asDouble ?: 0.0
-                    list.add(
-                        RobotFieldObstacle(
-                            id = id,
-                            name = name,
-                            x = centerX,
-                            y = centerY,
-                            width = width,
-                            height = height,
-                            rotation = rotation,
-                            shape = "rectangle"
-                        )
-                    )
-                } else if (type.contains("Polygon") || obj.has("vertices")) {
-                    val verticesArray = obj.getAsJsonArray("vertices")
-                    val pointsList = mutableListOf<RobotFieldPoint>()
-                    var sumX = 0.0
-                    var sumY = 0.0
-                    for (j in 0 until verticesArray.size()) {
-                        val ptObj = verticesArray.get(j).asJsonObject
-                        val px = ptObj.get("x")?.asDouble ?: 0.0
-                        val py = ptObj.get("y")?.asDouble ?: 0.0
-                        pointsList.add(RobotFieldPoint(px, py))
-                        sumX += px
-                        sumY += py
                     }
-                    val count = verticesArray.size().toDouble()
-                    val cx = if (count > 0) sumX / count else 0.0
-                    val cy = if (count > 0) sumY / count else 0.0
-                    list.add(
-                        RobotFieldObstacle(
-                            id = id,
-                            name = name,
-                            x = cx,
-                            y = cy,
-                            shape = "polygon",
-                            points = pointsList
+                    type.contains("Rectangle") || (obj.has("width") && obj.has("height")) -> {
+                        val centerX = obj.get("centerX")?.asDouble ?: 0.0
+                        val centerY = obj.get("centerY")?.asDouble ?: 0.0
+                        val width = obj.get("width")?.asDouble ?: 0.5
+                        val height = obj.get("height")?.asDouble ?: 0.5
+                        val rotation = obj.get("rotation")?.asDouble ?: 0.0
+                        list.add(
+                            RobotFieldObstacle(
+                                id = id,
+                                name = name,
+                                x = centerX,
+                                y = centerY,
+                                width = width,
+                                height = height,
+                                rotation = rotation,
+                                shape = "rectangle"
+                            )
                         )
-                    )
+                    }
+                    type.contains("Polygon") || obj.has("vertices") -> {
+                        val verticesArray = obj.getAsJsonArray("vertices")
+                        val pointsList = mutableListOf<RobotFieldPoint>()
+                        var sumX = 0.0
+                        var sumY = 0.0
+                        for (j in 0 until verticesArray.size()) {
+                            val ptObj = verticesArray.get(j).asJsonObject
+                            val px = ptObj.get("x")?.asDouble ?: 0.0
+                            val py = ptObj.get("y")?.asDouble ?: 0.0
+                            pointsList.add(RobotFieldPoint(px, py))
+                            sumX += px
+                            sumY += py
+                        }
+                        val count = verticesArray.size().toDouble()
+                        val cx = if (count > 0) sumX / count else 0.0
+                        val cy = if (count > 0) sumY / count else 0.0
+                        list.add(
+                            RobotFieldObstacle(
+                                id = id,
+                                name = name,
+                                x = cx,
+                                y = cy,
+                                shape = "polygon",
+                                points = pointsList
+                            )
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {

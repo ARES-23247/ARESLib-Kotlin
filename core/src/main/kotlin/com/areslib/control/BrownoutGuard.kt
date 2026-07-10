@@ -76,31 +76,20 @@ class BrownoutGuard(
 
         // Apply hysteresis-aware state transitions
         state = when (state) {
-            BrownoutState.HEALTHY -> {
-                if (voltage < criticalVoltage) {
-                    BrownoutState.CRITICAL
-                } else if (voltage < warningVoltage) {
-                    BrownoutState.WARNING
-                } else {
-                    BrownoutState.HEALTHY
-                }
+            BrownoutState.HEALTHY -> when {
+                voltage < criticalVoltage -> BrownoutState.CRITICAL
+                voltage < warningVoltage -> BrownoutState.WARNING
+                else -> BrownoutState.HEALTHY
             }
-            BrownoutState.WARNING -> {
-                if (voltage < criticalVoltage) {
-                    BrownoutState.CRITICAL
-                } else if (voltage > warningVoltage + hysteresisVoltage) {
-                    BrownoutState.HEALTHY
-                } else {
-                    BrownoutState.WARNING
-                }
+            BrownoutState.WARNING -> when {
+                voltage < criticalVoltage -> BrownoutState.CRITICAL
+                voltage > warningVoltage + hysteresisVoltage -> BrownoutState.HEALTHY
+                else -> BrownoutState.WARNING
             }
-            BrownoutState.CRITICAL -> {
+            BrownoutState.CRITICAL -> when {
                 // Must recover above critical + hysteresis to leave CRITICAL
-                if (voltage > criticalVoltage + hysteresisVoltage) {
-                    BrownoutState.WARNING
-                } else {
-                    BrownoutState.CRITICAL
-                }
+                voltage > criticalVoltage + hysteresisVoltage -> BrownoutState.WARNING
+                else -> BrownoutState.CRITICAL
             }
         }
 

@@ -89,28 +89,30 @@ class TaskExecutor {
         while (loopCount < maxLoopCount) {
             loopCount++
             if (task == null) {
-                if (preemptedStack.isNotEmpty()) {
-                    // Resume a previously preempted task
-                    val (resumedTask, priorElapsed) = preemptedStack.pop()
-                    activeTask = resumedTask
-                    activeTaskStartTimeMs = currentTimestampMs - priorElapsed
-                    task = resumedTask
-                } else if (queue.isNotEmpty()) {
-                    // Dequeue the next task
-                    val nextTask = queue.poll()
-                    activeTask = nextTask
-                    activeTaskStartTimeMs = currentTimestampMs
-                    try {
-                        actions = addActions(actions, nextTask.initialize(state))
-                    } catch (e: Exception) {
-                        System.err.println("TaskExecutor: Exception during task.initialize for task ${nextTask.name}: ${e.message}")
-                        e.printStackTrace()
-                        actions = addActions(actions, handleTaskFailure(nextTask, state))
-                        break
+                when {
+                    preemptedStack.isNotEmpty() -> {
+                        // Resume a previously preempted task
+                        val (resumedTask, priorElapsed) = preemptedStack.pop()
+                        activeTask = resumedTask
+                        activeTaskStartTimeMs = currentTimestampMs - priorElapsed
+                        task = resumedTask
                     }
-                    task = nextTask
-                } else {
-                    break
+                    queue.isNotEmpty() -> {
+                        // Dequeue the next task
+                        val nextTask = queue.poll()
+                        activeTask = nextTask
+                        activeTaskStartTimeMs = currentTimestampMs
+                        try {
+                            actions = addActions(actions, nextTask.initialize(state))
+                        } catch (e: Exception) {
+                            System.err.println("TaskExecutor: Exception during task.initialize for task ${nextTask.name}: ${e.message}")
+                            e.printStackTrace()
+                            actions = addActions(actions, handleTaskFailure(nextTask, state))
+                            break
+                        }
+                        task = nextTask
+                    }
+                    else -> break
                 }
             }
 

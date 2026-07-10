@@ -70,3 +70,15 @@ The FTC field→canvas transform swaps axes:
 - Robot icon arrow points RIGHT at zero rotation
 - `PathRenderer.kt` applies a `-90°` offset to heading rotation to compensate
 - If you change the canvas mapping or robot icon, re-verify the offset
+
+## Kotlin Code Style & Nested If-Else Avoidance
+- **Avoid Nested If Statements**: Do not use deeply nested or chained `if-else` blocks for conditional control flow in Kotlin.
+- **Prefer `when` Expressions**: Use clean, argument-less `when` expressions to handle multiple condition branches:
+  ```kotlin
+  when {
+      conditionA -> { ... }
+      conditionB -> { ... }
+      else -> { ... }
+  }
+  ```
+  This is more idiomatic, highly readable, and maintains zero heap allocations (Zero-GC compliance).

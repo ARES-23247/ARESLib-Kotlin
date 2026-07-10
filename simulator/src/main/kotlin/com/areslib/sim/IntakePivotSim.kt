@@ -50,12 +50,15 @@ class IntakePivotSim(
         val minAngle = 0.0
         val maxAngle = 120.0 * (Math.PI / 180.0)
         
-        if (angleRad < minAngle) {
-            angleRad = minAngle
-            angularVelocityRadPerSec = 0.0
-        } else if (angleRad > maxAngle) {
-            angleRad = maxAngle
-            angularVelocityRadPerSec = 0.0
+        when {
+            angleRad < minAngle -> {
+                angleRad = minAngle
+                angularVelocityRadPerSec = 0.0
+            }
+            angleRad > maxAngle -> {
+                angleRad = maxAngle
+                angularVelocityRadPerSec = 0.0
+            }
         }
     }
 

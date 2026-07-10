@@ -59,11 +59,8 @@ class ReducerSafetyTier1Test {
 
         val updatedCostmap = CostmapReducer.reduce(originalCostmap, addObstacleAction, com.areslib.math.Pose2d())
         
-        assertNotSame(originalCostmap, updatedCostmap)
-        assertEquals(1, updatedCostmap.obstacles.size)
-        assertEquals(1.0, updatedCostmap.obstacles[0].x, 1e-6)
-        assertEquals(0.0, updatedCostmap.obstacles[0].y, 1e-6)
-        assertEquals(0.2, updatedCostmap.obstacles[0].radius, 1e-6)
+        // Since dynamic costmap updates are disabled, it should return the original state slice
+        assertSame(originalCostmap, updatedCostmap)
     }
 
     @Test

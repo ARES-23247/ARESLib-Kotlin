@@ -228,7 +228,10 @@ class Costmap(
         /**
          * Factory to create and inflate a Costmap directly from a RobotFieldConfig.
          */
-        fun fromFieldConfig(config: com.areslib.state.RobotFieldConfig, robotRadiusMeters: Double): Costmap {
+        fun fromFieldConfig(
+            config: com.areslib.state.RobotFieldConfig,
+            robotRadiusMeters: Double = if (config.fieldType == com.areslib.state.FieldType.FRC) 0.45 else 0.25
+        ): Costmap {
             val width = if (config.fieldType == com.areslib.state.FieldType.FRC) 16.0 else 3.66
             val height = if (config.fieldType == com.areslib.state.FieldType.FRC) 8.0 else 3.66
             val origin = if (config.fieldType == com.areslib.state.FieldType.FRC) {

@@ -60,17 +60,19 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val limelightIO: VisionIO? = try {
         limelightName?.let { namesStr ->
             val names = namesStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            if (names.size > 1) {
-                val ios = names.map { name ->
-                    val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
+            when {
+                names.size > 1 -> {
+                    val ios = names.map { name ->
+                        val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
+                        FtcLimelightIO(limelightDriver)
+                    }
+                    CompositeVisionIO(ios)
+                }
+                names.size == 1 -> {
+                    val limelightDriver = hardwareMap.get(Limelight3A::class.java, names[0])
                     FtcLimelightIO(limelightDriver)
                 }
-                CompositeVisionIO(ios)
-            } else if (names.size == 1) {
-                val limelightDriver = hardwareMap.get(Limelight3A::class.java, names[0])
-                FtcLimelightIO(limelightDriver)
-            } else {
-                null
+                else -> null
             }
         }
     } catch (_: Throwable) {

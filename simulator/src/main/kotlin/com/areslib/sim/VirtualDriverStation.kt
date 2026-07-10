@@ -224,127 +224,131 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                     gamepadName.contains("DualShock", ignoreCase = true) ||
                                     gamepadName.contains("PS4", ignoreCase = true)
 
-                        if (isBluetoothXbox || isDS4) {
-                            // DirectInput mapping
-                            val axes = glfwGetJoystickAxes(activeJoy)
-                            val buttons = glfwGetJoystickButtons(activeJoy)
-                            
-                            if (isBluetoothXbox) {
-                                if (axes != null && axes.capacity() >= 5) {
-                                    gamepadLx = axes[0]
-                                    gamepadLy = axes[1]
-                                    gamepadRx = axes[3] // Right Stick X is raw axis 3
-                                    gamepadRy = axes[4] // Right Stick Y is raw axis 4
+                        when {
+                            isBluetoothXbox || isDS4 -> {
+                                // DirectInput mapping
+                                val axes = glfwGetJoystickAxes(activeJoy)
+                                val buttons = glfwGetJoystickButtons(activeJoy)
+                                
+                                if (isBluetoothXbox) {
+                                    if (axes != null && axes.capacity() >= 5) {
+                                        gamepadLx = axes[0]
+                                        gamepadLy = axes[1]
+                                        gamepadRx = axes[3] // Right Stick X is raw axis 3
+                                        gamepadRy = axes[4] // Right Stick Y is raw axis 4
+                                    } else {
+                                        gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                                    }
                                 } else {
-                                    gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                                    // isDS4
+                                    if (axes != null && axes.capacity() >= 6) {
+                                        gamepadLx = axes[0]
+                                        gamepadLy = axes[1]
+                                        gamepadRx = axes[2] // Right Stick X is raw axis 2
+                                        gamepadRy = axes[5] // Right Stick Y is raw axis 5
+                                    } else {
+                                        gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                                    }
                                 }
-                            } else {
-                                // isDS4
-                                if (axes != null && axes.capacity() >= 6) {
-                                    gamepadLx = axes[0]
-                                    gamepadLy = axes[1]
-                                    gamepadRx = axes[2] // Right Stick X is raw axis 2
-                                    gamepadRy = axes[5] // Right Stick Y is raw axis 5
-                                } else {
-                                    gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                                }
-                            }
 
-                            if (buttons != null) {
-                                val capacity = buttons.capacity()
-                                lbPressedThisFrame = (capacity > 6 && buttons[6] == GLFW_PRESS.toByte()) || 
-                                                     (capacity > 4 && buttons[4] == GLFW_PRESS.toByte())
-                                                     
-                                rbPressedThisFrame = (capacity > 7 && buttons[7] == GLFW_PRESS.toByte()) || 
-                                                     (capacity > 5 && buttons[5] == GLFW_PRESS.toByte())
-                                
-                                // DirectInput standard Right Trigger button (button 9)
-                                if (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) {
-                                    rtPressedThisFrame = true
-                                }
-                                // Backups for different drivers (e.g. Button 16 or 12 or 11)
-                                if (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) {
-                                    rtPressedThisFrame = true
-                                }
-                                if (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) {
-                                    rtPressedThisFrame = true
-                                }
-                                if (capacity > 11 && buttons[11] == GLFW_PRESS.toByte()) {
-                                    rtPressedThisFrame = true
-                                }
-                                
-                                // Face buttons as additional shooting/transfer backups (A, B, X, Y)
-                                if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
-                                    (capacity > 1 && buttons[1] == GLFW_PRESS.toByte()) ||
-                                    (capacity > 2 && buttons[2] == GLFW_PRESS.toByte()) ||
-                                    (capacity > 3 && buttons[3] == GLFW_PRESS.toByte())) {
-                                    rtPressedThisFrame = true
-                                }
-                            }
-                        } else if (glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState)) {
-                            // Standardized Gamepad API (Xbox Controller Normalized Mappings)
-                            gamepadLx = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_X)
-                            gamepadLy = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_Y)
-                            gamepadRx = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_X)
-                            gamepadRy = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_Y)
-                            
-                            // Triggers map from -1.0 to 1.0 in GLFW Gamepad State
-                            val rtValue = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER)
-                            if (rtValue > 0.0f) {
-                                rtPressedThisFrame = true
-                            }
-                            
-                            lbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER) == GLFW_PRESS.toByte()
-                            rbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) == GLFW_PRESS.toByte()
-                            
-                            // Y / Triangle button for pose reset (momentary)
-                            isPoseReset = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_Y) == GLFW_PRESS.toByte()
-                        } else {
-                            // Fallback to raw joystick inputs
-                            val axes = glfwGetJoystickAxes(activeJoy)
-                            val buttons = glfwGetJoystickButtons(activeJoy)
-                            
-                            if (axes != null && axes.capacity() >= 4) {
-                                gamepadLx = axes[0]
-                                gamepadLy = axes[1]
-                                
-                                if (axes.capacity() >= 6) {
-                                    gamepadRx = axes[2]
-                                    gamepadRy = axes[3]
-                                    if (axes[5] > 0.5f) {
+                                if (buttons != null) {
+                                    val capacity = buttons.capacity()
+                                    lbPressedThisFrame = (capacity > 6 && buttons[6] == GLFW_PRESS.toByte()) || 
+                                                         (capacity > 4 && buttons[4] == GLFW_PRESS.toByte())
+                                                         
+                                    rbPressedThisFrame = (capacity > 7 && buttons[7] == GLFW_PRESS.toByte()) || 
+                                                         (capacity > 5 && buttons[5] == GLFW_PRESS.toByte())
+                                    
+                                    // DirectInput standard Right Trigger button (button 9)
+                                    if (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) {
                                         rtPressedThisFrame = true
                                     }
-                                } else {
-                                    gamepadRx = axes[2]
-                                    gamepadRy = axes[3]
+                                    // Backups for different drivers (e.g. Button 16 or 12 or 11)
+                                    if (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) {
+                                        rtPressedThisFrame = true
+                                    }
+                                    if (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) {
+                                        rtPressedThisFrame = true
+                                    }
+                                    if (capacity > 11 && buttons[11] == GLFW_PRESS.toByte()) {
+                                        rtPressedThisFrame = true
+                                    }
+                                    
+                                    // Face buttons as additional shooting/transfer backups (A, B, X, Y)
+                                    if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
+                                        (capacity > 1 && buttons[1] == GLFW_PRESS.toByte()) ||
+                                        (capacity > 2 && buttons[2] == GLFW_PRESS.toByte()) ||
+                                        (capacity > 3 && buttons[3] == GLFW_PRESS.toByte())) {
+                                        rtPressedThisFrame = true
+                                    }
                                 }
-                            } else {
-                                gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
                             }
+                            glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState) -> {
+                                // Standardized Gamepad API (Xbox Controller Normalized Mappings)
+                                gamepadLx = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_X)
+                                gamepadLy = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_Y)
+                                gamepadRx = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_X)
+                                gamepadRy = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_Y)
+                                
+                                // Triggers map from -1.0 to 1.0 in GLFW Gamepad State
+                                val rtValue = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER)
+                                if (rtValue > 0.0f) {
+                                    rtPressedThisFrame = true
+                                }
+                                
+                                lbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER) == GLFW_PRESS.toByte()
+                                rbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) == GLFW_PRESS.toByte()
+                                
+                                // Y / Triangle button for pose reset (momentary)
+                                isPoseReset = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_Y) == GLFW_PRESS.toByte()
+                            }
+                            else -> {
+                                // Fallback to raw joystick inputs
+                                val axes = glfwGetJoystickAxes(activeJoy)
+                                val buttons = glfwGetJoystickButtons(activeJoy)
+                                
+                                if (axes != null && axes.capacity() >= 4) {
+                                    gamepadLx = axes[0]
+                                    gamepadLy = axes[1]
+                                    
+                                    if (axes.capacity() >= 6) {
+                                        gamepadRx = axes[2]
+                                        gamepadRy = axes[3]
+                                        if (axes[5] > 0.5f) {
+                                            rtPressedThisFrame = true
+                                        }
+                                    } else {
+                                        gamepadRx = axes[2]
+                                        gamepadRy = axes[3]
+                                    }
+                                } else {
+                                    gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
+                                }
 
-                            if (buttons != null) {
-                                val capacity = buttons.capacity()
-                                if (capacity >= 6) {
-                                    if (buttons[4] == GLFW_PRESS.toByte()) {
-                                        lbPressedThisFrame = true
+                                if (buttons != null) {
+                                    val capacity = buttons.capacity()
+                                    if (capacity >= 6) {
+                                        if (buttons[4] == GLFW_PRESS.toByte()) {
+                                            lbPressedThisFrame = true
+                                        }
+                                        if (buttons[5] == GLFW_PRESS.toByte()) {
+                                            rbPressedThisFrame = true
+                                        }
                                     }
-                                    if (buttons[5] == GLFW_PRESS.toByte()) {
-                                        rbPressedThisFrame = true
+                                    // Backups for fallback joystick
+                                    if (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) {
+                                        rtPressedThisFrame = true
                                     }
-                                }
-                                // Backups for fallback joystick
-                                if (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) {
-                                    rtPressedThisFrame = true
-                                }
-                                if (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) {
-                                    rtPressedThisFrame = true
-                                }
-                                if (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) {
-                                    rtPressedThisFrame = true
-                                }
-                                if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
-                                    (capacity > 2 && buttons[2] == GLFW_PRESS.toByte())) {
-                                    rtPressedThisFrame = true
+                                    if (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) {
+                                        rtPressedThisFrame = true
+                                    }
+                                    if (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) {
+                                        rtPressedThisFrame = true
+                                    }
+                                    if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
+                                        (capacity > 2 && buttons[2] == GLFW_PRESS.toByte())) {
+                                        rtPressedThisFrame = true
+                                    }
                                 }
                             }
                         }
@@ -399,7 +403,12 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
                         if (changed || isKeyboardTransferring) {
                             val isGamepad = glfwJoystickIsGamepad(activeJoy)
-                            println("[GAMEPAD DIAGNOSTIC] Name: $gamepadName | Mode: ${if (isBluetoothXbox) "ManualBluetoothXbox" else if (isGamepad) "GamepadAPI" else "RawJoystick"}")
+                            val modeStr = when {
+                                isBluetoothXbox -> "ManualBluetoothXbox"
+                                isGamepad -> "GamepadAPI"
+                                else -> "RawJoystick"
+                            }
+                            println("[GAMEPAD DIAGNOSTIC] Name: $gamepadName | Mode: $modeStr")
                             println(String.format("   - Sticks: Left(%.2f, %.2f) | Right(%.2f, %.2f)", gamepadLx, gamepadLy, gamepadRx, gamepadRy))
                             println("   - Buttons: LB=$lbPressedThisFrame, RB=$rbPressedThisFrame, RT=$rtPressedThisFrame")
                             

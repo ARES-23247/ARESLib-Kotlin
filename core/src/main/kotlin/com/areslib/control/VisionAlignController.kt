@@ -144,10 +144,9 @@ class VisionAlignController {
             } else 0.0
 
             // Update search direction
-            if (abs(ctrlOmega) > 0.02) {
-                lastKnownSearchDirection = sign(ctrlOmega)
-            } else if (abs(ctrlX) > 0.02) {
-                lastKnownSearchDirection = -sign(ctrlX)
+            when {
+                abs(ctrlOmega) > 0.02 -> lastKnownSearchDirection = sign(ctrlOmega)
+                abs(ctrlX) > 0.02 -> lastKnownSearchDirection = -sign(ctrlX)
             }
             wasTrackingTag = true
             

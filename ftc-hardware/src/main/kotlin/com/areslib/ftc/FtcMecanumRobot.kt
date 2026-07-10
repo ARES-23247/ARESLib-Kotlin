@@ -61,6 +61,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     init {
         // Core initializations
+        drive.maxSpeedMps = mecanumIO.maxWheelSpeedMetersPerSecond
     }
 
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
@@ -130,6 +131,79 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val intent = visionAlignController.calculate(store.state, tagId, true)
         if (intent != null) {
             store.dispatch(intent)
+        }
+    }
+
+    private var activePathfindTask: com.areslib.fsm.PathfindToPoseTask? = null
+    private var pathfindStartMs = 0L
+    private val pathfindFollower by lazy { com.areslib.pathing.HolonomicPathFollower(drive) }
+    private var wasPathfindRequested = false
+
+    /**
+     * Drives the robot to a target pose on the field, automatically generating
+     * and following a path around static obstacles.
+     */
+    fun driveToPose(targetPose: Pose2d, isRequested: Boolean) {
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
+        
+        if (isRequested) {
+            if (!wasPathfindRequested) {
+                val config = com.areslib.state.RobotFieldManager.activeConfig
+                val costmap = com.areslib.pathing.Costmap.fromFieldConfig(config)
+                
+                activePathfindTask = com.areslib.fsm.PathfindToPoseTask(
+                    targetPose = targetPose,
+                    follower = pathfindFollower,
+                    costmap = costmap,
+                    maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * 0.6,
+                    maxAccelerationMps2 = 1.5
+                )
+                
+                pathfindStartMs = now
+                val initActions = activePathfindTask!!.initialize(store.state)
+                initActions.forEach { store.dispatch(it) }
+                wasPathfindRequested = true
+            } else {
+                val task = activePathfindTask
+                if (task != null) {
+                    val elapsed = now - pathfindStartMs
+                    if (task.isCompleted(store.state, elapsed)) {
+                        val endActions = task.end(store.state, interrupted = false)
+                        endActions.forEach { store.dispatch(it) }
+                        activePathfindTask = null
+                    } else {
+                        val execActions = task.execute(store.state, elapsed)
+                        execActions.forEach { store.dispatch(it) }
+                    }
+                }
+            }
+        } else {
+            if (wasPathfindRequested) {
+                val task = activePathfindTask
+                if (task != null) {
+                    val endActions = task.end(store.state, interrupted = true)
+                    endActions.forEach { store.dispatch(it) }
+                }
+                pathfindFollower.stop()
+                activePathfindTask = null
+                wasPathfindRequested = false
+            }
+        }
+    }
+
+    /**
+     * Drives the robot to a named field waypoint loaded from field_waypoints.json,
+     * automatically pathfinding around static obstacles.
+     */
+    fun driveToWaypoint(name: String, isRequested: Boolean) {
+        val wp = com.areslib.pathing.FieldWaypointLoader.getWaypoint(name)
+        if (wp != null) {
+            driveToPose(wp.toPose(), isRequested)
+        } else {
+            if (isRequested) {
+                localTelemetry?.addData("Error", "Waypoint '$name' not found!")
+            }
+            driveToPose(Pose2d(0.0, 0.0, Rotation2d(0.0)), false)
         }
     }
 

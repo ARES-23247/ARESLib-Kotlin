@@ -195,10 +195,13 @@ class VFHPlanner(
 
                 val currentDetourSign = sign(sin(chosenHeading - targetHeadingRad))
                 var biasedDiff = diff
-                if (hasUnpassedObstacles && lastDetourSign != 0.0 && currentDetourSign != lastDetourSign) {
-                    biasedDiff += 10.0 // lock detour side until obstacle is passed
-                } else if (lastDetourSign != 0.0 && currentDetourSign == lastDetourSign) {
-                    biasedDiff -= 0.8
+                when {
+                    hasUnpassedObstacles && lastDetourSign != 0.0 && currentDetourSign != lastDetourSign -> {
+                        biasedDiff += 10.0 // lock detour side until obstacle is passed
+                    }
+                    lastDetourSign != 0.0 && currentDetourSign == lastDetourSign -> {
+                        biasedDiff -= 0.8
+                    }
                 }
 
                 if (biasedDiff < minHeadingDifference) {

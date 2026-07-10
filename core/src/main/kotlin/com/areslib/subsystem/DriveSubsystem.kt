@@ -4,7 +4,9 @@ import com.areslib.action.RobotAction
 import com.areslib.math.Pose2d
 import com.areslib.state.RobotState
 
-class DriveSubsystem(private val store: Store) {
+class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
+    var maxSpeedMps: Double = 3.5
+
     val xVelocity: Double 
         get() = store.state.drive.xVelocityMetersPerSecond
 
@@ -35,4 +37,20 @@ class DriveSubsystem(private val store: Store) {
             timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         ))
     }
+
+    override fun setChassisSpeeds(vx: Double, vy: Double, omega: Double) {
+        joystickDrive(
+            x = vx / maxSpeedMps,
+            y = vy / maxSpeedMps,
+            rot = omega / maxSpeedMps,
+            isFieldCentric = false
+        )
+    }
+
+    override fun getEstimatedPose(): Pose2d {
+        return odometryPose
+    }
+
+    override fun readSensors(store: Store, timestampMs: Long) {}
+    override fun writeOutputs(state: RobotState, scale: Double) {}
 }

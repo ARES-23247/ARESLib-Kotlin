@@ -71,10 +71,9 @@ class FtcMotor(
 
             // Automated stall detection: comparing encoder velocities against applied voltage
             if (kotlin.math.abs(value) > 0.5 && kotlin.math.abs(currentVel) < 10.0) {
-                if (stallStartTimeMs == 0L) {
-                    stallStartTimeMs = timeMs
-                } else if (timeMs - stallStartTimeMs > 500) {
-                    isStalled = true
+                when {
+                    stallStartTimeMs == 0L -> stallStartTimeMs = timeMs
+                    timeMs - stallStartTimeMs > 500 -> isStalled = true
                 }
             } else {
                 stallStartTimeMs = 0L
