@@ -28,7 +28,7 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     override fun initialize(state: RobotState): List<RobotAction> {
         val startPose = state.drive.poseEstimator.estimatedPose
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
-        val activeTargetPose = com.areslib.math.AllianceMirroring.mirror(targetPose, alliance, com.areslib.math.FieldSymmetry.ROTATIONAL)
+        val activeTargetPose = com.areslib.math.AllianceMirroring.mirror(targetPose, alliance, com.areslib.math.FieldSymmetry.MIRRORED)
 
         val startTrans = Translation2d(startPose.x, startPose.y)
         val targetTrans = Translation2d(activeTargetPose.x, activeTargetPose.y)

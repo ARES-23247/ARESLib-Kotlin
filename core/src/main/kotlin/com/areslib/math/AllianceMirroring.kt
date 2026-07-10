@@ -38,9 +38,9 @@ object AllianceMirroring {
                     heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
                 )
                 FieldSymmetry.MIRRORED -> Pose2d(
-                    x = -pose.x,
-                    y = pose.y,
-                    heading = Rotation2d(InputMath.wrapAngle(Math.PI - pose.heading.radians))
+                    x = pose.x,
+                    y = -pose.y,
+                    heading = Rotation2d(InputMath.wrapAngle(-pose.heading.radians))
                 )
             }
         } else {
@@ -51,9 +51,9 @@ object AllianceMirroring {
                     heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
                 )
                 FieldSymmetry.MIRRORED -> Pose2d(
-                    x = fieldLength - pose.x,
-                    y = pose.y,
-                    heading = Rotation2d(InputMath.wrapAngle(Math.PI - pose.heading.radians))
+                    x = pose.x,
+                    y = fieldWidth - pose.y,
+                    heading = Rotation2d(InputMath.wrapAngle(-pose.heading.radians))
                 )
             }
         }
@@ -81,7 +81,7 @@ object AllianceMirroring {
         return if (isCenterOrigin) {
             when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> Translation2d(-translation.x, -translation.y)
-                FieldSymmetry.MIRRORED -> Translation2d(-translation.x, translation.y)
+                FieldSymmetry.MIRRORED -> Translation2d(translation.x, -translation.y)
             }
         } else {
             when (symmetry) {
@@ -90,8 +90,8 @@ object AllianceMirroring {
                     y = fieldWidth - translation.y
                 )
                 FieldSymmetry.MIRRORED -> Translation2d(
-                    x = fieldLength - translation.x,
-                    y = translation.y
+                    x = translation.x,
+                    y = fieldWidth - translation.y
                 )
             }
         }

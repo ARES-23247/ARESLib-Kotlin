@@ -45,10 +45,10 @@ class AllianceMirroringTest {
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
         val mirroredPose = AllianceMirroring.mirror(originalPose, Alliance.RED, FieldSymmetry.MIRRORED, fieldLength, fieldWidth)
 
-        // Expected: x = -1.0, y = 1.5, heading = 135°
-        assertEquals(-1.0, mirroredPose.x, epsilon)
-        assertEquals(1.5, mirroredPose.y, epsilon)
-        assertEquals(Rotation2d.fromDegrees(135.0).radians, mirroredPose.heading.radians, epsilon)
+        // Expected: x = 1.0, y = -1.5, heading = -45° (315°)
+        assertEquals(1.0, mirroredPose.x, epsilon)
+        assertEquals(-1.5, mirroredPose.y, epsilon)
+        assertEquals(Rotation2d.fromDegrees(-45.0).radians, mirroredPose.heading.radians, epsilon)
     }
 
     @Test
@@ -74,7 +74,7 @@ class AllianceMirroringTest {
         // Curvatures should be INVERTED under reflection
         assertEquals(-0.5, reflectedPath.points[0].curvature, epsilon)
         assertEquals(0.3, reflectedPath.points[1].curvature, epsilon)
-        assertEquals(-1.0, reflectedPath.points[0].pose.x, epsilon)
-        assertEquals(1.5, reflectedPath.points[0].pose.y, epsilon)
+        assertEquals(1.0, reflectedPath.points[0].pose.x, epsilon)
+        assertEquals(-1.5, reflectedPath.points[0].pose.y, epsilon)
     }
 }

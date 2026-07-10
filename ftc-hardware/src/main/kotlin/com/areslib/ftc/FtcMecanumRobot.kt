@@ -156,8 +156,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     targetPose = targetPose,
                     follower = pathfindFollower,
                     costmap = costmap,
-                    maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * 0.6,
-                    maxAccelerationMps2 = 1.5,
+                    maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * 0.85,
+                    maxAccelerationMps2 = 3.0,
                     mirrorForAlliance = mirrorForAlliance
                 )
                 

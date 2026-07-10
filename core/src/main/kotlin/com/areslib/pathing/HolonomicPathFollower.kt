@@ -10,8 +10,8 @@ import com.areslib.subsystem.DrivetrainSubsystem
  */
 class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
     val drivetrain: DrivetrainSubsystem,
-    val xController: PIDController = PIDController(p = 1.5, i = 0.0, d = 0.15),
-    val yController: PIDController = PIDController(p = 1.5, i = 0.0, d = 0.15),
+    val xController: PIDController = PIDController(p = 2.0, i = 0.0, d = 0.02),
+    val yController: PIDController = PIDController(p = 2.0, i = 0.0, d = 0.02),
     val thetaController: PIDController = PIDController(p = 2.5, i = 0.0, d = 0.05).apply {
         enableContinuousInput(-Math.PI, Math.PI)
     }
