@@ -259,8 +259,13 @@ object DesktopSimLauncher {
         robotFixture.density = 15.0 // 15kg
         robotBody.setMass(MassType.NORMAL)
         
-        // Spawn configuration (starts at the center of the field: 0.0, 0.0)
-        var startPose = Pose2d(0.0, 0.0, Rotation2d(0.0))
+        // Spawn configuration (starts adjacent to the alliance wall facing the center)
+        val alliance = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
+        var startPose = if (alliance == com.areslib.state.Alliance.RED) {
+            Pose2d(0.0, -1.2, Rotation2d(kotlin.math.PI / 2.0))
+        } else {
+            Pose2d(0.0, 1.2, Rotation2d(-kotlin.math.PI / 2.0))
+        }
         robotBody.translate(startPose.x, startPose.y)
         robotBody.rotate(startPose.heading.radians)
         world.addBody(robotBody)
