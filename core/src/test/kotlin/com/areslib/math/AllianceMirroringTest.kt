@@ -33,11 +33,9 @@ class AllianceMirroringTest {
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
         val mirroredPose = AllianceMirroring.mirror(originalPose, Alliance.RED, FieldSymmetry.ROTATIONAL, fieldLength, fieldWidth)
 
-        // Expected: x = fieldLength - 1.0 = 2.6576
-        // Expected: y = fieldWidth - 1.5 = 2.1576
-        // Expected: heading = 45° + 180° = 225° = -135°
-        assertEquals(fieldLength - 1.0, mirroredPose.x, epsilon)
-        assertEquals(fieldWidth - 1.5, mirroredPose.y, epsilon)
+        // Expected: x = -1.0, y = -1.5, heading = 225°
+        assertEquals(-1.0, mirroredPose.x, epsilon)
+        assertEquals(-1.5, mirroredPose.y, epsilon)
         assertEquals(Rotation2d.fromDegrees(225.0).radians, mirroredPose.heading.radians, epsilon)
     }
 
@@ -47,10 +45,8 @@ class AllianceMirroringTest {
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
         val mirroredPose = AllianceMirroring.mirror(originalPose, Alliance.RED, FieldSymmetry.MIRRORED, fieldLength, fieldWidth)
 
-        // Expected: x = fieldLength - 1.0 = 2.6576
-        // Expected: y = 1.5 (unchanged)
-        // Expected: heading = 180° - 45° = 135°
-        assertEquals(fieldLength - 1.0, mirroredPose.x, epsilon)
+        // Expected: x = -1.0, y = 1.5, heading = 135°
+        assertEquals(-1.0, mirroredPose.x, epsilon)
         assertEquals(1.5, mirroredPose.y, epsilon)
         assertEquals(Rotation2d.fromDegrees(135.0).radians, mirroredPose.heading.radians, epsilon)
     }
@@ -69,8 +65,8 @@ class AllianceMirroringTest {
         // Curvatures should be UNCHANGED under rotation
         assertEquals(0.5, rotatedPath.points[0].curvature, epsilon)
         assertEquals(-0.3, rotatedPath.points[1].curvature, epsilon)
-        assertEquals(fieldLength - 1.0, rotatedPath.points[0].pose.x, epsilon)
-        assertEquals(fieldWidth - 1.5, rotatedPath.points[0].pose.y, epsilon)
+        assertEquals(-1.0, rotatedPath.points[0].pose.x, epsilon)
+        assertEquals(-1.5, rotatedPath.points[0].pose.y, epsilon)
 
         // Test Reflectional mirroring
         val reflectedPath = AllianceMirroring.mirror(path, Alliance.RED, FieldSymmetry.MIRRORED, fieldLength, fieldWidth)
@@ -78,7 +74,7 @@ class AllianceMirroringTest {
         // Curvatures should be INVERTED under reflection
         assertEquals(-0.5, reflectedPath.points[0].curvature, epsilon)
         assertEquals(0.3, reflectedPath.points[1].curvature, epsilon)
-        assertEquals(fieldLength - 1.0, reflectedPath.points[0].pose.x, epsilon)
+        assertEquals(-1.0, reflectedPath.points[0].pose.x, epsilon)
         assertEquals(1.5, reflectedPath.points[0].pose.y, epsilon)
     }
 }

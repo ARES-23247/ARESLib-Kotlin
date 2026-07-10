@@ -17,8 +17,22 @@ open class GoBildaPinpointDriver {
     private var rawOffsetY: Double = 0.0
     private var rawOffsetHeading: Double = 0.0
     
-    fun getPosX(unit: DistanceUnit): Double = posX - rawOffsetX
-    fun getPosY(unit: DistanceUnit): Double = posY - rawOffsetY
+    fun getPosX(unit: DistanceUnit): Double {
+        val dx = posX - rawOffsetX
+        val dy = posY - rawOffsetY
+        val cosH = kotlin.math.cos(rawOffsetHeading)
+        val sinH = kotlin.math.sin(rawOffsetHeading)
+        return dx * cosH - dy * sinH
+    }
+
+    fun getPosY(unit: DistanceUnit): Double {
+        val dx = posX - rawOffsetX
+        val dy = posY - rawOffsetY
+        val cosH = kotlin.math.cos(rawOffsetHeading)
+        val sinH = kotlin.math.sin(rawOffsetHeading)
+        return dx * sinH + dy * cosH
+    }
+
     fun getHeading(unit: AngleUnit): Double = heading - rawOffsetHeading
     fun getHeading(unit: UnnormalizedAngleUnit): Double = heading - rawOffsetHeading
     fun getHeadingVelocity(unit: UnnormalizedAngleUnit): Double = headingVelocity
@@ -26,7 +40,7 @@ open class GoBildaPinpointDriver {
     fun getVelY(unit: DistanceUnit): Double = velY
     
     fun getPosition(): Pose2D {
-        return Pose2D(DistanceUnit.METER, posX - rawOffsetX, posY - rawOffsetY, AngleUnit.RADIANS, heading - rawOffsetHeading)
+        return Pose2D(DistanceUnit.METER, getPosX(DistanceUnit.METER), getPosY(DistanceUnit.METER), AngleUnit.RADIANS, heading - rawOffsetHeading)
     }
     
     fun update() {}
