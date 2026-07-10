@@ -40,6 +40,9 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     @Volatile var isFlywheelOn = false
     @Volatile var isTransferring = false
     @Volatile var isPoseReset = false
+    @Volatile var isButtonAPressed = false
+    @Volatile var isButtonBPressed = false
+    @Volatile var isButtonXPressed = false
 
     // Web inputs
     @Volatile var webVx = 0.0
@@ -274,13 +277,11 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                         rtPressedThisFrame = true
                                     }
                                     
-                                    // Face buttons as additional shooting/transfer backups (A, B, X, Y)
-                                    if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
-                                        (capacity > 1 && buttons[1] == GLFW_PRESS.toByte()) ||
-                                        (capacity > 2 && buttons[2] == GLFW_PRESS.toByte()) ||
-                                        (capacity > 3 && buttons[3] == GLFW_PRESS.toByte())) {
-                                        rtPressedThisFrame = true
-                                    }
+                                    // Face buttons A, B, X, Y
+                                    if (capacity > 0) isButtonAPressed = buttons[0] == GLFW_PRESS.toByte()
+                                    if (capacity > 1) isButtonBPressed = buttons[1] == GLFW_PRESS.toByte()
+                                    if (capacity > 2) isButtonXPressed = buttons[2] == GLFW_PRESS.toByte()
+                                    if (capacity > 3) isPoseReset = buttons[3] == GLFW_PRESS.toByte()
                                 }
                             }
                             glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState) -> {
@@ -299,7 +300,9 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                 lbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER) == GLFW_PRESS.toByte()
                                 rbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) == GLFW_PRESS.toByte()
                                 
-                                // Y / Triangle button for pose reset (momentary)
+                                isButtonAPressed = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_A) == GLFW_PRESS.toByte()
+                                isButtonBPressed = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_B) == GLFW_PRESS.toByte()
+                                isButtonXPressed = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_X) == GLFW_PRESS.toByte()
                                 isPoseReset = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_Y) == GLFW_PRESS.toByte()
                             }
                             else -> {
@@ -345,10 +348,10 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                     if (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) {
                                         rtPressedThisFrame = true
                                     }
-                                    if ((capacity > 0 && buttons[0] == GLFW_PRESS.toByte()) || 
-                                        (capacity > 2 && buttons[2] == GLFW_PRESS.toByte())) {
-                                        rtPressedThisFrame = true
-                                    }
+                                    if (capacity > 0) isButtonAPressed = buttons[0] == GLFW_PRESS.toByte()
+                                    if (capacity > 1) isButtonBPressed = buttons[1] == GLFW_PRESS.toByte()
+                                    if (capacity > 2) isButtonXPressed = buttons[2] == GLFW_PRESS.toByte()
+                                    if (capacity > 3) isPoseReset = buttons[3] == GLFW_PRESS.toByte()
                                 }
                             }
                         }
@@ -464,6 +467,9 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 KeyEvent.VK_F -> isFlywheelOn = !isFlywheelOn
                 KeyEvent.VK_ENTER -> isTransferring = true
                 KeyEvent.VK_Y -> isPoseReset = true
+                KeyEvent.VK_1 -> isButtonAPressed = true
+                KeyEvent.VK_2 -> isButtonBPressed = true
+                KeyEvent.VK_3 -> isButtonXPressed = true
             }
             repaint()
         }
@@ -475,6 +481,9 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
             when (it.keyCode) {
                 KeyEvent.VK_ENTER -> isTransferring = false
                 KeyEvent.VK_Y -> isPoseReset = false
+                KeyEvent.VK_1 -> isButtonAPressed = false
+                KeyEvent.VK_2 -> isButtonBPressed = false
+                KeyEvent.VK_3 -> isButtonXPressed = false
             }
             repaint()
         }

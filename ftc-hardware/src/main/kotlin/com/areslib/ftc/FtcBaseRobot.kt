@@ -32,6 +32,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.telemetry.RobotWebServer.start()
         com.areslib.telemetry.RobotStatusTracker.isEnabled = false
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
+        activeInstance = this
     }
 
     companion object {
@@ -39,6 +40,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val javaVendor = System.getProperty("java.vendor") ?: ""
             javaVendor.contains("Android", ignoreCase = true) || java.io.File("/sdcard").exists()
         }
+        @Volatile
+        @JvmStatic
+        var activeInstance: FtcBaseRobot? = null
     }
 
     // Telemetry & recording pipelines
@@ -209,6 +213,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * and clears registries to prevent memory/thread leakage.
      */
     open fun close() {
+        activeInstance = null
         safeHardware()
         com.areslib.telemetry.RobotStatusTracker.isEnabled = false
         com.areslib.telemetry.RobotWebServer.stop()

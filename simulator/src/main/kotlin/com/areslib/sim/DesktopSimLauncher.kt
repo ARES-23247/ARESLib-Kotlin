@@ -428,6 +428,26 @@ object DesktopSimLauncher {
             // Match Start! Exits init loop in LinearOpMode
             opMode.isStarted = true
             println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
+            
+            // Automatically sync robot's EKF and Pinpoint to the actual physics body pose at match start!
+            val currentPhysPose = Pose2d(robotBody.transform.translationX, robotBody.transform.translationY, Rotation2d(robotBody.transform.rotationAngle))
+            com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
+                val now = com.areslib.util.RobotClock.currentTimeMillis()
+                robotInstance.pinpointIO?.initialize(
+                    com.areslib.math.Pose2d(currentPhysPose.x, currentPhysPose.y, com.areslib.math.Rotation2d(currentPhysPose.heading.radians)),
+                    resetHardware = false
+                )
+                robotInstance.store.dispatch(
+                    com.areslib.action.RobotAction.PoseUpdate(
+                        xMeters = currentPhysPose.x,
+                        yMeters = currentPhysPose.y,
+                        headingRadians = currentPhysPose.heading.radians,
+                        timestampMs = now,
+                        isReset = true
+                    )
+                )
+                println("[Simulator] Automatically synced robot EKF and Pinpoint to physics starting pose: $currentPhysPose")
+            }
         }
 
         // 5. Simulation Loop
@@ -622,11 +642,13 @@ object DesktopSimLauncher {
                 activeOpMode?.gamepad1?.right_stick_x = -(driveSpeeds.omegaRadiansPerSecond / 4.0).toFloat()
                 
                 // Buttons
-                activeOpMode?.gamepad1?.b = driverStation.isFieldCentric // B triggers AprilTag align or similar
+                activeOpMode?.gamepad1?.a = driverStation.isButtonAPressed
+                activeOpMode?.gamepad1?.b = driverStation.isButtonBPressed
+                activeOpMode?.gamepad1?.x = driverStation.isButtonXPressed
+                activeOpMode?.gamepad1?.y = driverStation.isPoseReset
                 activeOpMode?.gamepad1?.left_bumper = driverStation.isIntaking
                 activeOpMode?.gamepad1?.right_bumper = driverStation.isFlywheelOn
                 activeOpMode?.gamepad1?.right_trigger = if (driverStation.isTransferring) 1.0f else 0.0f
-                activeOpMode?.gamepad1?.y = driverStation.isPoseReset
             }
 
             // Unified motor power readout — always read from OpMode (teleop and auto alike)
