@@ -143,7 +143,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * Drives the robot to a target pose on the field, automatically generating
      * and following a path around static obstacles.
      */
-    fun driveToPose(targetPose: Pose2d, isRequested: Boolean) {
+    @kotlin.jvm.JvmOverloads
+    fun driveToPose(targetPose: Pose2d, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
         val now = com.areslib.util.RobotClock.currentTimeMillis()
         
         if (isRequested) {
@@ -156,7 +157,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     follower = pathfindFollower,
                     costmap = costmap,
                     maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * 0.6,
-                    maxAccelerationMps2 = 1.5
+                    maxAccelerationMps2 = 1.5,
+                    mirrorForAlliance = mirrorForAlliance
                 )
                 
                 pathfindStartMs = now
@@ -195,15 +197,16 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * Drives the robot to a named field waypoint loaded from field_waypoints.json,
      * automatically pathfinding around static obstacles.
      */
-    fun driveToWaypoint(name: String, isRequested: Boolean) {
+    @kotlin.jvm.JvmOverloads
+    fun driveToWaypoint(name: String, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
         val wp = com.areslib.pathing.FieldWaypointLoader.getWaypoint(name)
         if (wp != null) {
-            driveToPose(wp.toPose(), isRequested)
+            driveToPose(wp.toPose(), isRequested, mirrorForAlliance)
         } else {
             if (isRequested) {
                 localTelemetry?.addData("Error", "Waypoint '$name' not found!")
             }
-            driveToPose(Pose2d(0.0, 0.0, Rotation2d(0.0)), false)
+            driveToPose(Pose2d(0.0, 0.0, Rotation2d(0.0)), false, false)
         }
     }
 

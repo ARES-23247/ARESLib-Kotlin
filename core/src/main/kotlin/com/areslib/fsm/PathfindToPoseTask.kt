@@ -19,15 +19,19 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     private val follower: HolonomicPathFollower,
     private val costmap: Costmap,
     private val maxVelocityMps: Double = 2.0,
-    private val maxAccelerationMps2: Double = 1.5
+    private val maxAccelerationMps2: Double = 1.5,
+    private val mirrorForAlliance: Boolean = true
 ) : Task {
     override val name = "PathfindToPose($targetPose)"
     private var delegateTask: FollowPathTask? = null
 
     override fun initialize(state: RobotState): List<RobotAction> {
         val startPose = state.drive.poseEstimator.estimatedPose
+        val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
+        val activeTargetPose = com.areslib.math.AllianceMirroring.mirror(targetPose, alliance, com.areslib.math.FieldSymmetry.ROTATIONAL)
+
         val startTrans = Translation2d(startPose.x, startPose.y)
-        val targetTrans = Translation2d(targetPose.x, targetPose.y)
+        val targetTrans = Translation2d(activeTargetPose.x, activeTargetPose.y)
 
         // Plan 2D coordinate waypoints using Theta* any-angle pathfinder
         val coordinateWaypoints = ThetaStarPlanner.plan(costmap, startTrans, targetTrans)
@@ -43,12 +47,14 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         val path = PathPlannerParser.generatePath(
             points = finalWaypoints,
             startHeading = startPose.heading,
-            endHeading = targetPose.heading,
+            endHeading = activeTargetPose.heading,
             maxVelocityMps = maxVelocityMps,
             maxAccelerationMps2 = maxAccelerationMps2
         )
 
-        val task = FollowPathTask(follower, path)
+        // We already mirrored the targetPose and planned in absolute/mirrored space,
+        // so we disable mirroring inside the inner FollowPathTask.
+        val task = FollowPathTask(follower, path, mirrorForAlliance = false)
         delegateTask = task
         return task.initialize(state)
     }

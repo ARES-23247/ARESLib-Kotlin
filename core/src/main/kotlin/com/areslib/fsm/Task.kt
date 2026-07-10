@@ -291,7 +291,8 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val path: com.areslib.pathing.Path,
     private val symmetry: com.areslib.math.FieldSymmetry = com.areslib.math.FieldSymmetry.ROTATIONAL,
     private val fieldLength: Double = com.areslib.math.CoordinateTransformers.FTC_FIELD_SIZE,
-    private val fieldWidth: Double = com.areslib.math.CoordinateTransformers.FTC_FIELD_SIZE
+    private val fieldWidth: Double = com.areslib.math.CoordinateTransformers.FTC_FIELD_SIZE,
+    private val mirrorForAlliance: Boolean = true
 ) : Task {
     override val name = "FollowPath(${path.points.size} points)"
     private var lastTimeMs = 0L
@@ -304,7 +305,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
     override fun initialize(state: RobotState): List<RobotAction> {
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
-        val alliance = state.drive.alliance
+        val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
         activePath = com.areslib.math.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
         triggeredEvents.clear()
         return listOf(
