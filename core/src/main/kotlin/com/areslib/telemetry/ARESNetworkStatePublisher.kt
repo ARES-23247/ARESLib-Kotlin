@@ -29,25 +29,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Drive/Velocity_Y", state.drive.yVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Omega", state.drive.angularVelocityRadiansPerSecond)
 
-        // Pose2d for AdvantageScope 3D visualization
-        // Main robot pose tracks the EKF-fused pose (used by robot pathing/aiming)
-        telemetry.putDoubleArray(
-            "AdvantageScope/RobotPose",
-            doubleArrayOf(
-                state.drive.poseEstimator.estimatedPose.x,
-                state.drive.poseEstimator.estimatedPose.y,
-                state.drive.poseEstimator.estimatedPose.heading.radians
-            )
-        )
-        // Raw pinpoint odometry is published separately to allow comparing drift
-        telemetry.putDoubleArray(
-            "AdvantageScope/RawOdomPose",
-            doubleArrayOf(
-                state.drive.odometryX,
-                state.drive.odometryY,
-                state.drive.odometryHeading
-            )
-        )
+
 
         // ── Superstructure ──
         telemetry.putString("Superstructure/Mode", state.superstructure.mode.name)
