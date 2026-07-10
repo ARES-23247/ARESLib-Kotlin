@@ -310,9 +310,16 @@ object DesktopSimLauncher {
         }
         
         var loadedAprilTagsJson: String? = null
+        var loadedAprilTagsFmap: String? = null
         if (activeConfig == null) {
             var aprilTagsFile: java.io.File? = null
             val atPaths = listOf(
+                "src/main/assets/paths/apriltags.fmap",
+                "TeamCode/src/main/assets/paths/apriltags.fmap",
+                "../src/main/assets/paths/apriltags.fmap",
+                "src/main/deploy/paths/apriltags.fmap",
+                "frc-app/src/main/deploy/paths/apriltags.fmap",
+                "../src/main/deploy/paths/apriltags.fmap",
                 "src/main/assets/paths/apriltags.json",
                 "TeamCode/src/main/assets/paths/apriltags.json",
                 "../src/main/assets/paths/apriltags.json",
@@ -330,9 +337,13 @@ object DesktopSimLauncher {
             if (aprilTagsFile != null) {
                 try {
                     println("[Simulator] Loading apriltags from: ${aprilTagsFile.absolutePath}")
-                    loadedAprilTagsJson = aprilTagsFile.readText()
+                    if (aprilTagsFile.name.endsWith(".fmap")) {
+                        loadedAprilTagsFmap = aprilTagsFile.readText()
+                    } else {
+                        loadedAprilTagsJson = aprilTagsFile.readText()
+                    }
                 } catch (e: Exception) {
-                    println("Failed to load apriltags.json: ${e.message}")
+                    println("Failed to load apriltags file: ${e.message}")
                 }
             }
             
@@ -469,6 +480,21 @@ object DesktopSimLauncher {
                         com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
                         com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
                     )
+                }
+            }
+            loadedAprilTagsFmap != null -> {
+                try {
+                    val tagsList = com.areslib.state.RobotFieldManager.parseFmapContent(loadedAprilTagsFmap)
+                    NT4FieldPublisher.publishAprilTags(tagsList)
+                    tagsList.associate { tag ->
+                        tag.id to com.areslib.math.Pose3d(
+                            com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
+                            com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                        )
+                    }
+                } catch (e: Exception) {
+                    println("Failed to parse apriltags.fmap: ${e.message}")
+                    emptyMap()
                 }
             }
             loadedAprilTagsJson != null -> {

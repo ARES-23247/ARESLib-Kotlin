@@ -211,4 +211,47 @@ object RobotFieldManager {
     fun setActiveConfig(config: RobotFieldConfig) {
         activeConfig = config
     }
+
+    /**
+     * Loads AprilTags from a Limelight .fmap file content.
+     */
+    fun parseFmapContent(jsonContent: String): List<RobotFieldAprilTag> {
+        return try {
+            val fmap = gson.fromJson(jsonContent, LimelightFmap::class.java) ?: return emptyList()
+            fmap.fiducials.mapNotNull { fiducial ->
+                val transform = fiducial.transform
+                if (transform.size >= 16) {
+                    val tx = transform[3]
+                    val ty = transform[7]
+                    val tz = transform[11]
+                    // Calculate yaw from row-major rotation matrix r00 (index 0) and r10 (index 4)
+                    val yawRad = kotlin.math.atan2(transform[4], transform[0])
+                    val yawDeg = Math.toDegrees(yawRad)
+                    RobotFieldAprilTag(
+                        id = fiducial.id,
+                        x = tx,
+                        y = ty,
+                        z = tz,
+                        yaw = yawDeg
+                    )
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            println("ARES Field Manager Error: Failed to parse fmap JSON: ${e.message}")
+            emptyList()
+        }
+    }
 }
+
+private data class LimelightFiducial(
+    val id: Int = 0,
+    val family: String? = null,
+    val size: Double = 0.0,
+    val transform: List<Double> = emptyList()
+)
+
+private data class LimelightFmap(
+    val fiducials: List<LimelightFiducial> = emptyList()
+)
