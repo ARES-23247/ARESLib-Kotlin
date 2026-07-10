@@ -266,8 +266,8 @@ object DesktopSimLauncher {
         } else {
             Pose2d(0.0, 1.2, Rotation2d(-kotlin.math.PI / 2.0))
         }
-        robotBody.translate(startPose.x, startPose.y)
-        robotBody.rotate(startPose.heading.radians)
+        robotBody.transform.setTranslation(startPose.x, startPose.y)
+        robotBody.transform.setRotation(startPose.heading.radians)
         world.addBody(robotBody)
 
         createWalls(world)
@@ -398,6 +398,28 @@ object DesktopSimLauncher {
         var activeOpMode: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode? = null
         var activeOpModeThread: Thread? = null
 
+        val syncRobotPoseToPhysics = {
+            val currentPhysPose = Pose2d(robotBody.transform.translationX, robotBody.transform.translationY, Rotation2d(robotBody.transform.rotationAngle))
+            com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
+                val now = com.areslib.util.RobotClock.currentTimeMillis()
+                robotInstance.pinpointIO?.initialize(
+                    com.areslib.math.Pose2d(currentPhysPose.x, currentPhysPose.y, com.areslib.math.Rotation2d(currentPhysPose.heading.radians)),
+                    resetHardware = false
+                )
+                robotInstance.store.dispatch(
+                    com.areslib.action.RobotAction.PoseUpdate(
+                        xMeters = currentPhysPose.x,
+                        yMeters = currentPhysPose.y,
+                        headingRadians = currentPhysPose.heading.radians,
+                        timestampMs = now,
+                        isReset = true
+                    )
+                )
+                println("[Simulator] Automatically synced robot EKF and Pinpoint to physics starting pose: $currentPhysPose")
+            }
+            Unit
+        }
+
         if (!serverMode) {
             val opMode = opModeArg ?: Class.forName(opModeClassName).getDeclaredConstructor().newInstance() as com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
             opMode.hardwareMap = robotDouble.hardwareMap
@@ -448,26 +470,7 @@ object DesktopSimLauncher {
             // Match Start! Exits init loop in LinearOpMode
             opMode.isStarted = true
             println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
-            
-            // Automatically sync robot's EKF and Pinpoint to the actual physics body pose at match start!
-            val currentPhysPose = Pose2d(robotBody.transform.translationX, robotBody.transform.translationY, Rotation2d(robotBody.transform.rotationAngle))
-            com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
-                val now = com.areslib.util.RobotClock.currentTimeMillis()
-                robotInstance.pinpointIO?.initialize(
-                    com.areslib.math.Pose2d(currentPhysPose.x, currentPhysPose.y, com.areslib.math.Rotation2d(currentPhysPose.heading.radians)),
-                    resetHardware = false
-                )
-                robotInstance.store.dispatch(
-                    com.areslib.action.RobotAction.PoseUpdate(
-                        xMeters = currentPhysPose.x,
-                        yMeters = currentPhysPose.y,
-                        headingRadians = currentPhysPose.heading.radians,
-                        timestampMs = now,
-                        isReset = true
-                    )
-                )
-                println("[Simulator] Automatically synced robot EKF and Pinpoint to physics starting pose: $currentPhysPose")
-            }
+            syncRobotPoseToPhysics()
         }
 
         // 5. Simulation Loop
@@ -611,10 +614,16 @@ object DesktopSimLauncher {
                                     } catch (_: Exception) {
                                         // Not an auto OpMode with pathName, or path failed to load
                                     }
+                                    val alliance = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
+                                    startPose = if (alliance == com.areslib.state.Alliance.RED) {
+                                        Pose2d(0.0, -1.2, Rotation2d(kotlin.math.PI / 2.0))
+                                    } else {
+                                        Pose2d(0.0, 1.2, Rotation2d(-kotlin.math.PI / 2.0))
+                                    }
                                     if (!teleported) {
-                                        // Teleop or unknown mode: reset to origin
-                                        robotBody.transform.setTranslation(0.0, 0.0)
-                                        robotBody.transform.setRotation(0.0)
+                                        // Teleop or unknown mode: reset to startPose
+                                        robotBody.transform.setTranslation(startPose.x, startPose.y)
+                                        robotBody.transform.setRotation(startPose.heading.radians)
                                         robotBody.setLinearVelocity(0.0, 0.0)
                                         robotBody.angularVelocity = 0.0
                                     }
@@ -639,6 +648,7 @@ object DesktopSimLauncher {
                         "START" -> {
                             println("[Simulator] Received START")
                             activeOpMode?.isStarted = true
+                            syncRobotPoseToPhysics()
                         }
                         "STOP" -> {
                             println("[Simulator] Received STOP")

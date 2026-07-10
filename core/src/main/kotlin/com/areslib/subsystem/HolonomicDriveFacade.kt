@@ -55,6 +55,7 @@ abstract class HolonomicDriveFacade(protected val store: Store) {
     protected val headingPID = com.areslib.control.PIDController(4.5, 0.0, 0.25).apply {
         enableContinuousInput(-Math.PI, Math.PI)
         setOutputLimits(-2.0, 2.0)
+        deadzone = Math.toRadians(0.5)
     }
 
     /**

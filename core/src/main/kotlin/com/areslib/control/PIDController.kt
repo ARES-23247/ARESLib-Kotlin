@@ -24,6 +24,8 @@ class PIDController(
     private var minIntegral: Double = Double.NaN
     private var maxIntegral: Double = Double.NaN
 
+    var deadzone: Double = 0.0
+
     private var lastWarningTime: Long = 0L
 
     /**
@@ -92,6 +94,11 @@ class PIDController(
         if (isContinuous) {
             val errorBound = (continuousMax - continuousMin) / 2.0
             error = inputModulus(error, -errorBound, errorBound)
+        }
+
+        if (kotlin.math.abs(error) < deadzone) {
+            prevError = error
+            return 0.0
         }
 
         totalError += error * dtSeconds
