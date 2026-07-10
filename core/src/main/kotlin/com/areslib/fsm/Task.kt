@@ -329,7 +329,8 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         scratchMutablePoint.copyInto(scratchPathPoint)
         follower.update(scratchPathPoint, dt)
 
-        val nextDistance = currentDistance + scratchPathPoint.velocityMps * dt
+        val progressSpeed = kotlin.math.max(scratchPathPoint.velocityMps, 0.1)
+        val nextDistance = currentDistance + progressSpeed * dt
         actionsList.clear()
         actionsList.add(RobotAction.UpdatePathProgress(nextDistance, currentTimestamp))
 
