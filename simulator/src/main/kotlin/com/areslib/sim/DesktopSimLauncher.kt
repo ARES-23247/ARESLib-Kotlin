@@ -303,6 +303,10 @@ object DesktopSimLauncher {
                     val loaded = FieldObstacleLoader.loadObstacles(world, obstacles)
                     activeObstacles.addAll(loaded)
                     NT4FieldPublisher.publishObstacles(obstacles)
+
+                    // Update the active config so that the robot's EKF pathfinder knows about the obstacles!
+                    val newConfig = com.areslib.state.RobotFieldManager.activeConfig.copy(obstacles = obstacles)
+                    com.areslib.state.RobotFieldManager.setActiveConfig(newConfig)
                 } catch (e: Exception) {
                     println("Failed to load initial field obstacles: ${e.message}")
                 }

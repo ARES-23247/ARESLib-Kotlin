@@ -29,17 +29,33 @@ object AllianceMirroring {
         fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE
     ): Pose2d {
         if (alliance == Alliance.BLUE) return pose
-        return when (symmetry) {
-            FieldSymmetry.ROTATIONAL -> Pose2d(
-                x = fieldLength - pose.x,
-                y = fieldWidth - pose.y,
-                heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
-            )
-            FieldSymmetry.MIRRORED -> Pose2d(
-                x = fieldLength - pose.x,
-                y = pose.y,
-                heading = Rotation2d(InputMath.wrapAngle(Math.PI - pose.heading.radians))
-            )
+        val isCenterOrigin = kotlin.math.abs(fieldLength - CoordinateTransformers.FTC_FIELD_SIZE) < 1e-3
+        return if (isCenterOrigin) {
+            when (symmetry) {
+                FieldSymmetry.ROTATIONAL -> Pose2d(
+                    x = -pose.x,
+                    y = -pose.y,
+                    heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
+                )
+                FieldSymmetry.MIRRORED -> Pose2d(
+                    x = -pose.x,
+                    y = pose.y,
+                    heading = Rotation2d(InputMath.wrapAngle(Math.PI - pose.heading.radians))
+                )
+            }
+        } else {
+            when (symmetry) {
+                FieldSymmetry.ROTATIONAL -> Pose2d(
+                    x = fieldLength - pose.x,
+                    y = fieldWidth - pose.y,
+                    heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
+                )
+                FieldSymmetry.MIRRORED -> Pose2d(
+                    x = fieldLength - pose.x,
+                    y = pose.y,
+                    heading = Rotation2d(InputMath.wrapAngle(Math.PI - pose.heading.radians))
+                )
+            }
         }
     }
 
@@ -61,15 +77,23 @@ object AllianceMirroring {
         fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE
     ): Translation2d {
         if (alliance == Alliance.BLUE) return translation
-        return when (symmetry) {
-            FieldSymmetry.ROTATIONAL -> Translation2d(
-                x = fieldLength - translation.x,
-                y = fieldWidth - translation.y
-            )
-            FieldSymmetry.MIRRORED -> Translation2d(
-                x = fieldLength - translation.x,
-                y = translation.y
-            )
+        val isCenterOrigin = kotlin.math.abs(fieldLength - CoordinateTransformers.FTC_FIELD_SIZE) < 1e-3
+        return if (isCenterOrigin) {
+            when (symmetry) {
+                FieldSymmetry.ROTATIONAL -> Translation2d(-translation.x, -translation.y)
+                FieldSymmetry.MIRRORED -> Translation2d(-translation.x, translation.y)
+            }
+        } else {
+            when (symmetry) {
+                FieldSymmetry.ROTATIONAL -> Translation2d(
+                    x = fieldLength - translation.x,
+                    y = fieldWidth - translation.y
+                )
+                FieldSymmetry.MIRRORED -> Translation2d(
+                    x = fieldLength - translation.x,
+                    y = translation.y
+                )
+            }
         }
     }
 
