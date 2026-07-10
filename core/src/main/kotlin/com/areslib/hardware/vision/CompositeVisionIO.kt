@@ -6,7 +6,7 @@ import com.areslib.math.Pose3d
 /**
  * A composite implementation of [VisionIO] that aggregates measurements from multiple vision sources.
  */
-class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO {
+class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO, AutoCloseable {
 
     override val cameraPoses: List<Pose3d>
         get() = ios.flatMap { it.cameraPoses }
@@ -42,6 +42,16 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO {
                 rollDegrees, rollRateDegPerSec,
                 linearVelocityMps
             )
+        }
+    }
+
+    override fun close() {
+        for (io in ios) {
+            if (io is AutoCloseable) {
+                try {
+                    io.close()
+                } catch (_: Exception) {}
+            }
         }
     }
 }

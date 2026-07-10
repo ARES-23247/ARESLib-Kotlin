@@ -39,14 +39,14 @@ class GcAvoidanceTier1Test {
         val capacity = 3
         val buffer = HistoryBuffer(capacity)
         
-        buffer.addEntry(100L, Pose2d(), Matrix3x3.IDENTITY)
+        buffer.addEntry(100L, Pose2d(), Matrix3x3.IDENTITY, 1.0)
         val entry1 = buffer.get(0)
         
-        buffer.addEntry(200L, Pose2d(), Matrix3x3.IDENTITY)
-        buffer.addEntry(300L, Pose2d(), Matrix3x3.IDENTITY)
+        buffer.addEntry(200L, Pose2d(), Matrix3x3.IDENTITY, 1.0)
+        buffer.addEntry(300L, Pose2d(), Matrix3x3.IDENTITY, 1.0)
         
         // Adding the 4th entry should overwrite the 1st entry's data
-        buffer.addEntry(400L, Pose2d(), Matrix3x3.IDENTITY)
+        buffer.addEntry(400L, Pose2d(), Matrix3x3.IDENTITY, 1.0)
         
         val entry4 = buffer.get(2) // The newest entry is at the end of the logical list
         
@@ -58,10 +58,10 @@ class GcAvoidanceTier1Test {
     @Test
     fun testPoseEstimatorHistoryBuffer_updateEntryDoesNotAllocate() {
         val buffer = HistoryBuffer(5)
-        buffer.addEntry(100L, Pose2d(), Matrix3x3.IDENTITY)
+        buffer.addEntry(100L, Pose2d(), Matrix3x3.IDENTITY, 1.0)
         val entry = buffer.get(0)
         
-        buffer.updateEntry(0, 200L, Pose2d(), Matrix3x3.IDENTITY)
+        buffer.updateEntry(0, 200L, Pose2d(), Matrix3x3.IDENTITY, 1.0)
         
         val entryUpdated = buffer.get(0)
         assertSame(entry, entryUpdated, "updateEntry should not allocate a new object")

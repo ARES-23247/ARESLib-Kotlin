@@ -10,6 +10,9 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 object HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
+    private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
+    private val devicesNamesList = CopyOnWriteArrayList<String>()
+    private val devicesPrefixList = CopyOnWriteArrayList<String>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
     private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
     private val cachedMotorsWithNames = ConcurrentHashMap<String, MotorIO>()
@@ -27,6 +30,9 @@ object HardwareRegistry {
      */
     fun registerDevice(name: String, device: LoggableDevice) {
         devices[name] = device
+        devicesList.add(device)
+        devicesNamesList.add(name)
+        devicesPrefixList.add("Hardware/$name")
         if (device is MotorIO) {
             val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
             cachedMotorsWithNames[shortName] = device
@@ -159,7 +165,8 @@ object HardwareRegistry {
      * Batches status updates and read transactions across all registered SubsystemIO components.
      */
     fun refreshAll() {
-        for (device in devices.values) {
+        for (i in 0 until devicesList.size) {
+            val device = devicesList[i]
             if (device is SubsystemIO) {
                 device.refresh()
             }
@@ -170,7 +177,8 @@ object HardwareRegistry {
      * Triggers safety failsafes across all registered subsystems.
      */
     fun safeAll() {
-        for (device in devices.values) {
+        for (i in 0 until devicesList.size) {
+            val device = devicesList[i]
             if (device is SubsystemIO) {
                 try {
                     device.safe()
@@ -183,14 +191,15 @@ object HardwareRegistry {
      * Clears all registered devices and terminates background threads.
      */
     fun closeAll() {
-        for (c in closeables) {
+        for (i in 0 until closeables.size) {
             try {
-                c.close()
+                closeables[i].close()
             } catch (_: Exception) {}
         }
         closeables.clear()
 
-        for (device in devices.values) {
+        for (i in 0 until devicesList.size) {
+            val device = devicesList[i]
             if (device is AutoCloseable) {
                 try {
                     device.close()
@@ -198,6 +207,9 @@ object HardwareRegistry {
             }
         }
         devices.clear()
+        devicesList.clear()
+        devicesNamesList.clear()
+        devicesPrefixList.clear()
         topologyNodes.clear()
         cachedMotorsWithNames.clear()
         cachedMotorsList.clear()
@@ -214,8 +226,10 @@ object HardwareRegistry {
      * Publishes the current state of all registered hardware devices to the telemetry provider.
      */
     fun publishAll(telemetry: ITelemetry) {
-        for ((name, device) in devices) {
-            device.logTelemetry(telemetry, "Hardware/$name")
+        for (i in 0 until devicesList.size) {
+            val device = devicesList[i]
+            val prefix = devicesPrefixList[i]
+            device.logTelemetry(telemetry, prefix)
         }
     }
 }

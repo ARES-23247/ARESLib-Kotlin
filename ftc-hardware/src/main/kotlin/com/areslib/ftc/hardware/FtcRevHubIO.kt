@@ -319,30 +319,31 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     private var running = true
     private var latestVoltage = 0.0
 
+    private val thread = Thread {
+        while (running) {
+            try {
+                val volt = analogInput.voltage
+                synchronized(lock) {
+                    latestVoltage = volt
+                }
+            } catch (_: Exception) {}
+            try {
+                Thread.sleep(5)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+        }
+    }.apply {
+        isDaemon = true
+        name = "ARES-AnalogEncoder-Thread-${name ?: "unnamed"}"
+    }
+
     init {
         if (name != null) {
             HardwareRegistry.registerMotor(name, this)
         }
         HardwareRegistry.registerCloseable(this)
-
-        val thread = Thread {
-            while (running) {
-                try {
-                    val volt = analogInput.voltage
-                    synchronized(lock) {
-                        latestVoltage = volt
-                    }
-                } catch (_: Exception) {}
-                try {
-                    Thread.sleep(5)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                }
-            }
-        }
-        thread.isDaemon = true
-        thread.name = "ARES-AnalogEncoder-Thread-${name ?: "unnamed"}"
         thread.start()
     }
 
@@ -375,6 +376,7 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
 
     override fun close() {
         running = false
+        thread.interrupt()
     }
 }
 
@@ -417,6 +419,33 @@ class FtcImu(private val imu: IMU) : ImuIO, AutoCloseable {
     private var latestTimestamp = 0L
     @Volatile private var running = true
 
+    private val imuThread = Thread {
+        while (running) {
+            try {
+                val yawPitchRoll = imu.getRobotYawPitchRollAngles()
+                val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
+                synchronized(lock) {
+                    latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
+                    latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
+                    latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
+                    latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+                    latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+                }
+            } catch (_: Exception) {}
+            
+            try {
+                Thread.sleep(5) // Poll at ~200Hz
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+        }
+    }.apply {
+        isDaemon = true
+        priority = Thread.NORM_PRIORITY
+        name = "ARES-Asynchronous-IMU-Thread"
+    }
+
     init {
         try {
             val orientation = RevHubOrientationOnRobot(
@@ -441,33 +470,6 @@ class FtcImu(private val imu: IMU) : ImuIO, AutoCloseable {
         } catch (_: Exception) {}
 
         HardwareRegistry.registerCloseable(this)
-
-        // Launch low-priority daemon background thread to poll IMU asynchronously
-        val imuThread = Thread {
-            while (running) {
-                try {
-                    val yawPitchRoll = imu.getRobotYawPitchRollAngles()
-                    val angularVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS)
-                    synchronized(lock) {
-                        latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
-                        latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
-                        latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
-                        latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-                        latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
-                    }
-                } catch (_: Exception) {}
-                
-                try {
-                    Thread.sleep(5) // Poll at ~200Hz
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                }
-            }
-        }
-        imuThread.isDaemon = true
-        imuThread.priority = Thread.NORM_PRIORITY
-        imuThread.name = "ARES-Asynchronous-IMU-Thread"
         imuThread.start()
     }
 
@@ -489,6 +491,7 @@ class FtcImu(private val imu: IMU) : ImuIO, AutoCloseable {
 
     override fun close() {
         running = false
+        imuThread.interrupt()
     }
 }
 
@@ -498,26 +501,28 @@ class FtcAnalogSensor(private val analogInput: AnalogInput) : AutoCloseable {
     private var running = true
     private var latestVoltage = 0.0
 
-    init {
-        HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
-            while (running) {
-                try {
-                    val volt = analogInput.voltage
-                    synchronized(lock) {
-                        latestVoltage = volt
-                    }
-                } catch (_: Exception) {}
-                try {
-                    Thread.sleep(20)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
+    private val thread = Thread {
+        while (running) {
+            try {
+                val volt = analogInput.voltage
+                synchronized(lock) {
+                    latestVoltage = volt
                 }
+            } catch (_: Exception) {}
+            try {
+                Thread.sleep(20)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
             }
         }
-        thread.isDaemon = true
-        thread.name = "ARES-AnalogSensor-Thread"
+    }.apply {
+        isDaemon = true
+        name = "ARES-AnalogSensor-Thread"
+    }
+
+    init {
+        HardwareRegistry.registerCloseable(this)
         thread.start()
     }
 
@@ -527,6 +532,7 @@ class FtcAnalogSensor(private val analogInput: AnalogInput) : AutoCloseable {
 
     override fun close() {
         running = false
+        thread.interrupt()
     }
 }
 
@@ -535,30 +541,32 @@ class FtcDigitalSensor(private val digitalChannel: DigitalChannel) : AutoCloseab
     private var running = true
     private var latestState = false
 
+    private val thread = Thread {
+        while (running) {
+            try {
+                val state = digitalChannel.state
+                synchronized(lock) {
+                    latestState = state
+                }
+            } catch (_: Exception) {}
+            try {
+                Thread.sleep(20)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+        }
+    }.apply {
+        isDaemon = true
+        name = "ARES-DigitalSensor-Thread"
+    }
+
     init {
         try {
             digitalChannel.mode = DigitalChannel.Mode.INPUT
         } catch (_: Exception) {}
 
         HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
-            while (running) {
-                try {
-                    val state = digitalChannel.state
-                    synchronized(lock) {
-                        latestState = state
-                    }
-                } catch (_: Exception) {}
-                try {
-                    Thread.sleep(20)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                }
-            }
-        }
-        thread.isDaemon = true
-        thread.name = "ARES-DigitalSensor-Thread"
         thread.start()
     }
 
@@ -568,5 +576,6 @@ class FtcDigitalSensor(private val digitalChannel: DigitalChannel) : AutoCloseab
 
     override fun close() {
         running = false
+        thread.interrupt()
     }
 }

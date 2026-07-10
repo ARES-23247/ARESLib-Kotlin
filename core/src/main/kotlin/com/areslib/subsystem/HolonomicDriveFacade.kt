@@ -100,28 +100,26 @@ abstract class HolonomicDriveFacade(protected val store: Store) {
 
         var finalOmega = omega
         var fromHeadingHold = false
-        if (useHeadingLock) {
-            if (kotlin.math.abs(omega) > 0.05) {
-                // If driver is actively rotating, release lock target and disable heading hold mode
-                if (store.state.drive.headingLockTargetRadians != null || store.state.drive.driveMode != com.areslib.state.DriveMode.TELEOP) {
-                    store.dispatch(RobotAction.SetHeadingLockTarget(null))
-                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
-                }
-            } else {
-                val target = store.state.drive.headingLockTargetRadians
-                if (target == null) {
-                    // Set lock target to current heading if first frame
-                    store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
-                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
-                } else {
-                    // Calculate closed-loop PID feedback to hold orientation
-                    finalOmega = headingPID.calculate(headingRad, target, 0.02)
-                    fromHeadingHold = true
-                }
-            }
-        } else {
-            if (store.state.drive.headingLockTargetRadians != null) {
+        
+        val isRotating = kotlin.math.abs(omega) > 0.05
+        val target = store.state.drive.headingLockTargetRadians
+        val driveMode = store.state.drive.driveMode
+
+        when {
+            !useHeadingLock && target != null -> {
                 store.dispatch(RobotAction.SetHeadingLockTarget(null))
+            }
+            useHeadingLock && isRotating && (target != null || driveMode != com.areslib.state.DriveMode.TELEOP) -> {
+                store.dispatch(RobotAction.SetHeadingLockTarget(null))
+                store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
+            }
+            useHeadingLock && !isRotating && target == null -> {
+                store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
+                store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
+            }
+            useHeadingLock && !isRotating && target != null -> {
+                finalOmega = headingPID.calculate(headingRad, target, 0.02)
+                fromHeadingHold = true
             }
         }
 

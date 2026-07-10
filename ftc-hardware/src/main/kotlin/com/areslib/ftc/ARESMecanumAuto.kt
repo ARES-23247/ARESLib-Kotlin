@@ -92,6 +92,8 @@ open class ARESMecanumAuto : LinearOpMode() {
             var loopCount = 0L
             var overrunCount = 0L
             var currentDistance = 0.0
+            val scratchPoint = com.areslib.pathing.MutablePathPoint()
+            val targetState = com.areslib.pathing.PathPoint(com.areslib.math.Pose2d(0.0, 0.0, com.areslib.math.Rotation2d(0.0)), 0.0, 0.0, 0.0, 0.0)
 
             // --- 2. Autonomous Loop ---
             while (opModeIsActive()) {
@@ -130,8 +132,9 @@ open class ARESMecanumAuto : LinearOpMode() {
                         break
                     }
 
-                    // Get nominal target pose from Path spline
-                    val targetState = path.sampleAtDistance(currentDistance)
+                    // Get nominal target pose from Path spline without intermediate allocations
+                    path.sampleAtDistance(currentDistance, scratchPoint)
+                    scratchPoint.copyInto(targetState)
 
                     // B. Calculate speeds and update motor commands via the follower
                     pathFollower.update(targetState, dt)

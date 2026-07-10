@@ -7,7 +7,8 @@ data class PoseHistoryEntry(
     var x: Double = 0.0,
     var y: Double = 0.0,
     var headingRad: Double = 0.0,
-    var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+    var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+    var qScale: Double = 1.0
 ) {
     var pose: Pose2d
         get() = Pose2d(x, y, Rotation2d(headingRad))
@@ -31,11 +32,12 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         return entries[physicalIndex]
     }
 
-    fun addEntry(timestampMs: Long, pose: Pose2d, covariance: Matrix3x3) {
+    fun addEntry(timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
         val entry = entries[head]
         entry.timestampMs = timestampMs
         entry.pose = pose
         entry.covariance.setTo(covariance)
+        entry.qScale = qScale
         head = (head + 1) % capacity
         if (count < capacity) count++
     }
@@ -50,6 +52,7 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
             dest.y = src.y
             dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
+            dest.qScale = src.qScale
         }
         newBuf.head = head
         newBuf.count = count
@@ -67,35 +70,38 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
             dest.y = src.y
             dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
+            dest.qScale = src.qScale
         }
     }
     
     // allow setting existing entry to avoid object creation
-    fun updateEntry(index: Int, timestampMs: Long, pose: Pose2d, covariance: Matrix3x3) {
+    fun updateEntry(index: Int, timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
         val entry = get(index)
         entry.timestampMs = timestampMs
         entry.pose = pose
         entry.covariance.setTo(covariance)
+        entry.qScale = qScale
     }
 
-    fun updateEntryDirect(index: Int, timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3) {
+    fun updateEntryDirect(index: Int, timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3, qScale: Double) {
         val entry = get(index)
         entry.timestampMs = timestampMs
         entry.x = x
         entry.y = y
         entry.headingRad = headingRad
         entry.covariance.setTo(covariance)
+        entry.qScale = qScale
     }
 
     companion object {
-        private val pool = Array(64) { HistoryBuffer(50) }
+        private val pool = Array(256) { HistoryBuffer(50) }
         private var poolIndex = 0
 
         @Synchronized
         fun obtainCopy(src: HistoryBuffer): HistoryBuffer {
             val dest = pool[poolIndex]
             src.copyInto(dest)
-            poolIndex = (poolIndex + 1) % 64
+            poolIndex = (poolIndex + 1) % 256
             return dest
         }
     }
@@ -153,6 +159,8 @@ object PoseEstimator {
     private val scratchCov = Matrix3x3()
     private val scratchCov2 = Matrix3x3()
     private val scratchHistory = HistoryBuffer(MAX_HISTORY_SIZE)
+    private val kalmanGainPool = Array(16) { DoubleArray(9) }
+    private var kalmanGainPoolIndex = 0
 
     // Known AprilTag coordinates for distance calculations (configurable via FieldLayouts)
     @JvmField
@@ -220,7 +228,7 @@ object PoseEstimator {
         // Catastrophic tilt / beaching check: Freeze odometry updates
         if (currentlyBeached) {
             val newHistory = HistoryBuffer.obtainCopy(state.history)
-            newHistory.addEntry(timestampMs, state.estimatedPose, state.covariance)
+            newHistory.addEntry(timestampMs, state.estimatedPose, state.covariance, 1.0)
             return state.copy(history = newHistory, isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
         }
 
@@ -287,7 +295,7 @@ object PoseEstimator {
         )
 
         val newHistory = HistoryBuffer.obtainCopy(state.history)
-        newHistory.addEntry(timestampMs, newPose, newCovariance)
+        newHistory.addEntry(timestampMs, newPose, newCovariance, tiltScale * slipScale)
 
         return state.copy(
             estimatedPose = newPose,
@@ -503,7 +511,7 @@ object PoseEstimator {
         var currentHeadingRad = InputMath.wrapAngle(baseEntry.headingRad + dxZ)
         var currentCov = scratchCov
 
-        scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, currentCov)
+        scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, currentCov, baseEntry.qScale)
 
         for (i in (closestIndex + 1) until state.history.size) {
             val prevRaw = state.history[i - 1]
@@ -519,22 +527,29 @@ object PoseEstimator {
             currentY += deltaY
             currentHeadingRad = InputMath.wrapAngle(currentHeadingRad + deltaHeading)
 
-            scratchCov2.m00 = currentCov.m00 + Q.m00
-            scratchCov2.m01 = currentCov.m01 + Q.m01
-            scratchCov2.m02 = currentCov.m02 + Q.m02
-            scratchCov2.m10 = currentCov.m10 + Q.m10
-            scratchCov2.m11 = currentCov.m11 + Q.m11
-            scratchCov2.m12 = currentCov.m12 + Q.m12
-            scratchCov2.m20 = currentCov.m20 + Q.m20
-            scratchCov2.m21 = currentCov.m21 + Q.m21
-            scratchCov2.m22 = currentCov.m22 + Q.m22
+            val scale = currRaw.qScale
+            scratchCov2.m00 = currentCov.m00 + Q.m00 * scale
+            scratchCov2.m01 = currentCov.m01 + Q.m01 * scale
+            scratchCov2.m02 = currentCov.m02 + Q.m02 * scale
+            scratchCov2.m10 = currentCov.m10 + Q.m10 * scale
+            scratchCov2.m11 = currentCov.m11 + Q.m11 * scale
+            scratchCov2.m12 = currentCov.m12 + Q.m12 * scale
+            scratchCov2.m20 = currentCov.m20 + Q.m20 * scale
+            scratchCov2.m21 = currentCov.m21 + Q.m21 * scale
+            scratchCov2.m22 = currentCov.m22 + Q.m22 * scale
             
-            scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2)
+            scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, currRaw.qScale)
             currentCov = scratchCov2
         }
 
         // Copy mutated scratch history back to newHistory in-place
         scratchHistory.copyInto(newHistory)
+
+        val kg = kalmanGainPool[kalmanGainPoolIndex]
+        kg[0] = scratchK.m00; kg[1] = scratchK.m01; kg[2] = scratchK.m02
+        kg[3] = scratchK.m10; kg[4] = scratchK.m11; kg[5] = scratchK.m12
+        kg[6] = scratchK.m20; kg[7] = scratchK.m21; kg[8] = scratchK.m22
+        kalmanGainPoolIndex = (kalmanGainPoolIndex + 1) % 16
 
         return state.copy(
             estimatedPose = Pose2d(currentX, currentY, Rotation2d(currentHeadingRad)),
@@ -543,11 +558,7 @@ object PoseEstimator {
             lastInnovationX = yX,
             lastInnovationY = yY,
             lastInnovationTheta = yZ,
-            lastKalmanGain = doubleArrayOf(
-                scratchK.m00, scratchK.m01, scratchK.m02,
-                scratchK.m10, scratchK.m11, scratchK.m12,
-                scratchK.m20, scratchK.m21, scratchK.m22
-            ),
+            lastKalmanGain = kg,
             lastMeasurementAccepted = true,
             lastRejectionReason = null
         )

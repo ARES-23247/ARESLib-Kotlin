@@ -4,7 +4,10 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.action.RobotAction
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
@@ -22,6 +25,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
     private var offsetY = 0.0
     private var offsetHeading = 0.0
 
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val lock = Any()
     private var running = true
 
@@ -31,40 +35,42 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
     private var lastTimestampMs = 0L
     private var lastWarningTime = 0L
 
+    private val thread = Thread {
+        while (running) {
+            try {
+                driver.update()
+                val rawX = driver.getPosX(DistanceUnit.METER)
+                val rawY = driver.getPosY(DistanceUnit.METER)
+                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
+
+                val cosH = kotlin.math.cos(offsetHeading)
+                val sinH = kotlin.math.sin(offsetHeading)
+                val x = rawX * cosH - rawY * sinH + offsetX
+                val y = rawX * sinH + rawY * cosH + offsetY
+                val heading = com.areslib.math.InputMath.wrapAngle(rawHeading + offsetHeading)
+
+                synchronized(lock) {
+                    lastX = x
+                    lastY = y
+                    lastHeading = heading
+                    lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                }
+            } catch (e: Exception) {
+                val now = com.areslib.util.RobotClock.currentTimeMillis()
+                if (now - lastWarningTime > 2000L) {
+                    System.err.println("PinpointIO: Communication failure with GoBildaPinpointDriver. Using last known coordinates. Error: ${e.message}")
+                    lastWarningTime = now
+                }
+            }
+            try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+        }
+    }.apply {
+        isDaemon = true
+        name = "ARES-Pinpoint-Thread"
+    }
+
     init {
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
-            while (running) {
-                try {
-                    driver.update()
-                    val rawX = driver.getPosX(DistanceUnit.METER)
-                    val rawY = driver.getPosY(DistanceUnit.METER)
-                    val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
-
-                    val cosH = kotlin.math.cos(offsetHeading)
-                    val sinH = kotlin.math.sin(offsetHeading)
-                    val x = rawX * cosH - rawY * sinH + offsetX
-                    val y = rawX * sinH + rawY * cosH + offsetY
-                    val heading = com.areslib.math.InputMath.wrapAngle(rawHeading + offsetHeading)
-
-                    synchronized(lock) {
-                        lastX = x
-                        lastY = y
-                        lastHeading = heading
-                        lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                    }
-                } catch (e: Exception) {
-                    val now = com.areslib.util.RobotClock.currentTimeMillis()
-                    if (now - lastWarningTime > 2000L) {
-                        System.err.println("PinpointIO: Communication failure with GoBildaPinpointDriver. Using last known coordinates. Error: ${e.message}")
-                        lastWarningTime = now
-                    }
-                }
-                try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
-            }
-        }
-        thread.isDaemon = true
-        thread.name = "ARES-Pinpoint-Thread"
         thread.start()
     }
 
@@ -97,7 +103,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
      */
     @kotlin.jvm.JvmOverloads
     fun initialize(pose: com.areslib.math.Pose2d = com.areslib.math.Pose2d(), resetHardware: Boolean = false) {
-        kotlinx.coroutines.GlobalScope.launch {
+        scope.launch {
             try {
                 if (resetHardware) {
                     driver.resetPosAndIMU()
@@ -134,5 +140,7 @@ class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
 
     override fun close() {
         running = false
+        thread.interrupt()
+        scope.cancel()
     }
 }

@@ -120,10 +120,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 timestampMs = timestamp
             )
             
-            // Watchdog check for pinpoint sensor staleness - log warning instead of crashing
-            if (pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100) {
-                val age = timestamp - poseUpdate.timestampMs
-                if (timestamp - lastPinpointWarningTime > 2000L) {
+            val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
+            val age = timestamp - poseUpdate.timestampMs
+            when {
+                isPinpointStale && (timestamp - lastPinpointWarningTime > 2000L) -> {
                     System.err.println("FtcBaseRobot: Pinpoint pose update is stale! Age: ${age}ms")
                     lastPinpointWarningTime = timestamp
                 }
@@ -219,6 +219,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.telemetry.RobotWebServer.stop()
         telemetryManager.close()
         pinpointIO?.close()
+        try {
+            (limelightIO as? AutoCloseable)?.close()
+        } catch (_: Exception) {}
         com.areslib.hardware.HardwareRegistry.closeAll()
         com.areslib.ftc.hardware.FtcMotor.unregisterAll()
     }

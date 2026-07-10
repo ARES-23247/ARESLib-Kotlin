@@ -6,7 +6,11 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
 import com.areslib.hardware.MotorIO
 import com.areslib.math.SlewRateLimiter
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -21,7 +25,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val frDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE,
     val blDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
     val brDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE
-) : com.areslib.hardware.SubsystemIO {
+) : com.areslib.hardware.SubsystemIO, AutoCloseable {
     val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, flName)
     val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
     val backLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, blName)
@@ -35,6 +39,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val frIO = EstimateMotorIO(frontRight)
     val blIO = EstimateMotorIO(backLeft)
     val brIO = EstimateMotorIO(backRight)
+    private val speedBuffer = DoubleArray(4)
 
     private var flLimiter: SlewRateLimiter? = null
     private var frLimiter: SlewRateLimiter? = null
@@ -79,6 +84,14 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         com.areslib.hardware.HardwareRegistry.registerMotor(blName, blIO)
         com.areslib.hardware.HardwareRegistry.registerMotor(brName, brIO)
         com.areslib.hardware.HardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
+    }
+
+    override fun close() {
+        flIO.close()
+        frIO.close()
+        blIO.close()
+        brIO.close()
     }
 
     override fun refresh() {
@@ -110,18 +123,21 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val vy = driveState.yVelocityMetersPerSecond * maxSpeed
         val omega = driveState.angularVelocityRadiansPerSecond * maxSpeed
 
-        val chassisSpeeds = if (driveState.isFieldCentric) {
-            com.areslib.math.ChassisSpeeds.fromFieldRelativeSpeeds(
-                vx, vy, omega,
-                com.areslib.math.Rotation2d(driveState.poseEstimator.estimatedPose.heading.radians)
-            )
-        } else {
-            com.areslib.math.ChassisSpeeds(vx, vy, omega)
+        var robotVx = vx
+        var robotVy = vy
+        if (driveState.isFieldCentric) {
+            val heading = driveState.poseEstimator.estimatedPose.heading.radians
+            val cos = kotlin.math.cos(heading)
+            val sin = kotlin.math.sin(heading)
+            robotVx = vx * cos + vy * sin
+            robotVy = -vx * sin + vy * cos
         }
-        val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
+
+        kinematics.toWheelSpeeds(robotVx, robotVy, omega, speedBuffer)
+        com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
 
         apply(
-            speeds = wheelSpeeds.normalize(maxSpeed),
+            speeds = speedBuffer,
             batteryVolts = batteryVolts,
             dtSeconds = dtSeconds,
             powerScale = flIO.powerScale
@@ -138,7 +154,8 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      * @param powerScale The power multiplier (0.0 to 1.0) for safety/brownout throttling.
      */
     @kotlin.jvm.JvmOverloads
-    fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
+    fun apply(speeds: DoubleArray, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
+        if (speeds.size < 4) return
         val maxVolts = 12.0
         val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
         val voltageCompensationFactor = maxVolts / actualVolts
@@ -151,10 +168,10 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             return (velocityFF + staticFF) * voltageCompensationFactor
         }
         
-        var flPower = (applyFeedforward(speeds.frontLeftMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
-        var frPower = (applyFeedforward(speeds.frontRightMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
-        var blPower = (applyFeedforward(speeds.backLeftMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
-        var brPower = (applyFeedforward(speeds.backRightMetersPerSecond) * powerScale).coerceIn(-1.0, 1.0)
+        var flPower = (applyFeedforward(speeds[0]) * powerScale).coerceIn(-1.0, 1.0)
+        var frPower = (applyFeedforward(speeds[1]) * powerScale).coerceIn(-1.0, 1.0)
+        var blPower = (applyFeedforward(speeds[2]) * powerScale).coerceIn(-1.0, 1.0)
+        var brPower = (applyFeedforward(speeds[3]) * powerScale).coerceIn(-1.0, 1.0)
 
         // Adjust positive slew rate limits based on battery voltage if enabled
         val baseLimit = slewRateLimit
@@ -188,6 +205,15 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         frIO.power = frPower
         blIO.power = blPower
         brIO.power = brPower
+    }
+
+    @kotlin.jvm.JvmOverloads
+    fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
+        speedBuffer[0] = speeds.frontLeftMetersPerSecond
+        speedBuffer[1] = speeds.frontRightMetersPerSecond
+        speedBuffer[2] = speeds.backLeftMetersPerSecond
+        speedBuffer[3] = speeds.backRightMetersPerSecond
+        apply(speedBuffer, batteryVolts, dtSeconds, powerScale)
     }
 
     /**
@@ -255,16 +281,18 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
  * A lightweight MotorIO wrapper that records target power changes locally to avoid 
  * making blocking I2C current/power writes or reads when estimating current draw.
  */
-class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO {
+class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable {
     override var power: Double = 0.0
     override var powerScale: Double = 1.0
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
     private var cachedAmps = 0.0
 
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
     init {
-        kotlinx.coroutines.GlobalScope.launch {
-            while (true) {
+        scope.launch {
+            while (isActive) {
                 try {
                     cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
                 } catch (_: Exception) {}
@@ -294,5 +322,9 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO {
 
     override fun resetEncoder() {
         // No-op to avoid side-effects in estimation wrapper
+    }
+
+    override fun close() {
+        scope.cancel()
     }
 }

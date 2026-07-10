@@ -20,18 +20,45 @@ class MecanumKinematics(
         val vy = speeds.vyMetersPerSecond
         val omega = speeds.omegaRadiansPerSecond
         
-        // Mecanum inverse kinematics equations
-        // FL = vx - vy - omega * k
-        // FR = vx + vy + omega * k
-        // BL = vx + vy - omega * k
-        // BR = vx - vy + omega * k
-        // Note: Standard sign conventions may vary. Assuming Y is left and X is forward.
-        
         val fl = vx - vy - omega * k
         val fr = vx + vy + omega * k
         val bl = vx + vy - omega * k
         val br = vx - vy + omega * k
         
         return MecanumWheelSpeeds(fl, fr, bl, br)
+    }
+
+    /**
+     * Converts robot-centric primitive velocities into individual wheel speeds in-place to avoid GC.
+     */
+    fun toWheelSpeeds(vx: Double, vy: Double, omega: Double, outSpeeds: DoubleArray) {
+        if (outSpeeds.size < 4) return
+        outSpeeds[0] = vx - vy - omega * k
+        outSpeeds[1] = vx + vy + omega * k
+        outSpeeds[2] = vx + vy - omega * k
+        outSpeeds[3] = vx - vy + omega * k
+    }
+
+    companion object {
+        /**
+         * Normalizes wheel speeds in-place if any of them exceed the specified maximum speed.
+         */
+        fun normalize(speeds: DoubleArray, maxSpeedMetersPerSecond: Double) {
+            if (speeds.size < 4) return
+            val maxMagnitude = maxOf(
+                kotlin.math.abs(speeds[0]),
+                kotlin.math.abs(speeds[1]),
+                kotlin.math.abs(speeds[2]),
+                kotlin.math.abs(speeds[3])
+            )
+            
+            if (maxMagnitude > maxSpeedMetersPerSecond) {
+                val scale = maxSpeedMetersPerSecond / maxMagnitude
+                speeds[0] *= scale
+                speeds[1] *= scale
+                speeds[2] *= scale
+                speeds[3] *= scale
+            }
+        }
     }
 }

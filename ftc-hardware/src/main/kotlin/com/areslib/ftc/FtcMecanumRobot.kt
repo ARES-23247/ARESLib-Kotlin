@@ -75,10 +75,9 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val command = telemetryManager.nt4.getString("SysId/Command", "")
         if (command != lastCommandProcessed) {
             lastCommandProcessed = command
-            if (command.isNotEmpty()) {
-                if (command == "STOP") {
-                    sysIdManager.stop()
-                } else if (command.startsWith("START_")) {
+            when {
+                command == "STOP" -> sysIdManager.stop()
+                command.startsWith("START_") -> {
                     val parts = command.removePrefix("START_").split("_")
                     if (parts.size >= 2) {
                         val mechStr = parts[0]
@@ -245,9 +244,11 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     @kotlin.jvm.JvmOverloads
     fun driveToPose(targetPose: Pose2d, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
         val now = com.areslib.util.RobotClock.currentTimeMillis()
-        
-        if (isRequested) {
-            if (!wasPathfindRequested) {
+        val task = activePathfindTask
+        val elapsed = if (task != null) now - pathfindStartMs else 0L
+
+        when {
+            isRequested && !wasPathfindRequested -> {
                 val config = com.areslib.state.RobotFieldManager.activeConfig
                 val costmap = com.areslib.pathing.Costmap.fromFieldConfig(config)
                 
@@ -264,23 +265,17 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 val initActions = activePathfindTask!!.initialize(store.state)
                 initActions.forEach { store.dispatch(it) }
                 wasPathfindRequested = true
-            } else {
-                val task = activePathfindTask
-                if (task != null) {
-                    val elapsed = now - pathfindStartMs
-                    if (task.isCompleted(store.state, elapsed)) {
-                        val endActions = task.end(store.state, interrupted = false)
-                        endActions.forEach { store.dispatch(it) }
-                        activePathfindTask = null
-                    } else {
-                        val execActions = task.execute(store.state, elapsed)
-                        execActions.forEach { store.dispatch(it) }
-                    }
-                }
             }
-        } else {
-            if (wasPathfindRequested) {
-                val task = activePathfindTask
+            isRequested && wasPathfindRequested && task != null && task.isCompleted(store.state, elapsed) -> {
+                val endActions = task.end(store.state, interrupted = false)
+                endActions.forEach { store.dispatch(it) }
+                activePathfindTask = null
+            }
+            isRequested && wasPathfindRequested && task != null -> {
+                val execActions = task.execute(store.state, elapsed)
+                execActions.forEach { store.dispatch(it) }
+            }
+            !isRequested && wasPathfindRequested -> {
                 if (task != null) {
                     val endActions = task.end(store.state, interrupted = true)
                     endActions.forEach { store.dispatch(it) }

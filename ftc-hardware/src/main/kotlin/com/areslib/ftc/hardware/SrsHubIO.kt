@@ -54,6 +54,52 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private var running = true
     private var isInitialized = false
 
+    private val thread = Thread {
+        while (running) {
+            if (isInitialized) {
+                // 1. Process pending servo writes
+                synchronized(lock) {
+                    for (port in 0 until 4) {
+                        val pos = pendingServoPositions[port]
+                        if (!pos.isNaN()) {
+                            try {
+                                val raw = (pos.coerceIn(0.0, 1.0) * 65535.0).toInt()
+                                val buffer = servoWriteBuffers[port]
+                                buffer[0] = (raw and 0xFF).toByte()
+                                buffer[1] = ((raw shr 8) and 0xFF).toByte()
+                                deviceClient.write(16 + port * 2, buffer)
+                                pendingServoPositions[port] = Double.NaN
+                            } catch (_: Exception) {}
+                        }
+                    }
+                }
+
+                // 2. Trigger updates for active pinpoint sensors
+                synchronized(lock) {
+                    for (port in 0 until 4) {
+                        if (activePinpoints[port]) {
+                            try {
+                                deviceClient.write(124 + port, pingBuffers[port])
+                            } catch (_: Exception) {}
+                        }
+                    }
+                }
+
+                // 3. Poll the hub registers
+                pollHub()
+            }
+            try {
+                Thread.sleep(5)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+        }
+    }.apply {
+        isDaemon = true
+        name = "ARES-SrsHub-Thread"
+    }
+
     fun registerPinpoint(port: Int) {
         synchronized(lock) {
             if (port in 0 until 4) {
@@ -64,50 +110,6 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     init {
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
-            while (running) {
-                if (isInitialized) {
-                    // 1. Process pending servo writes
-                    synchronized(lock) {
-                        for (port in 0 until 4) {
-                            val pos = pendingServoPositions[port]
-                            if (!pos.isNaN()) {
-                                try {
-                                    val raw = (pos.coerceIn(0.0, 1.0) * 65535.0).toInt()
-                                    val buffer = servoWriteBuffers[port]
-                                    buffer[0] = (raw and 0xFF).toByte()
-                                    buffer[1] = ((raw shr 8) and 0xFF).toByte()
-                                    deviceClient.write(16 + port * 2, buffer)
-                                    pendingServoPositions[port] = Double.NaN
-                                } catch (_: Exception) {}
-                            }
-                        }
-                    }
-
-                    // 2. Trigger updates for active pinpoint sensors
-                    synchronized(lock) {
-                        for (port in 0 until 4) {
-                            if (activePinpoints[port]) {
-                                try {
-                                    deviceClient.write(124 + port, pingBuffers[port])
-                                } catch (_: Exception) {}
-                            }
-                        }
-                    }
-
-                    // 3. Poll the hub registers
-                    pollHub()
-                }
-                try {
-                    Thread.sleep(5)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                }
-            }
-        }
-        thread.isDaemon = true
-        thread.name = "ARES-SrsHub-Thread"
         thread.start()
     }
 
@@ -270,6 +272,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     override fun close() {
         running = false
+        thread.interrupt()
     }
 }
 

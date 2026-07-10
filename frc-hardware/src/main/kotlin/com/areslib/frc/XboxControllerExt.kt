@@ -29,3 +29,27 @@ fun XboxController.toState() = GamepadState(
     start = startButton,
     back = backButton
 )
+
+fun XboxController.updateState(state: GamepadState) {
+    state.leftStickX = leftX.toFloat()
+    state.leftStickY = leftY.toFloat()
+    state.rightStickX = rightX.toFloat()
+    state.rightStickY = rightY.toFloat()
+    state.leftTrigger = leftTriggerAxis.toFloat()
+    state.rightTrigger = rightTriggerAxis.toFloat()
+    state.a = aButton
+    state.b = bButton
+    state.x = xButton
+    state.y = yButton
+    val currentPov = pov
+    state.dpadUp = currentPov == 0
+    state.dpadDown = currentPov == 180
+    state.dpadLeft = currentPov == 270
+    state.dpadRight = currentPov == 90
+    state.leftBumper = leftBumperButton
+    state.rightBumper = rightBumperButton
+    state.leftStickButton = leftStickButton
+    state.rightStickButton = rightStickButton
+    state.start = startButton
+    state.back = backButton
+}

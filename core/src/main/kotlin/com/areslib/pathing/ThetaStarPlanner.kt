@@ -332,6 +332,6 @@ object ThetaStarPlanner {
             state.pathPool[pathSize - 1].y = end.y
         }
 
-        return state.pathPool.asList().subList(0, pathSize)
+        return List(pathSize) { i -> Translation2d(state.pathPool[i].x, state.pathPool[i].y) }
     }
 }

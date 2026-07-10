@@ -31,33 +31,35 @@ class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO, 
     private var latestHeadingVelocity = 0.0
     private var latestTimestamp = 0L
 
+    private val thread = Thread {
+        while (running) {
+            try {
+                driver.update()
+                val px = driver.posX
+                val py = driver.posY
+                val h = driver.heading
+                val vx = driver.velX
+                val vy = driver.velY
+                val hv = driver.headingVelocity
+                synchronized(lock) {
+                    latestPosX = px
+                    latestPosY = py
+                    latestHeading = -h
+                    latestVelX = vx
+                    latestVelY = vy
+                    latestHeadingVelocity = -hv
+                    latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+                }
+            } catch (_: Exception) {}
+            try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+        }
+    }.apply {
+        isDaemon = true
+        name = "ARES-PinpointOdometry-Thread"
+    }
+
     init {
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
-            while (running) {
-                try {
-                    driver.update()
-                    val px = driver.posX
-                    val py = driver.posY
-                    val h = driver.heading
-                    val vx = driver.velX
-                    val vy = driver.velY
-                    val hv = driver.headingVelocity
-                    synchronized(lock) {
-                        latestPosX = px
-                        latestPosY = py
-                        latestHeading = h
-                        latestVelX = vx
-                        latestVelY = vy
-                        latestHeadingVelocity = hv
-                        latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
-                    }
-                } catch (_: Exception) {}
-                try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
-            }
-        }
-        thread.isDaemon = true
-        thread.name = "ARES-PinpointOdometry-Thread"
         thread.start()
     }
 
@@ -83,5 +85,6 @@ class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO, 
 
     override fun close() {
         running = false
+        thread.interrupt()
     }
 }

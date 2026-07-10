@@ -66,9 +66,9 @@ class FRCCowlHardwareIO(
     }
 
     override fun setTargetAngle(degrees: Double) {
-        // We receive the target cowl angle in mechanism rotations from ARES FSM ShotSetup,
-        // so we command the TalonFX directly in rotations!
-        motor.setControl(positionRequest.withPosition(degrees))
+        // Convert target cowl angle from degrees to mechanism rotations
+        val rotations = degrees / 32.0
+        motor.setControl(positionRequest.withPosition(rotations))
     }
 
     override fun setAppliedVoltage(volts: Double) {
@@ -76,8 +76,8 @@ class FRCCowlHardwareIO(
     }
 
     override val angleDegrees: Double
-        // Returns current position directly in mechanism rotations
-        get() = cowlPosition.valueAsDouble
+        // Convert mechanism rotations to degrees
+        get() = cowlPosition.valueAsDouble * 32.0
 
     override val currentAmps: Double
         get() = cowlCurrent.valueAsDouble

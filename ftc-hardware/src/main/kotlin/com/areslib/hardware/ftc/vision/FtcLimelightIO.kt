@@ -17,7 +17,7 @@ import kotlinx.coroutines.cancel
 class FtcLimelightIO(
     private val limelight: Limelight3A,
     override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
-) : VisionIO {
+) : VisionIO, AutoCloseable {
     
     private var lastWarningTime = 0L
     private val ioScope = CoroutineScope(Dispatchers.IO)
@@ -100,11 +100,14 @@ class FtcLimelightIO(
                                 )
                             )
                             
+                            val distance = kotlin.math.hypot(posTargetMeters.x, posTargetMeters.z)
+                            val estAmbiguity = if (distance > 0.0) (0.02 * (distance * distance)).coerceAtMost(0.99) else 0.0
+
                             val measurement = VisionMeasurement(
                                 timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
                                 targetPose = pose,
                                 tagId = f.getFiducialId(),
-                                ambiguity = 0.0,
+                                ambiguity = estAmbiguity,
                                 robotPoseTargetSpace = robotPoseTargetSpaceWpi
                             )
                             scratchMeasurements.add(measurement)
@@ -152,7 +155,7 @@ class FtcLimelightIO(
         }
     }
 
-    fun close() {
+    override fun close() {
         ioScope.cancel()
     }
 }

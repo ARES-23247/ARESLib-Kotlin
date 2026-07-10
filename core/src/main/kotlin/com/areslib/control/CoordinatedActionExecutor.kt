@@ -94,11 +94,14 @@ class SequentialAction(private vararg val actions: Action) : Action {
         val currentAction = actions[currentIndex]
         currentAction.update(dtSeconds)
 
-        if (currentAction.isFinished()) {
-            currentAction.end(false)
-            currentIndex++
-            if (currentIndex < actions.size) {
-                actions[currentIndex].start()
+        val finished = currentAction.isFinished()
+        when {
+            finished -> {
+                currentAction.end(false)
+                currentIndex++
+                when {
+                    currentIndex < actions.size -> actions[currentIndex].start()
+                }
             }
         }
     }
