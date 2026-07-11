@@ -256,8 +256,10 @@ object DesktopSimLauncher {
         val robotBody = Body()
         // Standard FTC robot footprint (18x18 inches ~ 0.45x0.45 meters)
         val robotFixture = robotBody.addFixture(Geometry.createRectangle(0.45, 0.45))
-        robotFixture.density = 15.0 // 15kg
+        robotFixture.density = 74.0 // 0.2025m² * 74.0 ≈ 15.0 kg
         robotBody.setMass(MassType.NORMAL)
+        robotBody.linearDamping = 1.5   // Simulates translational carpet friction
+        robotBody.angularDamping = 3.0  // Simulates rotational floor resistance
         
         // Spawn configuration (starts adjacent to the alliance wall facing the center)
         val alliance = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE

@@ -95,6 +95,18 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * and streams telemetry to NetworkTables and local storage.
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
+        if (!isAndroid && lastUpdateTime != 0L) {
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
+            val elapsed = now - lastUpdateTime
+            if (elapsed < 20) {
+                try {
+                    Thread.sleep(20 - elapsed)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
+            }
+        }
+
         if (!com.areslib.telemetry.RobotStatusTracker.isEnabled) {
             com.areslib.telemetry.RobotWebServer.stop()
         }
