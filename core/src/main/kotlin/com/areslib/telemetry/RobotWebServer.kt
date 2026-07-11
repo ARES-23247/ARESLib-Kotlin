@@ -90,49 +90,54 @@ object RobotWebServer {
                 start()
             }
 
-            // Start discovery thread to scan for active Limelight cameras and configure port forwards
-            discoveryThread = Thread {
-                val possibleIps = listOf("172.29.11.7", "172.22.11.2", "limelight.local", "172.29.11.2", "172.29.11.8", "172.29.11.9", "172.22.11.3")
-                var lastIps = emptyList<String>()
+            val javaVendor = System.getProperty("java.vendor") ?: ""
+            val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
 
-                while (!Thread.currentThread().isInterrupted) {
-                    val currentIps = mutableListOf<String>()
-                    for (ip in possibleIps) {
+            if (isAndroid) {
+                // Start discovery thread to scan for active Limelight cameras and configure port forwards
+                discoveryThread = Thread {
+                    val possibleIps = listOf("172.29.11.7", "172.22.11.2", "limelight.local", "172.29.11.2", "172.29.11.8", "172.29.11.9", "172.22.11.3")
+                    var lastIps = emptyList<String>()
+
+                    while (!Thread.currentThread().isInterrupted) {
+                        val currentIps = mutableListOf<String>()
+                        for (ip in possibleIps) {
+                            try {
+                                val testSocket = Socket()
+                                testSocket.connect(InetSocketAddress(ip, 5800), 150)
+                                testSocket.close()
+                                currentIps.add(ip)
+                            } catch (_: Exception) {}
+                        }
+
+                        if (currentIps != lastIps) {
+                            // Stop old forwarders
+                            for (f in activeForwarders) {
+                                f.stopForwarder()
+                            }
+                            activeForwarders.clear()
+
+                            // Start new forwarders
+                            for ((index, ip) in currentIps.withIndex()) {
+                                val basePort = 5800 + (index * 2)
+                                activeForwarders.add(PortForwarder(basePort, 5800, ip).apply { start() })
+                                activeForwarders.add(PortForwarder(basePort + 1, 5801, ip).apply { start() })
+                            }
+                            lastIps = currentIps
+                            RobotStatusTracker.activeLimelightIps = currentIps
+                        }
+
                         try {
-                            val testSocket = Socket()
-                            testSocket.connect(InetSocketAddress(ip, 5800), 150)
-                            testSocket.close()
-                            currentIps.add(ip)
-                        } catch (_: Exception) {}
-                    }
-
-                    if (currentIps != lastIps) {
-                        // Stop old forwarders
-                        for (f in activeForwarders) {
-                            f.stopForwarder()
+                            Thread.sleep(5000)
+                        } catch (e: InterruptedException) {
+                            break
                         }
-                        activeForwarders.clear()
-
-                        // Start new forwarders
-                        for ((index, ip) in currentIps.withIndex()) {
-                            val basePort = 5800 + (index * 2)
-                            activeForwarders.add(PortForwarder(basePort, 5800, ip).apply { start() })
-                            activeForwarders.add(PortForwarder(basePort + 1, 5801, ip).apply { start() })
-                        }
-                        lastIps = currentIps
-                        RobotStatusTracker.activeLimelightIps = currentIps
                     }
-
-                    try {
-                        Thread.sleep(5000)
-                    } catch (e: InterruptedException) {
-                        break
-                    }
+                }.apply {
+                    isDaemon = true
+                    name = "ARES-LimelightDiscovery-Thread"
+                    start()
                 }
-            }.apply {
-                isDaemon = true
-                name = "ARES-LimelightDiscovery-Thread"
-                start()
             }
 
             println("ARES Robot WebServer started successfully on port $port")
