@@ -85,7 +85,9 @@ object MarvinReducer {
 
         if (nextMarvin != null) {
             nextState = nextState.copy(
-                superstructure = nextState.superstructure.copy(custom = nextMarvin)
+                superstructure = nextState.superstructure.copy(
+                    states = nextState.superstructure.states + (MarvinXIXSuperstructureState::class.java to nextMarvin)
+                )
             )
         }
 
@@ -129,6 +131,8 @@ object MarvinReducer {
             return state
         }
         val updatedMarvin = marvin.copy(intake = finalIntake, climber = finalClimber)
-        return state.copy(custom = updatedMarvin)
+        return state.copy(
+            states = state.states + (MarvinXIXSuperstructureState::class.java to updatedMarvin)
+        )
     }
 }

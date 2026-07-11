@@ -72,7 +72,7 @@ data class MarvinXIXSuperstructureState(
     val floor: FloorState = FloorState(),
     val slamtakeActive: Boolean = false,
     val slamtakeStartTimeMs: Long = 0L
-) {
+) : com.areslib.state.SubsystemState {
     fun withFlywheelSpeed(rpm: Double) = copy(flywheel = flywheel.copy(targetVelocityRpm = rpm))
     fun withCowlAngle(degrees: Double) = copy(cowl = cowl.copy(targetAngleDegrees = degrees))
     fun withIntakePivot(deployed: Boolean) = copy(intake = intake.copy(
@@ -90,4 +90,4 @@ data class MarvinXIXSuperstructureState(
  * Extension property to retrieve the Marvin XIX specific superstructure state.
  */
 val SuperstructureState.marvinXIX: MarvinXIXSuperstructureState
-    get() = this.custom as? MarvinXIXSuperstructureState ?: MarvinXIXSuperstructureState()
+    get() = if (has(MarvinXIXSuperstructureState::class.java)) get<MarvinXIXSuperstructureState>() else MarvinXIXSuperstructureState()
