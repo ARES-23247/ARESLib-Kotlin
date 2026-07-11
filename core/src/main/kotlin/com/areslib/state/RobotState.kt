@@ -114,6 +114,11 @@ enum class SuperstructureMode {
     SHOOTING
 }
 
+/**
+ * Marker interface for custom subsystem states.
+ */
+interface SubsystemState
+
 data class SuperstructureState(
     val mode: SuperstructureMode = SuperstructureMode.IDLE,
     val intakeActive: Boolean = false,
@@ -126,15 +131,20 @@ data class SuperstructureState(
     
     // Custom extensible container for season/robot-specific states
     val custom: Any? = null,
-    val states: Map<String, Any> = emptyMap()
+    val states: Map<Class<out SubsystemState>, SubsystemState> = emptyMap()
 ) {
-    inline fun <reified T> getSubstate(key: String): T? = states[key] as? T
-
-    inline fun <reified T> updateState(key: String, block: T.() -> T): SuperstructureState {
-        val current = (states[key] as? T) ?: error("Substate for key '$key' was not found or has incorrect type")
-        val updated = current.block()
-        return this.copy(states = this.states + (key to updated as Any))
+    inline fun <reified T : SubsystemState> get(): T {
+        return (states[T::class.java] as? T)
+            ?: error("Subsystem state of type ${T::class.java.simpleName} was not registered at startup!")
     }
+
+    inline fun <reified T : SubsystemState> update(block: T.() -> T): SuperstructureState {
+        val current = get<T>()
+        val updated = current.block()
+        return this.copy(states = this.states + (T::class.java to updated))
+    }
+
+    fun has(clazz: Class<out SubsystemState>): Boolean = states.containsKey(clazz)
 
     /** Returns true when the flywheel is within 5% of target RPM */
     val isFlywheelAtSpeed: Boolean
