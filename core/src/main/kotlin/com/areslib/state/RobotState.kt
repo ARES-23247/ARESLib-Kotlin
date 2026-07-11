@@ -4,19 +4,9 @@ import com.areslib.math.Pose3d
 import com.areslib.math.PoseEstimatorState
 
 /**
- * Represents a detected obstacle on the field.
- */
-data class Obstacle(
-    val x: Double = 0.0,
-    val y: Double = 0.0,
-    val radius: Double = 0.2
-)
-
-/**
- * Stores the dynamic costmap of fused local range observations.
+ * Stores the costmap update state.
  */
 data class CostmapState(
-    val obstacles: List<Obstacle> = emptyList(),
     val lastUpdateTimestampMs: Long = 0L
 )
 

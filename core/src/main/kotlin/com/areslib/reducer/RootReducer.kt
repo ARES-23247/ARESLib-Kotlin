@@ -126,13 +126,11 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
         }
         else -> {
             // Standard action propagation: Compose all independent domain slice reducers
-            val robotPose = state.drive.poseEstimator.estimatedPose
             state.copy(
                 drive = DriveReducer.reduce(state.drive, action),
                 vision = VisionReducer.reduce(state.vision, action),
                 superstructure = SuperstructureReducer.reduce(state.superstructure, action),
                 pathState = PathReducer.reduce(state.pathState, action),
-                costmap = CostmapReducer.reduce(state.costmap, action, robotPose),
                 timestampMs = action.timestampMs
             )
         }

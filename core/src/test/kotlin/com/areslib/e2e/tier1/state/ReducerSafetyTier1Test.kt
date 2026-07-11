@@ -39,28 +39,6 @@ class ReducerSafetyTier1Test {
 
         val pathState = PathState()
         assertSame(pathState, PathReducer.reduce(pathState, invalidAction))
-
-        val costmapState = CostmapState()
-        assertSame(costmapState, CostmapReducer.reduce(costmapState, invalidAction, com.areslib.math.Pose2d()))
-    }
-
-    @Test
-    fun testCostmapReducer_shouldSafelyCopyWorkingLists() {
-        val originalCostmap = CostmapState()
-        val observation = RobotAction.DistanceSensorObservation(
-            sensorId = "front",
-            angleOffsetRad = 0.0,
-            positionOffsetXMeters = 0.0,
-            positionOffsetYMeters = 0.0,
-            distanceMeters = 1.0,
-            maxRangeMeters = 4.0
-        )
-        val addObstacleAction = RobotAction.ObstacleCostmapUpdate(listOf(observation), 100L)
-
-        val updatedCostmap = CostmapReducer.reduce(originalCostmap, addObstacleAction, com.areslib.math.Pose2d())
-        
-        // Since dynamic costmap updates are disabled, it should return the original state slice
-        assertSame(originalCostmap, updatedCostmap)
     }
 
     @Test

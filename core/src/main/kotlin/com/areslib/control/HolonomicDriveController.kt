@@ -3,8 +3,6 @@ package com.areslib.control
 import com.areslib.math.ChassisSpeeds
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
-import com.areslib.state.Obstacle
-import com.areslib.pathing.VFHPlanner
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -27,7 +25,6 @@ class HolonomicDriveController(
     private val yAdrc: LinearADRC? = null,
     private val thetaAdrc: LinearADRC? = null
 ) {
-    private val vfh = VFHPlanner()
 
     init {
         thetaController.enableContinuousInput(-Math.PI, Math.PI)
@@ -47,7 +44,6 @@ class HolonomicDriveController(
      *        from the current position to the target position.
      * @param curvature Curvature of the path segment (1/radius).
      * @param maxCentripetalAccel Limit for lateral centripetal acceleration.
-     * @param obstacles List of dynamic/static obstacles on the field.
      * @param progressPercentage Progress along the trajectory (0.0 to 100.0).
      */
     fun calculate(
@@ -59,7 +55,6 @@ class HolonomicDriveController(
         pathTangentRadians: Double = Double.NaN,
         curvature: Double = 0.0,
         maxCentripetalAccel: Double = 2.5,
-        obstacles: List<Obstacle> = emptyList(),
         progressPercentage: Double = 0.0
     ): ChassisSpeeds {
         // Calculate raw error components
@@ -113,27 +108,13 @@ class HolonomicDriveController(
             targetVelocityMps
         }
 
-        // Apply VFH+ to calculate dynamic steering detours
-        val detourHeading = if (obstacles.isNotEmpty()) {
-            vfh.computeDetourHeading(currentPose, pathTangent, obstacles)
-        } else {
-            pathTangent
-        }
-
-        // Velocity feedforward along the (possibly detoured) path tangent
-        val xFF = limitedVelocity * cos(detourHeading)
-        val yFF = limitedVelocity * sin(detourHeading)
+        // Velocity feedforward along the path tangent
+        val xFF = limitedVelocity * cos(pathTangent)
+        val yFF = limitedVelocity * sin(pathTangent)
 
         // Sum feedforward and feedback
         var fieldRelativeX = xFF + xFeedback
         var fieldRelativeY = yFF + yFeedback
-
-        // If detouring, project the entire desired speed vector along the safe detour direction
-        if (detourHeading != pathTangent) {
-            val speedMagnitude = kotlin.math.hypot(fieldRelativeX, fieldRelativeY)
-            fieldRelativeX = speedMagnitude * cos(detourHeading)
-            fieldRelativeY = speedMagnitude * sin(detourHeading)
-        }
 
         // Clamp total velocity to physical limits
         val outputMagnitude = kotlin.math.hypot(fieldRelativeX, fieldRelativeY)

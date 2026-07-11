@@ -179,33 +179,6 @@ interface RobotAction {
         override val timestampMs: Long
     ) : RobotAction
 
-    // Obstacle Avoidance Actions
-
-    /**
-     * A single range sensor observation for obstacle detection.
-     *
-     * @property sensorId Unique identifier for this range sensor.
-     * @property angleOffsetRad Sensor's angular offset from robot forward in radians (CCW-positive).
-     * @property positionOffsetXMeters Sensor's X mount offset from robot center in meters (forward positive).
-     * @property positionOffsetYMeters Sensor's Y mount offset from robot center in meters (left positive).
-     * @property distanceMeters Measured distance to the nearest obstacle in meters.
-     * @property maxRangeMeters Sensor's maximum effective range in meters.
-     */
-    data class DistanceSensorObservation(
-        val sensorId: String,
-        val angleOffsetRad: Double,
-        val positionOffsetXMeters: Double,
-        val positionOffsetYMeters: Double,
-        val distanceMeters: Double,
-        val maxRangeMeters: Double = 4.0
-    )
-
-    /** Dispatches a batch of distance sensor observations for costmap integration. */
-    data class ObstacleCostmapUpdate(
-        val observations: List<DistanceSensorObservation>,
-        override val timestampMs: Long
-    ) : RobotAction
-
     // Path Following and Switching Actions
 
     /**

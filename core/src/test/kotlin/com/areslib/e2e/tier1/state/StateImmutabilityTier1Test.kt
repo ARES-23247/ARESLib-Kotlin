@@ -16,8 +16,7 @@ class StateImmutabilityTier1Test {
             VisionState::class.java,
             CostmapState::class.java,
             PathState::class.java,
-            VisionMeasurement::class.java,
-            Obstacle::class.java
+            VisionMeasurement::class.java
         )
 
         for (clazz in stateClasses) {
@@ -39,9 +38,6 @@ class StateImmutabilityTier1Test {
 
     @Test
     fun testCollectionStatePropertiesAreReadOnly() {
-        // CostmapState contains obstacles: List<Obstacle>
-        val costmap = CostmapState()
-        assertTrue(costmap.obstacles is List<*>, "obstacles in CostmapState should be a List")
         
         // VisionState contains measurements: List<VisionMeasurement>
         val vision = VisionState()
