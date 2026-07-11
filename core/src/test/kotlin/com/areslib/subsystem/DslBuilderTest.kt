@@ -44,4 +44,37 @@ class DslBuilderTest {
         
         assertEquals(0.0, robot.store.state.superstructure.flywheelRPM)
     }
+
+    @Test
+    fun testAresRobotLifecycle() {
+        val robot = aresRobot {}
+        var readSensorsCalled = false
+        var writeOutputsCalled = false
+        var closeCalled = false
+
+        val sub = object : Subsystem {
+            override fun readSensors(store: Store, timestampMs: Long) {
+                readSensorsCalled = true
+            }
+            override fun writeOutputs(state: RobotState, powerScale: Double) {
+                writeOutputsCalled = true
+            }
+            override fun close() {
+                closeCalled = true
+            }
+        }
+
+        robot.registerSubsystem(sub)
+        assertEquals(1, robot.getRegisteredSubsystems().size)
+
+        robot.readAllSensors(1234L)
+        kotlin.test.assertTrue(readSensorsCalled)
+
+        robot.writeAllOutputs(0.8)
+        kotlin.test.assertTrue(writeOutputsCalled)
+
+        robot.safeAll()
+        robot.closeSubsystems()
+        kotlin.test.assertTrue(closeCalled)
+    }
 }

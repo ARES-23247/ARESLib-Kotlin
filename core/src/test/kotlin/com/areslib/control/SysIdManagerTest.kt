@@ -83,4 +83,20 @@ class SysIdManagerTest {
         // Over 5s
         assertFalse(manager.checkSafety(0.1, 0.0, 0.0, 6001L))
     }
+
+    @Test
+    fun testStopAndInactiveState() {
+        val manager = SysIdManager()
+        // Inactive safety should be true
+        assertTrue(manager.checkSafety(1.0, 1.0, 1.0, 1000L))
+        // Inactive update should be 0.0
+        assertEquals(0.0, manager.update(1000L, 1.0))
+
+        // Start and Stop
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC_FORWARD, 1000L, 0.0, 0.0, 0.0)
+        assertTrue(manager.isActive())
+        manager.stop()
+        assertFalse(manager.isActive())
+        assertEquals(0.0, manager.currentVoltage)
+    }
 }
