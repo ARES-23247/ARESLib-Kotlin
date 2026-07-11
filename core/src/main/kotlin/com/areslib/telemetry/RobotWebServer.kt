@@ -425,6 +425,10 @@ object RobotWebServer {
         private var serverSocket: java.net.ServerSocket? = null
         @Volatile private var running = true
 
+        init {
+            isDaemon = true
+        }
+
         override fun run() {
             try {
                 serverSocket = java.net.ServerSocket(localPort)
@@ -440,7 +444,7 @@ object RobotWebServer {
                                     try { serverSocketConnection.close() } catch (_: Exception) {}
                                     try { clientSocket.close() } catch (_: Exception) {}
                                 }
-                            }.start()
+                            }.apply { isDaemon = true }.start()
                             try {
                                 serverSocketConnection.inputStream.copyTo(clientSocket.outputStream)
                             } catch (_: Exception) {} finally {
@@ -450,7 +454,7 @@ object RobotWebServer {
                         } catch (_: Exception) {
                             try { clientSocket.close() } catch (_: Exception) {}
                         }
-                    }.start()
+                    }.apply { isDaemon = true }.start()
                 }
             } catch (_: Exception) {}
         }
