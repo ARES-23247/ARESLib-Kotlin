@@ -1,14 +1,13 @@
-package com.areslib.frc
+package com.areslib.hardware
 
 import com.areslib.state.DriveState
-import com.areslib.hardware.SubsystemIO
 import com.areslib.telemetry.ITelemetry
 
 /**
  * Interface representing the hardware input/output for the swerve drivetrain.
  *
- * This allows clean decoupling of the swerve drivetrain logic from Phoenix 6/CTRE hardware
- * JNI classes, facilitating unit testing and simulation.
+ * This allows clean decoupling of the swerve drivetrain logic from CTRE/REV hardware,
+ * facilitating unit testing, simulation, and future cross-platform (FTC/FRC) swerve support.
  */
 interface SwerveHardwareIO : SubsystemIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
@@ -35,11 +34,11 @@ interface SwerveHardwareIO : SubsystemIO {
     /** Gets measured absolute encoder positions. */
     fun getEncoderPositions(out: DoubleArray) {}
 
-    /** Gets Pigeon2 absolute pitch degrees. */
+    /** Gets gyro absolute pitch degrees. */
     val pitchDegrees: Double
         get() = 0.0
 
-    /** Gets Pigeon2 absolute roll degrees. */
+    /** Gets gyro absolute roll degrees. */
     val rollDegrees: Double
         get() = 0.0
 
@@ -47,7 +46,7 @@ interface SwerveHardwareIO : SubsystemIO {
     fun getModuleSpeeds(out: DoubleArray) {}
 
     /** Feeds AprilTag measurements into drivetrain's pose estimator. */
-    fun addVisionMeasurement(pose: edu.wpi.first.math.geometry.Pose2d, timestampSeconds: Double) {}
+    fun addVisionMeasurement(pose: com.areslib.math.Pose2d, timestampSeconds: Double) {}
 
     /** Resets/seeds the underlying pose estimator. */
     fun seedPose(pose: com.areslib.math.Pose2d) {}

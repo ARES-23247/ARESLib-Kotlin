@@ -17,7 +17,7 @@ import com.areslib.telemetry.RobotStatusTracker
 class FrcVisionTracker(
     private val store: Store,
     val visionIO: VisionIO?,
-    private val swerveIO: com.areslib.frc.SwerveHardwareIO?,
+    private val swerveIO: com.areslib.hardware.SwerveHardwareIO?,
     private val isSimulation: Boolean
 ) : VisionTracker {
 
@@ -60,14 +60,14 @@ class FrcVisionTracker(
                 val measurement = visionInputs.measurements[0]
                 if (!isSimulation && swerveIO != null) {
                     try {
-                        val wpiPose = edu.wpi.first.math.geometry.Pose2d(
+                        val pose = com.areslib.math.Pose2d(
                             measurement.targetPose.translation.x,
                             measurement.targetPose.translation.y,
-                            edu.wpi.first.math.geometry.Rotation2d.fromRadians(measurement.targetPose.rotation.z)
+                            com.areslib.math.Rotation2d(measurement.targetPose.rotation.z)
                         )
                         val latencyMs = timestampMs - measurement.timestampMs
                         val timestampSec = edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - (latencyMs / 1000.0)
-                        swerveIO.addVisionMeasurement(wpiPose, timestampSec)
+                        swerveIO.addVisionMeasurement(pose, timestampSec)
                     } catch (e: Throwable) {
                         System.err.println("FrcSwerveRobot: Failed to feed vision to SwerveDrivetrain: ${e.message}")
                     }

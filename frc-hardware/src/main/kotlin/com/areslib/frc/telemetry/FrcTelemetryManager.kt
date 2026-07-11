@@ -1,7 +1,7 @@
 package com.areslib.frc.telemetry
 
 import com.areslib.control.BrownoutGuard
-import com.areslib.frc.SwerveHardwareIO
+import com.areslib.hardware.SwerveHardwareIO
 import com.areslib.state.RobotState
 import com.areslib.subsystem.Store
 import com.areslib.telemetry.*

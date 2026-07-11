@@ -4,12 +4,14 @@ import com.areslib.action.RobotAction
 import com.areslib.frc.power.FrcPowerManager
 import com.areslib.frc.telemetry.FrcTelemetryManager
 import com.areslib.frc.vision.FrcVisionTracker
+import com.areslib.hardware.SwerveHardwareIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.SwerveDriveFacade
 import com.areslib.telemetry.*
+import kotlin.math.abs
 
 /**
  * FRC Swerve Robot — a clean, drivebase-only swerve robot facade.
@@ -140,14 +142,14 @@ class FrcSwerveRobot(
             val roll = swerveIO.rollDegrees
 
             // 8.0 degrees prevents false positives from normal suspension travel
-            val isTilted = Math.abs(pitch) > 8.0 || Math.abs(roll) > 8.0
+            val isTilted = abs(pitch) > 8.0 || abs(roll) > 8.0
 
             // Loss of traction: high speed but very low current draw
             swerveIO.getModuleSpeeds(scratchSpeeds)
             swerveIO.getCurrents(scratchCurrents)
             var slipCount = 0
             for (i in 0..3) {
-                if (Math.abs(scratchSpeeds[i]) > 1.5 && Math.abs(scratchCurrents[i]) < 8.0) {
+                if (abs(scratchSpeeds[i]) > 1.5 && abs(scratchCurrents[i]) < 8.0) {
                     slipCount++
                 }
             }
