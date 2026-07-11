@@ -8,7 +8,13 @@ import com.areslib.pathing.Path
  * Shared base class containing common mathematical algorithms and properties for holonomic drive facades.
  * Standardizes joystick driving, field-relative coordinate rotations, heading locking, and path following.
  */
-abstract class HolonomicDriveFacade(protected val store: Store) {
+abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
+    protected val store: Store,
+    headingKp: Double = 4.5,
+    headingKi: Double = 0.0,
+    headingKd: Double = 0.25,
+    headingDeadzoneDeg: Double = 0.5
+) {
     
     /**
      * The current estimated longitudinal (X-axis) velocity of the robot on the field in meters per second.
@@ -52,10 +58,10 @@ abstract class HolonomicDriveFacade(protected val store: Store) {
     val odometryHeading: Double
         get() = store.state.drive.odometryHeading
 
-    protected val headingPID = com.areslib.control.PIDController(4.5, 0.0, 0.25).apply {
+    protected val headingPID = com.areslib.control.PIDController(headingKp, headingKi, headingKd).apply {
         enableContinuousInput(-Math.PI, Math.PI)
         setOutputLimits(-2.0, 2.0)
-        deadzone = Math.toRadians(0.5)
+        deadzone = Math.toRadians(headingDeadzoneDeg)
     }
 
     /**

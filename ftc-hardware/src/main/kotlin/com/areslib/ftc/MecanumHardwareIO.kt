@@ -20,11 +20,17 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val frName: String = "fr",
     val blName: String = "bl",
     val brName: String = "br",
-    val maxWheelSpeedMetersPerSecond: Double = 3.5,
+    var maxWheelSpeedMetersPerSecond: Double = 3.5,
     val flDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
     val frDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE,
     val blDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
-    val brDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE
+    val brDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE,
+    initialKs: Double = 0.0,
+    val initialSlewRateLimit: Double? = null,
+    val motorKp: Double? = null,
+    val motorKi: Double? = null,
+    val motorKd: Double? = null,
+    val motorKf: Double? = null
 ) : com.areslib.hardware.SubsystemIO, AutoCloseable {
     val frontLeft: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, flName)
     val frontRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, frName)
@@ -32,7 +38,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val backRight: DcMotorEx = hardwareMap.get(DcMotorEx::class.java, brName)
     
     /** Static friction feedforward coefficient (power needed to overcome static drivetrain friction) */
-    var kS: Double = 0.0
+    var kS: Double = initialKs
 
     /** Lightweight MotorIO wrappers for software estimation (CurrentBudgetManager) */
     val flIO = EstimateMotorIO(frontLeft)
@@ -85,6 +91,19 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         com.areslib.hardware.HardwareRegistry.registerMotor(brName, brIO)
         com.areslib.hardware.HardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
+
+        if (motorKp != null || motorKi != null || motorKd != null || motorKf != null) {
+            val coefficients = com.qualcomm.robotcore.hardware.PIDFCoefficients(
+                motorKp ?: 0.0, motorKi ?: 0.0, motorKd ?: 0.0, motorKf ?: 0.0
+            )
+            listOf(frontLeft, frontRight, backLeft, backRight).forEach { motor ->
+                motor.setPIDFCoefficients(com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER, coefficients)
+            }
+        }
+
+        if (initialSlewRateLimit != null) {
+            slewRateLimit = initialSlewRateLimit
+        }
     }
 
     override fun close() {

@@ -15,10 +15,11 @@ import com.areslib.subsystem.VisionTracker
  * Handles outlier rejection (using yaw, field boundary, distance, and EKF Mahalanobis checks),
  * and triggers EKF snap updates during initialization or recovery states.
  */
-class FtcVisionTracker(
+class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private val store: Store,
     val limelightIO: VisionIO?,
-    private val pinpointIO: PinpointIO?
+    private val pinpointIO: PinpointIO?,
+    val stdDevs: com.areslib.math.Vector3 = com.areslib.math.Vector3(0.05, 0.05, 0.1)
 ) : VisionTracker {
     val visionInputs = VisionIOInputs()
     var lastLimelightPose: Pose2d? = null
@@ -36,7 +37,7 @@ class FtcVisionTracker(
     var hasInitializedPoseWithVision = false
 
     // Pre-allocated structure to guarantee Zero-GC compliance inside EKF verification loops
-    private val stdDevs = Vector3(0.05, 0.05, 0.1)
+
 
     /**
      * Polls the vision sensors, performs outlier rejection, and updates the EKF store.
@@ -194,8 +195,8 @@ class FtcVisionTracker(
                         val yZ = com.areslib.math.InputMath.wrapAngle(fieldPose2d.heading.radians - baseEntry.pose.heading.radians)
                         
                         val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
-                        if (dMSquared > 12.0) {
-                            String.format("REJ_MAHALANOBIS (%.2f > 12.0)", dMSquared)
+                        if (dMSquared > filterConfig.mahalanobisThreshold) {
+                            String.format("REJ_MAHALANOBIS (%.2f > %.2f)", dMSquared, filterConfig.mahalanobisThreshold)
                         } else {
                             "ACCEPTED"
                         }

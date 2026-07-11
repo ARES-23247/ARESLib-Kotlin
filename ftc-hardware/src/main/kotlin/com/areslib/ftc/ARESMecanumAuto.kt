@@ -39,10 +39,17 @@ open class ARESMecanumAuto : LinearOpMode() {
         )
 
         // Calibrate static friction feedforward (kS) to overcome physical drivetrain deadband
-        robot.mecanumIO.kS = 0.05
+        robot.mecanumIO.kS = if (robot.driveKs > 0.0) robot.driveKs else 0.05
 
         // Setup unified path follower helper
-        val pathFollower = com.areslib.ftc.control.FtcMecanumPathFollower(robot)
+        val pathFollower = com.areslib.ftc.control.FtcMecanumPathFollower(
+            robot,
+            xController = com.areslib.control.PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
+            yController = com.areslib.control.PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
+            thetaController = com.areslib.control.PIDController(robot.pathRotationKp, robot.pathRotationKi, robot.pathRotationKd).apply {
+                enableContinuousInput(-Math.PI, Math.PI)
+            }
+        )
 
         // Parse trajectory spline path
         var path: Path? = null

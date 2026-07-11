@@ -34,12 +34,65 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     flDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
     frDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
     blDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
-    brDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
-) : FtcBaseRobot(hardwareMap, pinpointName, limelightName, localTelemetry) {
+    brDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+    
+    // Drivetrain Tunable Constants
+    val trackWidthMeters: Double = 0.45,
+    val wheelBaseMeters: Double = 0.45,
+    val headingKp: Double = 4.5,
+    val headingKi: Double = 0.0,
+    val headingKd: Double = 0.25,
+    val headingDeadzoneDeg: Double = 0.5,
+    val driveKs: Double = 0.0,
+    val driveSlewRateLimit: Double? = null,
+    val pathTranslationKp: Double = 2.0,
+    val pathTranslationKi: Double = 0.0,
+    val pathTranslationKd: Double = 0.02,
+    val pathRotationKp: Double = 2.5,
+    val pathRotationKi: Double = 0.0,
+    val pathRotationKd: Double = 0.05,
+    
+    // EKF Process Noise Constants
+    odomQx: Double = 0.01,
+    odomQy: Double = 0.01,
+    odomQtheta: Double = 0.01,
+    
+    // Pinpoint physical parameters
+    pinpointXOffsetMm: Double = 0.0,
+    pinpointYOffsetMm: Double = 0.0,
+    pinpointEncoderResolution: Double? = null,
+    pinpointXDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
+    pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
+    
+    // Motor Tunable Constants
+    val motorKp: Double? = null,
+    val motorKi: Double? = null,
+    val motorKd: Double? = null,
+    val motorKf: Double? = null,
+    
+    // Vision Filtering Constants
+    visionStdDevs: com.areslib.math.Vector3 = com.areslib.math.Vector3(0.05, 0.05, 0.1),
+    visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
+) : FtcBaseRobot(
+    hardwareMap = hardwareMap,
+    pinpointName = pinpointName,
+    limelightName = limelightName,
+    localTelemetry = localTelemetry,
+    odomQx = odomQx,
+    odomQy = odomQy,
+    odomQtheta = odomQtheta,
+    pinpointXOffsetMm = pinpointXOffsetMm,
+    pinpointYOffsetMm = pinpointYOffsetMm,
+    pinpointEncoderResolution = pinpointEncoderResolution,
+    pinpointXDirection = pinpointXDirection,
+    pinpointYDirection = pinpointYDirection,
+    visionStdDevs = visionStdDevs,
+    visionFilterConfig = visionFilterConfig
+) {
 
     // Subsystem Facades
     val drive = DriveSubsystem(store)
-    val mecanumDrive = MecanumDriveFacade(store)
+    val mecanumDrive = MecanumDriveFacade(store, headingKp, headingKi, headingKd, headingDeadzoneDeg)
 
     private val visionAlignController = VisionAlignController()
 
@@ -56,7 +109,13 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         flDirection = flDirection,
         frDirection = frDirection,
         blDirection = blDirection,
-        brDirection = brDirection
+        brDirection = brDirection,
+        initialKs = driveKs,
+        initialSlewRateLimit = driveSlewRateLimit,
+        motorKp = motorKp,
+        motorKi = motorKi,
+        motorKd = motorKd,
+        motorKf = motorKf
     )
 
     init {
@@ -67,7 +126,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val sysIdManager = com.areslib.control.SysIdManager()
     private var lastCommandProcessed = ""
 
-    private val kinematics = MecanumKinematics(trackWidthMeters = 0.45, wheelBaseMeters = 0.45)
+    private val kinematics = MecanumKinematics(trackWidthMeters = trackWidthMeters, wheelBaseMeters = wheelBaseMeters)
 
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()

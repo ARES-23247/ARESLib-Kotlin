@@ -76,7 +76,9 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                         state = currentEstimator,
                         measurement = measurement,
                         visionStdDevs = stdDevs,
-                        numTags = validMeasurements.size
+                        numTags = validMeasurements.size,
+                        useMahalanobisRejection = true,
+                        mahalanobisThreshold = state.vision.filterConfig.mahalanobisThreshold
                     )
                     lastAccepted = currentEstimator.lastMeasurementAccepted
                     lastReason = currentEstimator.lastRejectionReason

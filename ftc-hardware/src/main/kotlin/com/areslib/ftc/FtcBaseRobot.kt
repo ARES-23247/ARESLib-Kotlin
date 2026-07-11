@@ -24,8 +24,30 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
     val pinpointName: String? = "pinpoint",
     val limelightName: String? = "limelight",
-    protected val localTelemetry: Telemetry? = null
-) : AresRobot() {
+    protected val localTelemetry: Telemetry? = null,
+    
+    // EKF Process noise
+    val odomQx: Double = 0.01,
+    val odomQy: Double = 0.01,
+    val odomQtheta: Double = 0.01,
+    
+    // Pinpoint physical parameters
+    val pinpointXOffsetMm: Double = 0.0,
+    val pinpointYOffsetMm: Double = 0.0,
+    val pinpointEncoderResolution: Double? = null,
+    val pinpointXDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
+    val pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
+    
+    // Vision Configuration
+    val visionStdDevs: com.areslib.math.Vector3 = com.areslib.math.Vector3(0.05, 0.05, 0.1),
+    val visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
+) : AresRobot(
+    initialState = com.areslib.state.RobotState(
+        vision = com.areslib.state.VisionState(
+            filterConfig = visionFilterConfig
+        )
+    )
+) {
 
     init {
         com.areslib.ftc.hardware.FtcPerformanceManager.initialize(hardwareMap)
@@ -33,6 +55,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.telemetry.RobotStatusTracker.isEnabled = false
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
         activeInstance = this
+
+        com.areslib.math.PoseEstimator.qX = odomQx
+        com.areslib.math.PoseEstimator.qY = odomQy
+        com.areslib.math.PoseEstimator.qTheta = odomQtheta
     }
 
     companion object {
@@ -55,7 +81,14 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val pinpointIO: PinpointIO? = try {
         pinpointName?.let { name ->
             val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, name)
-            PinpointIO(pinpointDriver)
+            PinpointIO(
+                driver = pinpointDriver,
+                xOffsetMm = pinpointXOffsetMm,
+                yOffsetMm = pinpointYOffsetMm,
+                encoderResolution = pinpointEncoderResolution,
+                xDirection = pinpointXDirection,
+                yDirection = pinpointYDirection
+            )
         }
     } catch (_: Throwable) {
         null
@@ -84,7 +117,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     // Vision Tracker and Outlier Snapper
-    val visionTracker = FtcVisionTracker(store, limelightIO, pinpointIO)
+    val visionTracker = FtcVisionTracker(store, limelightIO, pinpointIO, visionStdDevs)
 
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L

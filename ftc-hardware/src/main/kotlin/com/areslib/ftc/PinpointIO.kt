@@ -20,10 +20,25 @@ import kotlinx.coroutines.launch
  *   we negate it here at the hardware boundary so all downstream
  *   consumers (EKF, kinematics, path followers) receive CCW-positive.
  */
-class PinpointIO(private val driver: GoBildaPinpointDriver) : AutoCloseable {
+class PinpointIO @kotlin.jvm.JvmOverloads constructor(
+    private val driver: GoBildaPinpointDriver,
+    xOffsetMm: Double = 0.0,
+    yOffsetMm: Double = 0.0,
+    encoderResolution: Double? = null,
+    xDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD,
+    yDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD
+) : AutoCloseable {
     private var offsetX = 0.0
     private var offsetY = 0.0
     private var offsetHeading = 0.0
+
+    init {
+        driver.setOffsets(xOffsetMm, yOffsetMm, org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.MM)
+        if (encoderResolution != null) {
+            driver.setEncoderResolution(encoderResolution)
+        }
+        driver.setEncoderDirections(xDirection, yDirection)
+    }
 
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val lock = Any()

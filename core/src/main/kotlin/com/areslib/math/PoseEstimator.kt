@@ -151,6 +151,24 @@ object PoseEstimator {
         0.0,  0.0,  0.01
     )
 
+    var qX: Double = 0.01
+        set(value) {
+            field = value
+            Q.m00 = value
+        }
+
+    var qY: Double = 0.01
+        set(value) {
+            field = value
+            Q.m11 = value
+        }
+
+    var qTheta: Double = 0.01
+        set(value) {
+            field = value
+            Q.m22 = value
+        }
+
     private val scratchQ = Matrix3x3()
     private val scratchR = Matrix3x3()
     private val scratchS = Matrix3x3()
