@@ -37,5 +37,6 @@ allprojects {
 subprojects {
     if (name != "tools" && name != "FtcRobotController") {
         apply(plugin = "org.jetbrains.dokka")
+        apply(plugin = "org.jetbrains.kotlinx.kover")
     }
 }
