@@ -47,7 +47,7 @@ graph TD
   * `src/main/kotlin/com/areslib/subsystem/`: Subsystem facades and Ares robot definitions.
 * **`ftc-hardware/`**: FTC-specific hardware wrapping, GoBilda Pinpoint and Limelight integration, and the student-facing Mecanum robot facade.
 * **`ftc-mocks/`**: Stubbed, light implementation of Qualcomm and external FTC APIs, enabling core compilation and desktop test executions without Android hardware.
-* **`frc-app/`**: FRC-specific kinematics, Swerve Facades, and WPILib adapters.
+* **`frc-app/`**: FRC-specific kinematics, Swerve Facades, WPILib adapters, and the `FrcBaseRobot` scaffold (parallel to `FtcBaseRobot`). Season-specific subsystem code (state, reducers, actions, subsystem facades) lives in the team repository (`ARES-FRC`).
 * **`simulator/`**: Dynamic physics simulator and dynamic visualizers.
 
 ---

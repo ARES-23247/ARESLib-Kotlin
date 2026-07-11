@@ -35,8 +35,20 @@ class FrcTelemetryManager(
     private val swerveStates = DoubleArray(8)
     private val swerveFaults = IntArray(4)
 
-    // CANBus instance created once to avoid allocations in update loop
-    private val canBus = CANBus("CAN2")
+    private fun isRealRobot(): Boolean {
+        return try {
+            edu.wpi.first.wpilibj.RobotBase.isReal()
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    // CANBus instance created once to avoid allocations in update loop, wrapped in try-catch for simulation/test safety
+    private val canBus = if (isRealRobot()) {
+        try { CANBus("CAN2") } catch (_: Throwable) { null }
+    } else {
+        null
+    }
 
     /**
      * Publishes core robot state, custom sub-state publishers, and AdvantageScope 3D visualization topics.
@@ -90,18 +102,20 @@ class FrcTelemetryManager(
 
         // --- Log FRC CANbus Diagnostics & Latency ---
         try {
-            val canStatus = canBus.status
-            val latencyMs = swerveIO?.signalLatencyMs ?: 0.0
+            val canStatus = canBus?.status
+            if (canStatus != null) {
+                val latencyMs = swerveIO?.signalLatencyMs ?: 0.0
 
-            dataLoggingTelemetry.logCanBusStatus(
-                busName = "CAN2",
-                busUtilization = canStatus.BusUtilization.toDouble(),
-                errorCount = canStatus.REC + canStatus.TEC,
-                txErrors = canStatus.TEC,
-                rxErrors = canStatus.REC,
-                busOffs = canStatus.BusOffCount,
-                signalLatencyMs = latencyMs
-            )
+                dataLoggingTelemetry.logCanBusStatus(
+                    busName = "CAN2",
+                    busUtilization = canStatus.BusUtilization.toDouble(),
+                    errorCount = canStatus.REC + canStatus.TEC,
+                    txErrors = canStatus.TEC,
+                    rxErrors = canStatus.REC,
+                    busOffs = canStatus.BusOffCount,
+                    signalLatencyMs = latencyMs
+                )
+            }
 
             // Log Swerve Motor Active Faults
             if (swerveIO != null) {
