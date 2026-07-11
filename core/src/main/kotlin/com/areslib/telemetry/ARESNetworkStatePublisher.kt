@@ -9,6 +9,11 @@ import com.areslib.state.RobotState
  */
 class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
+    private val EMPTY_DOUBLE_ARRAY = DoubleArray(0)
+    
+    private var lastPublishedPath: com.areslib.pathing.Path? = null
+    private var cachedPathPoints: DoubleArray = EMPTY_DOUBLE_ARRAY
+
     fun publish(
         state: RobotState,
         gamepad1: GamepadState? = null,
@@ -86,6 +91,34 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.putNumber("Vision/Pose_Heading", 0.0)
             telemetry.putNumber("Vision/Primary_TagId", -1.0)
             telemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
+        }
+
+        // ── Path State ──
+        val path = state.pathState
+        telemetry.putBoolean("Path/Active", path.activePath != null)
+        telemetry.putNumber("Path/DistanceMeters", path.currentDistanceMeters)
+        telemetry.putBoolean("Path/IsChained", path.isChained)
+        telemetry.putBoolean("Path/DetourActive", path.detourActive)
+        
+        val activePath = path.activePath
+        if (activePath != null) {
+            if (activePath !== lastPublishedPath) {
+                lastPublishedPath = activePath
+                val pointsList = activePath.points
+                val flatPoints = DoubleArray(pointsList.size * 3)
+                for (i in pointsList.indices) {
+                    val pt = pointsList[i]
+                    flatPoints[i * 3] = pt.pose.x
+                    flatPoints[i * 3 + 1] = pt.pose.y
+                    flatPoints[i * 3 + 2] = pt.pose.heading.radians
+                }
+                cachedPathPoints = flatPoints
+            }
+            telemetry.putDoubleArray("Path/Points", cachedPathPoints)
+        } else {
+            lastPublishedPath = null
+            cachedPathPoints = EMPTY_DOUBLE_ARRAY
+            telemetry.putDoubleArray("Path/Points", EMPTY_DOUBLE_ARRAY)
         }
 
         // ── Gamepad 1 ──
