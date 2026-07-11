@@ -33,7 +33,7 @@ class MecanumInteractionModel(private val robotDouble: MecanumRobotDouble) : Sim
         val frontVec = Vector2(frontX, frontY)
 
         // 1. INTAKE LOGIC
-        if (intakeActive && newInventory < 2) {
+        if (intakeActive && newInventory < 3) {
             val iterator = gamePieces.iterator()
             while (iterator.hasNext()) {
                 val piece = iterator.next()
