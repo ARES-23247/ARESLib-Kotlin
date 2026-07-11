@@ -96,27 +96,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         // Log the complete state, motor currents, and EKF vision updates
         // Obsolete: Handled by Unified ARESDataLogger
 
-        // Vision telemetry
+        // Vision telemetry status
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
-        if (visionTracker.lastLimelightPose != null) {
-            val pose = visionTracker.lastLimelightPose!!
-            dataLoggingTelemetry.logPoseArray2d("Vision/PoseArray", pose)
-            dataLoggingTelemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
-        } else {
-            // Log empty arrays/zeros on first frame so CSV headers are correctly generated
-            dataLoggingTelemetry.putDoubleArray("Vision/PoseArray", doubleArrayOf())
-            dataLoggingTelemetry.putNumber("Vision/Pose_x", 0.0)
-            dataLoggingTelemetry.putNumber("Vision/Pose_y", 0.0)
-            dataLoggingTelemetry.putNumber("Vision/Pose_theta", 0.0)
-        }
-        if (visionTracker.visionInputs.measurements.isNotEmpty()) {
-            val primaryMeasurement = visionTracker.visionInputs.measurements[0]
-            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
-            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
-        } else {
-            dataLoggingTelemetry.putNumber("Vision/Primary_TagId", -1.0)
-            dataLoggingTelemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
-        }
 
         // Global custom hardware telemetry
         HardwareRegistry.publishAll(dataLoggingTelemetry)

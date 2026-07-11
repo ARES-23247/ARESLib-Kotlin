@@ -72,6 +72,22 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Vision/Target_Y", state.vision.targetY)
         telemetry.putNumber("Vision/MeasurementCount", state.vision.measurements.size.toDouble())
 
+        if (state.vision.measurements.isNotEmpty()) {
+            val primaryMeasurement = state.vision.measurements[0]
+            val pose = primaryMeasurement.targetPose.toPose2d()
+            telemetry.logPoseArray2d("Vision/PoseArray", pose)
+            telemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
+            telemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
+            telemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
+        } else {
+            telemetry.putDoubleArray("Vision/PoseArray", doubleArrayOf())
+            telemetry.putNumber("Vision/Pose_X", 0.0)
+            telemetry.putNumber("Vision/Pose_Y", 0.0)
+            telemetry.putNumber("Vision/Pose_Heading", 0.0)
+            telemetry.putNumber("Vision/Primary_TagId", -1.0)
+            telemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
+        }
+
         // ── Gamepad 1 ──
         telemetry.logGamepad("Gamepad1", gamepad1 ?: GamepadState())
 
