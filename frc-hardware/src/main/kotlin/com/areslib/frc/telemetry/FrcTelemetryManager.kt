@@ -50,6 +50,8 @@ class FrcTelemetryManager(
         null
     }
 
+    private var activeBrownoutGuard: BrownoutGuard? = null
+
     /**
      * Publishes core robot state, custom sub-state publishers, and AdvantageScope 3D visualization topics.
      *
@@ -66,27 +68,12 @@ class FrcTelemetryManager(
         dtSeconds: Double,
         batteryVoltage: Double
     ) {
-        publisher.publish(state, gamepad1, gamepad2)
+        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, activeBrownoutGuard)
 
         // Invoke all registered custom publishers (season-specific subsystem dashboards)
         for (i in 0 until customPublishers.size) {
             customPublishers[i](state, dataLoggingTelemetry)
         }
-
-        // Publish EKF covariance diagonals
-        val cov = state.drive.poseEstimator.covariance
-        covarianceDiagonals[0] = cov.m00
-        covarianceDiagonals[1] = cov.m11
-        covarianceDiagonals[2] = cov.m22
-        dataLoggingTelemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceDiagonals)
-
-        // Publish 3D robot pose (quaternion format for AdvantageScope)
-        dataLoggingTelemetry.logPose3d(
-            "Robot/Pose3d",
-            state.drive.odometryX,
-            state.drive.odometryY,
-            state.drive.odometryHeading
-        )
 
         // Publish swerve module states
         val vx = state.drive.xVelocityMetersPerSecond
@@ -135,7 +122,7 @@ class FrcTelemetryManager(
      * Publishes brownout telemetry.
      */
     fun logBrownout(brownoutGuard: BrownoutGuard, batteryVoltage: Double) {
-        dataLoggingTelemetry.logBrownout(brownoutGuard, batteryVoltage)
+        this.activeBrownoutGuard = brownoutGuard
     }
 
     override fun close() {

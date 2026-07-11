@@ -29,6 +29,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     val nt4 = NT4Telemetry()
     override val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
+    val brownoutGuard = com.areslib.control.BrownoutGuard.ftcDefaults()
 
     override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
@@ -52,18 +53,9 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         dtSeconds: Double,
         batteryVoltage: Double
     ) {
-        dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
-        dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
+        brownoutGuard.update(batteryVoltage)
 
-        val estPose = state.drive.poseEstimator.estimatedPose
-        dataLoggingTelemetry.logPose2d("pinpoint", estPose, useUnderscores = true, lowercase = true)
-
-        val rawOdomX = state.drive.odometryX
-        val rawOdomY = state.drive.odometryY
-        dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
-        dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
-
-        publisher.publish(state, gamepad1, gamepad2)
+        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, brownoutGuard)
 
         // Global custom hardware telemetry
         HardwareRegistry.publishAll(dataLoggingTelemetry)
@@ -93,21 +85,13 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         localTelemetry: Telemetry?,
         onSubclassPublish: () -> Unit = {}
     ) {
-        dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
-        dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
-
         val estPose = state.drive.poseEstimator.estimatedPose
-        dataLoggingTelemetry.logPose2d("pinpoint", estPose, useUnderscores = true, lowercase = true)
-        
-        val rawOdomX = state.drive.odometryX
-        val rawOdomY = state.drive.odometryY
-        dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
-        dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
+        brownoutGuard.update(batteryVoltage)
 
         // Subclass-specific telemetry (motor powers, currents, custom subsystems)
         onSubclassPublish()
 
-        publisher.publish(state, gamepad1, gamepad2)
+        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, brownoutGuard)
 
         // Log the complete state, motor currents, and EKF vision updates
         // Obsolete: Handled by Unified ARESDataLogger

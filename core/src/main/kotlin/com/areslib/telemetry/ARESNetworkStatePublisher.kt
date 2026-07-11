@@ -12,7 +12,10 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     fun publish(
         state: RobotState,
         gamepad1: GamepadState? = null,
-        gamepad2: GamepadState? = null
+        gamepad2: GamepadState? = null,
+        dtSeconds: Double? = null,
+        batteryVoltage: Double? = null,
+        brownoutGuard: com.areslib.control.BrownoutGuard? = null
     ) {
         // ── Drive ──
         // Raw Pinpoint Odometry
@@ -29,7 +32,28 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Drive/Velocity_Y", state.drive.yVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Omega", state.drive.angularVelocityRadiansPerSecond)
 
+        // ── EKF Covariance Diagonals ──
+        val cov = state.drive.poseEstimator.covariance
+        telemetry.putDoubleArray("Robot/Odometry/Covariance", doubleArrayOf(cov.m00, cov.m11, cov.m22))
 
+        // ── AdvantageScope 3D Pose ──
+        telemetry.logPose3d("Robot/Pose3d", state.drive.poseEstimator.estimatedPose)
+
+        // ── Loop Time & Diagnostics ──
+        if (dtSeconds != null) {
+            telemetry.putNumber("Robot/LoopTimeMs", dtSeconds * 1000.0)
+        }
+
+        // ── Power / Battery ──
+        if (batteryVoltage != null) {
+            telemetry.putNumber("Robot/BatteryVoltage", batteryVoltage)
+        }
+        if (brownoutGuard != null) {
+            telemetry.putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
+            telemetry.putString("Robot/BrownoutState", brownoutGuard.state.name)
+            telemetry.putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
+            telemetry.putNumber("Diagnostics/Power/BrownoutCount", brownoutGuard.tripCount.toDouble())
+        }
 
         // ── Superstructure ──
         telemetry.putString("Superstructure/Mode", state.superstructure.mode.name)
@@ -41,8 +65,6 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putBoolean("Superstructure/Transfer_Active", state.superstructure.transferActive)
         telemetry.putNumber("Superstructure/Elevator_Height", state.superstructure.elevatorHeightMeters)
         telemetry.putNumber("Superstructure/Inventory", state.superstructure.inventoryCount.toDouble())
-
-
 
         // ── Vision ──
         telemetry.putBoolean("Vision/HasTarget", state.vision.hasTarget)
