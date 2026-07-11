@@ -8,6 +8,7 @@ import com.areslib.subsystem.Store
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
 import com.areslib.math.Vector3
+import com.areslib.subsystem.VisionTracker
 
 /**
  * Manages the robot's AprilTag vision tracking system.
@@ -18,14 +19,18 @@ class FtcVisionTracker(
     private val store: Store,
     val limelightIO: VisionIO?,
     private val pinpointIO: PinpointIO?
-) {
+) : VisionTracker {
     val visionInputs = VisionIOInputs()
     var lastLimelightPose: Pose2d? = null
         private set
     var lastLimelightTimeMs = 0L
         private set
-    var lastVisionStatus = "OFFLINE"
+    override var lastVisionStatus = "OFFLINE"
         private set
+
+    /** True if the vision sensor hardware is connected and responding. */
+    override val isConnected: Boolean
+        get() = limelightIO != null && visionInputs.isConnected
     private var consecutiveVisionRejections = 0
     var isInInit = true
     var hasInitializedPoseWithVision = false
@@ -37,7 +42,7 @@ class FtcVisionTracker(
      * Polls the vision sensors, performs outlier rejection, and updates the EKF store.
      * Triggers mathematical snaps if initial pose or kidnapped robot conditions are met.
      */
-    fun update(timestamp: Long) {
+    override fun update(timestampMs: Long) {
         val io = limelightIO ?: run {
             com.areslib.telemetry.RobotStatusTracker.visionConnected = false
             com.areslib.telemetry.RobotStatusTracker.visionStatus = "OFFLINE"
@@ -54,7 +59,7 @@ class FtcVisionTracker(
 
         val measurement = visionInputs.measurements[0]
         lastLimelightPose = measurement.targetPose.toPose2d()
-        lastLimelightTimeMs = timestamp
+        lastLimelightTimeMs = timestampMs
 
         val robotPose = store.state.drive.poseEstimator.estimatedPose
         val robotHeading = robotPose.heading.radians
@@ -88,7 +93,7 @@ class FtcVisionTracker(
                     xMeters = snapPose.x,
                     yMeters = snapPose.y,
                     headingRadians = snapPose.heading.radians,
-                    timestampMs = timestamp,
+                    timestampMs = timestampMs,
                     isReset = true
                 ))
             }
@@ -111,7 +116,7 @@ class FtcVisionTracker(
                         xMeters = snapPose.x,
                         yMeters = snapPose.y,
                         headingRadians = snapPose.heading.radians,
-                        timestampMs = timestamp,
+                        timestampMs = timestampMs,
                         isReset = true
                     ))
                 }
@@ -122,7 +127,7 @@ class FtcVisionTracker(
 
         store.dispatch(RobotAction.VisionMeasurementsReceived(
             visionInputs.measurements,
-            timestamp,
+            timestampMs,
             null
         ))
 

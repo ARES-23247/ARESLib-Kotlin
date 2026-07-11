@@ -7,6 +7,7 @@ import com.areslib.control.BrownoutGuard
 import com.areslib.control.CurrentBudgetManager
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
 import com.areslib.hardware.MotorIO
+import com.areslib.subsystem.PowerManager
 
 /**
  * Manages the robot's electrical power budgeting.
@@ -14,7 +15,7 @@ import com.areslib.hardware.MotorIO
  * and throttles motors dynamically using either a physical current sensor (Floodgate)
  * or a software current budget estimator.
  */
-class FtcPowerManager(private val hardwareMap: HardwareMap) {
+class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
     private var lastVoltageReadTime = 0L
     private var cachedBatteryVoltage = 12.0
 
@@ -32,16 +33,16 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) {
     /** Software current budget manager — used as a fallback if no Floodgate sensor is found */
     var currentBudgetManager: CurrentBudgetManager? = null
 
-    var batteryVoltage = 12.0
+    override var batteryVoltage = 12.0
         private set
-    var powerScale = 1.0
+    override var powerScale = 1.0
         private set
 
     /**
      * Total current draw of the robot in amperes.
      * Returns the physical sensor reading if available, or the sum of registered motor current estimations.
      */
-    val currentAmps: Double
+    override val currentAmps: Double
         get() = floodgate?.current ?: com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf { it.currentAmps }
 
     /**
@@ -51,10 +52,10 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) {
      * @param timestamp System time in milliseconds.
      * @return The calculated power scale factor (0.0 to 1.0).
      */
-    fun update(dtSeconds: Double, timestamp: Long): Double {
+    override fun update(dtSeconds: Double, timestampMs: Long): Double {
         // Fetch voltage sensor for sag compensation (rate-limited to 10Hz/100ms to eliminate blocking JNI overhead)
-        if (timestamp - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
-            lastVoltageReadTime = timestamp
+        if (timestampMs - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
+            lastVoltageReadTime = timestampMs
             val voltageSensors = hardwareMap.getAll(VoltageSensor::class.java)
             val newVoltage = if (voltageSensors.isNotEmpty()) {
                 voltageSensors[0].voltage

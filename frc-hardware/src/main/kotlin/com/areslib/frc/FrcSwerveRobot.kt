@@ -1,53 +1,52 @@
 package com.areslib.frc
 
 import com.areslib.action.RobotAction
-import com.areslib.hardware.FlywheelIO
-import com.areslib.hardware.CowlIO
-import com.areslib.hardware.IntakeIO
-import com.areslib.hardware.FeederIO
-import com.areslib.state.DriveState
-import com.areslib.subsystem.AresRobot
-import com.areslib.subsystem.DriveSubsystem
-import com.areslib.subsystem.SwerveDriveFacade
-import com.areslib.telemetry.*
-import com.areslib.frc.action.*
-import com.areslib.frc.subsystem.*
-import com.areslib.frc.state.marvinXIX
 import com.areslib.frc.power.FrcPowerManager
 import com.areslib.frc.telemetry.FrcTelemetryManager
 import com.areslib.frc.vision.FrcVisionTracker
-import com.areslib.hardware.vision.CompositeVisionIO
+import com.areslib.hardware.vision.VisionIO
+import com.areslib.reducer.rootReducer
+import com.areslib.state.RobotState
+import com.areslib.subsystem.DriveSubsystem
+import com.areslib.subsystem.SwerveDriveFacade
+import com.areslib.telemetry.*
 
 /**
- * FRC Swerve Robot facade — the FRC mirror of FtcMecanumRobot.
+ * FRC Swerve Robot — a clean, drivebase-only swerve robot facade.
  *
- * Extends AresRobot for the Store + superstructure subsystem facades, and delegates
- * peripheral tasks to dedicated managers (power, telemetry, vision).
+ * Extends [FrcBaseRobot] to wire CTRE Phoenix 6 swerve drivetrain IO,
+ * optional AprilTag vision tracking, and beached-chassis detection.
+ * Season-specific superstructure mechanisms are added by team code via
+ * [registerSubsystem] and [FrcTelemetryManager.customPublishers].
+ *
+ * @param swerveIO The swerve drivetrain hardware IO (null for simulation-only).
+ * @param visionIO The vision camera IO (null to disable vision tracking).
+ * @param isSimulation True when running in WPILib simulation mode.
+ * @param initialState The initial immutable robot state snapshot.
+ * @param reducer The root reducer function.
+ * @param baseTelemetry The platform telemetry backend.
+ * @param isEnabledProvider Supplier returning whether the robot is currently enabled.
+ * @param robotModeProvider Supplier returning the current robot mode string.
  */
 class FrcSwerveRobot(
     private val swerveIO: SwerveHardwareIO? = null,
-    private val flywheelIO: FlywheelIO,
-    private val cowlIO: CowlIO,
-    private val intakeIO: IntakeIO,
-    private val feederIO: FeederIO,
-    private val floorIO: com.areslib.hardware.FloorIO = object : com.areslib.hardware.FloorIO {
-        override fun setAppliedVoltage(volts: Double) {}
-    },
-    private val climberIO: com.areslib.hardware.ClimberIO = object : com.areslib.hardware.ClimberIO {
-        override fun setTargetExtension(meters: Double) {}
-        override fun setAppliedVoltage(volts: Double) {}
-    },
-    private val visionIO: com.areslib.hardware.vision.VisionIO? = null,
+    private val visionIO: VisionIO? = null,
     private val isSimulation: Boolean = false,
+    initialState: RobotState = RobotState(
+        vision = com.areslib.state.VisionState(
+            filterConfig = com.areslib.hardware.vision.VisionFilterConfig.frcDefaults()
+        )
+    ),
+    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
     baseTelemetry: ITelemetry = FRCTelemetry(),
-    private val isEnabledProvider: () -> Boolean = {
+    isEnabledProvider: () -> Boolean = {
         try {
             edu.wpi.first.wpilibj.DriverStation.isEnabled()
         } catch (_: Throwable) {
             false
         }
     },
-    private val robotModeProvider: () -> String = {
+    robotModeProvider: () -> String = {
         try {
             when {
                 edu.wpi.first.wpilibj.DriverStation.isAutonomous() -> "Auto"
@@ -59,181 +58,90 @@ class FrcSwerveRobot(
             "Active"
         }
     }
-) : AresRobot(
-    initialState = com.areslib.state.RobotState(
-        vision = com.areslib.state.VisionState(
-            filterConfig = com.areslib.hardware.vision.VisionFilterConfig.frcDefaults()
-        )
-    ),
-    reducer = com.areslib.frc.reducer.MarvinReducer::reduce
-) {
+) : FrcBaseRobot(initialState, reducer, baseTelemetry, isEnabledProvider, robotModeProvider) {
 
-    // Subsystem Facades
+    // ── Subsystem Facades ──
+    /** Redux-aware drive subsystem for action dispatch. */
     val drive = DriveSubsystem(store)
+
+    /** High-level swerve drive API (field-centric, robot-centric, path following). */
     val swerveDrive = SwerveDriveFacade(store)
 
-    val marvinShooter = MarvinShooterSubsystem(store)
-    val marvinIntake = MarvinIntakeSubsystem(store)
-    val marvinClimber = MarvinClimberSubsystem(store)
-
-    // Modular managers
+    // ── Modular Managers ──
+    /** Direct access to the swerve drivetrain IO layer. */
     val swerveDrivetrainIO: SwerveHardwareIO? get() = swerveIO
-    val telemetryManager = FrcTelemetryManager(baseTelemetry, store, swerveIO)
-    val powerManager = FrcPowerManager()
-    val visionTracker = FrcVisionTracker(store, visionIO, swerveIO, isSimulation)
 
-    // Alias properties for compatibility
-    val telemetry: ITelemetry get() = telemetryManager.dataLoggingTelemetry
-    val brownoutGuard get() = powerManager.brownoutGuard
-    var batteryVoltageSupplier: () -> Double
-        get() = powerManager.batteryVoltageSupplier
-        set(value) { powerManager.batteryVoltageSupplier = value }
+    override val telemetryManager = FrcTelemetryManager(baseTelemetry, store, swerveIO)
+    override val powerManager = FrcPowerManager()
 
+    private val _visionTracker = FrcVisionTracker(store, visionIO, swerveIO, isSimulation)
+
+    init {
+        visionTracker = _visionTracker
+
+        // Register swerve drivetrain with HardwareRegistry for automated lifecycle management
+        swerveIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Swerve", it) }
+        visionIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Vision", it) }
+    }
+
+    // ── Pre-allocated buffers for zero-GC beached detection ──
     private var wasBeached = false
     private val scratchSpeeds = DoubleArray(4)
     private val scratchCurrents = DoubleArray(4)
 
-    init {
-        RobotWebServer.start()
-        RobotStatusTracker.isEnabled = false
-        RobotStatusTracker.activeOpMode = "Init"
+    /**
+     * Reads swerve drivetrain sensors and dispatches a [RobotAction.PoseUpdate] to the store.
+     * Handles beached-chassis recovery by holding the last known EKF pose when traction is lost.
+     */
+    override fun updateHardwareInputs(timestampMs: Long) {
+        if (!isSimulation && swerveIO != null) {
+            val driveState = swerveIO.read()
+            val currentlyBeached = isBeached
+            val lastPose = store.state.drive.poseEstimator.estimatedPose
+            val x = if (currentlyBeached) lastPose.x else driveState.odometryX
+            val y = if (currentlyBeached) lastPose.y else driveState.odometryY
 
-        // Register all devices with HardwareRegistry for automated logging, lifecycle refresh, and safety shutdown
-        swerveIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Swerve", it) }
-        com.areslib.hardware.HardwareRegistry.registerDevice("Flywheel", flywheelIO)
-        com.areslib.hardware.HardwareRegistry.registerDevice("Cowl", cowlIO)
-        com.areslib.hardware.HardwareRegistry.registerDevice("Intake", intakeIO)
-        com.areslib.hardware.HardwareRegistry.registerDevice("Feeder", feederIO)
-        com.areslib.hardware.HardwareRegistry.registerDevice("Floor", floorIO)
-        com.areslib.hardware.HardwareRegistry.registerDevice("Climber", climberIO)
-        visionIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Vision", it) }
+            if (wasBeached && !currentlyBeached) {
+                swerveIO.seedPose(lastPose)
+            }
+            wasBeached = currentlyBeached
+
+            store.dispatch(RobotAction.PoseUpdate(
+                xMeters = x,
+                yMeters = y,
+                headingRadians = driveState.odometryHeading,
+                timestampMs = timestampMs,
+                pitchDegrees = swerveIO.pitchDegrees,
+                rollDegrees = swerveIO.rollDegrees
+            ))
+        }
     }
 
     /**
-     * Coordinated frame update for FRC Swerve Drivetrain.
-     *
-     * 1. Reads hardware sensors → dispatches to Store
-     * 2. Writes Store state → hardware outputs
-     * 3. Publishes everything through unified pipeline (NT4 + CSV)
-     *
-     * @param gamepad1 Optional driver gamepad (use `controller.toState()`)
-     * @param gamepad2 Optional operator gamepad
+     * Writes the current drive state to the swerve hardware IO.
      */
-    fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
-        try {
-            // Refresh all hardware status signals in a batch
-            com.areslib.hardware.HardwareRegistry.refreshAll()
-            val isEnabled = isEnabledProvider()
-            val mode = robotModeProvider()
-
-            if (isEnabled) {
-                RobotWebServer.stop()
-            } else {
-                RobotWebServer.start()
-            }
-
-            RobotStatusTracker.isEnabled = isEnabled
-            RobotStatusTracker.activeOpMode = mode
-
-            val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-
-            // ── 1. READ: Hardware → Store ──
-            if (!isSimulation && swerveIO != null) {
-                val driveState = swerveIO.read()
-                val currentlyBeached = isBeached
-                val lastPose = store.state.drive.poseEstimator.estimatedPose
-                val x = if (currentlyBeached) lastPose.x else driveState.odometryX
-                val y = if (currentlyBeached) lastPose.y else driveState.odometryY
-
-                if (wasBeached && !currentlyBeached) {
-                    swerveIO.seedPose(lastPose)
-                }
-                wasBeached = currentlyBeached
-
-                store.dispatch(RobotAction.PoseUpdate(
-                    xMeters = x,
-                    yMeters = y,
-                    headingRadians = driveState.odometryHeading,
-                    timestampMs = timestamp,
-                    pitchDegrees = swerveIO.pitchDegrees,
-                    rollDegrees = swerveIO.rollDegrees
-                ))
-            }
-
-            // ── 1.5. READ: Vision → Store ──
-            visionTracker.update(timestamp)
-
-            // Read superstructure sensors
-            store.dispatch(SuperstructureSensorUpdate(
-                flywheelRpm = flywheelIO.velocityRpm,
-                cowlAngle = cowlIO.angleDegrees,
-                intakeAngle = intakeIO.pivotAngleDegrees,
-                pieceDetected = feederIO.isBeamBroken,
-                floorVelocityRps = floorIO.velocityRps,
-                climberExtensionMeters = climberIO.extensionMeters,
-                timestampMs = timestamp
-            ))
-
-            // ── 2. WRITE: Store → Hardware ──
-            if (!isSimulation && swerveIO != null) {
-                swerveIO.write(store.state.drive)
-            }
-
-            // ── 3. BROWNOUT PROTECTION ──
-            val scale = powerManager.update()
-            val batteryVoltage = powerManager.batteryVoltage
-
-            // Apply power scaling to all superstructure outputs
-            // (Drive swerve modules have their own voltage compensation via CTRE)
-            val marvin = store.state.superstructure.marvinXIX
-            flywheelIO.setVelocityRpm(marvin.flywheel.targetVelocityRpm * scale)
-            cowlIO.setTargetAngle(marvin.cowl.targetAngleDegrees)
-
-            val pivotAngle = marvin.intake.targetAngleDegrees
-            intakeIO.setPivotAngle(pivotAngle)
-
-            val targetRollerSpeed = marvin.intake.targetRollerVelocityRps
-            intakeIO.setRollerVoltage((targetRollerSpeed / 10.0) * 12.0 * scale)
-
-            val targetFeederSpeed = marvin.feeder.targetVelocityRps
-            feederIO.setAppliedVoltage((targetFeederSpeed / 12.0) * 12.0 * scale)
-
-            val targetFloorSpeed = marvin.floor.targetVelocityRps
-            floorIO.setAppliedVoltage((targetFloorSpeed / 12.0) * 12.0 * scale)
-
-            val targetClimberVoltage = marvin.climber.targetVoltage
-            climberIO.setAppliedVoltage(targetClimberVoltage * scale)
-
-            // ── 4. PUBLISH: Everything → NT4 + CSV ──
-            telemetryManager.publish(gamepad1, gamepad2)
-            telemetryManager.logBrownout(powerManager.brownoutGuard, batteryVoltage)
-            com.areslib.hardware.HardwareRegistry.publishAll(telemetry)
-
-        } catch (e: Throwable) {
-            System.err.println("FrcSwerveRobot: Exception in update loop: ${e.message}")
-            e.printStackTrace()
-            safeHardware()
+    override fun writeHardwareOutputs(powerScale: Double, batteryVoltage: Double) {
+        if (!isSimulation && swerveIO != null) {
+            swerveIO.write(store.state.drive)
         }
     }
 
-    fun safeHardware() {
-        try {
-            com.areslib.hardware.HardwareRegistry.safeAll()
-        } catch (ex: Throwable) {
-            System.err.println("FrcSwerveRobot: Failed to apply safety stop: ${ex.message}")
-        }
-    }
-
+    /**
+     * Detects whether the chassis is "beached" — tilted with wheels losing traction.
+     *
+     * Uses a combination of IMU pitch/roll thresholds (>8°) and per-module
+     * slip detection (high speed + low current draw) to prevent odometry drift
+     * when the robot rides up on game pieces or field obstacles.
+     */
     val isBeached: Boolean
         get() {
             if (isSimulation || swerveIO == null) return false
             val pitch = swerveIO.pitchDegrees
             val roll = swerveIO.rollDegrees
-            
-            // Tilted chassis represents climbing/riding up on a note/ball.
-            // 8.0 degrees prevents false positives from normal suspension travel (braking/acceleration).
+
+            // 8.0 degrees prevents false positives from normal suspension travel
             val isTilted = Math.abs(pitch) > 8.0 || Math.abs(roll) > 8.0
-            
+
             // Loss of traction: high speed but very low current draw
             swerveIO.getModuleSpeeds(scratchSpeeds)
             swerveIO.getCurrents(scratchCurrents)
@@ -247,19 +155,4 @@ class FrcSwerveRobot(
         }
 
     companion object {}
-
-    /**
-     * Gracefully shuts down background logging threads and telemetry.
-     */
-    fun close() {
-        RobotStatusTracker.isEnabled = false
-        RobotWebServer.stop()
-        telemetryManager.close()
-        com.areslib.hardware.HardwareRegistry.closeAll()
-        try {
-            val ftcMotorClass = Class.forName("com.areslib.ftc.hardware.FtcMotor")
-            val unregisterAllMethod = ftcMotorClass.getMethod("unregisterAll")
-            unregisterAllMethod.invoke(null)
-        } catch (_: Exception) {}
-    }
 }

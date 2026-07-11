@@ -1,22 +1,34 @@
 package com.areslib.frc.telemetry
 
 import com.areslib.control.BrownoutGuard
-import com.areslib.frc.telemetry.MarvinStatePublisher
 import com.areslib.frc.SwerveHardwareIO
 import com.areslib.state.RobotState
 import com.areslib.subsystem.Store
 import com.areslib.telemetry.*
 import com.ctre.phoenix6.CANBus
 
+/**
+ * FRC implementation of the [RobotTelemetryManager] interface.
+ *
+ * Composes the unified telemetry pipeline: NT4 live streaming via [ARESNetworkStatePublisher],
+ * CSV/WPILOG file-based data logging via [DataLoggingTelemetry], and extensible custom
+ * publishers for season-specific subsystem dashboards.
+ */
 class FrcTelemetryManager(
     baseTelemetry: ITelemetry,
     private val store: Store,
     private val swerveIO: SwerveHardwareIO? = null
-) : AutoCloseable {
+) : RobotTelemetryManager {
 
     // Unified telemetry pipeline: base telemetry → CSV wrapper → publisher
-    val dataLoggingTelemetry = DataLoggingTelemetry(baseTelemetry)
+    override val dataLoggingTelemetry = DataLoggingTelemetry(baseTelemetry)
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
+
+    /**
+     * Registered custom telemetry publishers invoked during each [publish] call.
+     * Season-specific code registers callbacks here instead of modifying this class.
+     */
+    override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
     // Pre-allocated buffers to prevent high-frequency GC allocations in update loop
     private val covarianceDiagonals = DoubleArray(3)
@@ -27,14 +39,27 @@ class FrcTelemetryManager(
     private val canBus = CANBus("CAN2")
 
     /**
-     * Publishes core robot state, Marvin XIX specific sub-states, and AdvantageScope 3D visualization topics.
+     * Publishes core robot state, custom sub-state publishers, and AdvantageScope 3D visualization topics.
+     *
+     * @param state The current immutable robot state snapshot.
+     * @param gamepad1 Optional driver gamepad state.
+     * @param gamepad2 Optional operator gamepad state.
+     * @param dtSeconds Loop cycle delta time in seconds.
+     * @param batteryVoltage Current battery voltage for display.
      */
-    fun publish(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
-        val state = store.state
+    override fun publish(
+        state: RobotState,
+        gamepad1: GamepadState?,
+        gamepad2: GamepadState?,
+        dtSeconds: Double,
+        batteryVoltage: Double
+    ) {
         publisher.publish(state, gamepad1, gamepad2)
 
-        // Publish Marvin XIX specific sub-states
-        MarvinStatePublisher.publish(state, dataLoggingTelemetry)
+        // Invoke all registered custom publishers (season-specific subsystem dashboards)
+        for (i in 0 until customPublishers.size) {
+            customPublishers[i](state, dataLoggingTelemetry)
+        }
 
         // Publish EKF covariance diagonals
         val cov = state.drive.poseEstimator.covariance
@@ -88,6 +113,8 @@ class FrcTelemetryManager(
         } catch (_: Throwable) {
             // Graceful fallback if CANBus API fails (e.g. in simulation)
         }
+
+        dataLoggingTelemetry.update()
     }
 
     /**

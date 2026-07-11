@@ -10,6 +10,30 @@ import kotlin.math.*
 
 class ShotSetupTest {
 
+    /**
+     * Test config matching the original Marvin 19 hardcoded values.
+     * This ensures backward compatibility after parameterization.
+     */
+    private val testConfig = ShotConfig(
+        shooterOffsetX = -0.044704,
+        shooterOffsetY = -0.055626,
+        tofKeys = doubleArrayOf(1.24, 2.0, 3.0, 4.0, 5.6),
+        tofValues = doubleArrayOf(0.128, 0.212, 0.345, 0.481, 0.795),
+        shotKeys = doubleArrayOf(
+            1.24, 2.0, 2.2, 2.5, 3.0, 3.2, 3.4, 3.63, 3.80, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6
+        ),
+        shotRpm = doubleArrayOf(
+            3350.0, 3400.0, 3450.0, 3500.0, 3550.0, 3600.0, 3650.0, 3700.0, 3750.0, 3800.0, 3850.0, 3900.0, 3950.0, 4000.0, 4050.0, 4100.0, 4150.0, 4200.0
+        ),
+        shotCowl = doubleArrayOf(
+            0.50, 0.70, 0.80, 0.95, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.45, 1.50, 1.55, 1.60, 1.65, 1.70, 1.75
+        ),
+        delayCompensationSeconds = 0.05,
+        shooterFacesRearward = true
+    )
+
+    private val shotSetup = ShotSetup(testConfig)
+
     @Test
     fun testStaticShot() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
@@ -17,7 +41,7 @@ class ShotSetupTest {
         val target = Translation2d(4.0, 0.0)
         
         val result = ShotResult()
-        ShotSetup.calculate(robotPose, speeds, target, result)
+        shotSetup.calculate(robotPose, speeds, target, result)
         
         // Since the shooter is offset by -0.044704 along X, -0.055626 along Y:
         // Compensated pos: X = 0.0, Y = 0.0, heading = 0.0
@@ -42,7 +66,7 @@ class ShotSetupTest {
         assertEquals(0.0, result.angularVelocityFeedforwardRadPerSec, 1e-6)
 
         // Interpolation checks
-        val expectedRpm = ShotSetup.interpolateRpm(expectedDistance)
+        val expectedRpm = shotSetup.interpolateRpm(expectedDistance)
         assertEquals(expectedRpm, result.targetFlywheelRpm, 1e-6)
     }
 
@@ -54,7 +78,7 @@ class ShotSetupTest {
         val target = Translation2d(4.0, 0.0)
         
         val result = ShotResult()
-        ShotSetup.calculate(robotPose, speeds, target, result)
+        shotSetup.calculate(robotPose, speeds, target, result)
         
         // Assert exact, physically correct SOTM lead positions and TOF values
         assertEquals(-1.036, result.virtualTargetY, 0.01)
@@ -77,7 +101,7 @@ class ShotSetupTest {
         val target = Translation2d(4.0, 0.0)
         
         val result = ShotResult()
-        ShotSetup.calculate(robotPose, speeds, target, result)
+        shotSetup.calculate(robotPose, speeds, target, result)
         
         // Shooter is at (-0.25, 0). Under 1.0 rad/s counter-clockwise rotation,
         // it acquires a tangential velocity of omega * r = 1.0 * (-0.25) = -0.25 m/s along Y.

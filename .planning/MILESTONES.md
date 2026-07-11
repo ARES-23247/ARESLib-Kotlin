@@ -1,18 +1,18 @@
 # Milestones
 
-## v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification (Shipped: 2026-06-15)
+## v3.0 FRC Unified Robot Integration & Full System Verification (Shipped: 2026-06-15)
 
 **Phases completed:** 3 phases, 2 plans
 
 **Key accomplishments:**
 
-- Integrated the Marvin 19 FRC Superstructure Redux state and swerve drivetrain kinematic model into a unified FRC robot execution loop.
+- Integrated the FRC Superstructure Redux state and swerve drivetrain kinematic model into a unified FRC robot execution loop.
 - Set up AdvantageScope 3D visualization and telemetry streaming via NT4 for live monitoring of robot subsystems.
 - Relocated pure simulated FTC classes to the `:ftc-mocks` module to achieve clean compilation boundaries and mock isolation.
 
 ---
 
-## v2.9 Physical Deployment & FRC Marvin 19 Redux Migration (Shipped: 2026-05-18)
+## v2.9 Physical Deployment & FRC Redux Superstructure Architecture (Shipped: 2026-05-18)
 
 
 **Phases completed:** 8 phases, 8 plans
@@ -26,7 +26,7 @@
 - Developed a mathematical Mahalanobis Distance outlier filter gating noisy camera frames and coordinate glitches.
 - Created a consecutive-rejection automatic recovery snap-teleport mechanism.
 - Wired driver-centric gamepad calibrations to zero gyros and reset coordinates.
-- Ported the Marvin 19 FRC Superstructure to a state-driven Redux model, defining platform-agnostic IO boundaries (`FlywheelIO`, `CowlIO`, `IntakeIO`, `FeederIO`, `ClimberIO`), Phoenix 6 CTRE hardware wrappers with 40A current limits, and high-fidelity rotational/gravity physics simulations.
+- Ported the FRC Superstructure to a state-driven Redux model, defining platform-agnostic IO boundaries (`FlywheelIO`, `CowlIO`, `IntakeIO`, `FeederIO`, `ClimberIO`), Phoenix 6 CTRE hardware wrappers with 40A current limits, and high-fidelity rotational/gravity physics simulations.
 
 ---
 

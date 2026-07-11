@@ -8,6 +8,8 @@ import com.areslib.action.ActionLogger
 import com.areslib.telemetry.CloudExporter
 import com.areslib.state.RobotState
 import com.areslib.telemetry.GamepadState
+import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.RobotTelemetryManager
 import com.areslib.hardware.HardwareRegistry
 
 import org.firstinspires.ftc.robotcore.external.Telemetry
@@ -20,13 +22,15 @@ import com.areslib.math.toFormattedString
  * Manages the robot's data telemetry, AdvantageScope NT4 networking,
  * and background file logging pipelines (input and action JSONL loggers).
  */
-class FtcTelemetryManager(private val store: Store) : AutoCloseable {
+class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     val runId = java.util.UUID.randomUUID().toString()
     val robotId = "ares_robot"
 
     val nt4 = NT4Telemetry()
-    val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
+    override val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
+
+    override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
     val actionLogger = ActionLogger(runId, robotId, 0, "BLUE")
 
@@ -37,9 +41,48 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
     }
 
     /**
-     * Publishes the current state, driver gamepad states, vision state, and hardware metrics.
+     * Publishes the current robot state via the core interface contract.
+     * Invokes [ARESNetworkStatePublisher], [HardwareRegistry] telemetry,
+     * and all registered [customPublishers].
      */
-    fun publish(
+    override fun publish(
+        state: RobotState,
+        gamepad1: GamepadState?,
+        gamepad2: GamepadState?,
+        dtSeconds: Double,
+        batteryVoltage: Double
+    ) {
+        dataLoggingTelemetry.putNumber("loop_time_ms", dtSeconds * 1000.0)
+        dataLoggingTelemetry.putNumber("battery_voltage", batteryVoltage)
+
+        val estPose = state.drive.poseEstimator.estimatedPose
+        dataLoggingTelemetry.logPose2d("pinpoint", estPose, useUnderscores = true, lowercase = true)
+
+        val rawOdomX = state.drive.odometryX
+        val rawOdomY = state.drive.odometryY
+        dataLoggingTelemetry.putNumber("ekf_drift_x", estPose.x - rawOdomX)
+        dataLoggingTelemetry.putNumber("ekf_drift_y", estPose.y - rawOdomY)
+
+        publisher.publish(state, gamepad1, gamepad2)
+
+        // Global custom hardware telemetry
+        HardwareRegistry.publishAll(dataLoggingTelemetry)
+
+        // Invoke all registered custom publishers
+        for (i in 0 until customPublishers.size) {
+            customPublishers[i](state, dataLoggingTelemetry)
+        }
+
+        // Finalize frame and flush to loggers/network
+        dataLoggingTelemetry.update()
+    }
+
+    /**
+     * Full FTC-specific publish method with vision tracker telemetry and local
+     * driver station console output. Retained for backward compatibility with
+     * existing OpMode code.
+     */
+    fun publishFull(
         state: RobotState,
         gamepad1: GamepadState?,
         gamepad2: GamepadState?,
@@ -93,6 +136,11 @@ class FtcTelemetryManager(private val store: Store) : AutoCloseable {
 
         // Global custom hardware telemetry
         HardwareRegistry.publishAll(dataLoggingTelemetry)
+
+        // Invoke all registered custom publishers
+        for (i in 0 until customPublishers.size) {
+            customPublishers[i](state, dataLoggingTelemetry)
+        }
 
         // Human-readable local driver station console printouts
         localTelemetry?.let { t ->

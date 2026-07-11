@@ -86,7 +86,7 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - ✓ FRC-MS-03: Phoenix 6 TalonFX & CANcoder CTRE Wrappers with Current Limits. — v2.9
 - ✓ FRC-MS-04: High-Fidelity Superstructure Rotational and Gravity Simulator. — v2.9
 
-- ✓ FRC-INT-01: Unified FRC Marvin 19 Robot Loop — v3.0
+- ✓ FRC-INT-01: Unified FRC Robot Loop — v3.0
 - ✓ FRC-SIM-02: AdvantageScope Superstructure 2D/3D visualizer stream — v3.0
 - ✓ FTC-SYS-01: Decouple simulated/mock FTC classes out of :core completely — v3.0
 
@@ -134,7 +134,7 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 | Microsecond Action Replay | Structured JSONL telemetry logs write microsecond-accurate physical outputs to enable deterministic offline simulation replay. | ✓ Good |
 | Path Progress Floor Velocity | Enforces a nominal floor velocity of 1.5 m/s in simulations when progress is driven strictly by target trajectory speed to prevent standstill profiles. | ✓ Good |
 | Chi-Squared Outlier Gating | Employs Mahalanobis Distance outlier verification to isolate and reject spurious visual camera updates. | ✓ Good |
-| Superstructure Redux State | Fully models FRC multi-state superstructures (Marvin 19) in pure immutable state and physics simulation. | ✓ Good |
+| Superstructure Redux State | Fully models FRC multi-state superstructures in pure immutable state and physics simulation. | ✓ Good |
 
 ---
 

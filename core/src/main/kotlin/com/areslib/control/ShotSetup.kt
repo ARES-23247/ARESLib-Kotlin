@@ -20,70 +20,89 @@ class ShotResult {
 }
 
 /**
- * Pure functional lookahead coordinate solver for Shoot-on-the-Move (SOTM).
- * Computes exact target flywheel RPM, cowl angle, and angular velocity feedforward.
+ * Configuration for a robot's specific shooting geometry and ballistic tuning.
+ *
+ * Contains all the robot-specific constants needed for the Shoot-on-the-Move solver:
+ * - Shooter offset from chassis center (back-mounted, side-mounted, etc.)
+ * - Time-of-flight interpolation tables
+ * - Flywheel RPM and cowl angle interpolation tables keyed by distance
+ *
+ * Each season's robot defines its own [ShotConfig] instance with its tuned values.
+ *
+ * @property shooterOffsetX X offset (meters) of the shooter relative to chassis center (positive = forward).
+ * @property shooterOffsetY Y offset (meters) of the shooter relative to chassis center (positive = left).
+ * @property tofKeys Distance breakpoints (meters) for time-of-flight interpolation, sorted ascending.
+ * @property tofValues Time-of-flight values (seconds) corresponding to each distance breakpoint.
+ * @property shotKeys Distance breakpoints (meters) for RPM and cowl interpolation, sorted ascending.
+ * @property shotRpm Target flywheel RPM values corresponding to each shot distance breakpoint.
+ * @property shotCowl Target cowl angle values (degrees) corresponding to each shot distance breakpoint.
+ * @property delayCompensationSeconds Total latency compensation (seconds) for lookahead prediction.
+ * @property shooterFacesRearward If true, the robot's front is 180° from the aim direction (back-mounted shooter).
  */
-object ShotSetup {
-    private val TOF_KEYS = doubleArrayOf(1.24, 2.0, 3.0, 4.0, 5.6)
-    private val TOF_VALUES = doubleArrayOf(0.128, 0.212, 0.345, 0.481, 0.795)
+data class ShotConfig(
+    val shooterOffsetX: Double,
+    val shooterOffsetY: Double,
+    val tofKeys: DoubleArray,
+    val tofValues: DoubleArray,
+    val shotKeys: DoubleArray,
+    val shotRpm: DoubleArray,
+    val shotCowl: DoubleArray,
+    val delayCompensationSeconds: Double = 0.05,
+    val shooterFacesRearward: Boolean = true
+) {
+    init {
+        require(tofKeys.size == tofValues.size) { "tofKeys and tofValues must have the same length" }
+        require(shotKeys.size == shotRpm.size) { "shotKeys and shotRpm must have the same length" }
+        require(shotKeys.size == shotCowl.size) { "shotKeys and shotCowl must have the same length" }
+    }
+}
 
-    private val SHOT_KEYS = doubleArrayOf(
-        1.24, 2.0, 2.2, 2.5, 3.0, 3.2, 3.4, 3.63, 3.80, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6
-    )
-    private val SHOT_RPM = doubleArrayOf(
-        3350.0, 3400.0, 3450.0, 3500.0, 3550.0, 3600.0, 3650.0, 3700.0, 3750.0, 3800.0, 3850.0, 3900.0, 3950.0, 4000.0, 4050.0, 4100.0, 4150.0, 4200.0
-    )
-    private val SHOT_COWL = doubleArrayOf(
-        0.50, 0.70, 0.80, 0.95, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.45, 1.50, 1.55, 1.60, 1.65, 1.70, 1.75
-    )
+/**
+ * Pure functional lookahead coordinate solver for Shoot-on-the-Move (SOTM).
+ *
+ * Computes exact target flywheel RPM, cowl angle, and angular velocity feedforward
+ * using iterative latency-compensated lookahead convergence.
+ *
+ * This class is **robot-agnostic** — all robot-specific tuning constants are provided
+ * via the [ShotConfig] parameter. The SOTM math algorithm is reusable across any
+ * FTC or FRC robot with a turret/shooter mechanism.
+ *
+ * **Zero-GC compliance**: All calculations use primitives. The [ShotResult] output
+ * container is pre-allocated by the caller and populated in-place.
+ *
+ * @param config Robot-specific shooting geometry and ballistic tuning tables.
+ */
+class ShotSetup(private val config: ShotConfig) {
 
-    // Marvin 19 has the shooter offset at the back of the chassis
-    private const val SHOOTER_OFFSET_X = -0.044704
-    private const val SHOOTER_OFFSET_Y = -0.055626
-
+    /**
+     * Linearly interpolates the projectile time-of-flight (seconds) for a given aim distance (meters).
+     */
     fun interpolateTof(distance: Double): Double {
-        if (distance <= TOF_KEYS.first()) return TOF_VALUES.first()
-        if (distance >= TOF_KEYS.last()) return TOF_VALUES.last()
-        for (i in 0 until TOF_KEYS.size - 1) {
-            if (distance >= TOF_KEYS[i] && distance <= TOF_KEYS[i + 1]) {
-                val t = (distance - TOF_KEYS[i]) / (TOF_KEYS[i + 1] - TOF_KEYS[i])
-                return TOF_VALUES[i] + t * (TOF_VALUES[i + 1] - TOF_VALUES[i])
-            }
-        }
-        return TOF_VALUES.last()
+        return interpolate(config.tofKeys, config.tofValues, distance)
     }
 
+    /**
+     * Linearly interpolates the target flywheel RPM for a given aim distance (meters).
+     */
     fun interpolateRpm(distance: Double): Double {
-        if (distance <= SHOT_KEYS.first()) return SHOT_RPM.first()
-        if (distance >= SHOT_KEYS.last()) return SHOT_RPM.last()
-        for (i in 0 until SHOT_KEYS.size - 1) {
-            if (distance >= SHOT_KEYS[i] && distance <= SHOT_KEYS[i + 1]) {
-                val t = (distance - SHOT_KEYS[i]) / (SHOT_KEYS[i + 1] - SHOT_KEYS[i])
-                return SHOT_RPM[i] + t * (SHOT_RPM[i + 1] - SHOT_RPM[i])
-            }
-        }
-        return SHOT_RPM.last()
+        return interpolate(config.shotKeys, config.shotRpm, distance)
     }
 
+    /**
+     * Linearly interpolates the target cowl angle (degrees) for a given aim distance (meters).
+     */
     fun interpolateCowl(distance: Double): Double {
-        if (distance <= SHOT_KEYS.first()) return SHOT_COWL.first()
-        if (distance >= SHOT_KEYS.last()) return SHOT_COWL.last()
-        for (i in 0 until SHOT_KEYS.size - 1) {
-            if (distance >= SHOT_KEYS[i] && distance <= SHOT_KEYS[i + 1]) {
-                val t = (distance - SHOT_KEYS[i]) / (SHOT_KEYS[i + 1] - SHOT_KEYS[i])
-                return SHOT_COWL[i] + t * (SHOT_COWL[i + 1] - SHOT_COWL[i])
-            }
-        }
-        return SHOT_COWL.last()
+        return interpolate(config.shotKeys, config.shotCowl, distance)
     }
 
     /**
      * Performs a latency-compensated iterative convergence calculation for SOTM.
-     * Populates [result] to prevent runtime allocations.
-     * @param robotPose Current robot position and orientation on the field
-     * @param fieldCentricSpeeds Current velocity vector of the chassis in field coordinates
-     * @param target Field coordinates of the goal (Speaker)
-     * @param result Pre-allocated output container
+     * Populates [result] in-place to prevent runtime allocations.
+     *
+     * @param robotPose Current robot position and orientation on the field.
+     * @param fieldCentricSpeeds Current velocity vector of the chassis in field coordinates.
+     * @param target Field coordinates of the goal (e.g., Speaker opening).
+     * @param result Pre-allocated output container.
      */
     fun calculate(
         robotPose: Pose2d,
@@ -91,8 +110,8 @@ object ShotSetup {
         target: Translation2d,
         result: ShotResult
     ) {
-        val dtDelay = 0.05 // 50ms total delay compensation
-        
+        val dtDelay = config.delayCompensationSeconds
+
         // 1. Compute phase delay compensated chassis position and heading
         val compHeading = robotPose.heading.radians + fieldCentricSpeeds.omegaRadiansPerSecond * dtDelay
         val compX = robotPose.x + fieldCentricSpeeds.vxMetersPerSecond * dtDelay
@@ -101,9 +120,9 @@ object ShotSetup {
         // 2. Translate center to shooter offset based on heading rotation
         val cosH = cos(compHeading)
         val sinH = sin(compHeading)
-        val rotOffsetX = SHOOTER_OFFSET_X * cosH - SHOOTER_OFFSET_Y * sinH
-        val rotOffsetY = SHOOTER_OFFSET_X * sinH + SHOOTER_OFFSET_Y * cosH
-        
+        val rotOffsetX = config.shooterOffsetX * cosH - config.shooterOffsetY * sinH
+        val rotOffsetY = config.shooterOffsetX * sinH + config.shooterOffsetY * cosH
+
         val shooterX = compX + rotOffsetX
         val shooterY = compY + rotOffsetY
 
@@ -114,14 +133,13 @@ object ShotSetup {
         // 4. Iterative solver for lookahead distance (5 loops)
         var virtualTargetX = target.x
         var virtualTargetY = target.y
-        var tof: Double
         var aimDistance: Double
 
         for (i in 0 until 5) {
             val dx = virtualTargetX - shooterX
             val dy = virtualTargetY - shooterY
             aimDistance = hypot(dx, dy)
-            tof = interpolateTof(aimDistance)
+            val tof = interpolateTof(aimDistance)
             virtualTargetX = target.x - shooterVx * tof
             virtualTargetY = target.y - shooterVy * tof
         }
@@ -130,12 +148,12 @@ object ShotSetup {
         val dxFinal = virtualTargetX - shooterX
         val dyFinal = virtualTargetY - shooterY
         aimDistance = hypot(dxFinal, dyFinal)
-        
+
         val aimAngle = atan2(dyFinal, dxFinal)
-        
-        // Shooter is at the back facing rearward, so the robot's front is 180 degrees away
-        val robotTargetHeading = aimAngle + PI
-        
+
+        // Rearward-facing shooter: robot's front is 180° from the aim direction
+        val robotTargetHeading = if (config.shooterFacesRearward) aimAngle + PI else aimAngle
+
         val wrappedRobotHeading = com.areslib.math.InputMath.wrapAngle(robotTargetHeading)
 
         // 6. Direct derivative for exact heading angular velocity feedforward
@@ -158,5 +176,28 @@ object ShotSetup {
         result.targetFlywheelRpm = targetRpm
         result.targetCowlAngleDegrees = targetCowl
         result.angularVelocityFeedforwardRadPerSec = angularVelFF
+    }
+
+    companion object {
+        /**
+         * Generic piecewise-linear interpolation for sorted key/value arrays.
+         * Zero-allocation: operates on primitive arrays with indexed access.
+         *
+         * @param keys Sorted ascending breakpoint array.
+         * @param values Corresponding output values.
+         * @param x The input value to interpolate.
+         * @return The interpolated output value.
+         */
+        fun interpolate(keys: DoubleArray, values: DoubleArray, x: Double): Double {
+            if (x <= keys[0]) return values[0]
+            if (x >= keys[keys.size - 1]) return values[values.size - 1]
+            for (i in 0 until keys.size - 1) {
+                if (x >= keys[i] && x <= keys[i + 1]) {
+                    val t = (x - keys[i]) / (keys[i + 1] - keys[i])
+                    return values[i] + t * (values[i + 1] - values[i])
+                }
+            }
+            return values[values.size - 1]
+        }
     }
 }

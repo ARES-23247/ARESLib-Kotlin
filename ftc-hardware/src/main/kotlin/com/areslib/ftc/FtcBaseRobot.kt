@@ -141,7 +141,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             updateSubsystems(dtSeconds, batteryVoltage, effectiveScale)
 
             // 5. Publish logging and diagnostics
-            telemetryManager.publish(
+            telemetryManager.publishFull(
                 state = store.state,
                 gamepad1 = gamepad1,
                 gamepad2 = gamepad2,

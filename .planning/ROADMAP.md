@@ -22,8 +22,8 @@
 - ✅ **v2.6 Dynamic Swerve Trajectory Optimization & Obstacle Avoidance** — Phases 53-55 (shipped 2026-05-18)
 - ✅ **v2.7 Path Execution & Dynamic Task Planning** — Phases 56-59 (shipped 2026-05-18)
 - ✅ **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (shipped 2026-05-18)
-- ✅ **v2.9 Physical Deployment & FRC Marvin 19 Redux Migration** — Phases 64-71 (shipped 2026-05-18)
-- ✅ **v3.0 FRC Marvin 19 Unified Robot Integration & Full System Verification** — Phases 72-74 (shipped 2026-06-15)
+- ✅ **v2.9 Physical Deployment & FRC Redux Superstructure Architecture** — Phases 64-71 (shipped 2026-05-18)
+- ✅ **v3.0 FRC Unified Robot Integration & Full System Verification** — Phases 72-74 (shipped 2026-06-15)
 - 🚧 **v3.1 FTC EKF Localization Hardening & FRC E2E Match Simulation** — Phases 74.1-75 (in progress)
 
 ## Phases
