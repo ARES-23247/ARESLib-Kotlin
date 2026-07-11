@@ -38,7 +38,7 @@ class MecanumInteractionModel(private val robotDouble: MecanumRobotDouble) : Sim
             while (iterator.hasNext()) {
                 val piece = iterator.next()
                 val dist = piece.transform.translation.distance(frontVec)
-                if (dist < 0.25) {
+                if (dist < 0.12) {
                     world.removeBody(piece)
                     iterator.remove()
                     newInventory++
