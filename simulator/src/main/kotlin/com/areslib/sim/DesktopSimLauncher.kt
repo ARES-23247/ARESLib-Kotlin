@@ -762,7 +762,27 @@ object DesktopSimLauncher {
             }
 
             if (visibleFiducials.isNotEmpty()) {
-                robotDouble.limelight.setLatestResult(SimLLResult(valid = true, fiducials = visibleFiducials))
+                val rand = java.util.Random()
+                val noiseTranslation = 0.02
+                val noiseRotation = 0.005
+                
+                val noisyX = currentPose.x + rand.nextGaussian() * noiseTranslation
+                val noisyY = currentPose.y + rand.nextGaussian() * noiseTranslation
+                val noisyHeading = currentPose.heading.radians + rand.nextGaussian() * noiseRotation
+                
+                val ftcYaw = noisyHeading + Math.PI / 2.0
+                
+                val position = org.firstinspires.ftc.robotcore.external.navigation.Position(
+                    org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER,
+                    -noisyY, noisyX, 0.0
+                )
+                val orientation = org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles(
+                    org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS,
+                    ftcYaw, 0.0, 0.0
+                )
+                val mockBotpose = org.firstinspires.ftc.robotcore.external.navigation.Pose3D(position, orientation)
+                
+                robotDouble.limelight.setLatestResult(SimLLResult(valid = true, fiducials = visibleFiducials, botpose = mockBotpose))
             } else {
                 robotDouble.limelight.setLatestResult(null)
             }

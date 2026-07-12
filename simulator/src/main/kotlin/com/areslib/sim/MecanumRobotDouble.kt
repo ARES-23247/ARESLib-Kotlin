@@ -44,10 +44,12 @@ class SimLimelight3A : Limelight3A() {
 
 class SimLLResult(
     private val valid: Boolean,
-    private val fiducials: List<LLResultTypes.FiducialResult>
+    private val fiducials: List<LLResultTypes.FiducialResult>,
+    private val botpose: Pose3D? = null
 ) : LLResult() {
     override fun isValid(): Boolean = valid
     override fun getFiducialResults(): List<LLResultTypes.FiducialResult> = fiducials
+    override fun getBotpose(): Pose3D? = botpose
 }
 
 class MecanumRobotDouble {
