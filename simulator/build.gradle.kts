@@ -28,7 +28,6 @@ dependencies {
     // WPILib Desktop Simulation native dependencies for NT4 and DataLog
     val wpiVersion = "2024.3.2"
     val osName = System.getProperty("os.name").lowercase()
-    val osArch = System.getProperty("os.arch")
     val platform = when {
         osName.contains("windows") -> "windowsx86-64"
         osName.contains("mac") -> "osxuniversal"
