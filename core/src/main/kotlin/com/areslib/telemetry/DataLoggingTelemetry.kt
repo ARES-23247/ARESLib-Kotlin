@@ -13,6 +13,10 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     private val currentFrame = ConcurrentHashMap<String, Any>()
     private var currentMode = "Init"
 
+    init {
+        ntTelemetry?.putString("OpMode", currentMode)
+    }
+
     /**
      * The minimum time interval in milliseconds between file-based logging writes.
      * Defaults to 20ms (maximum 50Hz logging rate) to prevent storage and CPU congestion.
@@ -64,6 +68,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
             logger.stop()
             currentMode = detectedMode
             logger = ARESDataLogger(currentMode)
+            ntTelemetry?.putString("OpMode", currentMode)
         }
         
         // Log the complete frame asynchronously using the GC-free map pool only if interval elapsed
