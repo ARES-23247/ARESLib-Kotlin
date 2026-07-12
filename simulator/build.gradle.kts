@@ -31,7 +31,6 @@ dependencies {
     val osArch = System.getProperty("os.arch")
     val platform = when {
         osName.contains("windows") -> "windowsx86-64"
-        osName.contains("mac") && osArch == "aarch64" -> "osxarm64"
         osName.contains("mac") -> "osxuniversal"
         osName.contains("linux") -> "linuxx86-64"
         else -> "windowsx86-64"
