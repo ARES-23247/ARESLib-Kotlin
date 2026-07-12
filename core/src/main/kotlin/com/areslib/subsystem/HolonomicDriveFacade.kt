@@ -64,6 +64,8 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         deadzone = Math.toRadians(headingDeadzoneDeg)
     }
 
+    protected val headingErrorFilter = com.areslib.math.LowPassFilter(0.15)
+
     /**
      * Executes robot-relative drivetrain movement effort.
      *
@@ -122,9 +124,12 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             useHeadingLock && !isRotating && target == null -> {
                 store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
                 store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
+                headingErrorFilter.reset(0.0)
             }
             useHeadingLock && !isRotating && target != null -> {
-                finalOmega = headingPID.calculate(headingRad, target, 0.02)
+                val rawError = com.areslib.math.InputMath.wrapAngle(target - headingRad)
+                val filteredError = headingErrorFilter.calculate(rawError, 0.02)
+                finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02)
                 fromHeadingHold = true
             }
         }
