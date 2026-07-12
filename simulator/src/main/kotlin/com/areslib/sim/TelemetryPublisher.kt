@@ -42,6 +42,10 @@ object TelemetryPublisher {
     private val webFieldCentricSub = ntInst.getBooleanTopic("ARES/Input/isFieldCentric").subscribe(false)
     private val webRedAllianceSub = ntInst.getBooleanTopic("ARES/Input/isRedAlliance").subscribe(false)
     private val webHeartbeatSub = ntInst.getIntegerTopic("ARES/Input/heartbeat").subscribe(0L)
+    private val webButtonASub = ntInst.getBooleanTopic("ARES/Input/isButtonAPressed").subscribe(false)
+    private val webButtonBSub = ntInst.getBooleanTopic("ARES/Input/isButtonBPressed").subscribe(false)
+    private val webButtonXSub = ntInst.getBooleanTopic("ARES/Input/isButtonXPressed").subscribe(false)
+    private val webPoseResetSub = ntInst.getBooleanTopic("ARES/Input/isPoseReset").subscribe(false)
     val obstaclesSub = ntInst.getStringTopic("ARES/Input/obstacles").subscribe("")
 
     private var lastWebHeartbeatTimestamp = 0L
@@ -171,6 +175,10 @@ object TelemetryPublisher {
             driverStation.isTeleopMode = webTeleopSub.get()
             driverStation.isFieldCentric = webFieldCentricSub.get()
             driverStation.isRedAlliance = webRedAllianceSub.get()
+            driverStation.isButtonAPressed = webButtonASub.get()
+            driverStation.isButtonBPressed = webButtonBSub.get()
+            driverStation.isButtonXPressed = webButtonXSub.get()
+            driverStation.isPoseReset = webPoseResetSub.get()
         } else {
             // Clear web speeds so they don't linger
             driverStation.webVx = 0.0
