@@ -4,8 +4,6 @@ bin/
 
 # Gradle
 .gradle/
-gradlew
-gradlew.bat
 
 # OS files
 .DS_Store
