@@ -54,7 +54,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         dtSeconds: Double,
         batteryVoltage: Double
     ) {
-        val detectedMode = com.areslib.telemetry.RobotStatusTracker.getOpModeState()
+        val detectedMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
         if (detectedMode != actionLogger.mode) {
             actionLogger.stop()
             actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
@@ -92,7 +92,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         localTelemetry: Telemetry?,
         onSubclassPublish: () -> Unit = {}
     ) {
-        val detectedMode = com.areslib.telemetry.RobotStatusTracker.getOpModeState()
+        val detectedMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
         if (detectedMode != actionLogger.mode) {
             actionLogger.stop()
             actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)

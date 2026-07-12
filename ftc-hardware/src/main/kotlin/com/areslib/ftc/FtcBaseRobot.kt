@@ -144,7 +144,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             com.areslib.telemetry.RobotWebServer.stop()
         }
         com.areslib.telemetry.RobotStatusTracker.isEnabled = true
-        com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Active"
 
         // 0. Clear manual bulk caches at the beginning of the frame
         com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()

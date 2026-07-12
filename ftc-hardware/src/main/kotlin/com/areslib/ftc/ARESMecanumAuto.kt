@@ -23,7 +23,6 @@ open class ARESMecanumAuto : LinearOpMode() {
     }
 
     override fun runOpMode() {
-        com.areslib.telemetry.RobotStatusTracker.opModeInstance = this
         // --- 1. Initialization ---
         val robot = FtcMecanumRobot(
             hardwareMap = hardwareMap,
@@ -72,6 +71,7 @@ open class ARESMecanumAuto : LinearOpMode() {
 
         try {
             waitForStart()
+            com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Auto"
 
             if (path == null) {
                 telemetry.addData("CRASH", "Aborting: Path not loaded. Error: $pathLoadError")

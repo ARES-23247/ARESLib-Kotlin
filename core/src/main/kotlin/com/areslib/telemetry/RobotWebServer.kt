@@ -37,29 +37,6 @@ object RobotStatusTracker {
 
     @Volatile
     var activeUploadFile: String? = null
-
-    @Volatile
-    var opModeInstance: Any? = null
-
-    fun getOpModeState(): String {
-        val opMode = opModeInstance ?: return "Init"
-        return try {
-            val isActiveMethod = opMode.javaClass.getMethod("opModeIsActive")
-            val isActive = isActiveMethod.invoke(opMode) as Boolean
-            if (isActive) {
-                val className = opMode.javaClass.name
-                if (className.contains("Auto", ignoreCase = true) || className.contains("Autonomous", ignoreCase = true)) {
-                    "Auto"
-                } else {
-                    "TeleOp"
-                }
-            } else {
-                "Init"
-            }
-        } catch (_: Exception) {
-            "Init"
-        }
-    }
 }
 
 /**

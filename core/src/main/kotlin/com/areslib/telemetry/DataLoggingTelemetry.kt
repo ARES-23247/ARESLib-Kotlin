@@ -59,7 +59,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         val now = com.areslib.util.RobotClock.currentTimeMillis()
 
         // Check if mode transitioned
-        val detectedMode = com.areslib.telemetry.RobotStatusTracker.getOpModeState()
+        val detectedMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
         if (detectedMode != currentMode) {
             logger.stop()
             currentMode = detectedMode
