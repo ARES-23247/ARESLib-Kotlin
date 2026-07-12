@@ -40,14 +40,6 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
 
             var currentEstimator = state.drive.poseEstimator
             val stdDevs = action.customVisionStdDevs ?: DEFAULT_STD_DEVS
-            val hasTag1 = run {
-                var found = false
-                for (j in 0 until validMeasurements.size) {
-                    if (validMeasurements[j].tagId == 1) { found = true; break }
-                }
-                found
-            }
-
             var acceptedCountDelta = 0
             var rejectedCountDelta = 0
             var lastCovBefore: DoubleArray? = null
@@ -59,46 +51,44 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             val scratchBefore = DoubleArray(9)
             val scratchAfter = DoubleArray(9)
 
-            if (!hasTag1) {
-                for (i in 0 until validMeasurements.size) {
-                    val measurement = validMeasurements[i]
-                    scratchBefore[0] = currentEstimator.covariance.m00
-                    scratchBefore[1] = currentEstimator.covariance.m01
-                    scratchBefore[2] = currentEstimator.covariance.m02
-                    scratchBefore[3] = currentEstimator.covariance.m10
-                    scratchBefore[4] = currentEstimator.covariance.m11
-                    scratchBefore[5] = currentEstimator.covariance.m12
-                    scratchBefore[6] = currentEstimator.covariance.m20
-                    scratchBefore[7] = currentEstimator.covariance.m21
-                    scratchBefore[8] = currentEstimator.covariance.m22
+            for (i in 0 until validMeasurements.size) {
+                val measurement = validMeasurements[i]
+                scratchBefore[0] = currentEstimator.covariance.m00
+                scratchBefore[1] = currentEstimator.covariance.m01
+                scratchBefore[2] = currentEstimator.covariance.m02
+                scratchBefore[3] = currentEstimator.covariance.m10
+                scratchBefore[4] = currentEstimator.covariance.m11
+                scratchBefore[5] = currentEstimator.covariance.m12
+                scratchBefore[6] = currentEstimator.covariance.m20
+                scratchBefore[7] = currentEstimator.covariance.m21
+                scratchBefore[8] = currentEstimator.covariance.m22
 
-                    currentEstimator = PoseEstimator.addVisionMeasurement(
-                        state = currentEstimator,
-                        measurement = measurement,
-                        visionStdDevs = stdDevs,
-                        numTags = validMeasurements.size,
-                        useMahalanobisRejection = true,
-                        mahalanobisThreshold = state.vision.filterConfig.mahalanobisThreshold
-                    )
-                    lastAccepted = currentEstimator.lastMeasurementAccepted
-                    lastReason = currentEstimator.lastRejectionReason
-                    if (lastAccepted) {
-                        acceptedCountDelta++
-                        lastCovBefore = scratchBefore
-                        
-                        scratchAfter[0] = currentEstimator.covariance.m00
-                        scratchAfter[1] = currentEstimator.covariance.m01
-                        scratchAfter[2] = currentEstimator.covariance.m02
-                        scratchAfter[3] = currentEstimator.covariance.m10
-                        scratchAfter[4] = currentEstimator.covariance.m11
-                        scratchAfter[5] = currentEstimator.covariance.m12
-                        scratchAfter[6] = currentEstimator.covariance.m20
-                        scratchAfter[7] = currentEstimator.covariance.m21
-                        scratchAfter[8] = currentEstimator.covariance.m22
-                        lastCovAfter = scratchAfter
-                    } else {
-                        rejectedCountDelta++
-                    }
+                currentEstimator = PoseEstimator.addVisionMeasurement(
+                    state = currentEstimator,
+                    measurement = measurement,
+                    visionStdDevs = stdDevs,
+                    numTags = validMeasurements.size,
+                    useMahalanobisRejection = true,
+                    mahalanobisThreshold = state.vision.filterConfig.mahalanobisThreshold
+                )
+                lastAccepted = currentEstimator.lastMeasurementAccepted
+                lastReason = currentEstimator.lastRejectionReason
+                if (lastAccepted) {
+                    acceptedCountDelta++
+                    lastCovBefore = scratchBefore
+                    
+                    scratchAfter[0] = currentEstimator.covariance.m00
+                    scratchAfter[1] = currentEstimator.covariance.m01
+                    scratchAfter[2] = currentEstimator.covariance.m02
+                    scratchAfter[3] = currentEstimator.covariance.m10
+                    scratchAfter[4] = currentEstimator.covariance.m11
+                    scratchAfter[5] = currentEstimator.covariance.m12
+                    scratchAfter[6] = currentEstimator.covariance.m20
+                    scratchAfter[7] = currentEstimator.covariance.m21
+                    scratchAfter[8] = currentEstimator.covariance.m22
+                    lastCovAfter = scratchAfter
+                } else {
+                    rejectedCountDelta++
                 }
             }
 

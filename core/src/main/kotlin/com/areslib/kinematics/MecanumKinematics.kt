@@ -10,7 +10,7 @@ class MecanumKinematics(
     private val wheelBaseMeters: Double
 ) {
     // The sum of the half-track-width and half-wheel-base is the effective moment arm for rotation.
-    private val k: Double = (trackWidthMeters / 2.0) + (wheelBaseMeters / 2.0)
+    val k: Double = (trackWidthMeters / 2.0) + (wheelBaseMeters / 2.0)
 
     /**
      * Converts robot-centric ChassisSpeeds into individual MecanumWheelSpeeds.

@@ -118,16 +118,21 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         motorKf = motorKf
     )
 
+    private val kinematics = MecanumKinematics(trackWidthMeters = trackWidthMeters, wheelBaseMeters = wheelBaseMeters)
+
     init {
         // Core initializations
-        drive.maxSpeedMps = mecanumIO.maxWheelSpeedMetersPerSecond
-        mecanumDrive.maxSpeedMps = mecanumIO.maxWheelSpeedMetersPerSecond
+        val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
+        val maxAngularSpeed = maxSpeed / kinematics.k
+        
+        drive.maxSpeedMps = maxSpeed
+        mecanumDrive.maxSpeedMps = maxSpeed
+        
+        mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
     }
 
     val sysIdManager = com.areslib.control.SysIdManager()
     private var lastCommandProcessed = ""
-
-    private val kinematics = MecanumKinematics(trackWidthMeters = trackWidthMeters, wheelBaseMeters = wheelBaseMeters)
 
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()

@@ -140,7 +140,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val maxSpeed = maxWheelSpeedMetersPerSecond
         val vx = driveState.xVelocityMetersPerSecond * maxSpeed
         val vy = driveState.yVelocityMetersPerSecond * maxSpeed
-        val omega = driveState.angularVelocityRadiansPerSecond * maxSpeed
+        val omega = driveState.angularVelocityRadiansPerSecond * (maxSpeed / kinematics.k)
 
         var robotVx = vx
         var robotVy = vy

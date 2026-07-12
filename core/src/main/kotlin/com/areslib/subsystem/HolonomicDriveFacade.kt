@@ -22,6 +22,12 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
     var maxSpeedMps: Double = 3.5
 
     /**
+     * The maximum angular speed of the robot in radians per second.
+     * Used to normalize angular velocity output for heading hold PID.
+     */
+    var maxAngularSpeedRps: Double = 9.5
+
+    /**
      * The current estimated longitudinal (X-axis) velocity of the robot on the field in meters per second.
      */
     val xVelocity: Double
@@ -135,7 +141,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             useHeadingLock && !isRotating && target != null -> {
                 val rawError = com.areslib.math.InputMath.wrapAngle(target - headingRad)
                 val filteredError = headingErrorFilter.calculate(rawError, 0.02)
-                finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02) / maxSpeedMps
+                finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02) / maxAngularSpeedRps
                 fromHeadingHold = true
             }
         }

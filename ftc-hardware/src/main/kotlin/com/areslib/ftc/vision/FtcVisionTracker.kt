@@ -73,19 +73,10 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val headingDiff = com.areslib.math.InputMath.wrapAngle(fieldYaw - robotHeading)
 
         lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
+        val filterConfig = store.state.vision.filterConfig
 
-        // 1. One-time absolute snap during initialization to bypass outlier lockout
-        var hasTag1 = false
-        val measurementsList = visionInputs.measurements
-        val measurementCount = measurementsList.size
-        for (i in 0 until measurementCount) {
-            if (measurementsList[i].tagId == 1) {
-                hasTag1 = true
-                break
-            }
-        }
         if (isInInit) {
-            if (!hasInitializedPoseWithVision && measurement.ambiguity < 0.05 && !hasTag1) {
+            if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity) {
                 val snapPose = measurement.targetPose.toPose2d()
                 pinpointIO?.initialize(snapPose, resetHardware = false)
                 hasInitializedPoseWithVision = true
@@ -101,10 +92,10 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         } else {
             // Kidnapped Robot Recovery (Active Play)
             val isRejected = lastVisionStatus.startsWith("REJ_")
-            val isHighConfidence = measurement.ambiguity < 0.05 && !hasTag1
-            val isStationary = store.state.drive.xVelocityMetersPerSecond == 0.0 &&
-                               store.state.drive.yVelocityMetersPerSecond == 0.0 &&
-                               store.state.drive.angularVelocityRadiansPerSecond == 0.0
+            val isHighConfidence = measurement.ambiguity < filterConfig.maxAmbiguity
+            val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < 0.05 &&
+                               kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < 0.05 &&
+                               kotlin.math.abs(store.state.drive.angularVelocityRadiansPerSecond) < 0.05
 
             if (isRejected && isHighConfidence && isStationary) {
                 consecutiveVisionRejections++
