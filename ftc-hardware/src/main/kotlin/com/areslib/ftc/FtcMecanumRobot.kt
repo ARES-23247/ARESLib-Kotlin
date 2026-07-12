@@ -121,6 +121,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     init {
         // Core initializations
         drive.maxSpeedMps = mecanumIO.maxWheelSpeedMetersPerSecond
+        mecanumDrive.maxSpeedMps = mecanumIO.maxWheelSpeedMetersPerSecond
     }
 
     val sysIdManager = com.areslib.control.SysIdManager()

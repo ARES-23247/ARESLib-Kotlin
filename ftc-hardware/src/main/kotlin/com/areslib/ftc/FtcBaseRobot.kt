@@ -52,6 +52,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     init {
         com.areslib.ftc.hardware.FtcPerformanceManager.initialize(hardwareMap)
         com.areslib.telemetry.RobotWebServer.start()
+        com.areslib.telemetry.LogManagerServer.startServer()
         com.areslib.telemetry.RobotStatusTracker.isEnabled = false
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
         activeInstance = this
@@ -122,6 +123,48 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
 
+    private var hasReadSensorsThisFrame = false
+    private var lastPoseUpdateTimestamp = 0L
+
+    /**
+     * Synchronously reads pinpoint and Limelight visual tracking sensors,
+     * updates the EKF state immediately, and clears REV expansion hub bulk caches.
+     * This can be called at the start of an OpMode loop to eliminate one-frame loop latency.
+     */
+    fun readSensors() {
+        if (hasReadSensorsThisFrame) return
+        hasReadSensorsThisFrame = true
+
+        // 0. Clear manual bulk caches at the beginning of the frame
+        com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()
+
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        
+        // 0b. Read inputs from robot-specific sensors (e.g. drive encoders)
+        updateHardwareInputs()
+
+        // 1. Read pinpoint sensors and update EKF pose estimation
+        val poseUpdate = pinpointIO?.getPoseUpdate() ?: RobotAction.PoseUpdate(
+            xMeters = 0.0,
+            yMeters = 0.0,
+            headingRadians = 0.0,
+            timestampMs = timestamp
+        )
+        
+        val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
+        val age = timestamp - poseUpdate.timestampMs
+        when {
+            isPinpointStale && (timestamp - lastPinpointWarningTime > 2000L) -> {
+                System.err.println("FtcBaseRobot: Pinpoint pose update is stale! Age: ${age}ms")
+                lastPinpointWarningTime = timestamp
+            }
+        }
+        store.dispatch(poseUpdate)
+
+        // 2. Process AprilTags visual updates
+        visionTracker.update(timestamp)
+    }
+
     /**
      * Executes a single frame cycle of the robot's control loop.
      * Clears hardware caches, updates sensors, filters power, executes kinematics,
@@ -145,37 +188,14 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         }
         com.areslib.telemetry.RobotStatusTracker.isEnabled = true
 
-        // 0. Clear manual bulk caches at the beginning of the frame
-        com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()
-
         try {
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
             val dtSeconds = if (lastUpdateTime == 0L) 0.02 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
-            // 0b. Read inputs from robot-specific sensors (e.g. drive encoders)
-            updateHardwareInputs()
-
-            // 1. Read pinpoint sensors and update EKF pose estimation
-            val poseUpdate = pinpointIO?.getPoseUpdate() ?: RobotAction.PoseUpdate(
-                xMeters = 0.0,
-                yMeters = 0.0,
-                headingRadians = 0.0,
-                timestampMs = timestamp
-            )
-            
-            val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
-            val age = timestamp - poseUpdate.timestampMs
-            when {
-                isPinpointStale && (timestamp - lastPinpointWarningTime > 2000L) -> {
-                    System.err.println("FtcBaseRobot: Pinpoint pose update is stale! Age: ${age}ms")
-                    lastPinpointWarningTime = timestamp
-                }
-            }
-            store.dispatch(poseUpdate)
-
-            // 2. Process AprilTags visual updates
-            visionTracker.update(timestamp)
+            // Ensure sensors are read
+            readSensors()
+            hasReadSensorsThisFrame = false // Reset for the next frame
 
             // 3. Update voltage sag filter and brownout power scaling
             val effectiveScale = powerManager.update(dtSeconds, timestamp)

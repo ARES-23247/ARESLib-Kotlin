@@ -15,7 +15,12 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
     headingKd: Double = 0.25,
     headingDeadzoneDeg: Double = 0.5
 ) {
-    
+    /**
+     * The maximum linear speed of the robot in meters per second.
+     * Used to normalize angular velocity output for heading hold PID.
+     */
+    var maxSpeedMps: Double = 3.5
+
     /**
      * The current estimated longitudinal (X-axis) velocity of the robot on the field in meters per second.
      */
@@ -125,11 +130,12 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
                 store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
                 headingErrorFilter.reset(0.0)
+                headingPID.reset()
             }
             useHeadingLock && !isRotating && target != null -> {
                 val rawError = com.areslib.math.InputMath.wrapAngle(target - headingRad)
                 val filteredError = headingErrorFilter.calculate(rawError, 0.02)
-                finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02)
+                finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02) / maxSpeedMps
                 fromHeadingHold = true
             }
         }

@@ -56,7 +56,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
+                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
 
                 val cosH = kotlin.math.cos(offsetHeading)
                 val sinH = kotlin.math.sin(offsetHeading)
@@ -135,7 +135,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                     driver.update()
                     val rawX = driver.getPosX(DistanceUnit.METER)
                     val rawY = driver.getPosY(DistanceUnit.METER)
-                    val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
+                    val rawHeading = driver.getHeading(AngleUnit.RADIANS)
 
                     synchronized(lock) {
                         offsetHeading = com.areslib.math.InputMath.wrapAngle(pose.heading.radians - rawHeading)
