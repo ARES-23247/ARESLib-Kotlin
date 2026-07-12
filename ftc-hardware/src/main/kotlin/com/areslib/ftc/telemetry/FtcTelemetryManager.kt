@@ -33,11 +33,12 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
 
     override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
-    val actionLogger = ActionLogger(runId, robotId, 0, "BLUE")
+    var actionLogger = ActionLogger(runId, robotId, 0, "BLUE", "Init")
+        private set
 
     init {
         // Intercept and record all dispatched store actions asynchronously
-        store.actionListener = { actionLogger.logAction(it) }
+        store.actionListener = { action -> actionLogger.logAction(action) }
         HardwareRegistry.registerCloseable(this)
     }
 
@@ -53,6 +54,12 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         dtSeconds: Double,
         batteryVoltage: Double
     ) {
+        val detectedMode = com.areslib.telemetry.RobotStatusTracker.getOpModeState()
+        if (detectedMode != actionLogger.mode) {
+            actionLogger.stop()
+            actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
+        }
+
         brownoutGuard.update(batteryVoltage)
 
         publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, brownoutGuard)
@@ -85,6 +92,12 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         localTelemetry: Telemetry?,
         onSubclassPublish: () -> Unit = {}
     ) {
+        val detectedMode = com.areslib.telemetry.RobotStatusTracker.getOpModeState()
+        if (detectedMode != actionLogger.mode) {
+            actionLogger.stop()
+            actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
+        }
+
         val estPose = state.drive.poseEstimator.estimatedPose
         brownoutGuard.update(batteryVoltage)
 

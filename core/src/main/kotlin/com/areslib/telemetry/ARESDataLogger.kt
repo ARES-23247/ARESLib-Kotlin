@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
  * Offloads all file writing operations to a background thread to guarantee
  * zero impact on the robot controller's primary control loop.
  */
-class ARESDataLogger {
+class ARESDataLogger(val mode: String = "Init") {
 
     private val logQueue = LinkedBlockingQueue<Map<String, Any>>(1000)
     private val activeKeys = mutableListOf<String>()
@@ -55,8 +55,8 @@ class ARESDataLogger {
                 logDir.mkdirs()
             }
 
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val logFile = File(logDir, "ares_log_$timestamp.csv")
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
+            val logFile = File(logDir, "ares_log_${timestamp}_$mode.csv")
 
             writer = BufferedWriter(FileWriter(logFile))
             isRunning = true

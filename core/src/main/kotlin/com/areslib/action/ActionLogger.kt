@@ -21,7 +21,8 @@ class ActionLogger(
     val runId: String = "",
     val robotId: String = "",
     val matchNumber: Int = 0,
-    val alliance: String = "BLUE"
+    val alliance: String = "BLUE",
+    val mode: String = "Init"
 ) {
     private val gson = Gson()
     private val queue = LinkedBlockingQueue<RobotAction>(1000)
@@ -50,8 +51,8 @@ class ActionLogger(
                 logDir.mkdirs()
             }
 
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val logFile = File(logDir, "action_log_$timestamp.jsonl")
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
+            val logFile = File(logDir, "action_log_${timestamp}_$mode.jsonl")
 
             writer = BufferedWriter(FileWriter(logFile))
             isRunning = true
@@ -94,6 +95,7 @@ class ActionLogger(
         envelope.addProperty("robot_id", robotId)
         envelope.addProperty("match_number", matchNumber)
         envelope.addProperty("alliance", alliance)
+        envelope.addProperty("op_mode", mode)
         envelope.addProperty("type", typeName)
         envelope.add("payload", payloadJson)
 

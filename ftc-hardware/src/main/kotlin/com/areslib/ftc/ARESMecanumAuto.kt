@@ -23,6 +23,7 @@ open class ARESMecanumAuto : LinearOpMode() {
     }
 
     override fun runOpMode() {
+        com.areslib.telemetry.RobotStatusTracker.opModeInstance = this
         // --- 1. Initialization ---
         val robot = FtcMecanumRobot(
             hardwareMap = hardwareMap,

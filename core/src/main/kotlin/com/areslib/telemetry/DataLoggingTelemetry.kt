@@ -9,8 +9,9 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelemetry {
     
-    private val logger = ARESDataLogger()
+    private var logger = ARESDataLogger("Init")
     private val currentFrame = ConcurrentHashMap<String, Any>()
+    private var currentMode = "Init"
 
     /**
      * The minimum time interval in milliseconds between file-based logging writes.
@@ -56,11 +57,20 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
 
     override fun update() {
         val now = com.areslib.util.RobotClock.currentTimeMillis()
+
+        // Check if mode transitioned
+        val detectedMode = com.areslib.telemetry.RobotStatusTracker.getOpModeState()
+        if (detectedMode != currentMode) {
+            logger.stop()
+            currentMode = detectedMode
+            logger = ARESDataLogger(currentMode)
+        }
         
         // Log the complete frame asynchronously using the GC-free map pool only if interval elapsed
         if (now - lastLogTimeMs >= minLogIntervalMs) {
             lastLogTimeMs = now
             currentFrame["TimestampMs"] = now
+            currentFrame["OpMode"] = currentMode
             
             val map = logger.obtainMap()
             map.putAll(currentFrame)
