@@ -33,24 +33,68 @@ class LimelightProxy(
     private val executor = Executors.newCachedThreadPool()
     private val forwarders = mutableListOf<TCPForwarder>()
 
+    private fun discoverLimelightIp(): String {
+        val defaultIp = "172.29.0.1"
+        val subnet = "172.29.0."
+        val scanExecutor = Executors.newFixedThreadPool(50)
+        val futures = java.util.ArrayList<java.util.concurrent.Future<String?>>()
+        
+        for (i in 1..254) {
+            val ip = "$subnet$i"
+            futures.add(scanExecutor.submit(java.util.concurrent.Callable {
+                try {
+                    val socket = Socket()
+                    socket.connect(java.net.InetSocketAddress(ip, 5801), 100)
+                    socket.close()
+                    ip
+                } catch (e: Exception) {
+                    null
+                }
+            }))
+        }
+        
+        var foundIp: String? = null
+        for (future in futures) {
+            try {
+                val ip = future.get()
+                if (ip != null) {
+                    foundIp = ip
+                    break
+                }
+            } catch (ignored: Exception) {}
+        }
+        scanExecutor.shutdownNow()
+        
+        if (foundIp != null) {
+            System.out.println("LimelightProxy: Auto-discovered Limelight at $foundIp")
+            return foundIp
+        }
+        
+        System.out.println("LimelightProxy: No Limelight discovered on 172.29.0.x. Falling back to $defaultIp")
+        return defaultIp
+    }
+
     /**
      * Starts the wireless network tunnels for all configured cameras.
      */
     fun start() {
+        val discoveredIp = discoverLimelightIp()
+        
         for (camera in cameras) {
             val basePort = 5800 + camera.localPortOffset
+            val targetIp = if (camera.targetIp.startsWith("172.29.0.")) discoveredIp else camera.targetIp
             
             // 1. Forward the Web UI Dashboard (HTTP/REST)
-            startForwarder(basePort + 1, camera.targetIp, 5801)
+            startForwarder(basePort + 1, targetIp, 5801)
 
             // 2. Forward all other Limelight streaming, websocket, and status API ports (5800 to 5807)
-            startForwarder(basePort, camera.targetIp, 5800)
-            startForwarder(basePort + 2, camera.targetIp, 5802)
-            startForwarder(basePort + 3, camera.targetIp, 5803)
-            startForwarder(basePort + 4, camera.targetIp, 5804)
-            startForwarder(basePort + 5, camera.targetIp, 5805)
-            startForwarder(basePort + 6, camera.targetIp, 5806)
-            startForwarder(basePort + 7, camera.targetIp, 5807)
+            startForwarder(basePort, targetIp, 5800)
+            startForwarder(basePort + 2, targetIp, 5802)
+            startForwarder(basePort + 3, targetIp, 5803)
+            startForwarder(basePort + 4, targetIp, 5804)
+            startForwarder(basePort + 5, targetIp, 5805)
+            startForwarder(basePort + 6, targetIp, 5806)
+            startForwarder(basePort + 7, targetIp, 5807)
 
             System.out.println(
                 "LimelightProxy: Started '${camera.name}' camera tunnel. " +

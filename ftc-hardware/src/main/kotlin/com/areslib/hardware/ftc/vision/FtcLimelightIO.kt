@@ -48,20 +48,18 @@ class FtcLimelightIO(
                     val pos = botpose.position.toUnit(DistanceUnit.METER)
                     val orient = botpose.orientation
                     
-                    // Transform FTC coordinates (+Y forward, +X right) to WPILib coordinates (+X forward, +Y left)
+                    // Limelight outputs botpose directly in standard WPILib field coordinates (+X forward, +Y left)
                     val wpiTranslation = com.areslib.math.Translation3d(
-                        x = pos.y,
-                        y = -pos.x,
+                        x = pos.x,
+                        y = pos.y,
                         z = pos.z
                     )
                     
-                    // Transform orientation: R_wpi = R(0, 0, -pi/2) * R_ftc
-                    val ftcRotation = com.areslib.math.Rotation3d(
+                    val wpiRotation = com.areslib.math.Rotation3d(
                         roll = orient.getRoll(AngleUnit.RADIANS),
                         pitch = orient.getPitch(AngleUnit.RADIANS),
                         yaw = orient.getYaw(AngleUnit.RADIANS)
                     )
-                    val wpiRotation = frameRotation * ftcRotation
                     
                     val pose = Pose3d(
                         translation = wpiTranslation,
