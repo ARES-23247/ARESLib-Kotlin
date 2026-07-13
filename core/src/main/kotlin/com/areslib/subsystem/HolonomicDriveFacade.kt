@@ -133,10 +133,15 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
             }
             useHeadingLock && !isRotating && target == null -> {
-                store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
-                store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
-                headingErrorFilter.reset(0.0)
-                headingPID.reset()
+                if (kotlin.math.abs(angularVelocity) < 0.08) {
+                    store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
+                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
+                    headingErrorFilter.reset(0.0)
+                    headingPID.reset()
+                } else {
+                    // Let the robot's physical rotation coast/decelerate to a stop before locking heading target
+                    finalOmega = 0.0
+                }
             }
             useHeadingLock && !isRotating && target != null -> {
                 val rawError = com.areslib.math.InputMath.wrapAngle(target - headingRad)
