@@ -100,7 +100,9 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     // Removed intake and shooter as they belong in TeamCode
 
     init {
-        LimelightProxyAutoStart.start()
+        if (isAndroid) {
+            LimelightProxyAutoStart.start()
+        }
     }
 
     // 1. Physical Hardware IO & Kinematics Controllers
@@ -379,6 +381,8 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun close() {
         super.close()
         // Ensure proxy restarts for wireless tuning after the OpMode ends
-        LimelightProxyAutoStart.start()
+        if (isAndroid) {
+            LimelightProxyAutoStart.start()
+        }
     }
 }
