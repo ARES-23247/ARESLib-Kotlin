@@ -417,7 +417,7 @@ object DesktopSimLauncher {
                 val now = com.areslib.util.RobotClock.currentTimeMillis()
                 robotInstance.pinpointIO?.initialize(
                     com.areslib.math.geometry.Pose2d(currentPhysPose.x, currentPhysPose.y, com.areslib.math.geometry.Rotation2d(currentPhysPose.heading.radians)),
-                    resetHardware = false
+                    resetHardware = true
                 )
                 robotInstance.store.dispatch(
                     com.areslib.action.RobotAction.PoseUpdate(
@@ -481,9 +481,9 @@ object DesktopSimLauncher {
             }
             
             // Match Start! Exits init loop in LinearOpMode
-            opMode.isStarted = true
             println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
             syncRobotPoseToPhysics()
+            opMode.isStarted = true
         }
 
         // 5. Simulation Loop
@@ -660,8 +660,8 @@ object DesktopSimLauncher {
                         }
                         "START" -> {
                             println("[Simulator] Received START")
-                            activeOpMode?.isStarted = true
                             syncRobotPoseToPhysics()
+                            activeOpMode?.isStarted = true
                         }
                         "STOP" -> {
                             println("[Simulator] Received STOP")

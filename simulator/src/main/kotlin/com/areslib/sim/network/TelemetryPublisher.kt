@@ -11,7 +11,9 @@ object TelemetryPublisher {
     private val ntInst = NetworkTableInstance.getDefault()
     private val statePublisher: StructPublisher<RobotState>
     private val targetPosePublisher = ntInst.getDoubleArrayTopic("ARES/TargetPose").publish()
-    private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").publish()
+    private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").publish(
+        edu.wpi.first.networktables.PubSubOption.periodic(0.01)
+    )
     private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("ARES/GamePieces").publish()
     private val timestampPub = ntInst.getIntegerTopic("TimestampMs").publish()
 

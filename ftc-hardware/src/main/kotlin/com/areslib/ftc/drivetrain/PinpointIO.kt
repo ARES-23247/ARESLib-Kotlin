@@ -57,18 +57,21 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
 
                 val cosH = kotlin.math.cos(offsetHeading)
                 val sinH = kotlin.math.sin(offsetHeading)
                 val x = rawX * cosH - rawY * sinH + offsetX
                 val y = rawX * sinH + rawY * cosH + offsetY
-                val heading = wrapAngle(rawHeading + offsetHeading)
+                
+                println("[PinpointIO] position getter: rawX=$rawX, rawY=$rawY, offsetX=$offsetX, offsetY=$offsetY, x=$x, y=$y, rawHeading=$rawHeading, offsetHeading=$offsetHeading")
+                
+                val pose = com.areslib.math.geometry.Pose2d(x, y, com.areslib.math.geometry.Rotation2d(wrapAngle(rawHeading + offsetHeading)))
 
                 synchronized(lock) {
                     lastX = x
                     lastY = y
-                    lastHeading = heading
+                    lastHeading = pose.heading.radians
                     lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                 }
             } catch (e: Exception) {
@@ -135,7 +138,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
 
                 synchronized(lock) {
                     offsetHeading = wrapAngle(pose.heading.radians - rawHeading)

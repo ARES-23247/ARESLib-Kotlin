@@ -99,6 +99,15 @@ tasks.register<JavaExec>("runFakeController") {
     })
 }
 
+tasks.register<JavaExec>("runVerification") {
+    group = "application"
+    mainClass.set("com.areslib.sim.VerificationAppKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    })
+}
+
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
