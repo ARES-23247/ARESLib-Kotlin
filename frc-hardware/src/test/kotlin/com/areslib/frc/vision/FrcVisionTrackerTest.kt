@@ -6,7 +6,7 @@ import com.areslib.state.VisionMeasurement
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Translation3d
 import com.areslib.math.geometry.Rotation3d
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.state.RobotState
 import com.areslib.telemetry.RobotStatusTracker
 import com.areslib.hardware.vision.VisionFilterConfig

@@ -6,7 +6,7 @@ import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.state.VisionMeasurement
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.control.drivetrain.HolonomicDriveController
 

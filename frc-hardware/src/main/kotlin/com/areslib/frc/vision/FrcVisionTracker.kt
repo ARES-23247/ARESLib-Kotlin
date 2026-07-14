@@ -3,7 +3,7 @@ package com.areslib.frc.vision
 import com.areslib.action.RobotAction
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.subsystem.VisionTracker
 import com.areslib.telemetry.RobotStatusTracker
 

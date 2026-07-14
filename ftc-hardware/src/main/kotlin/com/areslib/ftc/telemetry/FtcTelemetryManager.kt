@@ -1,6 +1,6 @@
 package com.areslib.ftc.telemetry
 
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.telemetry.NT4Telemetry
 import com.areslib.logging.DataLoggingTelemetry
 import com.areslib.telemetry.ARESNetworkStatePublisher

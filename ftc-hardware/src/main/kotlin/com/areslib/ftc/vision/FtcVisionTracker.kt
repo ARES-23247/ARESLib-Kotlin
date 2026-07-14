@@ -4,7 +4,7 @@ import com.areslib.action.RobotAction
 import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Vector3

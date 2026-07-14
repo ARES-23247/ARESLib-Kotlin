@@ -10,7 +10,7 @@ import com.areslib.math.geometry.Rotation3d
 import com.areslib.math.geometry.Pose3d
 import com.areslib.state.RobotState
 import com.areslib.state.VisionMeasurement
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.telemetry.ITelemetry
 import org.junit.jupiter.api.Assertions.*

@@ -3,7 +3,7 @@ package com.areslib.frc.telemetry
 import com.areslib.control.safety.BrownoutGuard
 import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.state.RobotState
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.telemetry.*
 import com.areslib.logging.DataLoggingTelemetry
 import com.ctre.phoenix6.CANBus

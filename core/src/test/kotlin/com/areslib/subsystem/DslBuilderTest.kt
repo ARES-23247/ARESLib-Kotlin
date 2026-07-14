@@ -1,5 +1,6 @@
 package com.areslib.subsystem
 
+import com.areslib.Store
 import com.areslib.state.RobotState
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

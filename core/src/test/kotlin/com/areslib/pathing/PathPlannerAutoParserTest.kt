@@ -5,7 +5,7 @@ import com.areslib.state.RobotState
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.subsystem.DrivetrainSubsystem
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 

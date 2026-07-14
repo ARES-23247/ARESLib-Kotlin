@@ -1,6 +1,6 @@
 package com.areslib.util
 
-import com.areslib.subsystem.Store
+import com.areslib.Store
 import com.areslib.state.RobotState
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow

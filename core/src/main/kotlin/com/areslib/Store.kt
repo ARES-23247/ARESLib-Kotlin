@@ -1,4 +1,4 @@
-package com.areslib.subsystem
+package com.areslib
 
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState

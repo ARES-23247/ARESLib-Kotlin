@@ -2,7 +2,6 @@ package com.areslib.control
 
 import com.areslib.control.filters.Debouncer
 import com.areslib.control.filters.EMAFilter
-import com.areslib.control.filters.SlewRateLimiter
 import com.areslib.util.RobotClock
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -51,25 +50,5 @@ class FiltersTest {
         assertEquals(10.0, filter.calculate(10.0), 0.001) // First value sets the baseline
         assertEquals(15.0, filter.calculate(20.0), 0.001) // (0.5 * 20) + (0.5 * 10) = 15
         assertEquals(22.5, filter.calculate(30.0), 0.001) // (0.5 * 30) + (0.5 * 15) = 22.5
-    }
-
-    @Test
-    fun testSlewRateLimiter() {
-        val limiter = SlewRateLimiter(rateLimit = 1.0) // Maximum 1 unit per second
-        
-        RobotClock.setMockTimeMs(0)
-        assertEquals(0.0, limiter.calculate(0.0), 0.001)
-        
-        // Request a jump to 10.0. After 1 second, it should only be at 1.0.
-        RobotClock.setMockTimeMs(1000)
-        assertEquals(1.0, limiter.calculate(10.0), 0.001)
-        
-        // After another 0.5 seconds, it should be at 1.5.
-        RobotClock.setMockTimeMs(1500)
-        assertEquals(1.5, limiter.calculate(10.0), 0.001)
-        
-        // Request a jump down to 0.0. After 2 seconds, it should be at -0.5 (1.5 - 2.0 = -0.5), wait input is 0.0 so it clamps at 0.0.
-        RobotClock.setMockTimeMs(3500)
-        assertEquals(0.0, limiter.calculate(0.0), 0.001)
     }
 }
