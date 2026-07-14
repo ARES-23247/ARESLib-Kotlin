@@ -32,8 +32,8 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
     // Mode toggles
     @Volatile var isTeleopMode = true
-    @Volatile var isFieldCentric = false
-    @Volatile var isRedAlliance = false
+    @Volatile var isFieldCentric = true
+    @Volatile var isRedAlliance = true
 
     // FSM Toggles
     @Volatile var isIntaking = false
