@@ -1,4 +1,4 @@
-package com.areslib.ftc.util
+package com.areslib.ftc
 
 import com.areslib.telemetry.GamepadState
 import com.qualcomm.robotcore.hardware.Gamepad

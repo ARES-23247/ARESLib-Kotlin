@@ -4,7 +4,7 @@ import com.areslib.telemetry.AresGamepad
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.areslib.telemetry.GamepadState
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import com.areslib.ftc.util.update
+import com.areslib.ftc.update
 
 /**
  * Generic DSL Builder class for constructing a TeleOp.

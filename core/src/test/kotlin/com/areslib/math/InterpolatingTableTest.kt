@@ -1,4 +1,4 @@
-package com.areslib.util
+package com.areslib.math
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
