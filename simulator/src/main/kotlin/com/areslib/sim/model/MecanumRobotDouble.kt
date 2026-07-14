@@ -118,6 +118,6 @@ class MecanumRobotDouble {
         // Feed simulated EKF/Pinpoint sensor coordinates
         pinpoint.posX = trueX
         pinpoint.posY = trueY
-        pinpoint.heading = -trueHeadingRad  // Simulate CW-positive hardware output for PinpointIO to negate back to CCW-positive
+        pinpoint.heading = trueHeadingRad  // PinpointIO passes heading through without negation, so feed CCW-positive directly
     }
 }
