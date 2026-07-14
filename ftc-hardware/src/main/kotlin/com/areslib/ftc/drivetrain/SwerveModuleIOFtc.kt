@@ -1,4 +1,4 @@
-package com.areslib.ftc
+package com.areslib.ftc.drivetrain
 
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.AnalogInput
@@ -82,4 +82,3 @@ class SwerveModuleIOFtc(
         running = false
     }
 }
-

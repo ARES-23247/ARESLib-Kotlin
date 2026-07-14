@@ -1,4 +1,4 @@
-package com.areslib.ftc
+package com.areslib.ftc.dsl
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
@@ -7,13 +7,15 @@ import com.areslib.control.PIDController
 import com.areslib.pathing.Path
 import com.areslib.pathing.DynamicPathLoader
 import com.areslib.util.RobotClock
+import com.areslib.ftc.FtcMecanumRobot
+import com.areslib.ftc.control.FtcMecanumPathFollower
 
 /**
- * A simplified, clean autonomous OpMode using the FtcMecanumRobot facade.
+ * A simplified, clean autonomous OpMode base class.
  * Coordinates EKF fused state updating and path-following with high-level facade calls.
+ * @param R The type of the Robot facade.
  */
-@Autonomous(name = "ARES Mecanum Auto", group = "ARES")
-open class ARESMecanumAuto : LinearOpMode() {
+abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
 
     open val pathName: String = "Example Path"
 
@@ -21,28 +23,21 @@ open class ARESMecanumAuto : LinearOpMode() {
         /** Threshold above which we log a loop overrun warning (50 Hz = 20ms) */
         private const val OVERRUN_THRESHOLD_MS = 30L
     }
+    abstract fun buildRobot(): R
+    abstract fun getMecanumRobot(robot: R): FtcMecanumRobot
+    abstract fun updateRobot(robot: R)
+    abstract fun closeRobot(robot: R)
 
     override fun runOpMode() {
         // --- 1. Initialization ---
-        val robot = FtcMecanumRobot(
-            hardwareMap = hardwareMap,
-            flName = "fl",
-            frName = "fr",
-            blName = "rl",
-            brName = "rr",
-            pinpointName = "pinpoint",
-            limelightName = null,
-            flDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
-            blDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
-            frDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
-            brDirection = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
-        )
+        val wrapper = buildRobot()
+        val robot = getMecanumRobot(wrapper)
 
         // Calibrate static friction feedforward (kS) to overcome physical drivetrain deadband
         robot.mecanumIO.kS = if (robot.driveKs > 0.0) robot.driveKs else 0.05
 
         // Setup unified path follower helper
-        val pathFollower = com.areslib.ftc.control.FtcMecanumPathFollower(
+        val pathFollower = FtcMecanumPathFollower(
             robot,
             xController = com.areslib.control.PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
             yController = com.areslib.control.PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
@@ -113,7 +108,7 @@ open class ARESMecanumAuto : LinearOpMode() {
                     lastTime = currentTime
 
                     // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
-                    robot.update()
+                    updateRobot(wrapper)
 
                     // Find closest point on path to robot's actual position
                     val robotPose = robot.drive.odometryPose
@@ -181,9 +176,7 @@ open class ARESMecanumAuto : LinearOpMode() {
             telemetry.addData("CRASH", e.message ?: "Unknown error")
             telemetry.update()
         } finally {
-            robot.close()
+            closeRobot(wrapper)
         }
-
     }
 }
-
