@@ -5,9 +5,9 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.kinematics.MecanumKinematics
 import com.areslib.kinematics.MecanumWheelSpeeds
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.ChassisSpeeds
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.areslib.telemetry.logDriveMotor
@@ -74,7 +74,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val motorKf: Double? = null,
     
     // Vision Filtering Constants
-    visionStdDevs: com.areslib.math.Vector3 = com.areslib.math.Vector3(0.05, 0.05, 0.1),
+    visionStdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
     visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
 ) : FtcBaseRobot(
     hardwareMap = hardwareMap,
@@ -213,7 +213,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 pathfindFollower.thetaController.d = currentTuning.pathRotationKd
             }
             
-            visionTracker.stdDevs = com.areslib.math.Vector3(
+            visionTracker.stdDevs = com.areslib.math.geometry.Vector3(
                 currentTuning.visionStdDevsX,
                 currentTuning.visionStdDevsY,
                 currentTuning.visionStdDevsHeading
@@ -433,3 +433,4 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         }
     }
 }
+

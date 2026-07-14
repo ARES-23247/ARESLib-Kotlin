@@ -1,8 +1,8 @@
 package com.areslib.control.assist
 
-import com.areslib.math.Pose2d
-import com.areslib.math.ChassisSpeeds
-import com.areslib.math.Translation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.ChassisSpeeds
+import com.areslib.math.geometry.Translation2d
 import kotlin.math.*
 
 /**

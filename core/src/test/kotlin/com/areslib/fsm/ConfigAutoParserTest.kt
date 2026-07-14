@@ -1,7 +1,7 @@
 package com.areslib.fsm
 
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.pathing.HolonomicPathFollower
 import com.areslib.state.RobotState
 import com.areslib.subsystem.DrivetrainSubsystem
@@ -63,3 +63,4 @@ class ConfigAutoParserTest {
         }
     }
 }
+

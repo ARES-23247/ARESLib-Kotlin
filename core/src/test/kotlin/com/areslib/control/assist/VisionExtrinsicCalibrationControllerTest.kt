@@ -2,12 +2,12 @@ package com.areslib.control.assist
 
 import com.areslib.action.RobotAction
 import com.areslib.action.CalibrationFrameLogged
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
-import com.areslib.math.Quaternion
-import com.areslib.math.Translation3d
-import com.areslib.math.Rotation3d
-import com.areslib.math.Pose3d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.Quaternion
+import com.areslib.math.geometry.Translation3d
+import com.areslib.math.geometry.Rotation3d
+import com.areslib.math.geometry.Pose3d
 import com.areslib.state.RobotState
 import com.areslib.state.VisionMeasurement
 import com.areslib.subsystem.Store
@@ -93,3 +93,4 @@ class VisionExtrinsicCalibrationControllerTest {
         assertEquals(42.0, telemetryMap["Calibration/TagIndex"])
     }
 }
+

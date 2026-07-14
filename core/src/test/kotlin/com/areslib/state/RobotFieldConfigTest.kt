@@ -1,6 +1,6 @@
 package com.areslib.state
 
-import com.areslib.math.Pose2d
+import com.areslib.math.geometry.Pose2d
 import com.areslib.pathing.Costmap
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test

@@ -127,8 +127,8 @@ class TaskGroupTest {
                 speedsVy = vy
                 speedsOmega = omega
             }
-            override fun getEstimatedPose(): com.areslib.math.Pose2d {
-                return com.areslib.math.Pose2d(1.9, 1.9, com.areslib.math.Rotation2d.fromDegrees(0.0))
+            override fun getEstimatedPose(): com.areslib.math.geometry.Pose2d {
+                return com.areslib.math.geometry.Pose2d(1.9, 1.9, com.areslib.math.geometry.Rotation2d.fromDegrees(0.0))
             }
             override fun readSensors(store: Store, timestampMs: Long) {}
             override fun writeOutputs(state: RobotState, scale: Double) {}
@@ -157,3 +157,4 @@ class TaskGroupTest {
         assertEquals(0.0, speedsVy)
     }
 }
+

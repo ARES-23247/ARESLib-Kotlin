@@ -1,6 +1,6 @@
 package com.areslib.ftc.hardware
 
-import com.areslib.hardware.DistanceSensorIO
+import com.areslib.hardware.sensor.DistanceSensorIO
 import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.DistanceSensor
 import org.firstinspires.ftc.robotcore.external.navigation.Distance
@@ -40,3 +40,4 @@ class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, 
         running = false
     }
 }
+

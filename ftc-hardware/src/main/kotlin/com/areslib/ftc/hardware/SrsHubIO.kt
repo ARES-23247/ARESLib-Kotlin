@@ -5,14 +5,15 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynch
 import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties
 import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType
-import com.areslib.hardware.MotorIO
-import com.areslib.hardware.ServoIO
-import com.areslib.hardware.ColorSensorIO
-import com.areslib.hardware.DistanceSensorIO
-import com.areslib.hardware.MultizoneDistanceSensorIO
-import com.areslib.hardware.OdometryIO
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.hardware.actuator.MotorIO
+import com.areslib.hardware.actuator.RevEncoderVersion
+import com.areslib.hardware.actuator.ServoIO
+import com.areslib.hardware.sensor.ColorSensorIO
+import com.areslib.hardware.sensor.DistanceSensorIO
+import com.areslib.hardware.sensor.MultizoneDistanceSensorIO
+import com.areslib.hardware.drive.OdometryIO
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 
 @I2cDeviceType
 @DeviceProperties(
@@ -318,7 +319,7 @@ class SrsHubEncoderIO(private val srsHub: SrsHubDriver, private val port: Int) :
 class SrsHubAbsoluteAnalogEncoder(
     private val srsHub: SrsHubDriver,
     private val port: Int,
-    private val version: com.areslib.hardware.RevEncoderVersion = com.areslib.hardware.RevEncoderVersion.V1,
+    private val version: com.areslib.hardware.actuator.RevEncoderVersion = com.areslib.hardware.actuator.RevEncoderVersion.V1,
     private val ticksPerRev: Double = 8192.0
 ) : MotorIO {
     private var offset = 0.0
@@ -347,7 +348,7 @@ class SrsHubAbsoluteAnalogEncoder(
 class SrsHubAbsolutePWMEncoder(
     private val srsHub: SrsHubDriver,
     private val port: Int,
-    private val version: com.areslib.hardware.RevEncoderVersion = com.areslib.hardware.RevEncoderVersion.V1,
+    private val version: com.areslib.hardware.actuator.RevEncoderVersion = com.areslib.hardware.actuator.RevEncoderVersion.V1,
     private val ticksPerRev: Double = 8192.0
 ) : MotorIO {
     private var offset = 0.0
@@ -463,7 +464,7 @@ class SrsHubPinpointOdometry(
         srsHub.registerPinpoint(port)
     }
 
-    override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {
+    override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
         srsHub.updateI2cOdometry(port)
         inputs.posX = srsHub.getI2cOdometryX(port) / 1000.0
         inputs.posY = srsHub.getI2cOdometryY(port) / 1000.0
@@ -474,3 +475,5 @@ class SrsHubPinpointOdometry(
         inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }
+
+

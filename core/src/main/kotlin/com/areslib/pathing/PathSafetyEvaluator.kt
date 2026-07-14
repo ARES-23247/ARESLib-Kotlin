@@ -1,6 +1,6 @@
 package com.areslib.pathing
 
-import com.areslib.math.Translation2d
+import com.areslib.math.geometry.Translation2d
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 

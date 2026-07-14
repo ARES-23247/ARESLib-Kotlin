@@ -1,6 +1,7 @@
 package com.areslib.math
 
 import com.areslib.state.Alliance
+import com.areslib.math.geometry.*
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathPoint
 

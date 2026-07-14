@@ -1,8 +1,8 @@
 package com.areslib.ftc
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.ftc.drivetrain.PinpointIO
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -110,3 +110,4 @@ class PinpointIOTest {
         fail<Unit>("Timed out waiting for PinpointIO initialization to complete (expected X: $expectedX)")
     }
 }
+

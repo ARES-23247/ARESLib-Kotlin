@@ -1,17 +1,17 @@
 package com.areslib.e2e.tier1.math
 
 import com.areslib.control.feedback.LQRController
-import com.areslib.math.PoseEstimator
-import com.areslib.math.PoseEstimatorState
-import com.areslib.math.Vector3
-import com.areslib.math.Rotation2d
-import com.areslib.math.Translation2d
-import com.areslib.math.Pose2d
-import com.areslib.math.Matrix3x3
+import com.areslib.math.estimation.PoseEstimator
+import com.areslib.math.estimation.PoseEstimatorState
+import com.areslib.math.geometry.Vector3
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.Translation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Matrix3x3
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.Pose3d
-import com.areslib.math.Translation3d
-import com.areslib.math.Rotation3d
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Translation3d
+import com.areslib.math.geometry.Rotation3d
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -115,3 +115,4 @@ class MathBoundsTier1Test {
         assertEquals(1.0, recoveredState.estimatedPose.x, 1e-6)
     }
 }
+

@@ -1,10 +1,10 @@
 package com.areslib.control.drivetrain
 
 import com.areslib.control.feedback.PIDController
-import com.areslib.hardware.OdometryIO
-import com.areslib.hardware.OdometryInputs
-import com.areslib.math.ChassisSpeeds
-import com.areslib.math.Pose2d
+import com.areslib.hardware.drive.OdometryIO
+import com.areslib.hardware.drive.OdometryInputs
+import com.areslib.math.geometry.ChassisSpeeds
+import com.areslib.math.geometry.Pose2d
 
 class AntiDriftController(
     private val baseOdometry: OdometryIO,

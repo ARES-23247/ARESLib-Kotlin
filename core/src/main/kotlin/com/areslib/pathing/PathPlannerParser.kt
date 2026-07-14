@@ -2,8 +2,9 @@ package com.areslib.pathing
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.Translation2d
 import kotlin.math.hypot
 
 object PathPlannerParser {
@@ -24,13 +25,13 @@ object PathPlannerParser {
         for (i in 0 until waypointsArray.size()) {
             val wp = waypointsArray.get(i).asJsonObject
             val anchorNode = wp.getAsJsonObject("anchor")
-            val anchor = com.areslib.math.Translation2d(anchorNode.get("x").asDouble, anchorNode.get("y").asDouble)
+            val anchor = Translation2d(anchorNode.get("x").asDouble, anchorNode.get("y").asDouble)
             
             val prevNode = if (wp.has("prevControl") && !wp.get("prevControl").isJsonNull) wp.getAsJsonObject("prevControl") else null
-            val prevControl = prevNode?.let { com.areslib.math.Translation2d(it.get("x").asDouble, it.get("y").asDouble) } ?: anchor
+            val prevControl = prevNode?.let { Translation2d(it.get("x").asDouble, it.get("y").asDouble) } ?: anchor
             
             val nextNode = if (wp.has("nextControl") && !wp.get("nextControl").isJsonNull) wp.getAsJsonObject("nextControl") else null
-            val nextControl = nextNode?.let { com.areslib.math.Translation2d(it.get("x").asDouble, it.get("y").asDouble) } ?: anchor
+            val nextControl = nextNode?.let { Translation2d(it.get("x").asDouble, it.get("y").asDouble) } ?: anchor
             
             parsedWaypoints.add(WaypointData(anchor, prevControl, nextControl))
         }
@@ -350,7 +351,7 @@ object PathPlannerParser {
      * using Hermite/Catmull-Rom spline control points and trapezoidal motion profiling.
      */
     fun generatePath(
-        points: List<com.areslib.math.Translation2d>,
+        points: List<Translation2d>,
         startHeading: Rotation2d,
         endHeading: Rotation2d,
         maxVelocityMps: Double = 2.0,
@@ -372,11 +373,11 @@ object PathPlannerParser {
             val d = 0.25 // scale factor
             
             val nextControl = if (i < points.size - 1) {
-                com.areslib.math.Translation2d(anchor.x + dx * d, anchor.y + dy * d)
+                Translation2d(anchor.x + dx * d, anchor.y + dy * d)
             } else anchor
             
             val prevControl = if (i > 0) {
-                com.areslib.math.Translation2d(anchor.x - dx * d, anchor.y - dy * d)
+                Translation2d(anchor.x - dx * d, anchor.y - dy * d)
             } else anchor
             
             parsedWaypoints.add(WaypointData(anchor, prevControl, nextControl))
@@ -490,9 +491,9 @@ object PathPlannerParser {
     }
 
     private data class WaypointData(
-        val anchor: com.areslib.math.Translation2d,
-        val prevControl: com.areslib.math.Translation2d,
-        val nextControl: com.areslib.math.Translation2d
+        val anchor: Translation2d,
+        val prevControl: Translation2d,
+        val nextControl: Translation2d
     )
 
     private data class ParsedRotationTarget(

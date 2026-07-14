@@ -1,7 +1,8 @@
 package com.areslib.subsystem
 
 import com.areslib.action.RobotAction
-import com.areslib.math.Pose2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.filter.LowPassFilter
 import com.areslib.pathing.Path
 import com.areslib.control.feedback.PIDController
 
@@ -76,7 +77,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         deadzone = Math.toRadians(headingDeadzoneDeg)
     }
 
-    protected val headingErrorFilter = com.areslib.math.LowPassFilter(0.0)
+    protected val headingErrorFilter = com.areslib.math.filter.LowPassFilter(0.0)
 
     /**
      * Executes robot-relative drivetrain movement effort.

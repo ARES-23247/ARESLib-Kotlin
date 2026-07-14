@@ -1,6 +1,6 @@
 package com.areslib.ftc.hardware
 
-import com.areslib.hardware.MultizoneDistanceSensorIO
+import com.areslib.hardware.sensor.MultizoneDistanceSensorIO
 
 /**
  * Proxy interface that mirrors typical community-made VL53L5CX I2C drivers.
@@ -71,3 +71,4 @@ class FtcVL53L5CX(private val driver: VL53L5CXDriverProxy) : MultizoneDistanceSe
         running = false
     }
 }
+

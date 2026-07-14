@@ -1,6 +1,6 @@
 package com.areslib.control.assist
 
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.control.feedback.LQRController
 import com.areslib.control.feedback.GravityFeedforward
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -152,4 +152,5 @@ class ControlChampionshipTest {
         assertTrue(assistedSpeeds.vyMetersPerSecond > 0.0, "Lateral correction should center onto target")
     }
 }
+
 

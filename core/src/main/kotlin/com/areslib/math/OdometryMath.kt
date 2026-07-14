@@ -1,5 +1,7 @@
 package com.areslib.math
 
+import com.areslib.math.geometry.*
+
 import kotlin.math.cos
 import kotlin.math.sin
 

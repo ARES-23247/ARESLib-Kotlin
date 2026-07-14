@@ -1,7 +1,7 @@
 package com.areslib.hardware.vision
 
-import com.areslib.math.Pose2d
-import com.areslib.math.Translation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Translation2d
 import com.areslib.state.VisionMeasurement
 import kotlin.math.abs
 import kotlin.math.sqrt

@@ -2,9 +2,9 @@ package com.areslib.sim
 
 
 
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
 import com.areslib.util.RobotClock
 import com.qualcomm.hardware.limelightvision.LLResult
@@ -120,7 +120,7 @@ object DesktopSimLauncher {
         }
 
         // Read EKF config overrides if present
-        var customVisionStdDevs: com.areslib.math.Vector3? = null
+        var customVisionStdDevs: com.areslib.math.geometry.Vector3? = null
         var configFile = java.io.File("config_override.json")
         if (!configFile.exists()) {
             val parentFile = java.io.File("../config_override.json")
@@ -137,7 +137,7 @@ object DesktopSimLauncher {
                 val overrideY = (configMap["visionStdDevY"] as? Number)?.toDouble()
                 val overrideTheta = (configMap["visionStdDevTheta"] as? Number)?.toDouble()
                 if (overrideX != null && overrideY != null && overrideTheta != null) {
-                    customVisionStdDevs = com.areslib.math.Vector3(overrideX, overrideY, overrideTheta)
+                    customVisionStdDevs = com.areslib.math.geometry.Vector3(overrideX, overrideY, overrideTheta)
                     println("[Simulator Config] Loaded EKF Standard Deviation overrides: X=$overrideX, Y=$overrideY, Theta=$overrideTheta")
                 }
             } catch (e: Exception) {
@@ -405,7 +405,7 @@ object DesktopSimLauncher {
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
                 val now = com.areslib.util.RobotClock.currentTimeMillis()
                 robotInstance.pinpointIO?.initialize(
-                    com.areslib.math.Pose2d(currentPhysPose.x, currentPhysPose.y, com.areslib.math.Rotation2d(currentPhysPose.heading.radians)),
+                    com.areslib.math.geometry.Pose2d(currentPhysPose.x, currentPhysPose.y, com.areslib.math.geometry.Rotation2d(currentPhysPose.heading.radians)),
                     resetHardware = false
                 )
                 robotInstance.store.dispatch(
@@ -490,9 +490,9 @@ object DesktopSimLauncher {
         val visionTags = when {
             activeFieldConfig.apriltags.isNotEmpty() -> {
                 activeFieldConfig.apriltags.associate { tag ->
-                    tag.id to com.areslib.math.Pose3d(
-                        com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
-                        com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                    tag.id to com.areslib.math.geometry.Pose3d(
+                        com.areslib.math.geometry.Translation3d(tag.x, tag.y, tag.z),
+                        com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
                     )
                 }
             }
@@ -501,9 +501,9 @@ object DesktopSimLauncher {
                     val tagsList = com.areslib.state.RobotFieldManager.parseFmapContent(loadedAprilTagsFmap)
                     NT4FieldPublisher.publishAprilTags(tagsList)
                     tagsList.associate { tag ->
-                        tag.id to com.areslib.math.Pose3d(
-                            com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
-                            com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                        tag.id to com.areslib.math.geometry.Pose3d(
+                            com.areslib.math.geometry.Translation3d(tag.x, tag.y, tag.z),
+                            com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
                         )
                     }
                 } catch (e: Exception) {
@@ -517,27 +517,27 @@ object DesktopSimLauncher {
                     val tagsList = gson.fromJson(loadedAprilTagsJson, Array<com.areslib.state.RobotFieldAprilTag>::class.java).toList()
                     NT4FieldPublisher.publishAprilTags(tagsList)
                     tagsList.associate { tag ->
-                        tag.id to com.areslib.math.Pose3d(
-                            com.areslib.math.Translation3d(tag.x, tag.y, tag.z),
-                            com.areslib.math.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                        tag.id to com.areslib.math.geometry.Pose3d(
+                            com.areslib.math.geometry.Translation3d(tag.x, tag.y, tag.z),
+                            com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
                         )
                     }
                 } catch (e: Exception) {
                     println("Failed to parse apriltags.json: ${e.message}")
                     mapOf(
-                        1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
-                        2 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
-                        3 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0)),
-                        4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
+                        1 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(1.8, 1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.PI)),
+                        2 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(1.8, -1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.PI)),
+                        3 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, 0.0)),
+                        4 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, 0.0))
                     )
                 }
             }
             else -> {
                 mapOf(
-                    1 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
-                    2 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, Math.PI)),
-                    3 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0)),
-                    4 to com.areslib.math.Pose3d(com.areslib.math.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.Rotation3d(0.0, 0.0, 0.0))
+                    1 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(1.8, 1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.PI)),
+                    2 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(1.8, -1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.PI)),
+                    3 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(-1.8, 1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, 0.0)),
+                    4 to com.areslib.math.geometry.Pose3d(com.areslib.math.geometry.Translation3d(-1.8, -1.8, 0.5), com.areslib.math.geometry.Rotation3d(0.0, 0.0, 0.0))
                 )
             }
         }
@@ -940,3 +940,4 @@ object DesktopSimLauncher {
         val deviationM: Double
     )
 }
+

@@ -1,6 +1,6 @@
 package com.areslib.hardware.vision
 
-import com.areslib.math.Pose3d
+import com.areslib.math.geometry.Pose3d
 import com.areslib.state.VisionMeasurement
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -107,3 +107,4 @@ class VisionMeasurementBufferTest {
         }
     }
 }
+

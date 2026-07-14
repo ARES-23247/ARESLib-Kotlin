@@ -63,7 +63,7 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
         }
         
         // Configure the EKF with the tag positions of the selected field layout
-        com.areslib.math.PoseEstimator.activeTags = com.areslib.math.FieldLayouts.getTagsForLayout(com.areslib.math.FieldLayout.SQUARE_STANDARD)
+        com.areslib.math.estimation.PoseEstimator.activeTags = com.areslib.math.FieldLayouts.getTagsForLayout(com.areslib.math.FieldLayout.SQUARE_STANDARD)
 
         val robot = buildRobot()
 
@@ -113,3 +113,4 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
         }
     }
 }
+

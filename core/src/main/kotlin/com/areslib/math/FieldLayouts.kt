@@ -1,5 +1,7 @@
 package com.areslib.math
 
+import com.areslib.math.geometry.*
+
 /**
  * Represents the physical layout of the FTC field.
  */

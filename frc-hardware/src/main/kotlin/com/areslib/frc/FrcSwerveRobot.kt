@@ -4,7 +4,7 @@ import com.areslib.action.RobotAction
 import com.areslib.frc.power.FrcPowerManager
 import com.areslib.frc.telemetry.FrcTelemetryManager
 import com.areslib.frc.vision.FrcVisionTracker
-import com.areslib.hardware.SwerveHardwareIO
+import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
@@ -158,3 +158,4 @@ class FrcSwerveRobot(
 
     companion object {}
 }
+

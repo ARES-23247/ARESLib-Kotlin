@@ -37,7 +37,6 @@ class ActionLogger(
 
     init {
         try {
-            val osName = System.getProperty("os.name") ?: ""
             val javaVendor = System.getProperty("java.vendor") ?: ""
             val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
             

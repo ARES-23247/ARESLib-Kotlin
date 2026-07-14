@@ -1,10 +1,11 @@
 package com.areslib.ftc.hardware
 
-import com.areslib.hardware.MotorIO
-import com.areslib.hardware.ServoIO
-import com.areslib.hardware.ImuIO
+import com.areslib.hardware.actuator.MotorIO
+import com.areslib.hardware.actuator.RevEncoderVersion
+import com.areslib.hardware.actuator.ServoIO
+import com.areslib.hardware.sensor.ImuIO
 import com.areslib.hardware.HardwareRegistry
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Rotation2d
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.Servo
@@ -309,7 +310,7 @@ class CompositeMotorIO(
  */
 class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     private val analogInput: AnalogInput,
-    private val version: com.areslib.hardware.RevEncoderVersion = com.areslib.hardware.RevEncoderVersion.V1,
+    private val version: com.areslib.hardware.actuator.RevEncoderVersion = com.areslib.hardware.actuator.RevEncoderVersion.V1,
     private val ticksPerRev: Double = 8192.0,
     val name: String? = null
 ) : MotorIO, AutoCloseable {
@@ -473,7 +474,7 @@ class FtcImu(private val imu: IMU) : ImuIO, AutoCloseable {
         imuThread.start()
     }
 
-    override fun updateInputs(inputs: com.areslib.hardware.ImuInputs) {
+    override fun updateInputs(inputs: com.areslib.hardware.sensor.ImuInputs) {
         synchronized(lock) {
             inputs.headingRadians = latestYaw - headingOffset
             inputs.pitchRadians = latestPitch
@@ -579,3 +580,5 @@ class FtcDigitalSensor(private val digitalChannel: DigitalChannel) : AutoCloseab
         thread.interrupt()
     }
 }
+
+

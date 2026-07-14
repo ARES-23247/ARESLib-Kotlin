@@ -1,6 +1,6 @@
 package com.areslib.kinematics
 
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.ChassisSpeeds
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -41,3 +41,4 @@ class MecanumKinematicsTest {
         assertEquals(0.25, normalized.backRightMetersPerSecond, 0.001)
     }
 }
+

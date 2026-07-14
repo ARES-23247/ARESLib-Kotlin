@@ -1,6 +1,7 @@
 package com.areslib.logging
 
-import com.areslib.math.Vector3
+import com.areslib.math.geometry.Vector3
+import com.areslib.math.geometry.Pose2d
 import com.areslib.telemetry.CloudExporter
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -46,7 +47,7 @@ object CloudReplayProvider {
         return if (lines.isNotEmpty()) {
             SensoryReplayRunner.replaySensoryLines(lines, ghostVisionStdDevs)
         } else {
-            ReplaySummary(emptyList(), com.areslib.math.Pose2d(), com.areslib.math.Pose2d())
+            ReplaySummary(emptyList(), Pose2d(), Pose2d())
         }
     }
 }

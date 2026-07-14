@@ -2,7 +2,7 @@ package com.areslib.ftc.power
 
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.VoltageSensor
-import com.areslib.hardware.MotorIO
+import com.areslib.hardware.actuator.MotorIO
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -83,3 +83,4 @@ class FtcPowerManagerTest {
         }
     }
 }
+

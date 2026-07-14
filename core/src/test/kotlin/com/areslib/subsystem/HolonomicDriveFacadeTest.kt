@@ -1,8 +1,8 @@
 package com.areslib.subsystem
 
 import com.areslib.action.RobotAction
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathPoint
 import com.areslib.reducer.rootReducer

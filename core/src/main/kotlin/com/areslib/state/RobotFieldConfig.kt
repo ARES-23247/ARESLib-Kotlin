@@ -3,6 +3,8 @@ package com.areslib.state
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.File
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 
 enum class FieldType {
     @SerializedName("ftc") FTC,
@@ -97,12 +99,12 @@ data class RobotFieldConfig(
      * Resolves the starting pose based on the alliance's driver station wall.
      * Starts adjacent to the wall facing the field center.
      */
-    fun getInitialPose(alliance: Alliance): com.areslib.math.Pose2d {
+    fun getInitialPose(alliance: Alliance): Pose2d {
         if (fieldType == FieldType.FRC) {
             return if (alliance == Alliance.BLUE) {
-                com.areslib.math.Pose2d(0.5, 4.1055, com.areslib.math.Rotation2d(0.0))
+                Pose2d(0.5, 4.1055, Rotation2d(0.0))
             } else {
-                com.areslib.math.Pose2d(16.041, 4.1055, com.areslib.math.Rotation2d(Math.PI))
+                Pose2d(16.041, 4.1055, Rotation2d(Math.PI))
             }
         }
 
@@ -128,7 +130,7 @@ data class RobotFieldConfig(
             DriverStationSide.SOUTH -> Math.PI / 2.0
         }
         
-        return com.areslib.math.Pose2d(startX, startY, com.areslib.math.Rotation2d(headingRad))
+        return Pose2d(startX, startY, Rotation2d(headingRad))
     }
 
     /**

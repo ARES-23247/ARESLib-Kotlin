@@ -1,6 +1,6 @@
 package com.areslib.kinematics
 
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.ChassisSpeeds
 
 /**
  * Pure math class for calculating Mecanum wheel speeds from ChassisSpeeds.

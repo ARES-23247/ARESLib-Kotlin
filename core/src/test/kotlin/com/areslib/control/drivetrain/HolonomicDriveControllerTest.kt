@@ -1,8 +1,8 @@
 package com.areslib.control.drivetrain
 
 import com.areslib.control.feedback.PIDController
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -88,3 +88,4 @@ class HolonomicDriveControllerTest {
         assertEquals(1.0, outputWithCurve.vxMetersPerSecond, 0.001)
     }
 }
+

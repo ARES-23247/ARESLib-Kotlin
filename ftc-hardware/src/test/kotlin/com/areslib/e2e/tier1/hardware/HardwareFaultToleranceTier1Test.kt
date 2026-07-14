@@ -2,7 +2,7 @@ package com.areslib.e2e.tier1.hardware
 
 import com.areslib.ftc.hardware.FtcMotor
 import com.areslib.ftc.hardware.FtcImu
-import com.areslib.hardware.ImuInputs
+import com.areslib.hardware.sensor.ImuInputs
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
@@ -153,3 +153,4 @@ class HardwareFaultToleranceTier1Test {
         assertEquals(0.5, inputs.pitchRadians, 1e-6)
     }
 }
+

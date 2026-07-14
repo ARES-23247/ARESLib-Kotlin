@@ -1,6 +1,6 @@
 package com.areslib.control.safety
 
-import com.areslib.hardware.MotorIO
+import com.areslib.hardware.actuator.MotorIO
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -142,3 +142,4 @@ class CurrentBudgetManagerTest {
         assertEquals(17.9, manager.totalEstimatedAmps, 0.001)
     }
 }
+

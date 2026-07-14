@@ -1,7 +1,7 @@
 package com.areslib.subsystem
 
 import com.areslib.action.RobotAction
-import com.areslib.math.Pose2d
+import com.areslib.math.geometry.Pose2d
 import com.areslib.state.RobotState
 
 class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {

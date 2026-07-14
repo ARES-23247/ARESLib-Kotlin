@@ -2,9 +2,9 @@ package com.areslib.control.assist
 
 import com.areslib.action.CalibrationFrameLogged
 import com.areslib.action.StartCalibrationSweep
-import com.areslib.math.ChassisSpeeds
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.ChassisSpeeds
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.state.VisionMeasurement
 import com.areslib.subsystem.Store
 import com.areslib.telemetry.ARESNetworkStatePublisher

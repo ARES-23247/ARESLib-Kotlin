@@ -1,8 +1,8 @@
 package com.areslib.ftc.hardware
 
-import com.areslib.hardware.OdometryIO
-import com.areslib.hardware.OdometryInputs
-import com.areslib.math.Pose2d
+import com.areslib.hardware.drive.OdometryIO
+import com.areslib.hardware.drive.OdometryInputs
+import com.areslib.math.geometry.Pose2d
 
 /**
  * Interface that mirrors the GoBildaPinpointDriver API so we can mock or wrap it.
@@ -88,3 +88,4 @@ class PinpointOdometryIO(private val driver: PinpointDriverProxy) : OdometryIO, 
         thread.interrupt()
     }
 }
+

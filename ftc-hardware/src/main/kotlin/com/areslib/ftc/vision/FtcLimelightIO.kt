@@ -3,9 +3,9 @@ package com.areslib.ftc.vision
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.Pose3d
-import com.areslib.math.Translation3d
-import com.areslib.math.Rotation3d
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Translation3d
+import com.areslib.math.geometry.Rotation3d
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
@@ -21,7 +21,7 @@ class FtcLimelightIO(
     
     private var lastWarningTime = 0L
     private val ioScope = CoroutineScope(Dispatchers.IO)
-    private val frameRotation = com.areslib.math.Rotation3d(0.0, 0.0, -Math.PI / 2.0)
+    private val frameRotation = com.areslib.math.geometry.Rotation3d(0.0, 0.0, -Math.PI / 2.0)
     private val scratchMeasurements = ArrayList<VisionMeasurement>(10)
 
     init {
@@ -49,13 +49,13 @@ class FtcLimelightIO(
                     val orient = botpose.orientation
                     
                     // Limelight outputs botpose directly in standard WPILib field coordinates (+X forward, +Y left)
-                    val wpiTranslation = com.areslib.math.Translation3d(
+                    val wpiTranslation = com.areslib.math.geometry.Translation3d(
                         x = pos.x,
                         y = pos.y,
                         z = pos.z
                     )
                     
-                    val wpiRotation = com.areslib.math.Rotation3d(
+                    val wpiRotation = com.areslib.math.geometry.Rotation3d(
                         roll = orient.getRoll(AngleUnit.RADIANS),
                         pitch = orient.getPitch(AngleUnit.RADIANS),
                         yaw = orient.getYaw(AngleUnit.RADIANS)
@@ -86,12 +86,12 @@ class FtcLimelightIO(
                             // Consumers should use: -rotation.y for heading, NOT rotation.z.
                             // See VisionMeasurement KDoc for the full axis mapping table.
                             val robotPoseTargetSpaceWpi = Pose3d(
-                                translation = com.areslib.math.Translation3d(
+                                translation = com.areslib.math.geometry.Translation3d(
                                     x = posTargetMeters.x,
                                     y = posTargetMeters.y,
                                     z = posTargetMeters.z
                                 ),
-                                rotation = com.areslib.math.Rotation3d(
+                                rotation = com.areslib.math.geometry.Rotation3d(
                                     roll = orientTarget.getRoll(AngleUnit.RADIANS),
                                     pitch = orientTarget.getPitch(AngleUnit.RADIANS),
                                     yaw = orientTarget.getYaw(AngleUnit.RADIANS)
@@ -157,3 +157,4 @@ class FtcLimelightIO(
         ioScope.cancel()
     }
 }
+

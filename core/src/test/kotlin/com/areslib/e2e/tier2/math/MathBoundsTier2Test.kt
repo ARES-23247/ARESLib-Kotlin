@@ -1,10 +1,10 @@
 package com.areslib.e2e.tier2.math
 
 import com.areslib.control.feedback.LQRController
-import com.areslib.math.PoseEstimator
-import com.areslib.math.PoseEstimatorState
-import com.areslib.math.Translation2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.estimation.PoseEstimator
+import com.areslib.math.estimation.PoseEstimatorState
+import com.areslib.math.geometry.Translation2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.pathing.Costmap
 import com.areslib.pathing.ThetaStarPlanner
 import org.junit.jupiter.api.Assertions.*
@@ -91,3 +91,4 @@ class MathBoundsTier2Test {
         }
     }
 }
+

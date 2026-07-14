@@ -1,8 +1,8 @@
 package com.areslib.logging
 
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
-import com.areslib.math.Vector3
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.Vector3
 import com.areslib.state.VisionMeasurement
 import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions.*
@@ -82,9 +82,9 @@ class SensoryReplayRunnerTest {
                     measurements = listOf(
                         VisionMeasurement(
                             timestampMs = 1040L,
-                            targetPose = com.areslib.math.Pose3d(
-                                com.areslib.math.Translation3d(1.1, 0.2, 0.0),
-                                com.areslib.math.Rotation3d()
+                            targetPose = com.areslib.math.geometry.Pose3d(
+                                com.areslib.math.geometry.Translation3d(1.1, 0.2, 0.0),
+                                com.areslib.math.geometry.Rotation3d()
                             ),
                             tagId = 2,
                             ambiguity = 0.05
@@ -156,3 +156,4 @@ class SensoryReplayRunnerTest {
         }
     }
 }
+

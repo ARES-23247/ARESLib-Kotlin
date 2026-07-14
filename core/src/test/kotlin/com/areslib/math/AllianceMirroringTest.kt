@@ -2,6 +2,7 @@ package com.areslib.math
 
 import com.areslib.state.Alliance
 import com.areslib.pathing.Path
+import com.areslib.math.geometry.*
 import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

@@ -3,9 +3,9 @@ package com.areslib.ftc.vision
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.Pose3d
-import com.areslib.math.Translation3d
-import com.areslib.math.Rotation3d
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Translation3d
+import com.areslib.math.geometry.Rotation3d
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
 
 class FtcVisionPortalIO(
@@ -28,12 +28,12 @@ class FtcVisionPortalIO(
                     // VisionPortal returns position in inches and rotation in degrees
                     // We convert inches to meters (1 inch = 0.0254 meters)
                     val poseMeters = Pose3d(
-                        translation = com.areslib.math.Translation3d(
+                        translation = com.areslib.math.geometry.Translation3d(
                             x = pose.x * 0.0254,
                             y = pose.y * 0.0254,
                             z = pose.z * 0.0254
                         ),
-                        rotation = com.areslib.math.Rotation3d(
+                        rotation = com.areslib.math.geometry.Rotation3d(
                             roll = Math.toRadians(pose.roll),
                             pitch = Math.toRadians(pose.pitch),
                             yaw = Math.toRadians(pose.yaw)
@@ -64,3 +64,4 @@ class FtcVisionPortalIO(
         }
     }
 }
+

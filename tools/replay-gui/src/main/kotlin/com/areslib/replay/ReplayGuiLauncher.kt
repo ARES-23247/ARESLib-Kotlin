@@ -22,10 +22,10 @@ import androidx.compose.ui.window.application
 import com.areslib.logging.SensoryReplayRunner
 import com.areslib.logging.ReplaySummary
 import com.areslib.telemetry.ReplayPublisher
-import com.areslib.math.Vector3
-import com.areslib.math.Pose3d
-import com.areslib.math.Translation3d
-import com.areslib.math.Rotation3d
+import com.areslib.math.geometry.Vector3
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Translation3d
+import com.areslib.math.geometry.Rotation3d
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -73,7 +73,7 @@ fun ReplayDashboardContent() {
                 SensoryReplayRunner.replaySensoryLines(logLines, customWeights)
             } catch (e: Exception) {
                 // Return empty summary on parsing error
-                ReplaySummary(emptyList(), com.areslib.math.Pose2d(), com.areslib.math.Pose2d())
+                ReplaySummary(emptyList(), com.areslib.math.geometry.Pose2d(), com.areslib.math.geometry.Pose2d())
             }
         }
     }
@@ -569,9 +569,9 @@ private fun generateSyntheticLog(): List<String> {
 
             visionInputs.apply {
                 cameraPoses = listOf(
-                    com.areslib.math.Pose3d(
-                        com.areslib.math.Translation3d(0.18, 0.0, 0.0),
-                        com.areslib.math.Rotation3d(0.0, 0.0, 0.0)
+                    com.areslib.math.geometry.Pose3d(
+                        com.areslib.math.geometry.Translation3d(0.18, 0.0, 0.0),
+                        com.areslib.math.geometry.Rotation3d(0.0, 0.0, 0.0)
                     )
                 )
             }
@@ -583,9 +583,9 @@ private fun generateSyntheticLog(): List<String> {
                     measurements = listOf(
                         com.areslib.state.VisionMeasurement(
                             timestampMs = timeMs,
-                            targetPose = com.areslib.math.Pose3d(
-                                com.areslib.math.Translation3d(8.0, 4.0, 0.0),
-                                com.areslib.math.Rotation3d()
+                            targetPose = com.areslib.math.geometry.Pose3d(
+                                com.areslib.math.geometry.Translation3d(8.0, 4.0, 0.0),
+                                com.areslib.math.geometry.Rotation3d()
                             ),
                             tagId = 9,
                             ambiguity = 0.05
@@ -598,3 +598,4 @@ private fun generateSyntheticLog(): List<String> {
     }
     return lines
 }
+

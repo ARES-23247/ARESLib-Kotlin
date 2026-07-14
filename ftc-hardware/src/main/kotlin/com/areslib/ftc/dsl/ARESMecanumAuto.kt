@@ -96,7 +96,7 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
             var overrunCount = 0L
             var currentDistance = 0.0
             val scratchPoint = com.areslib.pathing.MutablePathPoint()
-            val targetState = com.areslib.pathing.PathPoint(com.areslib.math.Pose2d(0.0, 0.0, com.areslib.math.Rotation2d(0.0)), 0.0, 0.0, 0.0, 0.0)
+            val targetState = com.areslib.pathing.PathPoint(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(0.0)), 0.0, 0.0, 0.0, 0.0)
 
             // --- 2. Autonomous Loop ---
             while (opModeIsActive()) {
@@ -180,3 +180,4 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         }
     }
 }
+

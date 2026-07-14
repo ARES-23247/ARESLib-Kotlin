@@ -1,9 +1,9 @@
 package com.areslib.control.assist
 
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
-import com.areslib.math.ChassisSpeeds
-import com.areslib.math.Translation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.ChassisSpeeds
+import com.areslib.math.geometry.Translation2d
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.math.*
@@ -111,3 +111,4 @@ class ShotSetupTest {
         assertTrue(result.aimAngleRad > 0.0, "Aim angle should be positive to compensate")
     }
 }
+

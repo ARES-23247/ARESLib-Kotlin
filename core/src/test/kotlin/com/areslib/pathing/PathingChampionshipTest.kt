@@ -1,7 +1,7 @@
 package com.areslib.pathing
 
-import com.areslib.math.Rotation2d
-import com.areslib.math.Translation2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.Translation2d
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -113,3 +113,4 @@ class PathingChampionshipTest {
         }
     }
 }
+

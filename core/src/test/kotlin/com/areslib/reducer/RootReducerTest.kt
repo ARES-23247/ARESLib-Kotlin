@@ -1,9 +1,9 @@
 package com.areslib.reducer
 
 import com.areslib.action.RobotAction
-import com.areslib.math.Pose3d
-import com.areslib.math.Rotation3d
-import com.areslib.math.Translation3d
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Rotation3d
+import com.areslib.math.geometry.Translation3d
 import com.areslib.state.RobotState
 import com.areslib.state.VisionMeasurement
 import org.junit.jupiter.api.Test

@@ -1,6 +1,7 @@
 package com.areslib.math
 
 import com.areslib.state.Alliance
+import com.areslib.math.geometry.*
 
 object CoordinateTransformers {
     const val FTC_FIELD_SIZE = 3.6576

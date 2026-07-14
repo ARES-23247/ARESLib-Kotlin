@@ -3,10 +3,10 @@ package com.areslib.ftc.vision
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.Pose3d
-import com.areslib.math.Translation3d
-import com.areslib.math.Rotation3d
-import com.areslib.math.Vector3
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Translation3d
+import com.areslib.math.geometry.Rotation3d
+import com.areslib.math.geometry.Vector3
 import com.areslib.subsystem.Store
 import com.areslib.state.RobotState
 import com.areslib.reducer.rootReducer
@@ -66,3 +66,4 @@ class FtcVisionTrackerTest {
         assertTrue(tracker.lastVisionStatus.startsWith("REJ_AMBIG"))
     }
 }
+

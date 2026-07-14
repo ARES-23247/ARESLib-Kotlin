@@ -1,7 +1,7 @@
 package com.areslib.kinematics
 
-import com.areslib.math.ChassisSpeeds
-import com.areslib.math.Translation2d
+import com.areslib.math.geometry.ChassisSpeeds
+import com.areslib.math.geometry.Translation2d
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -64,3 +64,4 @@ class SwerveKinematicsTest {
         }
     }
 }
+

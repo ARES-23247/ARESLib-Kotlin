@@ -1,6 +1,7 @@
 package com.areslib.math
 
 import org.junit.jupiter.api.Test
+import com.areslib.math.geometry.*
 import kotlin.test.assertEquals
 import com.areslib.state.Alliance
 import com.areslib.state.DriveState

@@ -1,8 +1,9 @@
 package com.areslib.logging
 
 import com.areslib.action.RobotAction
-import com.areslib.math.Pose2d
-import com.areslib.math.Vector3
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Vector3
 import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 import com.google.gson.Gson
@@ -14,7 +15,7 @@ data class ReplayStepResult(
     val timestampMs: Long,
     val realPose: Pose2d,
     val ghostPose: Pose2d,
-    val cameraPoses: List<com.areslib.math.Pose3d> = emptyList()
+    val cameraPoses: List<Pose3d> = emptyList()
 )
 
 data class ReplaySummary(

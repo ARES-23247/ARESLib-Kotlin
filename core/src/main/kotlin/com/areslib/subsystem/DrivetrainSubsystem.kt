@@ -1,6 +1,6 @@
 package com.areslib.subsystem
 
-import com.areslib.math.Pose2d
+import com.areslib.math.geometry.Pose2d
 
 /**
  * Platform-independent drivetrain interface supporting generic coordinate drive calculations.

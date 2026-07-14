@@ -1,8 +1,8 @@
 package com.areslib.hardware.vision
 
-import com.areslib.math.Pose3d
-import com.areslib.math.Rotation3d
-import com.areslib.math.Translation3d
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Rotation3d
+import com.areslib.math.geometry.Translation3d
 import com.areslib.state.VisionMeasurement
 
 class SimVisionIO(
@@ -33,3 +33,4 @@ class SimVisionIO(
         inputs.measurements = listOf(measurement)
     }
 }
+

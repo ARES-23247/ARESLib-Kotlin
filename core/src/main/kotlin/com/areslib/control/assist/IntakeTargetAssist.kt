@@ -1,6 +1,6 @@
 package com.areslib.control.assist
 
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.control.feedback.PIDController
 /**
  * Intelligent Vision-based Drivetrain Steering Assist.

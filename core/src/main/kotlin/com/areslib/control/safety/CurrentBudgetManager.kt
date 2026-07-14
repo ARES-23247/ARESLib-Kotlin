@@ -1,6 +1,6 @@
 package com.areslib.control.safety
 
-import com.areslib.hardware.MotorIO
+import com.areslib.hardware.actuator.MotorIO
 
 /**
  * System-level current budget manager for FTC robots.

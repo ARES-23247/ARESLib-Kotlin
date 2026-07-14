@@ -1,6 +1,6 @@
 package com.areslib.ftc.hardware
 
-import com.areslib.hardware.ColorSensorIO
+import com.areslib.hardware.sensor.ColorSensorIO
 import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.ColorSensor
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor
@@ -106,3 +106,4 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
         running = false
     }
 }
+

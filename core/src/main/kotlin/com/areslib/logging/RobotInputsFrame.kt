@@ -1,7 +1,7 @@
 package com.areslib.logging
 
-import com.areslib.hardware.ImuInputs
-import com.areslib.hardware.OdometryInputs
+import com.areslib.hardware.sensor.ImuInputs
+import com.areslib.hardware.drive.OdometryInputs
 import com.areslib.hardware.drive.SwerveModuleInputs
 import com.areslib.hardware.vision.VisionIOInputs
 import com.google.gson.annotations.SerializedName

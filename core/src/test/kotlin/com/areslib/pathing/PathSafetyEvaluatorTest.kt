@@ -1,6 +1,6 @@
 package com.areslib.pathing
 
-import com.areslib.math.Translation2d
+import com.areslib.math.geometry.Translation2d
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -95,3 +95,4 @@ class PathSafetyEvaluatorTest {
         assertTrue(report.maxObstacleDensity > 0.0)
     }
 }
+

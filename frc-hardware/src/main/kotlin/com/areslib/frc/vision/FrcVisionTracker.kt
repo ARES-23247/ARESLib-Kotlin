@@ -17,7 +17,7 @@ import com.areslib.telemetry.RobotStatusTracker
 class FrcVisionTracker(
     private val store: Store,
     val visionIO: VisionIO?,
-    private val swerveIO: com.areslib.hardware.SwerveHardwareIO?,
+    private val swerveIO: com.areslib.hardware.drive.SwerveHardwareIO?,
     private val isSimulation: Boolean
 ) : VisionTracker {
 
@@ -60,10 +60,10 @@ class FrcVisionTracker(
                 val measurement = visionInputs.measurements[0]
                 if (!isSimulation && swerveIO != null) {
                     try {
-                        val pose = com.areslib.math.Pose2d(
+                        val pose = com.areslib.math.geometry.Pose2d(
                             measurement.targetPose.translation.x,
                             measurement.targetPose.translation.y,
-                            com.areslib.math.Rotation2d(measurement.targetPose.rotation.z)
+                            com.areslib.math.geometry.Rotation2d(measurement.targetPose.rotation.z)
                         )
                         val latencyMs = timestampMs - measurement.timestampMs
                         val timestampSec = edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - (latencyMs / 1000.0)
@@ -88,3 +88,4 @@ class FrcVisionTracker(
         }
     }
 }
+

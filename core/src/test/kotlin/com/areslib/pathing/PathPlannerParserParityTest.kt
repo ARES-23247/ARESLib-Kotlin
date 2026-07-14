@@ -1,7 +1,7 @@
 package com.areslib.pathing
 
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -153,3 +153,4 @@ class PathPlannerParserParityTest {
         assertEquals(expectedRad, midpoint.pose.heading.radians, 1e-4)
     }
 }
+

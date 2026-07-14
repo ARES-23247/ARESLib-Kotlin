@@ -2,7 +2,11 @@ package com.areslib.hardware
 
 import com.areslib.hardware.drive.SwerveModuleIO
 import com.areslib.hardware.drive.SwerveModuleInputs
-import com.areslib.math.Pose2d
+import com.areslib.hardware.sensor.ImuIO
+import com.areslib.hardware.sensor.ImuInputs
+import com.areslib.hardware.drive.OdometryIO
+import com.areslib.hardware.drive.OdometryInputs
+import com.areslib.math.geometry.Pose2d
 import com.google.gson.Gson
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -219,3 +223,4 @@ class HardwareIOSimTest {
         assertEquals(inputs.headingVelocity, deserialized.headingVelocity)
     }
 }
+

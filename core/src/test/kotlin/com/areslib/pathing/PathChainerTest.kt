@@ -1,7 +1,7 @@
 package com.areslib.pathing
 
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -58,3 +58,4 @@ class PathChainerTest {
             "Heading should be blended smoothly at joint: $degrees")
     }
 }
+

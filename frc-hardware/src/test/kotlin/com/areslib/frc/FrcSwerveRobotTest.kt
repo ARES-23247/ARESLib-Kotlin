@@ -2,10 +2,10 @@ package com.areslib.frc
 
 import com.areslib.action.RobotAction
 import com.areslib.state.*
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.telemetry.ITelemetry
-import com.areslib.hardware.SwerveHardwareIO
+import com.areslib.hardware.drive.SwerveHardwareIO
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -154,3 +154,4 @@ class FrcSwerveRobotTest {
         robot.close()
     }
 }
+

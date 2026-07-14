@@ -3,8 +3,8 @@ package com.areslib.control.assist
 import com.areslib.action.RobotAction
 import com.areslib.fsm.Task
 import com.areslib.fsm.TaskExecutor
-import com.areslib.hardware.MotorIO
-import com.areslib.math.Translation2d
+import com.areslib.hardware.actuator.MotorIO
+import com.areslib.math.geometry.Translation2d
 import com.areslib.pathing.Costmap
 import com.areslib.pathing.ThetaStarPlanner
 import com.areslib.state.RobotState
@@ -154,3 +154,4 @@ class SafetyFaultToleranceTest {
         assertTrue(budget.powerScale > 0.0)
     }
 }
+

@@ -16,7 +16,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.ftc.vision.FtcVisionTracker
 import com.areslib.telemetry.logPose2d
 import com.areslib.telemetry.logPoseArray2d
-import com.areslib.math.toFormattedString
+import com.areslib.math.geometry.toFormattedString
 
 /**
  * Manages the robot's data telemetry, AdvantageScope NT4 networking,
@@ -128,10 +128,10 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         localTelemetry?.let { t ->
             if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
                 t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
-                val pinpointPose = com.areslib.math.Pose2d(
+                val pinpointPose = com.areslib.math.geometry.Pose2d(
                     state.drive.odometryX,
                     state.drive.odometryY,
-                    com.areslib.math.Rotation2d(state.drive.odometryHeading)
+                    com.areslib.math.geometry.Rotation2d(state.drive.odometryHeading)
                 )
                 t.addData("Raw Pinpoint (X, Y, Deg)", pinpointPose.toFormattedString())
 
@@ -154,6 +154,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
      * Captures motor telemetry. This MUST be called at the end of the OpMode loop,
      * after all motor powers have been written to the hardware.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun publishMotors(batteryVoltage: Double) {
         // Obsolete: Handled by Unified ARESDataLogger
     }
@@ -166,3 +167,4 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         actionLogger.stop()
     }
 }
+

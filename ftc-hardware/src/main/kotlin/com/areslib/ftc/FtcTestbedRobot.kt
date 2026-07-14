@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.IMU
 import com.areslib.ftc.hardware.FtcMotor
 import com.areslib.ftc.hardware.FtcImu
-import com.areslib.hardware.ImuInputs
+import com.areslib.hardware.sensor.ImuInputs
 import com.areslib.action.RobotAction
 import com.areslib.subsystem.DriveSubsystem
 
@@ -58,3 +58,4 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
         com.areslib.hardware.HardwareRegistry.safeAll()
     }
 }
+

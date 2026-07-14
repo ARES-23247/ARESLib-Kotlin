@@ -3,9 +3,9 @@ package com.areslib.frc.vision
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.Pose3d
-import com.areslib.math.Translation3d
-import com.areslib.math.Rotation3d
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Translation3d
+import com.areslib.math.geometry.Rotation3d
 import com.areslib.subsystem.Store
 import com.areslib.state.RobotState
 import com.areslib.telemetry.RobotStatusTracker
@@ -54,3 +54,4 @@ class FrcVisionTrackerTest {
         assertTrue(RobotStatusTracker.visionConnected, "RobotStatusTracker vision connection state should be true")
     }
 }
+

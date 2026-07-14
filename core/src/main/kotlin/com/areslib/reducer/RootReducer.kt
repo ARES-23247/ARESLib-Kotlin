@@ -3,8 +3,8 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.Vector3
-import com.areslib.math.PoseEstimator
+import com.areslib.math.geometry.Vector3
+import com.areslib.math.estimation.PoseEstimator
 import com.areslib.hardware.vision.VisionOutlierFilter
 
 /**

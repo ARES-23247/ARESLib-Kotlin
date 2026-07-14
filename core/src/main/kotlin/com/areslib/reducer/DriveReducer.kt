@@ -4,12 +4,12 @@ import com.areslib.action.RobotAction
 import com.areslib.state.DriveState
 import com.areslib.state.DriveMode
 import com.areslib.math.InputMath
-import com.areslib.math.HistoryBuffer
-import com.areslib.math.Matrix3x3
-import com.areslib.math.Pose2d
-import com.areslib.math.Translation2d
-import com.areslib.math.Rotation2d
-import com.areslib.math.PoseEstimator
+import com.areslib.math.estimation.HistoryBuffer
+import com.areslib.math.geometry.Matrix3x3
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Translation2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.estimation.PoseEstimator
 
 object DriveReducer {
     /**

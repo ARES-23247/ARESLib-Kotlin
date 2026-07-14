@@ -6,8 +6,8 @@ import java.io.InputStreamReader
 import java.io.IOException
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 
 data class FieldWaypoint(
     val id: String,

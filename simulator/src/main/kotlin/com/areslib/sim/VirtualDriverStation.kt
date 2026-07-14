@@ -1,6 +1,6 @@
 package com.areslib.sim
 
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.ChassisSpeeds
 import java.awt.*
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
@@ -489,3 +489,4 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         return ChassisSpeeds(vx, vy, omega)
     }
 }
+

@@ -4,10 +4,11 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynchDevice
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch
 import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties
 import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType
-import com.areslib.hardware.MotorIO
-import com.areslib.hardware.OdometryIO
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.hardware.actuator.MotorIO
+import com.areslib.hardware.actuator.RevEncoderVersion
+import com.areslib.hardware.drive.OdometryIO
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -278,7 +279,7 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
 class OctoQuadAbsolutePWMEncoder(
     private val octoQuad: OctoQuadFWv3,
     private val channel: Int,
-    private val version: com.areslib.hardware.RevEncoderVersion = com.areslib.hardware.RevEncoderVersion.V1,
+    private val version: com.areslib.hardware.actuator.RevEncoderVersion = com.areslib.hardware.actuator.RevEncoderVersion.V1,
     private val ticksPerRev: Double = 8192.0
 ) : MotorIO {
     private var offset = 0.0
@@ -322,7 +323,7 @@ class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
         octoQuad.resetEncoder(0) // Dummy implementation for now
     }
 
-    override fun updateInputs(inputs: com.areslib.hardware.OdometryInputs) {
+    override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
         octoQuad.update()
         val lastData = octoQuad.readLocalizerData()
         inputs.posX = lastData.posX_mm / 1000.0
@@ -334,3 +335,5 @@ class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
         inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }
+
+

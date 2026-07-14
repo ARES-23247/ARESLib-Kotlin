@@ -39,7 +39,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     
     // Vision Configuration
-    val visionStdDevs: com.areslib.math.Vector3 = com.areslib.math.Vector3(0.05, 0.05, 0.1),
+    val visionStdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
     val visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
 ) : AresRobot(
     initialState = com.areslib.state.RobotState(
@@ -57,9 +57,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
         activeInstance = this
 
-        com.areslib.math.PoseEstimator.qX = odomQx
-        com.areslib.math.PoseEstimator.qY = odomQy
-        com.areslib.math.PoseEstimator.qTheta = odomQtheta
+        com.areslib.math.estimation.PoseEstimator.qX = odomQx
+        com.areslib.math.estimation.PoseEstimator.qY = odomQy
+        com.areslib.math.estimation.PoseEstimator.qTheta = odomQtheta
     }
 
     companion object {
@@ -294,3 +294,4 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.ftc.hardware.FtcMotor.unregisterAll()
     }
 }
+

@@ -2,9 +2,9 @@ package com.areslib.e2e.tier1.math
 
 import com.areslib.control.feedback.LQRController
 import com.areslib.control.feedback.PIDController
-import com.areslib.math.HistoryBuffer
-import com.areslib.math.Pose2d
-import com.areslib.math.Matrix3x3
+import com.areslib.math.estimation.HistoryBuffer
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Matrix3x3
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -83,3 +83,4 @@ class GcAvoidanceTier1Test {
         assertEquals(8.0, mOut.get(1, 1), 1e-6)
     }
 }
+

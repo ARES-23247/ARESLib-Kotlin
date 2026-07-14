@@ -2,8 +2,8 @@ package com.areslib.ftc.hardware
 
 import com.areslib.util.RobotClock
 
-import com.areslib.hardware.ColorSensorIO
-import com.areslib.hardware.DistanceSensorIO
+import com.areslib.hardware.sensor.ColorSensorIO
+import com.areslib.hardware.sensor.DistanceSensorIO
 import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.ColorSensor
 import com.qualcomm.robotcore.hardware.DistanceSensor
@@ -128,3 +128,4 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
         running = false
     }
 }
+

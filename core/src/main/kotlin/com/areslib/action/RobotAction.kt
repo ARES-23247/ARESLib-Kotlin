@@ -1,5 +1,7 @@
 package com.areslib.action
 
+import com.areslib.math.geometry.Vector3
+
 /**
  * Represents an immutable intent or hardware update event dispatched to the Redux store.
  * All concrete subtypes are data classes with `val` fields, ensuring immutability.
@@ -59,12 +61,12 @@ interface RobotAction {
      *
      * @property measurements List of individual tag detections with pose estimates.
      * @property customVisionStdDevs Optional override for EKF vision measurement standard deviations
-     *   as a [com.areslib.math.Vector3] of (x meters, y meters, heading radians). If null, defaults are used.
+     *   as a [Vector3] of (x meters, y meters, heading radians). If null, defaults are used.
      */
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
         override val timestampMs: Long,
-        val customVisionStdDevs: com.areslib.math.Vector3? = null
+        val customVisionStdDevs: Vector3? = null
     ) : RobotAction
 
     /**

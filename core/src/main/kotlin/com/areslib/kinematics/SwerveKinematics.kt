@@ -1,8 +1,8 @@
 package com.areslib.kinematics
 
-import com.areslib.math.ChassisSpeeds
-import com.areslib.math.Translation2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.ChassisSpeeds
+import com.areslib.math.geometry.Translation2d
+import com.areslib.math.geometry.Rotation2d
 import kotlin.math.hypot
 import kotlin.math.atan2
 

@@ -1,6 +1,6 @@
 package com.areslib.sim
 
-import com.areslib.math.ChassisSpeeds
+import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
@@ -80,14 +80,14 @@ object TelemetryPublisher {
      * Publishes the target trajectory pose for AdvantageScope "ghost" rendering.
      * AdvantageScope 2D/3D pose arrays expect [x, y, rotation_radians].
      */
-    fun publishTargetPose(pose: com.areslib.math.Pose2d) {
+    fun publishTargetPose(pose: com.areslib.math.geometry.Pose2d) {
         targetPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
     }
 
     /**
      * Publishes the estimated pose from the Kalman Filter (EKF) for AdvantageScope rendering.
      */
-    fun publishEstimatedPose(pose: com.areslib.math.Pose2d) {
+    fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
         estimatedPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
     }
 
@@ -194,4 +194,5 @@ object TelemetryPublisher {
         DataLogManager.stop()
     }
 }
+
 

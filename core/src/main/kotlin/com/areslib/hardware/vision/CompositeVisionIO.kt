@@ -1,7 +1,7 @@
 package com.areslib.hardware.vision
 
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.Pose3d
+import com.areslib.math.geometry.Pose3d
 
 /**
  * A composite implementation of [VisionIO] that aggregates measurements from multiple vision sources.

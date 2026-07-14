@@ -2,9 +2,9 @@ package com.areslib.control.drivetrain
 
 import com.areslib.control.feedback.PIDController
 import com.areslib.control.feedback.LinearADRC
-import com.areslib.math.ChassisSpeeds
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.ChassisSpeeds
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import kotlin.math.cos
 import kotlin.math.sin
 

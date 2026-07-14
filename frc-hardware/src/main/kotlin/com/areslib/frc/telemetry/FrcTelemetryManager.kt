@@ -1,7 +1,7 @@
 package com.areslib.frc.telemetry
 
 import com.areslib.control.safety.BrownoutGuard
-import com.areslib.hardware.SwerveHardwareIO
+import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.state.RobotState
 import com.areslib.subsystem.Store
 import com.areslib.telemetry.*
@@ -121,6 +121,7 @@ class FrcTelemetryManager(
     /**
      * Publishes brownout telemetry.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun logBrownout(brownoutGuard: BrownoutGuard, batteryVoltage: Double) {
         this.activeBrownoutGuard = brownoutGuard
     }
@@ -136,3 +137,4 @@ class FrcTelemetryManager(
         )
     }
 }
+

@@ -1,7 +1,7 @@
 package com.areslib.state
 
-import com.areslib.math.Pose3d
-import com.areslib.math.PoseEstimatorState
+import com.areslib.math.geometry.Pose3d
+import com.areslib.math.estimation.PoseEstimatorState
 
 /**
  * Stores the costmap update state.

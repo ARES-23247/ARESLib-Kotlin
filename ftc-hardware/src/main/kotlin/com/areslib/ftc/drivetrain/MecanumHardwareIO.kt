@@ -4,8 +4,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
-import com.areslib.hardware.MotorIO
-import com.areslib.math.SlewRateLimiter
+import com.areslib.hardware.actuator.MotorIO
+import com.areslib.math.filter.SlewRateLimiter
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -349,3 +349,4 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable {
     override fun close() {
     }
 }
+

@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.control.safety.BrownoutGuard
 import com.areslib.control.safety.CurrentBudgetManager
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
-import com.areslib.hardware.MotorIO
+import com.areslib.hardware.actuator.MotorIO
 import com.areslib.subsystem.PowerManager
 
 /**
@@ -107,3 +107,4 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         return scale
     }
 }
+

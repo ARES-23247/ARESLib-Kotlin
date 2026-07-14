@@ -1,8 +1,8 @@
 package com.areslib.hardware.vision
 
 import com.areslib.action.RobotAction
-import com.areslib.math.Pose2d
-import com.areslib.math.Rotation2d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 import org.junit.jupiter.api.Test
@@ -92,3 +92,4 @@ class VisionNoiseRejectionTest {
         assertEquals(finalTruePose.heading.radians, estimatedPose.heading.radians, 0.05, "EKF Heading should converge to true pose")
     }
 }
+

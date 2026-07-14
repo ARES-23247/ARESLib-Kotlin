@@ -4,6 +4,7 @@ import com.areslib.telemetry.ITelemetry
 import com.google.gson.Gson
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import com.areslib.hardware.actuator.*
 
 /**
  * Global registry for automatic hardware device logging, diagnostics, power scaling, and lifecycle batch reads.

@@ -117,7 +117,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
      * Optionally configures starting pose tracking values.
      */
     @kotlin.jvm.JvmOverloads
-    fun initialize(pose: com.areslib.math.Pose2d = com.areslib.math.Pose2d(), resetHardware: Boolean = false) {
+    fun initialize(pose: com.areslib.math.geometry.Pose2d = com.areslib.math.geometry.Pose2d(), resetHardware: Boolean = false) {
         try {
             if (resetHardware) {
                 driver.resetPosAndIMU()
@@ -157,3 +157,4 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         scope.cancel()
     }
 }
+

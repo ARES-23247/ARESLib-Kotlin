@@ -1,6 +1,6 @@
 package com.areslib.frc
 
-import com.areslib.hardware.SwerveHardwareIO
+import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.state.DriveState
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
@@ -127,7 +127,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     /**
      * Feeds AprilTag vision measurements into the CTRE SwerveDrivetrain's internal EKF.
      */
-    override fun addVisionMeasurement(pose: com.areslib.math.Pose2d, timestampSeconds: Double) {
+    override fun addVisionMeasurement(pose: com.areslib.math.geometry.Pose2d, timestampSeconds: Double) {
         val wpiPose = edu.wpi.first.math.geometry.Pose2d(
             pose.x,
             pose.y,
@@ -139,7 +139,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     /**
      * Resets/seeds the CTRE SwerveDrivetrain internal odometry pose.
      */
-    override fun seedPose(pose: com.areslib.math.Pose2d) {
+    override fun seedPose(pose: com.areslib.math.geometry.Pose2d) {
         val wpiPose = edu.wpi.first.math.geometry.Pose2d(
             pose.x,
             pose.y,
@@ -165,3 +165,4 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     override val signalLatencyMs: Double
         get() = currentDraw1.timestamp.latency * 1000.0
 }
+

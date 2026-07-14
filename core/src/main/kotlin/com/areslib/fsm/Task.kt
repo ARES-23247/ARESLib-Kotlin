@@ -2,6 +2,7 @@ package com.areslib.fsm
 
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
+import com.areslib.math.geometry.Pose2d
 
 /**
  * Interface representing a discrete superstructure or autonomous execution task.
@@ -223,7 +224,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val triggeredEvents = mutableSetOf<String>()
     
     private val scratchMutablePoint = com.areslib.pathing.MutablePathPoint()
-    private val scratchPathPoint = com.areslib.pathing.PathPoint(com.areslib.math.Pose2d(), 0.0)
+    private val scratchPathPoint = com.areslib.pathing.PathPoint(Pose2d(), 0.0)
     private val actionsList = mutableListOf<RobotAction>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
