@@ -8,19 +8,15 @@ import com.areslib.ftc.hardware.FtcImu
 import com.areslib.hardware.ImuInputs
 import com.areslib.action.RobotAction
 import com.areslib.subsystem.DriveSubsystem
-import com.areslib.subsystem.ShooterSubsystem
-import com.areslib.subsystem.IntakeSubsystem
 
 /**
  * Concrete single-motor testing testbed facade.
  * Extends FtcBaseRobot and uses null sensors for AprilTag and pinpoint localization.
  */
-class FtcAresRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinpointName = null, limelightName = null) {
+class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinpointName = null, limelightName = null) {
 
     // Subsystem Facades
     val drive = DriveSubsystem(store)
-    val shooter = ShooterSubsystem(store)
-    val intake = IntakeSubsystem(store)
     
     // 1. Concrete FTC Hardware wrappers
     val motor = FtcMotor(hardwareMap.get(DcMotorEx::class.java, "revMotor"))

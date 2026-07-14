@@ -2,7 +2,7 @@ package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import com.areslib.ftc.FtcAresRobot
+import com.areslib.ftc.FtcTestbedRobot
 import com.areslib.ftc.toState
 import com.areslib.telemetry.AresGamepad
 
@@ -26,17 +26,13 @@ class AresHardwareTestOpMode : LinearOpMode() {
         telemetry.update()
 
         // Centrally initialize the robot container and all subsystem facades
-        val robot = FtcAresRobot(hardwareMap)
+        val robot = FtcTestbedRobot(hardwareMap)
         
         // Define declarative bindings
         val driver = AresGamepad()
         driver.leftStick.label("Robot Translation (X/Y)")
         driver.rightStickX.label("Robot Rotation")
         
-        driver.a.onPress("Spin up shooter") { robot.shooter.spinUp(3500.0) }
-        driver.b.onPress("Stop shooter") { robot.shooter.stop() }
-        driver.x.onPress("Deploy intake") { robot.intake.deploy() }
-        driver.y.onPress("Retract intake") { robot.intake.retract() }
 
         telemetry.addData("Status", "Initialized. Ready for match!")
         telemetry.update()
@@ -69,9 +65,6 @@ class AresHardwareTestOpMode : LinearOpMode() {
                 }
 
                 // 5. Stream automatically processed telemetry values
-                telemetry.addData("Robot Mode", robot.shooter.mode)
-                telemetry.addData("Flywheel RPM", robot.shooter.flywheelRPM)
-                telemetry.addData("Intake Deployed", robot.intake.isDeployed)
                 telemetry.addData("Odometry X Pose", robot.drive.odometryX)
                 telemetry.addData("Loop ms", loopElapsedMs)
                 telemetry.addData("Overruns", "$overrunCount / $loopCount")
