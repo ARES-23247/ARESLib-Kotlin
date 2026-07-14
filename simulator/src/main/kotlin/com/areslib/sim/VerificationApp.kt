@@ -96,80 +96,134 @@ fun main(args: Array<String>) {
         }
     }
 
+    fun rotateToTarget(targetRad: Double, toleranceRad: Double = 0.03, timeoutMs: Long = 6000): Boolean {
+        println("Rotating to target: %.3f rad...".format(targetRad))
+        val startTime = System.currentTimeMillis()
+        var settledTicks = 0
+        var lastH = getPose().third
+        var lastTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            val (_, _, currentH) = getPose()
+            val now = System.currentTimeMillis()
+            val dt = (now - lastTime) / 1000.0
+            val velocity = if (dt > 0.001) wrapAngle(currentH - lastH) / dt else 0.0
+            lastH = currentH
+            lastTime = now
+
+            val predictedH = currentH + velocity * 0.07
+            val error = wrapAngle(targetRad - currentH)
+
+            if (abs(wrapAngle(targetRad - predictedH)) < toleranceRad) {
+                settledTicks++
+                if (settledTicks >= 5) { // Settle for ~100ms
+                    omegaPub.set(0.0)
+                    Thread.sleep(400)
+                    val (_, _, finalH) = getPose()
+                    if (abs(wrapAngle(targetRad - finalH)) < toleranceRad + 0.005) {
+                        println("Successfully stabilized at target: %.3f rad (actual: %.3f)".format(targetRad, finalH))
+                        return true
+                    }
+                }
+            } else {
+                settledTicks = 0
+            }
+
+            val kP = 4.0
+            var cmdOmega = error * kP
+            if (abs(cmdOmega) < 0.205) {
+                val sign = if (error > 0.0) 1.0 else -1.0
+                cmdOmega = sign * 0.205
+            }
+            cmdOmega = cmdOmega.coerceIn(-3.0, 3.0)
+            omegaPub.set(cmdOmega)
+            Thread.sleep(20)
+        }
+        omegaPub.set(0.0)
+        return false
+    }
+
     // Measure starting pose
     val (startX, startY, startH) = getPose()
     println("Starting Pose: X=%.3f, Y=%.3f, Heading=%.3f".format(startX, startY, startH))
 
-    // 5. Test 1: Command forward (+Y from alliance perspective)
-    println("Test 1: Pushing forward (+Y)...")
-    vxPub.set(1.5)
-    Thread.sleep(1500)
-    vxPub.set(0.0)
-    Thread.sleep(1000) // Wait to settle
-
-    val (pos1X, pos1Y, pos1H) = getPose()
-    println("Pose after Test 1: X=%.3f, Y=%.3f, Heading=%.3f".format(pos1X, pos1Y, pos1H))
+    // 5. Test 1: Square Drive Test (Translation in all 4 directions)
+    println("Test 1: Starting Square Drive Test...")
     
-    val deltaY1 = pos1Y - startY
-    val deltaX1 = pos1X - startX
-    println("Test 1 Delta: dX=%.3f, dY=%.3f".format(deltaX1, deltaY1))
-
-    if (deltaY1 < 0.2) {
+    // Segment 1: Drive +Y (Forward on field)
+    println("Square Drive - Segment 1: Pushing +Y...")
+    vxPub.set(1.2)
+    Thread.sleep(1200)
+    vxPub.set(0.0)
+    Thread.sleep(1000)
+    val (p1X, p1Y, _) = getPose()
+    val dX1 = p1X - startX
+    val dY1 = p1Y - startY
+    println("Segment 1 Delta: dX=%.3f, dY=%.3f".format(dX1, dY1))
+    if (dY1 < 0.2 || abs(dX1) > 0.15) {
         running.set(false)
-        System.err.println("Verification Failed: Robot did not move forward (+Y) in Test 1! DeltaY=%.3f".format(deltaY1))
+        System.err.println("Square Drive Failed: Segment 1 (+Y) failed! dX=%.3f, dY=%.3f".format(dX1, dY1))
         System.exit(1)
     }
-    println("Test 1 Passed: Robot successfully moved forward in Y.")
+    
+    // Segment 2: Drive +X (Right on field)
+    println("Square Drive - Segment 2: Pushing +X...")
+    vyPub.set(-1.2)
+    Thread.sleep(1200)
+    vyPub.set(0.0)
+    Thread.sleep(1000)
+    val (p2X, p2Y, _) = getPose()
+    val dX2 = p2X - p1X
+    val dY2 = p2Y - p1Y
+    println("Segment 2 Delta: dX=%.3f, dY=%.3f".format(dX2, dY2))
+    if (dX2 < 0.2 || abs(dY2) > 0.15) {
+        running.set(false)
+        System.err.println("Square Drive Failed: Segment 2 (+X) failed! dX=%.3f, dY=%.3f".format(dX2, dY2))
+        System.exit(1)
+    }
+
+    // Segment 3: Drive -Y (Backward on field)
+    println("Square Drive - Segment 3: Pushing -Y...")
+    vxPub.set(-1.2)
+    Thread.sleep(1200)
+    vxPub.set(0.0)
+    Thread.sleep(1000)
+    val (p3X, p3Y, _) = getPose()
+    val dX3 = p3X - p2X
+    val dY3 = p3Y - p2Y
+    println("Segment 3 Delta: dX=%.3f, dY=%.3f".format(dX3, dY3))
+    if (dY3 > -0.2 || abs(dX3) > 0.15) {
+        running.set(false)
+        System.err.println("Square Drive Failed: Segment 3 (-Y) failed! dX=%.3f, dY=%.3f".format(dX3, dY3))
+        System.exit(1)
+    }
+
+    // Segment 4: Drive -X (Left on field)
+    println("Square Drive - Segment 4: Pushing -X...")
+    vyPub.set(1.2)
+    Thread.sleep(1200)
+    vyPub.set(0.0)
+    Thread.sleep(1000)
+    val (p4X, p4Y, _) = getPose()
+    val dX4 = p4X - p3X
+    val dY4 = p4Y - p3Y
+    println("Segment 4 Delta: dX=%.3f, dY=%.3f".format(dX4, dY4))
+    if (dX4 > -0.2 || abs(dY4) > 0.15) {
+        running.set(false)
+        System.err.println("Square Drive Failed: Segment 4 (-X) failed! dX=%.3f, dY=%.3f".format(dX4, dY4))
+        System.exit(1)
+    }
+
+    println("Test 1 Passed: Square Drive completed successfully!")
 
     // 6. Test 2: Rotate robot to facing ~0.0 heading
     println("Test 2: Rotating robot to 0.0 heading...")
-    val rotateStartTime = System.currentTimeMillis()
-    var rotatedOk = false
-    var lastH = getPose().third
-    var lastTime = System.currentTimeMillis()
-    while (System.currentTimeMillis() - rotateStartTime < 8000) {
-        val (_, _, currentH) = getPose()
-        val now = System.currentTimeMillis()
-        val dt = (now - lastTime) / 1000.0
-        
-        // Calculate velocity dynamically to predict stopping drift
-        val velocity = if (dt > 0.001) wrapAngle(currentH - lastH) / dt else 0.0
-        lastH = currentH
-        lastTime = now
-        
-        // Stop deceleration time is ~140ms. Drift is velocity * decelTime / 2 = velocity * 0.07.
-        val predictedH = currentH + velocity * 0.07
-        val error = wrapAngle(0.0 - currentH)
-        
-        if (abs(wrapAngle(0.0 - predictedH)) < 0.012) {
-            omegaPub.set(0.0)
-            Thread.sleep(600)
-            val (_, _, finalH) = getPose()
-            if (abs(wrapAngle(0.0 - finalH)) < 0.02) {
-                rotatedOk = true
-                break
-            }
-        }
-        
-        val kP = 4.0
-        var cmdOmega = error * kP
-        // Keep cmdOmega just barely above 0.20 (which maps to 0.05 on the gamepad stick)
-        // to prevent premature heading lock and keep rotation extremely slow/controlled
-        if (abs(cmdOmega) < 0.205) {
-            val sign = if (error > 0.0) 1.0 else -1.0
-            cmdOmega = sign * 0.205
-        }
-        cmdOmega = cmdOmega.coerceIn(-3.0, 3.0)
-        omegaPub.set(cmdOmega)
-        Thread.sleep(20)
-    }
-
+    val rotatedOk = rotateToTarget(0.0, toleranceRad = 0.02, timeoutMs = 8000)
     if (!rotatedOk) {
-        omegaPub.set(0.0)
         running.set(false)
         System.err.println("Verification Failed: Robot failed to rotate to 0.0 heading! Current heading: %.3f".format(getPose().third))
         System.exit(1)
     }
+    println("Test 2 Passed: Robot successfully rotated to 0.0 heading.")
     
     Thread.sleep(2000) // Wait for heading lock PID to fully settle at 0.0
     val (pos2X, pos2Y, pos2H) = getPose()
@@ -194,15 +248,48 @@ fun main(args: Array<String>) {
     val ratio = abs(deltaY2) / (abs(deltaX2) + 1e-6)
     println("Ratio of Y movement to X movement: %.3f".format(ratio))
 
-    running.set(false)
-    if (deltaY2 > 0.2 && ratio > 2.0) {
-        println("VERIFICATION SUCCESSFUL: Drivetrain is field-centric! Robot moved in +Y, not +X.")
-        System.exit(0)
-    } else if (deltaX2 > 0.2 && ratio < 0.5) {
-        System.err.println("VERIFICATION FAILED: Robot is driving ROBOT-CENTRIC! Rotated forward command moved in X (longitudinal) instead of Y (field-centric).")
-        System.exit(1)
-    } else {
-        System.err.println("VERIFICATION FAILED: Inconclusive movement. dX=%.3f, dY=%.3f".format(deltaX2, deltaY2))
+    if (!(deltaY2 > 0.2 && ratio > 2.0)) {
+        running.set(false)
+        if (deltaX2 > 0.2 && ratio < 0.5) {
+            System.err.println("VERIFICATION FAILED: Robot is driving ROBOT-CENTRIC! Rotated forward command moved in X (longitudinal) instead of Y (field-centric).")
+        } else {
+            System.err.println("VERIFICATION FAILED: Inconclusive movement. dX=%.3f, dY=%.3f".format(deltaX2, deltaY2))
+        }
         System.exit(1)
     }
+    println("Test 3 Passed: Field-centric translation verified.")
+
+    // 8. Test 4: Multi-Target Rotation Test (Dedicated Rotation Verification)
+    println("Test 4: Starting Multi-Target Rotation Test...")
+    
+    // Target 1: Rotate to +90 degrees (+PI/2 rad)
+    val rot1Ok = rotateToTarget(Math.PI / 2, toleranceRad = 0.03, timeoutMs = 6000)
+    if (!rot1Ok) {
+        running.set(false)
+        System.err.println("Verification Failed: Robot failed to rotate to +90 degrees! Current heading: %.3f".format(getPose().third))
+        System.exit(1)
+    }
+    Thread.sleep(1000)
+
+    // Target 2: Rotate to -90 degrees (-PI/2 rad)
+    val rot2Ok = rotateToTarget(-Math.PI / 2, toleranceRad = 0.03, timeoutMs = 8000)
+    if (!rot2Ok) {
+        running.set(false)
+        System.err.println("Verification Failed: Robot failed to rotate to -90 degrees! Current heading: %.3f".format(getPose().third))
+        System.exit(1)
+    }
+    Thread.sleep(1000)
+
+    // Target 3: Rotate back to 0.0 rad
+    val rot3Ok = rotateToTarget(0.0, toleranceRad = 0.03, timeoutMs = 8000)
+    if (!rot3Ok) {
+        running.set(false)
+        System.err.println("Verification Failed: Robot failed to rotate back to 0.0 rad! Current heading: %.3f".format(getPose().third))
+        System.exit(1)
+    }
+
+    println("Test 4 Passed: Multi-target rotation verified.")
+    println("VERIFICATION SUCCESSFUL: Drivetrain translation and rotation function perfectly!")
+    running.set(false)
+    System.exit(0)
 }
