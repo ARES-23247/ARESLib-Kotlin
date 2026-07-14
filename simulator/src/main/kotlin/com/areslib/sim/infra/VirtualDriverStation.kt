@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.infra
 
 import com.areslib.math.geometry.ChassisSpeeds
 import java.awt.*
@@ -75,7 +75,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.color = Color(25, 25, 25)
                 g2d.fillRect(0, 0, width, height)
 
-                // Top Status Text
+                // Status Labels
                 g2d.font = Font("Segoe UI", Font.BOLD, 14)
                 g2d.color = if (isTeleopMode) Color(50, 200, 50) else Color(200, 50, 50)
                 g2d.drawString("MODE: ${if (isTeleopMode) "TELEOP" else "AUTO (Path)"}", 20, 25)
@@ -160,7 +160,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.color = Color.WHITE
                 g2d.drawString("Q / E", cx + 70, cy + 100)
 
-                // Status bar at bottom
+                // Status info
                 g2d.font = Font("Segoe UI", Font.BOLD, 11)
                 g2d.color = Color(80, 80, 80)
                 g2d.drawString("SHIFT=Intake  F=Flywheel  ENTER=Shoot", cx - 130, cy + 120)
@@ -234,8 +234,8 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                             isBluetoothXbox && axes != null && axes.capacity() >= 5 -> {
                                 gamepadLx = axes[0]
                                 gamepadLy = axes[1]
-                                gamepadRx = axes[3] // Right Stick X is raw axis 3
-                                gamepadRy = axes[4] // Right Stick Y is raw axis 4
+                                gamepadRx = axes[3]
+                                gamepadRy = axes[4]
                             }
                             isBluetoothXbox -> {
                                 gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
@@ -243,14 +243,13 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                             isDS4 && axes != null && axes.capacity() >= 6 -> {
                                 gamepadLx = axes[0]
                                 gamepadLy = axes[1]
-                                gamepadRx = axes[2] // Right Stick X is raw axis 2
-                                gamepadRy = axes[5] // Right Stick Y is raw axis 5
+                                gamepadRx = axes[2]
+                                gamepadRy = axes[5]
                             }
                             isDS4 -> {
                                 gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
                             }
                             glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState) -> {
-                                // Standardized Gamepad API (Xbox Controller Normalized Mappings)
                                 gamepadLx = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_X)
                                 gamepadLy = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_Y)
                                 gamepadRx = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_X)
@@ -333,14 +332,14 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                         lastGamepadShift = lbPressedThisFrame
                         lastGamepadRb = rbPressedThisFrame
 
-                        // Transfer/Shoot Momentary (Right Trigger)
+                        // Transfer/Shoot momentary
                         val isKeyboardTransferring = pressedKeys.contains(KeyEvent.VK_ENTER)
                         val newIsTransferring = rtPressedThisFrame || isKeyboardTransferring
                         if (isTransferring != newIsTransferring) {
                             isTransferring = newIsTransferring
                         }
 
-                        // Determine if ANY raw button changed state
+                        // Any raw button state changes
                         var anyButtonChanged = false
                         val rawButtons = glfwGetJoystickButtons(activeJoy)
                         if (rawButtons != null) {
@@ -360,7 +359,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                             }
                         }
 
-                        // Only repaint if axes or buttons changed significantly to save CPU
+                        // Repaint conditional check
                         val changed = kotlin.math.abs(gamepadLx - lastLx) > 0.05f ||
                                       kotlin.math.abs(gamepadLy - lastLy) > 0.05f ||
                                       kotlin.math.abs(gamepadRx - lastRx) > 0.05f ||
@@ -371,26 +370,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                                       anyButtonChanged
 
                         if (changed || isKeyboardTransferring) {
-                            val isGamepad = glfwJoystickIsGamepad(activeJoy)
-                            val modeStr = when {
-                                isBluetoothXbox -> "ManualBluetoothXbox"
-                                isGamepad -> "GamepadAPI"
-                                else -> "RawJoystick"
-                            }
-                            println("[GAMEPAD DIAGNOSTIC] Name: $gamepadName | Mode: $modeStr")
-                            println(String.format("   - Sticks: Left(%.2f, %.2f) | Right(%.2f, %.2f)", gamepadLx, gamepadLy, gamepadRx, gamepadRy))
-                            println("   - Buttons: LB=$lbPressedThisFrame, RB=$rbPressedThisFrame, RT=$rtPressedThisFrame")
-                            
-                            val rawAxes = glfwGetJoystickAxes(activeJoy)
-                            if (rawAxes != null) {
-                                val axesStr = (0 until rawAxes.capacity()).joinToString(", ") { idx -> String.format("%d:%.2f", idx, rawAxes[idx]) }
-                                println("   - Raw Axes: $axesStr")
-                            }
-                            if (rawButtons != null) {
-                                val btnStr = (0 until rawButtons.capacity()).joinToString(", ") { idx -> "$idx:${rawButtons[idx]}" }
-                                println("   - Raw Buttons: $btnStr")
-                            }
-
                             lastLx = gamepadLx; lastLy = gamepadLy; lastRx = gamepadRx; lastRy = gamepadRy
                             lastGamepadEnter = rtPressedThisFrame
                             repaint()
@@ -489,4 +468,3 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         return ChassisSpeeds(vx, vy, omega)
     }
 }
-

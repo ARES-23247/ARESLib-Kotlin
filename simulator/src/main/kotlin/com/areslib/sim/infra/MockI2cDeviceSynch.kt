@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.infra
 
 import com.qualcomm.robotcore.hardware.I2cAddr
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch

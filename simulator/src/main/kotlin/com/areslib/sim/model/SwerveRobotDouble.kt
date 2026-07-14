@@ -1,5 +1,6 @@
-package com.areslib.sim
+package com.areslib.sim.model
 
+import com.areslib.sim.infra.MockI2cDeviceSynch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
@@ -127,65 +128,51 @@ class SwerveRobotDouble {
         System.arraycopy(transferBytes, 0, srsHubI2c.registers, 13, 4) // SRS Port 1 (Offset 13)
 
         // 3. Flywheel Motor — Angular Momentum with P-controller
-        // The motor controller regulates to flywheelTargetRPM using proportional control.
-        // flywheelPower acts as on/off enable; the internal P-controller modulates actual voltage.
         val controllerOutput = if (flywheelPower > 0.0) {
-            // P-controller: error-proportional voltage, clamped to [0, 1]
             val error = flywheelTargetRPM - flywheelRPM
             (error * 0.003).coerceIn(0.0, 1.0)
         } else {
             0.0
         }
         
-        // Motor torque model: T = stallTorque * voltage * (1 - RPM/freeSpeed)
         val currentSpeedFraction = flywheelRPM / flywheelMotorFreeSpeedRPM
         val motorTorque = flywheelMotorStallTorque * controllerOutput * (1.0 - currentSpeedFraction).coerceAtLeast(0.0)
         
-        // Net torque = motor torque - friction (always opposes motion)
         val frictionSign = if (flywheelRPM > 0.1) 1.0 else 0.0
         val netTorque = motorTorque - flywheelFrictionTorque * frictionSign
         
-        // Angular acceleration: α = τ / I
         val angularAccelRadS2 = netTorque / flywheelMOI
         
-        // Integrate: ω += α * dt (convert to RPM)
         val deltaRPM = (angularAccelRadS2 * dt) * (60.0 / (2.0 * Math.PI))
         flywheelRPM = (flywheelRPM + deltaRPM).coerceAtLeast(0.0)
         
-        // When flywheel is off and below threshold, snap to zero
         if (flywheelPower == 0.0 && flywheelRPM < 10.0) {
             flywheelRPM = 0.0
         }
         
-        // Update encoder position from RPM
         val flywheelTicksPerSec = (flywheelRPM / 60.0) * flywheelEncoderTicksPerRev
         flywheelPosition[0] += flywheelTicksPerSec * dt
         val shooterBytes = ByteBuffer.allocate(4).order(endian).putInt(flywheelPosition[0].toInt()).array()
         System.arraycopy(shooterBytes, 0, srsHubI2c.registers, 17, 4) // SRS Port 2 (Offset 17)
 
         // --- C. BATTERY LOAD & FLOODGATE V2 SWITCH TELEMETRY ---
-        // Model real-world electrical currents (Amperes)
         val idleCurrent = 1.2
         var driveCurrent = 0.0
         for (i in 0 until 4) {
-            driveCurrent += abs(drivePowers[i]) * 12.0 // Up to 48A peak drive load
+            driveCurrent += abs(drivePowers[i]) * 12.0
         }
         val intakeCurrent = abs(intakePower) * 6.0 + (if (hasBallInIntake) 3.5 else 0.0)
         val transferCurrent = abs(transferPower) * 5.0 + (if (hasBallInTransfer) 2.0 else 0.0)
         
-        // Flywheel draws most current during acceleration (back-EMF model)
         val flywheelCurrentDraw = abs(flywheelPower) * 22.0 * (1.0 - currentSpeedFraction).coerceAtLeast(0.1)
         
         val totalCurrent = (idleCurrent + driveCurrent + intakeCurrent + transferCurrent + flywheelCurrentDraw).coerceIn(0.0, 80.0)
         
-        // Convert total current to 0V-3.3V analog output voltage
         val floodgateVoltage = (totalCurrent / 80.0) * 3.3
         
-        // Map 0V-3.3V to 16-bit raw analog input scaled value (0 to 65535)
         val rawAnalogVal = ((floodgateVoltage / 3.3) * 65535.0).toInt().coerceIn(0, 65535)
         val analogBytes = ByteBuffer.allocate(2).order(endian).putShort(rawAnalogVal.toShort()).array()
         
-        // Write to SRS Hub Analog Port 3 registers (Offset 6, 2 bytes)
         System.arraycopy(analogBytes, 0, srsHubI2c.registers, 6, 2)
     }
 }

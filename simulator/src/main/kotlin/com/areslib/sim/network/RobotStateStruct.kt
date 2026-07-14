@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.network
 
 import com.areslib.state.RobotState
 import edu.wpi.first.util.struct.Struct

@@ -1,5 +1,8 @@
-package com.areslib.sim
+package com.areslib.sim.field
 
+import com.areslib.sim.SimInteractionModel
+import com.areslib.sim.model.MecanumRobotDouble
+import com.areslib.sim.infra.VirtualDriverStation
 import org.dyn4j.dynamics.Body
 import org.dyn4j.dynamics.BodyFixture
 import org.dyn4j.geometry.Geometry
@@ -48,7 +51,6 @@ class MecanumInteractionModel(private val robotDouble: MecanumRobotDouble) : Sim
         }
 
         // 2. SHOOTING LOGIC
-        // We use the driverStation transfer button as the physical feed, or if shooter is spinning fast enough
         val isTransferring = driverStation.isTransferring
         if (isTransferring && shooterActive && newInventory > 0) {
             // Spawn a new ball

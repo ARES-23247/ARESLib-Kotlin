@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.model
 
 /**
  * High-fidelity rotational physics simulator for a dual-motor FRC flywheel shooter.

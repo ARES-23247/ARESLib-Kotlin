@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.model
 
 /**
  * High-fidelity rotational dynamics simulator for a gravity-loaded FRC intake pivot arm.

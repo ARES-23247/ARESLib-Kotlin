@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.network
 
 import edu.wpi.first.networktables.NetworkTableInstance
 

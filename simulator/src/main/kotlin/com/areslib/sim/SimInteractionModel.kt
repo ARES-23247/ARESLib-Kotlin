@@ -2,6 +2,7 @@ package com.areslib.sim
 
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
+import com.areslib.sim.infra.VirtualDriverStation
 
 interface SimInteractionModel {
     /**

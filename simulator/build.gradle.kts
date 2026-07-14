@@ -92,7 +92,7 @@ tasks.named<JavaExec>("run") {
 
 tasks.register<JavaExec>("runFakeController") {
     group = "application"
-    mainClass.set("com.areslib.sim.FakeControllerClient")
+    mainClass.set("com.areslib.sim.infra.FakeControllerClient")
     classpath = sourceSets.main.get().runtimeClasspath
     javaLauncher.set(javaToolchains.launcherFor {
         languageVersion.set(JavaLanguageVersion.of(17))

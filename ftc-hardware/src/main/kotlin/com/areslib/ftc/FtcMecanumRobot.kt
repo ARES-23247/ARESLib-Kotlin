@@ -93,6 +93,12 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     private val visionAlignController = VisionAlignController()
 
+    private val tuningManager = com.areslib.tuning.TuningManager(
+        store = store,
+        telemetry = telemetryManager.dataLoggingTelemetry,
+        saveFile = java.io.File(if (isAndroid) "/sdcard/FIRST/ares_tuning.json" else "ares_tuning.json")
+    )
+
     // 0. Superstructure Hardware (Optional)
     // Removed intake and shooter as they belong in TeamCode
 
@@ -142,6 +148,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
+        
+        tuningManager.update()
         
         val command = telemetryManager.nt4.getString("SysId/Command", "")
         if (command != lastCommandProcessed) {

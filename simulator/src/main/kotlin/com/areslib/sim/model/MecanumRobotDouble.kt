@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.model
 
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
@@ -95,7 +95,6 @@ class MecanumRobotDouble {
     private val encoderTicksPerMeter = 2000.0 // Ticks per meter of wheel travel
 
     fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double) {
-        // 1. Update motor encoder positions based on simulated robot speed
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2
         // RL = vx + vy - omega * (trackWidth + wheelBase)/2
@@ -116,7 +115,7 @@ class MecanumRobotDouble {
         rl.currentPosition += (rl.velocity * dt).toInt()
         rr.currentPosition += (rr.velocity * dt).toInt()
 
-        // 2. Feed simulated EKF/Pinpoint sensor coordinates
+        // Feed simulated EKF/Pinpoint sensor coordinates
         pinpoint.posX = trueX
         pinpoint.posY = trueY
         pinpoint.heading = trueHeadingRad  // Feed CCW-positive to match real hardware

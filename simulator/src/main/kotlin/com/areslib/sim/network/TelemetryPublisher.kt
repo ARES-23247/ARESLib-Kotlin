@@ -1,10 +1,10 @@
-package com.areslib.sim
+package com.areslib.sim.network
 
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
+import com.areslib.sim.infra.VirtualDriverStation
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
-import com.areslib.sim.RobotStateStruct
 import edu.wpi.first.wpilibj.DataLogManager
 
 object TelemetryPublisher {
@@ -51,21 +51,14 @@ object TelemetryPublisher {
     private var lastWebHeartbeatTimestamp = 0L
     private var lastWebInputReceiveTime = 0L
 
-
-
     // Session log file path publisher
     private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
 
     init {
-        // DataLogManager.start() removed to maintain log format parity with the physical FTC robot.
-
-        // Configure NT4 for live streaming
         ntInst.startServer()
         
         // Register the custom struct so NT4 knows how to serialize it
         statePublisher = ntInst.getStructTopic("ARES/RobotState", RobotStateStruct()).publish()
-
-        // Log path publishing removed since we no longer generate .wpilog files in the simulator
     }
 
     /**
@@ -149,7 +142,6 @@ object TelemetryPublisher {
             }
         }
 
-        // Only apply web inputs if we've received an update within the last 1.0 seconds
         val timeDiff = now - lastWebInputReceiveTime
         if (timeDiff < 1000) {
             val vx = webVxSub.get()
@@ -173,7 +165,6 @@ object TelemetryPublisher {
             driverStation.isButtonXPressed = webButtonXSub.get()
             driverStation.isPoseReset = webPoseResetSub.get()
         } else {
-            // Clear web speeds so they don't linger
             driverStation.webVx = 0.0
             driverStation.webVy = 0.0
             driverStation.webOmega = 0.0
@@ -194,5 +185,3 @@ object TelemetryPublisher {
         DataLogManager.stop()
     }
 }
-
-

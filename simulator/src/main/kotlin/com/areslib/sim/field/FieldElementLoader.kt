@@ -1,4 +1,4 @@
-package com.areslib.sim
+package com.areslib.sim.field
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -29,8 +29,8 @@ object FieldElementLoader {
 
     fun loadElements(
         world: World<Body>,
-        elementTypes: List<com.areslib.state.RobotFieldElementType>,
-        elements: List<com.areslib.state.RobotFieldElementInstance>
+        elementTypes: List<RobotFieldElementType>,
+        elements: List<RobotFieldElementInstance>
     ): List<Body> {
         val spawnedBodies = mutableListOf<Body>()
         val typesMap = elementTypes.associateBy { it.id }
@@ -67,7 +67,7 @@ object FieldElementLoader {
                 val height = if (isSample) 0.05 else 0.1
                 val diameter = if (isNote) 0.35 else 0.15
                 
-                val typeSpec = com.areslib.state.RobotFieldElementType(
+                val typeSpec = RobotFieldElementType(
                     id = gp.type,
                     name = gp.type,
                     shape = shape,
@@ -90,7 +90,7 @@ object FieldElementLoader {
     }
 
     private fun createBodyFromSpec(
-        type: com.areslib.state.RobotFieldElementType,
+        type: RobotFieldElementType,
         x: Double,
         y: Double,
         rotation: Double,
@@ -110,8 +110,6 @@ object FieldElementLoader {
         fixture.friction = 0.6
         fixture.restitution = 0.3
 
-        // For a 2D physics engine, Mass = Density * Area.
-        // We set fixture density so that calculated mass equals massKg.
         val area = shape.getArea()
         val density = if (area > 0) type.massKg / area else 1.0
         fixture.density = density
@@ -120,14 +118,12 @@ object FieldElementLoader {
 
         if (type.movable) {
             body.setMass(MassType.NORMAL)
-            // Add carpet friction damping
             body.linearDamping = 2.0
             body.angularDamping = 2.0
         } else {
             body.setMass(MassType.INFINITE)
         }
 
-        // Translate to simulator coordinates (meters relative to center origin)
         body.translate(x, y)
 
         if (rotation != 0.0) {
