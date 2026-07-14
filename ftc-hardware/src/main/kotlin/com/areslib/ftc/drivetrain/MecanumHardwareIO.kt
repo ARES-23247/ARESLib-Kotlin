@@ -140,8 +140,8 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val maxSpeed = maxWheelSpeedMetersPerSecond
         val omega = driveState.angularVelocityRadiansPerSecond * (maxSpeed / kinematics.k)
 
-        val forward = driveState.yVelocityMetersPerSecond * maxSpeed
-        val left = -driveState.xVelocityMetersPerSecond * maxSpeed
+        val forward = driveState.xVelocityMetersPerSecond * maxSpeed
+        val left = driveState.yVelocityMetersPerSecond * maxSpeed
 
         kinematics.toWheelSpeeds(forward, left, omega, speedBuffer)
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
