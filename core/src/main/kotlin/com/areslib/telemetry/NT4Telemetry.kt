@@ -19,11 +19,15 @@ class NT4Telemetry : ITelemetry {
             false
         }
 
+        println("NT4Telemetry: isWpilibAvailable = $isWpilibAvailable")
+
         if (isWpilibAvailable) {
             try {
                 reflectHelper = ReflectionWpilibTelemetry()
                 isInitialized = true
+                println("NT4Telemetry: Successfully initialized ReflectionWpilibTelemetry")
             } catch (e: Exception) {
+                println("NT4Telemetry: Failed to initialize ReflectionWpilibTelemetry:")
                 e.printStackTrace()
             }
         } else {
@@ -36,8 +40,10 @@ class NT4Telemetry : ITelemetry {
                 } catch (e: Exception) {
                     false
                 }
+                println("NT4Telemetry: Falling back to org.frcforftc.networktables. Server status = ${inst.server}")
                 if (!isUnitTest && inst.server == null) {
                     inst.startNT4Server("0.0.0.0", 5810)
+                    println("NT4Telemetry: Started org.frcforftc.networktables server on port 5810")
                 }
                 isInitialized = true
             } catch (e: Exception) {

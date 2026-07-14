@@ -51,8 +51,9 @@ class ReflectionWpilibTelemetry {
 
             val doubleArrayPubClass = Class.forName("edu.wpi.first.networktables.DoubleArrayPublisher")
             setDoubleArrayMethod = doubleArrayPubClass.getMethod("set", DoubleArray::class.java)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             System.err.println("ReflectionWpilibTelemetry: Failed to initialize reflection bindings: ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -65,7 +66,7 @@ class ReflectionWpilibTelemetry {
                 publishMethod.invoke(topic, emptyOptions)
             }
             setDoubleMethod!!.invoke(pub, value)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             System.err.println("ReflectionWpilibTelemetry: error putting number for $key: ${e.message}")
             e.printStackTrace()
         }
@@ -80,7 +81,7 @@ class ReflectionWpilibTelemetry {
                 publishMethod.invoke(topic, emptyOptions)
             }
             setBooleanMethod!!.invoke(pub, value)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             System.err.println("ReflectionWpilibTelemetry: error putting boolean for $key: ${e.message}")
             e.printStackTrace()
         }
@@ -95,7 +96,7 @@ class ReflectionWpilibTelemetry {
                 publishMethod.invoke(topic, emptyOptions)
             }
             setStringMethod!!.invoke(pub, value)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             System.err.println("ReflectionWpilibTelemetry: error putting string for $key: ${e.message}")
             e.printStackTrace()
         }
@@ -110,7 +111,7 @@ class ReflectionWpilibTelemetry {
                 publishMethod.invoke(topic, emptyOptions)
             }
             setDoubleArrayMethod!!.invoke(pub, value)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             System.err.println("ReflectionWpilibTelemetry: error putting double array for $key: ${e.message}")
             e.printStackTrace()
         }
