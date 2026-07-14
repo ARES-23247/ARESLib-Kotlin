@@ -1,12 +1,12 @@
-package com.areslib.hardware.ftc.config
+package com.areslib.ftc.config
 
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.CompositeVisionIO
-import com.areslib.hardware.ftc.vision.FtcLimelightIO
-import com.areslib.hardware.ftc.vision.FtcVisionPortalIO
+import com.areslib.ftc.vision.FtcLimelightIO
+import com.areslib.ftc.vision.FtcVisionPortalIO
 
 /**
  * Central hardware dependency injector for FTC.

@@ -1,4 +1,4 @@
-package com.areslib.hardware.ftc.vision
+package com.areslib.ftc.vision
 
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
@@ -157,4 +157,3 @@ class FtcLimelightIO(
         ioScope.cancel()
     }
 }
-

@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.subsystem.AresRobot
 import com.areslib.ftc.PinpointIO
-import com.areslib.hardware.ftc.vision.FtcLimelightIO
+import com.areslib.ftc.vision.FtcLimelightIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.CompositeVisionIO
 import com.areslib.ftc.vision.FtcVisionTracker
@@ -243,6 +243,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             }
 
         } catch (e: Throwable) {
+            if (e is InterruptedException || e.cause is InterruptedException) {
+                Thread.currentThread().interrupt()
+                return
+            }
             System.err.println("FtcBaseRobot: Exception in update loop: ${e.message}")
             e.printStackTrace()
             safeHardware()

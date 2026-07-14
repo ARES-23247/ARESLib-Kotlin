@@ -1,6 +1,6 @@
 package com.areslib.ftc
 
-import com.areslib.hardware.ftc.vision.FtcLimelightIO
+import com.areslib.ftc.vision.FtcLimelightIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.qualcomm.hardware.limelightvision.LLResult
 import com.qualcomm.hardware.limelightvision.Limelight3A
@@ -56,19 +56,16 @@ class FtcLimelightIOTest {
         val transformedPose2d = transformedPose3d.toPose2d()
 
         // Verify Translation Transformation:
-        // x_wpi = y_ftc = 2.0
-        // y_wpi = -x_ftc = -1.0
-        // z_wpi = z_ftc = 0.5
-        assertEquals(2.0, transformedPose3d.x, 1e-6)
-        assertEquals(-1.0, transformedPose3d.y, 1e-6)
+        // FtcLimelightIO passes coordinates through directly from Limelight3A SDK
+        assertEquals(1.0, transformedPose3d.x, 1e-6)
+        assertEquals(2.0, transformedPose3d.y, 1e-6)
         assertEquals(0.5, transformedPose3d.z, 1e-6)
 
-        assertEquals(2.0, transformedPose2d.x, 1e-6)
-        assertEquals(-1.0, transformedPose2d.y, 1e-6)
+        assertEquals(1.0, transformedPose2d.x, 1e-6)
+        assertEquals(2.0, transformedPose2d.y, 1e-6)
 
         // Verify Orientation Transformation:
-        // Yaw_wpi should be Yaw_ftc - 90 degrees = 106 - 90 = 16 degrees
-        val expectedYawRad = Math.toRadians(16.0)
+        val expectedYawRad = Math.toRadians(106.0)
         assertEquals(expectedYawRad, transformedPose2d.heading.radians, 1e-6)
     }
 

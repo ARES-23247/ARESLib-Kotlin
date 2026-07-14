@@ -1,4 +1,4 @@
-package com.areslib.hardware.ftc
+package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.hardware.Gamepad
 import com.areslib.control.ControllerState
