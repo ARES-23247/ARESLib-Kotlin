@@ -138,21 +138,12 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         dtSeconds: Double
     ) {
         val maxSpeed = maxWheelSpeedMetersPerSecond
-        val vx = driveState.xVelocityMetersPerSecond * maxSpeed
-        val vy = driveState.yVelocityMetersPerSecond * maxSpeed
         val omega = driveState.angularVelocityRadiansPerSecond * (maxSpeed / kinematics.k)
 
-        var robotVx = vx
-        var robotVy = vy
-        if (driveState.isFieldCentric) {
-            val heading = driveState.poseEstimator.estimatedPose.heading.radians
-            val cos = kotlin.math.cos(heading)
-            val sin = kotlin.math.sin(heading)
-            robotVx = vx * cos + vy * sin
-            robotVy = -vx * sin + vy * cos
-        }
+        val forward = driveState.yVelocityMetersPerSecond * maxSpeed
+        val left = -driveState.xVelocityMetersPerSecond * maxSpeed
 
-        kinematics.toWheelSpeeds(robotVx, robotVy, omega, speedBuffer)
+        kinematics.toWheelSpeeds(forward, left, omega, speedBuffer)
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
 
         apply(
