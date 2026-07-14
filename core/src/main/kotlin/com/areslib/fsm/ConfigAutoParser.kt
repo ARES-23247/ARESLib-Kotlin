@@ -57,17 +57,7 @@ object ConfigAutoParser {
                     val durationMs = step.durationMs ?: error("waittime step requires 'durationMs'")
                     TimeWaitTask(durationMs)
                 }
-                "spinflywheel" -> {
-                    val rpm = step.rpm ?: error("spinflywheel step requires 'rpm'")
-                    FlywheelReadyTask(rpm, baseTimestampMs)
-                }
-                "shoot" -> {
-                    ShootTask(baseTimestampMs)
-                }
-                "intake" -> {
-                    val count = step.count ?: error("intake step requires 'count'")
-                    IntakeUntilCountTask(count, baseTimestampMs)
-                }
+
                 "dispatchpathevent" -> {
                     val eventName = step.eventName ?: error("dispatchpathevent step requires 'eventName'")
                     ActionDispatchTask(RobotAction.PathEventTriggered(eventName, baseTimestampMs))

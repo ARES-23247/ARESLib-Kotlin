@@ -1,6 +1,6 @@
 package com.areslib.e2e.tier2.math
 
-import com.areslib.control.LQRController
+import com.areslib.control.feedback.LQRController
 import com.areslib.math.PoseEstimator
 import com.areslib.math.PoseEstimatorState
 import com.areslib.math.Translation2d

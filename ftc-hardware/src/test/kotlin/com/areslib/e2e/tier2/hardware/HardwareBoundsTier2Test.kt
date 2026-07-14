@@ -1,7 +1,7 @@
 package com.areslib.e2e.tier2.hardware
 
-import com.areslib.control.BrownoutGuard
-import com.areslib.control.CurrentBudgetManager
+import com.areslib.control.safety.BrownoutGuard
+import com.areslib.control.safety.CurrentBudgetManager
 import com.areslib.ftc.MockDcMotorEx
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
 import com.qualcomm.robotcore.hardware.AnalogInput

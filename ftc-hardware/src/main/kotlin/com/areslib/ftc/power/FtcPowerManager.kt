@@ -3,8 +3,8 @@ package com.areslib.ftc.power
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.VoltageSensor
 import com.qualcomm.robotcore.hardware.AnalogInput
-import com.areslib.control.BrownoutGuard
-import com.areslib.control.CurrentBudgetManager
+import com.areslib.control.safety.BrownoutGuard
+import com.areslib.control.safety.CurrentBudgetManager
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
 import com.areslib.hardware.MotorIO
 import com.areslib.subsystem.PowerManager

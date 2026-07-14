@@ -157,7 +157,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         return try {
             deviceClient.i2cAddress = com.qualcomm.robotcore.hardware.I2cAddr.create7bit(OCTOQUAD_I2C_ADDRESS)
             val chipId = deviceClient.read8(REG_CHIP_ID)
-            val fwMaj = deviceClient.read8(REG_FW_MAJ)
+            deviceClient.read8(REG_FW_MAJ)
             
             if (chipId != OCTOQUAD_CHIP_ID) {
                 false
@@ -253,7 +253,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel: Int) : MotorIO {
     override var power: Double
         get() = 0.0 // Encoders are read-only
-        set(value) {
+        set(@Suppress("UNUSED_PARAMETER") value) {
             // Encoders are read-only, cannot set power
         }
 
@@ -285,7 +285,7 @@ class OctoQuadAbsolutePWMEncoder(
 
     override var power: Double
         get() = 0.0
-        set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     fun updateInputs() {
         octoQuad.update()

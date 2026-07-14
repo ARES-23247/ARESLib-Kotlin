@@ -26,8 +26,8 @@ class AppFailsafeTier1Test {
                 return when (deviceName) {
                     "fl" -> fl as T
                     "fr" -> fr as T
-                    "bl" -> bl as T
-                    "br" -> br as T
+                    "rl" -> bl as T
+                    "rr" -> br as T
                     "pinpoint" -> pinpoint as T
                     "limelight" -> limelight as T
                     else -> throw IllegalArgumentException()
@@ -89,8 +89,8 @@ class AppFailsafeTier1Test {
                 return when (deviceName) {
                     "fl" -> fl as T
                     "fr" -> fr as T
-                    "bl" -> bl as T
-                    "br" -> br as T
+                    "rl" -> bl as T
+                    "rr" -> br as T
                     "pinpoint" -> pinpoint as T
                     "limelight" -> limelight as T
                     else -> throw IllegalArgumentException()

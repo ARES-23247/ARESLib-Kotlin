@@ -2,8 +2,8 @@ package com.areslib.ftc.dsl
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
-import com.areslib.control.HolonomicDriveController
-import com.areslib.control.PIDController
+import com.areslib.control.drivetrain.HolonomicDriveController
+import com.areslib.control.feedback.PIDController
 import com.areslib.pathing.Path
 import com.areslib.pathing.DynamicPathLoader
 import com.areslib.util.RobotClock
@@ -39,9 +39,9 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         // Setup unified path follower helper
         val pathFollower = FtcMecanumPathFollower(
             robot,
-            xController = com.areslib.control.PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
-            yController = com.areslib.control.PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
-            thetaController = com.areslib.control.PIDController(robot.pathRotationKp, robot.pathRotationKi, robot.pathRotationKd).apply {
+            xController = PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
+            yController = PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
+            thetaController = PIDController(robot.pathRotationKp, robot.pathRotationKi, robot.pathRotationKd).apply {
                 enableContinuousInput(-Math.PI, Math.PI)
             }
         )

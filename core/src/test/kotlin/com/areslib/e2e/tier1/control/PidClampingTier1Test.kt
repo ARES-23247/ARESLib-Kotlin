@@ -1,6 +1,6 @@
 package com.areslib.e2e.tier1.control
 
-import com.areslib.control.PIDController
+import com.areslib.control.feedback.PIDController
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 

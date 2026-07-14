@@ -1,6 +1,6 @@
 package com.areslib.frc.power
 
-import com.areslib.control.BrownoutGuard
+import com.areslib.control.safety.BrownoutGuard
 import com.areslib.subsystem.PowerManager
 
 /**

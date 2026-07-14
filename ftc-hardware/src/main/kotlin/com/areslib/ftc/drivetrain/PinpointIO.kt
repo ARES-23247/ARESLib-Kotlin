@@ -93,10 +93,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
      * Updates the pinpoint driver and returns the current pose as a pure action.
      */
     fun getPoseUpdate(): RobotAction.PoseUpdate {
-        var x = 0.0
-        var y = 0.0
-        var heading = 0.0
-        var ts = 0L
+        val x: Double
+        val y: Double
+        val heading: Double
+        var ts: Long
         synchronized(lock) {
             x = lastX
             y = lastY

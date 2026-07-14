@@ -92,7 +92,8 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     /**
      * Shuts down background logging workers and standard telemetry server gracefully.
      */
-    fun close() {
+    override fun close() {
         logger.stop()
+        ntTelemetry?.close()
     }
 }

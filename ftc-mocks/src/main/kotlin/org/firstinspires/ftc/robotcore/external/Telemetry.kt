@@ -1,3 +1,4 @@
+@file:Suppress("UNUSED_PARAMETER")
 package org.firstinspires.ftc.robotcore.external
 
 interface Telemetry {

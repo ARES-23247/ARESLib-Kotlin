@@ -3,6 +3,7 @@ package com.areslib.subsystem
 import com.areslib.action.RobotAction
 import com.areslib.math.Pose2d
 import com.areslib.pathing.Path
+import com.areslib.control.feedback.PIDController
 
 /**
  * Shared base class containing common mathematical algorithms and properties for holonomic drive facades.
@@ -69,7 +70,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
     val odometryHeading: Double
         get() = store.state.drive.odometryHeading
 
-    protected val headingPID = com.areslib.control.PIDController(headingKp, headingKi, headingKd).apply {
+    protected val headingPID = com.areslib.control.feedback.PIDController(headingKp, headingKi, headingKd).apply {
         enableContinuousInput(-Math.PI, Math.PI)
         setOutputLimits(-2.0, 2.0)
         deadzone = Math.toRadians(headingDeadzoneDeg)
@@ -133,7 +134,17 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
             }
             useHeadingLock && !isRotating && target == null -> {
-                if (kotlin.math.abs(angularVelocity) < 0.08) {
+                val history = store.state.drive.poseEstimator.history
+                val physicalAngularVelocity = if (history.size >= 2) {
+                    val latest = history[history.size - 1]
+                    val prev = history[history.size - 2]
+                    val dt = (latest.timestampMs - prev.timestampMs) / 1000.0
+                    if (dt > 0.001) {
+                        com.areslib.math.InputMath.wrapAngle(latest.headingRad - prev.headingRad) / dt
+                    } else 0.0
+                } else angularVelocity
+
+                if (kotlin.math.abs(physicalAngularVelocity) < 0.08) {
                     store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
                     store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
                     headingErrorFilter.reset(0.0)
@@ -144,6 +155,12 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 }
             }
             useHeadingLock && !isRotating && target != null -> {
+                val tuning = store.state.tuning
+                headingPID.p = tuning.headingKp
+                headingPID.i = tuning.headingKi
+                headingPID.d = tuning.headingKd
+                headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
+
                 val rawError = com.areslib.math.InputMath.wrapAngle(target - headingRad)
                 val filteredError = headingErrorFilter.calculate(rawError, 0.02)
                 finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02) / maxAngularSpeedRps

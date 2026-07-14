@@ -1,7 +1,7 @@
 package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.hardware.Gamepad
-import com.areslib.control.ControllerState
+import com.areslib.input.ControllerState
 import com.areslib.math.InputMath
 
 /**

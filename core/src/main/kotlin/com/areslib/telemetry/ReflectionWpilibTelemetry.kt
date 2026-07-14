@@ -17,6 +17,11 @@ class ReflectionWpilibTelemetry {
     private var getStringTopicMethod: Method? = null
     private var getDoubleArrayTopicMethod: Method? = null
 
+    private var setDoubleMethod: Method? = null
+    private var setBooleanMethod: Method? = null
+    private var setStringMethod: Method? = null
+    private var setDoubleArrayMethod: Method? = null
+
     private var pubSubOptionArrayClass: Class<*>? = null
     private var emptyOptions: Any? = null
 
@@ -34,6 +39,18 @@ class ReflectionWpilibTelemetry {
             val pubSubOptionClass = Class.forName("edu.wpi.first.networktables.PubSubOption")
             pubSubOptionArrayClass = java.lang.reflect.Array.newInstance(pubSubOptionClass, 0).javaClass
             emptyOptions = java.lang.reflect.Array.newInstance(pubSubOptionClass, 0)
+
+            val doublePubClass = Class.forName("edu.wpi.first.networktables.DoublePublisher")
+            setDoubleMethod = doublePubClass.getMethod("set", Double::class.javaPrimitiveType)
+
+            val boolPubClass = Class.forName("edu.wpi.first.networktables.BooleanPublisher")
+            setBooleanMethod = boolPubClass.getMethod("set", Boolean::class.javaPrimitiveType)
+
+            val stringPubClass = Class.forName("edu.wpi.first.networktables.StringPublisher")
+            setStringMethod = stringPubClass.getMethod("set", String::class.java)
+
+            val doubleArrayPubClass = Class.forName("edu.wpi.first.networktables.DoubleArrayPublisher")
+            setDoubleArrayMethod = doubleArrayPubClass.getMethod("set", DoubleArray::class.java)
         } catch (e: Exception) {
             System.err.println("ReflectionWpilibTelemetry: Failed to initialize reflection bindings: ${e.message}")
         }
@@ -47,8 +64,7 @@ class ReflectionWpilibTelemetry {
                 val publishMethod = topic.javaClass.getMethod("publish", pubSubOptionArrayClass)
                 publishMethod.invoke(topic, emptyOptions)
             }
-            val setMethod = pub.javaClass.getMethod("set", Double::class.javaPrimitiveType)
-            setMethod.invoke(pub, value)
+            setDoubleMethod!!.invoke(pub, value)
         } catch (e: Exception) {
             System.err.println("ReflectionWpilibTelemetry: error putting number for $key: ${e.message}")
             e.printStackTrace()
@@ -63,8 +79,7 @@ class ReflectionWpilibTelemetry {
                 val publishMethod = topic.javaClass.getMethod("publish", pubSubOptionArrayClass)
                 publishMethod.invoke(topic, emptyOptions)
             }
-            val setMethod = pub.javaClass.getMethod("set", Boolean::class.javaPrimitiveType)
-            setMethod.invoke(pub, value)
+            setBooleanMethod!!.invoke(pub, value)
         } catch (e: Exception) {
             System.err.println("ReflectionWpilibTelemetry: error putting boolean for $key: ${e.message}")
             e.printStackTrace()
@@ -79,8 +94,7 @@ class ReflectionWpilibTelemetry {
                 val publishMethod = topic.javaClass.getMethod("publish", pubSubOptionArrayClass)
                 publishMethod.invoke(topic, emptyOptions)
             }
-            val setMethod = pub.javaClass.getMethod("set", String::class.java)
-            setMethod.invoke(pub, value)
+            setStringMethod!!.invoke(pub, value)
         } catch (e: Exception) {
             System.err.println("ReflectionWpilibTelemetry: error putting string for $key: ${e.message}")
             e.printStackTrace()
@@ -95,8 +109,7 @@ class ReflectionWpilibTelemetry {
                 val publishMethod = topic.javaClass.getMethod("publish", pubSubOptionArrayClass)
                 publishMethod.invoke(topic, emptyOptions)
             }
-            val setMethod = pub.javaClass.getMethod("set", DoubleArray::class.java)
-            setMethod.invoke(pub, value)
+            setDoubleArrayMethod!!.invoke(pub, value)
         } catch (e: Exception) {
             System.err.println("ReflectionWpilibTelemetry: error putting double array for $key: ${e.message}")
             e.printStackTrace()

@@ -18,14 +18,14 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
     var frontRightMotorName: String = "fr"
     
     /**
-     * Hardware map name for the Back Left drive motor. Defaults to `"bl"`.
+     * Hardware map name for the Rear Left drive motor. Defaults to `"rl"`.
      */
-    var backLeftMotorName: String = "bl"
+    var rearLeftMotorName: String = "rl"
     
     /**
-     * Hardware map name for the Back Right drive motor. Defaults to `"br"`.
+     * Hardware map name for the Rear Right drive motor. Defaults to `"rr"`.
      */
-    var backRightMotorName: String = "br"
+    var rearRightMotorName: String = "rr"
     
     /**
      * Hardware map name for the Pinpoint odometry computer. Defaults to `"pinpoint"`. Can be null if no Pinpoint is used.
@@ -54,14 +54,14 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
     var frontRightMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
 
     /**
-     * Motor direction for the Back Left drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD].
+     * Motor direction for the Rear Left drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD].
      */
-    var backLeftMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD
+    var rearLeftMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD
 
     /**
-     * Motor direction for the Back Right drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE].
+     * Motor direction for the Rear Right drive motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE].
      */
-    var backRightMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
+    var rearRightMotorDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE
 
     /**
      * Constructs and returns the fully configured [FtcMecanumRobot] instance.
@@ -71,15 +71,15 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
             hardwareMap = hardwareMap,
             flName = frontLeftMotorName,
             frName = frontRightMotorName,
-            blName = backLeftMotorName,
-            brName = backRightMotorName,
+            rlName = rearLeftMotorName,
+            rrName = rearRightMotorName,
             pinpointName = pinpointName,
             limelightName = limelightName,
             localTelemetry = telemetry,
             flDirection = frontLeftMotorDirection,
             frDirection = frontRightMotorDirection,
-            blDirection = backLeftMotorDirection,
-            brDirection = backRightMotorDirection
+            rlDirection = rearLeftMotorDirection,
+            rrDirection = rearRightMotorDirection
         )
     }
 }

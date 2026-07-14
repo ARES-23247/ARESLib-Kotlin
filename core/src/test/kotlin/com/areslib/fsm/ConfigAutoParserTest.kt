@@ -29,9 +29,6 @@ class ConfigAutoParserTest {
                 "name": "TestAutoScript",
                 "steps": [
                     { "type": "waittime", "durationMs": 1000 },
-                    { "type": "shoot" },
-                    { "type": "spinflywheel", "rpm": 2500.0 },
-                    { "type": "intake", "count": 2 },
                     { "type": "dispatchpathevent", "eventName": "AlignDone" },
                     { "type": "waitdistance", "meters": 1.5 }
                 ]
@@ -42,7 +39,7 @@ class ConfigAutoParserTest {
         assertNotNull(parsedTask)
         assertTrue(parsedTask is SequentialTaskGroup)
         assertEquals(
-            "Sequential(TimeWait(1000 ms), Shoot, FlywheelReady(2500.0 RPM), IntakeUntilCount(2), ActionDispatch(PathEventTriggered), PathProgressWait(1.5 m))",
+            "Sequential(TimeWait(1000 ms), ActionDispatch(PathEventTriggered), PathProgressWait(1.5 m))",
             parsedTask.name
         )
     }

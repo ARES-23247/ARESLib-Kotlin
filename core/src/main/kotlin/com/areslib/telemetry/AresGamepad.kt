@@ -115,7 +115,7 @@ class AresGamepad {
          * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
          * @param action The block of code to execute. Must not block the thread.
          */
-        fun onPress(description: String, action: () -> Unit) {
+        fun onPress(@Suppress("UNUSED_PARAMETER") description: String, action: () -> Unit) {
             this.onPressAction = action
         }
 
@@ -125,7 +125,7 @@ class AresGamepad {
          * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
          * @param action The block of code to execute. Must not block the thread.
          */
-        fun onRelease(description: String, action: () -> Unit) {
+        fun onRelease(@Suppress("UNUSED_PARAMETER") description: String, action: () -> Unit) {
             this.onReleaseAction = action
         }
 
@@ -135,7 +135,7 @@ class AresGamepad {
          * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
          * @param action The block of code to execute. Must not block the thread.
          */
-        fun whilePressed(description: String, action: () -> Unit) {
+        fun whilePressed(@Suppress("UNUSED_PARAMETER") description: String, action: () -> Unit) {
             this.whilePressedAction = action
         }
 
@@ -156,7 +156,7 @@ class AresGamepad {
         var value: Float = 0.0f
             private set
 
-        fun label(description: String) {
+        fun label(@Suppress("UNUSED_PARAMETER") description: String) {
             // No-op at runtime, used statically for ARES-Analytics parsing
         }
 
@@ -171,7 +171,7 @@ class AresGamepad {
         var y: Float = 0.0f
             private set
 
-        fun label(description: String) {
+        fun label(@Suppress("UNUSED_PARAMETER") description: String) {
             // No-op at runtime, used statically for ARES-Analytics parsing
         }
 

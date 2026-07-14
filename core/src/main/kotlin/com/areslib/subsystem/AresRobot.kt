@@ -24,7 +24,6 @@ open class AresRobot(
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) {
     val store = Store(initialState, reducer)
-    val superstructure = SuperstructureFacade(store)
 
     // ── Subsystem Registry ──
     // Uses ArrayList with indexed access for zero-allocation iteration in hot paths.

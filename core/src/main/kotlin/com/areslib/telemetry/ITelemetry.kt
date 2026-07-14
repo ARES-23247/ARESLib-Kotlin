@@ -1,5 +1,7 @@
 package com.areslib.telemetry
 
+import com.areslib.control.safety.BrownoutGuard
+
 /**
  * Platform-agnostic telemetry interface used by the functional core to publish
  * variables, tuning parameters, and robot state.
@@ -18,6 +20,11 @@ interface ITelemetry {
      * Optional method to process periodic updates.
      */
     fun update() {}
+    
+    /**
+     * Optional method to clean up resources.
+     */
+    fun close() {}
 }
 
 /**
@@ -76,7 +83,7 @@ fun ITelemetry.logPose3d(key: String, pose: com.areslib.math.Pose2d) {
 /**
  * Extension to log brownout guard state and diagnostics.
  */
-fun ITelemetry.logBrownout(brownoutGuard: com.areslib.control.BrownoutGuard, batteryVoltage: Double) {
+fun ITelemetry.logBrownout(brownoutGuard: com.areslib.control.safety.BrownoutGuard, batteryVoltage: Double) {
     putNumber("Robot/BatteryVoltage", batteryVoltage)
     putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
     putString("Robot/BrownoutState", brownoutGuard.state.name)

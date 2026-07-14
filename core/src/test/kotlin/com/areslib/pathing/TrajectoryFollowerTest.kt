@@ -1,7 +1,7 @@
 package com.areslib.pathing
 
-import com.areslib.control.HolonomicDriveController
-import com.areslib.control.PIDController
+import com.areslib.control.drivetrain.HolonomicDriveController
+import com.areslib.control.feedback.PIDController
 import com.areslib.math.Pose2d
 import com.areslib.math.Rotation2d
 import org.junit.jupiter.api.Assertions.assertEquals

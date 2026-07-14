@@ -1,3 +1,4 @@
+@file:Suppress("UNUSED_PARAMETER")
 package android.util
 
 object Base64 {

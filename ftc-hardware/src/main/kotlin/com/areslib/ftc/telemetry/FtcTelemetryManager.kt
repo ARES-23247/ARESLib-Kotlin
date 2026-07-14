@@ -29,12 +29,15 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     val nt4 = NT4Telemetry()
     override val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
-    val brownoutGuard = com.areslib.control.BrownoutGuard.ftcDefaults()
+    val brownoutGuard = com.areslib.control.safety.BrownoutGuard.ftcDefaults()
 
     override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
     var actionLogger = ActionLogger(runId, robotId, 0, "BLUE", "Init")
         private set
+        
+    // Timestamp tracking for local Driver Station telemetry throttling
+    private var lastLocalTelemetryUpdateMs = 0L
 
     init {
         // Intercept and record all dispatched store actions asynchronously
@@ -121,22 +124,26 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         }
 
         // Human-readable local driver station console printouts
+        // Throttled to 10Hz (100ms) to prevent WiFi Direct network overhead from stalling the 50Hz hardware loop
         localTelemetry?.let { t ->
-            t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
-            val pinpointPose = com.areslib.math.Pose2d(
-                state.drive.odometryX,
-                state.drive.odometryY,
-                com.areslib.math.Rotation2d(state.drive.odometryHeading)
-            )
-            t.addData("Raw Pinpoint (X, Y, Deg)", pinpointPose.toFormattedString())
+            if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
+                t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
+                val pinpointPose = com.areslib.math.Pose2d(
+                    state.drive.odometryX,
+                    state.drive.odometryY,
+                    com.areslib.math.Rotation2d(state.drive.odometryHeading)
+                )
+                t.addData("Raw Pinpoint (X, Y, Deg)", pinpointPose.toFormattedString())
 
-            val llStr = visionTracker.lastLimelightPose?.let { pose ->
-                val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
-                "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
-            } ?: "NO TARGET"
-            t.addData("Limelight Pose (X, Y, Deg)", llStr)
-            t.addData("Vision Status", visionTracker.lastVisionStatus)
-            t.update()
+                val llStr = visionTracker.lastLimelightPose?.let { pose ->
+                    val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
+                    "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
+                } ?: "NO TARGET"
+                t.addData("Limelight Pose (X, Y, Deg)", llStr)
+                t.addData("Vision Status", visionTracker.lastVisionStatus)
+                t.update()
+                lastLocalTelemetryUpdateMs = timestamp
+            }
         }
 
         // Finalize frame and flush to loggers/network

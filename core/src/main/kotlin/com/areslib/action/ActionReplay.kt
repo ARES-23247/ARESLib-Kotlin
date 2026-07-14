@@ -17,23 +17,20 @@ import java.util.concurrent.ConcurrentHashMap
 object ActionReplay {
     private val gson = Gson()
 
-    private val actionRegistry = ConcurrentHashMap<String, Class<out RobotAction>>(mapOf(
-        "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
-        "VisionUpdate" to RobotAction.VisionUpdate::class.java,
-        "VisionMeasurementsReceived" to RobotAction.VisionMeasurementsReceived::class.java,
-        "PoseUpdate" to RobotAction.PoseUpdate::class.java,
-        "JoystickDriveIntent" to RobotAction.JoystickDriveIntent::class.java,
-        "PathEventTriggered" to RobotAction.PathEventTriggered::class.java,
-        "SetIntakeActive" to RobotAction.SetIntakeActive::class.java,
-        "SetFlywheelActive" to RobotAction.SetFlywheelActive::class.java,
-        "SetTransferActive" to RobotAction.SetTransferActive::class.java,
-        "UpdateFlywheelRPM" to RobotAction.UpdateFlywheelRPM::class.java,
-        "SetFlywheelTargetRPM" to RobotAction.SetFlywheelTargetRPM::class.java,
-        "SetInventoryCount" to RobotAction.SetInventoryCount::class.java,
-        "ChainPaths" to RobotAction.ChainPaths::class.java,
-        "SwitchPath" to RobotAction.SwitchPath::class.java,
-        "UpdatePathProgress" to RobotAction.UpdatePathProgress::class.java
-    ))
+    private val actionRegistry = ConcurrentHashMap<String, Class<out RobotAction>>().apply {
+        putAll(mapOf(
+            "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
+            "VisionUpdate" to RobotAction.VisionUpdate::class.java,
+            "VisionMeasurementsReceived" to RobotAction.VisionMeasurementsReceived::class.java,
+            "PoseUpdate" to RobotAction.PoseUpdate::class.java,
+            "JoystickDriveIntent" to RobotAction.JoystickDriveIntent::class.java,
+            "PathEventTriggered" to RobotAction.PathEventTriggered::class.java,
+            "UpdateSubsystemState" to RobotAction.UpdateSubsystemState::class.java,
+            "ChainPaths" to RobotAction.ChainPaths::class.java,
+            "SwitchPath" to RobotAction.SwitchPath::class.java,
+            "UpdatePathProgress" to RobotAction.UpdatePathProgress::class.java
+        ))
+    }
 
     /**
      * Registers a custom action type for deserialization during replay.
@@ -81,7 +78,7 @@ object ActionReplay {
             val actionClass = actionRegistry[type]
 
             if (actionClass != null) {
-                gson.fromJson(payload, actionClass)
+                gson.fromJson(payload, actionClass as java.lang.reflect.Type)
             } else {
                 System.err.println("ActionReplay: Unknown action type '$type'")
                 null

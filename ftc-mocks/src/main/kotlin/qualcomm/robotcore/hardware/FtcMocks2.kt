@@ -1,3 +1,4 @@
+@file:Suppress("UNUSED_PARAMETER")
 package com.qualcomm.robotcore.hardware
 
 // Append to the existing FtcMocks.kt or just define the missing ones here in a new file

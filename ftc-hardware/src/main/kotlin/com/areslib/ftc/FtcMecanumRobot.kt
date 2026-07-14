@@ -14,7 +14,10 @@ import com.areslib.telemetry.logDriveMotor
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.MecanumDriveFacade
 import com.areslib.action.RobotAction
-import com.areslib.control.VisionAlignController
+import com.areslib.control.drivetrain.VisionAlignController
+import com.areslib.control.assist.SysIdManager
+import com.areslib.control.assist.SysIdMechanism
+import com.areslib.control.assist.SysIdRoutine
 import com.areslib.ftc.telemetry.LimelightProxyAutoStart
 
 /**
@@ -138,7 +141,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
     }
 
-    val sysIdManager = com.areslib.control.SysIdManager()
+    val sysIdManager = SysIdManager()
     
     private var lastLocalTelemetryUpdateMs = 0L
     private var lastCommandProcessed = ""
@@ -158,15 +161,15 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                         val routineStr = command.removePrefix("START_${mechStr}_")
                         
                         val mechanism = try {
-                            com.areslib.control.SysIdMechanism.valueOf(mechStr)
+                            SysIdMechanism.valueOf(mechStr)
                         } catch (e: Exception) {
-                            com.areslib.control.SysIdMechanism.LINEAR
+                            SysIdMechanism.LINEAR
                         }
                         
                         val routine = try {
-                            com.areslib.control.SysIdRoutine.valueOf(routineStr)
+                            SysIdRoutine.valueOf(routineStr)
                         } catch (e: Exception) {
-                            com.areslib.control.SysIdRoutine.NONE
+                            SysIdRoutine.NONE
                         }
                         
                         val pose = store.state.drive.poseEstimator.estimatedPose
@@ -227,7 +230,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 sysIdManager.stop()
                 mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
             } else {
-                val velocity = if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+                val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
                     store.state.drive.xVelocityMetersPerSecond
                 } else {
                     store.state.drive.angularVelocityRadiansPerSecond
@@ -236,7 +239,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 val voltage = sysIdManager.update(timestamp, velocity)
                 val power = (voltage / batteryVoltage).coerceIn(-1.0, 1.0)
                 
-                if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+                if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
                     mecanumIO.setMotorPowers(power, power, power, power)
                 } else {
                     mecanumIO.setMotorPowers(-power, power, -power, power)
@@ -278,7 +281,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
         if (sysIdManager.isActive()) {
             val pose = store.state.drive.poseEstimator.estimatedPose
-            val position = if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+            val position = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
                 val dx = pose.x - sysIdManager.startX
                 val dy = pose.y - sysIdManager.startY
                 kotlin.math.sqrt(dx * dx + dy * dy)
@@ -286,7 +289,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 sysIdManager.accumulatedHeadingChange
             }
             
-            val velocity = if (sysIdManager.activeMechanism == com.areslib.control.SysIdMechanism.LINEAR) {
+            val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
                 store.state.drive.xVelocityMetersPerSecond
             } else {
                 store.state.drive.angularVelocityRadiansPerSecond

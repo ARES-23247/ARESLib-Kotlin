@@ -27,7 +27,7 @@ interface MotorIO : SubsystemIO {
      */
     var powerScale: Double
         get() = 1.0
-        set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     /**
      * Sets the motor output in absolute volts, automatically compensating for battery sag.

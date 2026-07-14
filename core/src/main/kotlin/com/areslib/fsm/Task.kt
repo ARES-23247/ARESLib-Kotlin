@@ -34,83 +34,6 @@ interface Task {
     fun end(state: RobotState, interrupted: Boolean): List<RobotAction> = emptyList()
 }
 
-/**
- * Task to activate the flywheel and wait until it spins up to the target speed.
- */
-class FlywheelReadyTask(
-    private val targetRPM: Double,
-    private val timestampMs: Long,
-    private val timeoutMs: Long = 4000L
-) : Task {
-    override val name = "FlywheelReady($targetRPM RPM)"
-
-    override fun initialize(state: RobotState): List<RobotAction> {
-        return listOf(
-            RobotAction.SetFlywheelActive(active = true, timestampMs = timestampMs)
-        )
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        // Reduced state updates the superstructure.mode to ready or check RPM directly
-        return state.superstructure.flywheelRPM >= targetRPM * 0.95 || elapsedMs >= timeoutMs
-    }
-}
-
-/**
- * Task to activate intake and wait until inventoryCount reaches target.
- */
-class IntakeUntilCountTask(
-    private val targetCount: Int,
-    private val timestampMs: Long,
-    private val timeoutMs: Long = 5000L
-) : Task {
-    override val name = "IntakeUntilCount($targetCount)"
-
-    override fun initialize(state: RobotState): List<RobotAction> {
-        return listOf(
-            RobotAction.SetIntakeActive(active = true, timestampMs = timestampMs)
-        )
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        return state.superstructure.inventoryCount >= targetCount || elapsedMs >= timeoutMs
-    }
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        return listOf(
-            RobotAction.SetIntakeActive(active = false, timestampMs = timestampMs)
-        )
-    }
-}
-
-/**
- * Task to activate transfer and shoot. Blocks until inventoryCount decreases.
- */
-class ShootTask(
-    private val timestampMs: Long
-) : Task {
-    override val name = "Shoot"
-    private var initialCount: Int = -1
-
-    override fun initialize(state: RobotState): List<RobotAction> {
-        initialCount = state.superstructure.inventoryCount
-        return listOf(
-            RobotAction.SetTransferActive(active = true, timestampMs = timestampMs)
-        )
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        // Complete if count decreases or becomes zero, or we time out after 3 seconds safety window
-        val currentCount = state.superstructure.inventoryCount
-        return currentCount < initialCount || currentCount == 0 || elapsedMs > 3000L
-    }
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        return listOf(
-            RobotAction.SetTransferActive(active = false, timestampMs = timestampMs)
-        )
-    }
-}
 
 /**
  * Task to wait for a specific duration of time.
@@ -316,7 +239,19 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         if (activePath.points.isEmpty()) return true
         val targetDistance = activePath.points.last().distanceMeters
-        return state.pathState.currentDistanceMeters >= targetDistance || elapsedMs >= 15000L
+        
+        val isVirtualComplete = state.pathState.currentDistanceMeters >= targetDistance
+        if (!isVirtualComplete && elapsedMs < 15000L) {
+            return false
+        }
+        
+        val currentPose = state.drive.poseEstimator.estimatedPose
+        val endPose = activePath.points.last().pose
+        val dx = currentPose.x - endPose.x
+        val dy = currentPose.y - endPose.y
+        val distToTarget = kotlin.math.sqrt(dx * dx + dy * dy)
+        
+        return distToTarget < 0.1 || elapsedMs >= 15000L
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {

@@ -9,7 +9,7 @@ object LimelightProxyAutoStart {
 
     @WebHandlerRegistrar
     @JvmStatic
-    fun registerWebHandlers(context: Context, manager: WebHandlerManager) {
+    fun registerWebHandlers(@Suppress("UNUSED_PARAMETER") context: Context, @Suppress("UNUSED_PARAMETER") manager: WebHandlerManager) {
         start()
         System.out.println("LimelightProxyAutoStart: Automatically registered web handlers.")
     }

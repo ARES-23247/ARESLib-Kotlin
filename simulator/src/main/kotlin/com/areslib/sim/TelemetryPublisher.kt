@@ -51,14 +51,7 @@ object TelemetryPublisher {
     private var lastWebHeartbeatTimestamp = 0L
     private var lastWebInputReceiveTime = 0L
 
-    // Superstructure telemetry
-    private val flywheelRPMPub = ntInst.getDoubleTopic("Superstructure/FlywheelRPM").publish()
-    private val flywheelTargetRPMPub = ntInst.getDoubleTopic("Superstructure/FlywheelTargetRPM").publish()
-    private val superstructureModePub = ntInst.getStringTopic("Superstructure/Mode").publish()
-    private val intakeActivePub = ntInst.getBooleanTopic("Superstructure/IntakeActive").publish()
-    private val flywheelActivePub = ntInst.getBooleanTopic("Superstructure/FlywheelActive").publish()
-    private val transferActivePub = ntInst.getBooleanTopic("Superstructure/TransferActive").publish()
-    private val inventoryCountPub = ntInst.getIntegerTopic("Superstructure/InventoryCount").publish()
+
 
     // Session log file path publisher
     private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
@@ -190,14 +183,7 @@ object TelemetryPublisher {
     /**
      * Publishes superstructure state (flywheel RPM, mode, active flags).
      */
-    fun publishSuperstructure(state: RobotState) {
-        flywheelRPMPub.set(state.superstructure.flywheelRPM)
-        flywheelTargetRPMPub.set(state.superstructure.flywheelTargetRPM)
-        superstructureModePub.set(state.superstructure.mode.name)
-        intakeActivePub.set(state.superstructure.intakeActive)
-        flywheelActivePub.set(state.superstructure.flywheelActive)
-        transferActivePub.set(state.superstructure.transferActive)
-        inventoryCountPub.set(state.superstructure.inventoryCount.toLong())
+    fun publishSuperstructure(@Suppress("UNUSED_PARAMETER") state: RobotState) {
     }
 
     /**

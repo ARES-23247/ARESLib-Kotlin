@@ -1,3 +1,4 @@
+@file:Suppress("UNUSED_PARAMETER")
 package com.qualcomm.robotcore.eventloop.opmode
 
 import com.qualcomm.robotcore.hardware.HardwareMap
@@ -24,11 +25,11 @@ abstract class LinearOpMode {
     @Volatile var isStarted = false
     @Volatile var isStopRequested = false
     
-    fun opModeIsActive(): Boolean = isStarted && !isStopRequested
-    fun opModeInInit(): Boolean = !isStarted && !isStopRequested
+    fun opModeIsActive(): Boolean = isStarted && !isStopRequested && !Thread.currentThread().isInterrupted
+    fun opModeInInit(): Boolean = !isStarted && !isStopRequested && !Thread.currentThread().isInterrupted
     
     fun waitForStart() {
-        while (!isStarted && !isStopRequested) {
+        while (!isStarted && !isStopRequested && !Thread.currentThread().isInterrupted) {
             Thread.sleep(10)
         }
     }

@@ -15,8 +15,8 @@ class FtcMecanumRobotBuilderTest {
     fun `test ftcMecanumRobot builder with custom names`() {
         val fl = MockDcMotorEx()
         val fr = MockDcMotorEx()
-        val bl = MockDcMotorEx()
-        val br = MockDcMotorEx()
+        val rl = MockDcMotorEx()
+        val rr = MockDcMotorEx()
         val pinpoint = GoBildaPinpointDriver()
         val limelight = Limelight3A()
 
@@ -26,8 +26,8 @@ class FtcMecanumRobotBuilderTest {
                 return when (deviceName) {
                     "my_fl" -> fl as T
                     "my_fr" -> fr as T
-                    "my_bl" -> bl as T
-                    "my_br" -> br as T
+                    "my_rl" -> rl as T
+                    "my_rr" -> rr as T
                     "my_pinpoint" -> pinpoint as T
                     "my_limelight" -> limelight as T
                     else -> throw IllegalArgumentException("Unknown device name: $deviceName")
@@ -49,8 +49,8 @@ class FtcMecanumRobotBuilderTest {
         val robot = ftcMecanumRobot(hardwareMap) {
             frontLeftMotorName = "my_fl"
             frontRightMotorName = "my_fr"
-            backLeftMotorName = "my_bl"
-            backRightMotorName = "my_br"
+            rearLeftMotorName = "my_rl"
+            rearRightMotorName = "my_rr"
             pinpointName = "my_pinpoint"
             limelightName = "my_limelight"
         }

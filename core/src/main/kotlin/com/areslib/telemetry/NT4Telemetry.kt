@@ -30,7 +30,13 @@ class NT4Telemetry : ITelemetry {
             try {
                 // Start the server on port 5810 (Standard NT4 port)
                 // Check if server is already running to avoid exceptions in persistent environments
-                if (inst.server == null) {
+                val isUnitTest = try {
+                    Class.forName("org.junit.Test")
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+                if (!isUnitTest && inst.server == null) {
                     inst.startNT4Server("0.0.0.0", 5810)
                 }
                 isInitialized = true
@@ -106,5 +112,10 @@ class NT4Telemetry : ITelemetry {
      */
     fun putPose2d(key: String, xMeters: Double, yMeters: Double, rotationRadians: Double) {
         putDoubleArray(key, doubleArrayOf(xMeters, yMeters, rotationRadians))
+    }
+
+    override fun close() {
+        if (!isInitialized) return
+        try { inst.closeServer() } catch (e: Exception) { /* swallow */ }
     }
 }

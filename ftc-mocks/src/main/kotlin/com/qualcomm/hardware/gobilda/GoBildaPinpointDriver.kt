@@ -1,3 +1,4 @@
+@file:Suppress("UNUSED_PARAMETER")
 package com.qualcomm.hardware.gobilda
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit

@@ -1,5 +1,21 @@
+@file:Suppress("UNUSED_PARAMETER")
 package com.qualcomm.robotcore.hardware
 
+
+interface HardwareDevice {
+    fun getManufacturer(): Manufacturer
+    fun getDeviceName(): String
+    fun getConnectionInfo(): String
+    fun getVersion(): Int
+    fun resetDeviceConfigurationForOpMode()
+    fun close()
+
+    enum class Manufacturer {
+        Unknown, Other, Lego, HiTechnic, ModernRobotics, Adafruit, Matrix,
+        Lynx, AMS, STMicroelectronics, StepperMotor, I2cDeviceSynchImplSimple,
+        I2cDeviceSynchImpl, Broadcom, MaxBotix, GoBilda, Rev
+    }
+}
 
 open class HardwareMap {
     open fun <T> get(classOrType: Class<out T>, deviceName: String): T {
@@ -8,6 +24,24 @@ open class HardwareMap {
     open fun <T> getAll(classOrType: Class<out T>): List<T> {
         throw NotImplementedError("Mock HardwareMap.getAll() not overridden")
     }
+    open fun <T> getNamesOf(device: T): Set<String> {
+        return emptySet()
+    }
+    open fun remove(serialNumber: String, deviceName: String): Boolean {
+        return true
+    }
+    open fun remove(serialNumber: com.qualcomm.robotcore.util.SerialNumber, deviceName: String): Boolean {
+        return true
+    }
+    open fun remove(serialNumber: String, device: HardwareDevice): Boolean {
+        return true
+    }
+    open fun remove(serialNumber: com.qualcomm.robotcore.util.SerialNumber, device: HardwareDevice): Boolean {
+        return true
+    }
+    open fun put(serialNumber: String, deviceName: String, device: HardwareDevice) {}
+    open fun put(serialNumber: com.qualcomm.robotcore.util.SerialNumber, deviceName: String, device: HardwareDevice) {}
+    open fun put(deviceName: String, device: HardwareDevice) {}
 }
 
 interface VoltageSensor {

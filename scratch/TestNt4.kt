@@ -1,20 +1,10 @@
-import edu.wpi.first.networktables.NetworkTableInstance
+import org.frcforftc.networktables.NetworkTablesInstance
 
 fun main() {
-    val ntInst = NetworkTableInstance.getDefault()
-    ntInst.startClient4("ARES-Analytics-Test")
-    ntInst.setServer("127.0.0.1")
-    
-    val sub = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").subscribe(doubleArrayOf())
-    
-    var count = 0
-    while (count < 10) {
-        val vals = sub.get()
-        if (vals.isNotEmpty()) {
-            println("EstimatedPose: ${vals.joinToString()}")
-            count++
-        }
-        Thread.sleep(100)
-    }
+    val inst1 = NetworkTablesInstance.getDefaultInstance()
+    val inst2 = NetworkTablesInstance.getDefaultInstance()
+    println("Same instance? ${inst1 === inst2}")
+    println("Server initially: ${inst1.server}")
+    inst1.startNT4Server("0.0.0.0", 5810)
+    println("Server after start: ${inst1.server}")
 }
-

@@ -1,8 +1,6 @@
 package com.areslib.subsystem
 
 import com.areslib.state.RobotState
-import com.areslib.state.SuperstructureMode
-import com.areslib.state.SuperstructureState
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -15,22 +13,19 @@ class DslBuilderTest {
         }
         
         assertEquals(0.0, robot.store.state.drive.xVelocityMetersPerSecond)
-        assertEquals(SuperstructureMode.IDLE, robot.store.state.superstructure.mode)
     }
 
     @Test
     fun `test aresRobot builder with custom initial state`() {
         val robot = aresRobot {
             initialState = RobotState(
-                superstructure = SuperstructureState(
-                    flywheelRPM = 1500.0,
-                    inventoryCount = 3
+                drive = com.areslib.state.DriveState(
+                    xVelocityMetersPerSecond = 5.0
                 )
             )
         }
         
-        assertEquals(1500.0, robot.store.state.superstructure.flywheelRPM)
-        assertEquals(3, robot.store.state.superstructure.inventoryCount)
+        assertEquals(5.0, robot.store.state.drive.xVelocityMetersPerSecond)
     }
 
     @Test
@@ -42,7 +37,7 @@ class DslBuilderTest {
             }
         }
         
-        assertEquals(0.0, robot.store.state.superstructure.flywheelRPM)
+        assertEquals(0.0, robot.store.state.drive.xVelocityMetersPerSecond)
     }
 
     @Test

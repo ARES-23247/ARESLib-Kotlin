@@ -126,7 +126,6 @@ object ThetaStarPlanner {
         val openQueue = state.openQueue
 
         val startKey = startY * costmap.widthCells + startX
-        val endKey = endY * costmap.widthCells + endX
 
         gCosts[startKey] = 0.0
         parents[startKey] = startKey

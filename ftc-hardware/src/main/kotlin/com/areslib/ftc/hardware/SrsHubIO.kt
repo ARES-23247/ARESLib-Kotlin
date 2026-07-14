@@ -301,7 +301,7 @@ class SrsHubServoIO(private val srsHub: SrsHubDriver, private val port: Int) : S
 class SrsHubEncoderIO(private val srsHub: SrsHubDriver, private val port: Int) : MotorIO {
     override var power: Double
         get() = 0.0
-        set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     override val velocity: Double
         get() = 0.0
@@ -325,7 +325,7 @@ class SrsHubAbsoluteAnalogEncoder(
 
     override var power: Double
         get() = 0.0
-        set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     override val velocity: Double
         get() = 0.0
@@ -354,7 +354,7 @@ class SrsHubAbsolutePWMEncoder(
 
     override var power: Double
         get() = 0.0
-        set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     fun updateInputs() {
         srsHub.update()

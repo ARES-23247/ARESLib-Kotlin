@@ -116,6 +116,20 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 timestampMs = action.timestampMs
             )
         }
+        is RobotAction.UpdateTuningState -> {
+            val filterConfig = state.vision.filterConfig.copy(
+                maxDistanceMeters = action.tuning.visionMaxDistanceMeters,
+                maxAmbiguity = action.tuning.visionMaxAmbiguity,
+                mahalanobisThreshold = action.tuning.visionMahalanobisThreshold
+            )
+            val updatedVision = state.vision.copy(filterConfig = filterConfig)
+            
+            state.copy(
+                tuning = action.tuning,
+                vision = updatedVision,
+                timestampMs = action.timestampMs
+            )
+        }
         else -> {
             // Standard action propagation: Compose all independent domain slice reducers
             state.copy(

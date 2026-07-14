@@ -1,6 +1,7 @@
 package com.areslib.telemetry
 
 import com.areslib.state.RobotState
+import com.areslib.control.safety.BrownoutGuard
 
 /**
  * Serializes and publishes the complete RobotState to an ITelemetry interface.
@@ -10,6 +11,7 @@ import com.areslib.state.RobotState
 class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
     private val EMPTY_DOUBLE_ARRAY = DoubleArray(0)
+    private val covarianceArray = DoubleArray(3)
     
     private var lastPublishedPath: com.areslib.pathing.Path? = null
     private var cachedPathPoints: DoubleArray = EMPTY_DOUBLE_ARRAY
@@ -20,7 +22,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         gamepad2: GamepadState? = null,
         dtSeconds: Double? = null,
         batteryVoltage: Double? = null,
-        brownoutGuard: com.areslib.control.BrownoutGuard? = null
+        brownoutGuard: com.areslib.control.safety.BrownoutGuard? = null
     ) {
         // ── Drive ──
         // Raw Pinpoint Odometry
@@ -39,7 +41,10 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
         // ── EKF Covariance Diagonals ──
         val cov = state.drive.poseEstimator.covariance
-        telemetry.putDoubleArray("Robot/Odometry/Covariance", doubleArrayOf(cov.m00, cov.m11, cov.m22))
+        covarianceArray[0] = cov.m00
+        covarianceArray[1] = cov.m11
+        covarianceArray[2] = cov.m22
+        telemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceArray)
 
         // ── AdvantageScope 3D Pose ──
         telemetry.logPose3d("Robot/Pose3d", state.drive.poseEstimator.estimatedPose)
@@ -60,16 +65,6 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.putNumber("Diagnostics/Power/BrownoutCount", brownoutGuard.tripCount.toDouble())
         }
 
-        // ── Superstructure ──
-        telemetry.putString("Superstructure/Mode", state.superstructure.mode.name)
-        telemetry.putNumber("Superstructure/Flywheel_RPM", state.superstructure.flywheelRPM)
-        telemetry.putNumber("Superstructure/Flywheel_Target", state.superstructure.flywheelTargetRPM)
-        telemetry.putBoolean("Superstructure/Flywheel_Active", state.superstructure.flywheelActive)
-        telemetry.putBoolean("Superstructure/Flywheel_AtSpeed", state.superstructure.isFlywheelAtSpeed)
-        telemetry.putBoolean("Superstructure/Intake_Active", state.superstructure.intakeActive)
-        telemetry.putBoolean("Superstructure/Transfer_Active", state.superstructure.transferActive)
-        telemetry.putNumber("Superstructure/Elevator_Height", state.superstructure.elevatorHeightMeters)
-        telemetry.putNumber("Superstructure/Inventory", state.superstructure.inventoryCount.toDouble())
 
         // ── Vision ──
         telemetry.putBoolean("Vision/HasTarget", state.vision.hasTarget)
@@ -85,7 +80,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
             telemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
         } else {
-            telemetry.putDoubleArray("Vision/PoseArray", doubleArrayOf())
+            telemetry.putDoubleArray("Vision/PoseArray", EMPTY_DOUBLE_ARRAY)
             telemetry.putNumber("Vision/Pose_X", 0.0)
             telemetry.putNumber("Vision/Pose_Y", 0.0)
             telemetry.putNumber("Vision/Pose_Heading", 0.0)

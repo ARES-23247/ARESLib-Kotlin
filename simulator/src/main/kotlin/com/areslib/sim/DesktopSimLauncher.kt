@@ -703,21 +703,21 @@ object DesktopSimLauncher {
             //   FtcMecanumPathFollower → joystickDrive → DriveReducer → MecanumHardwareIO → SimMotor.power
             val pFL = robotDouble.fl.power
             val pFR = robotDouble.fr.power
-            val pBL = robotDouble.bl.power
-            val pBR = robotDouble.br.power
+            val pRL = robotDouble.rl.power
+            val pRR = robotDouble.rr.power
 
             // Forward kinematics: wheel powers → chassis-space velocities
             val maxWheelSpeed = 3.5
             val wFL = pFL * maxWheelSpeed
             val wFR = pFR * maxWheelSpeed
-            val wBL = pBL * maxWheelSpeed
-            val wBR = pBR * maxWheelSpeed
+            val wRL = pRL * maxWheelSpeed
+            val wRR = pRR * maxWheelSpeed
 
             val L = 0.45
             val chassisSpeeds = ChassisSpeeds(
-                vxMetersPerSecond = (wFL + wFR + wBL + wBR) / 4.0,
-                vyMetersPerSecond = (-wFL + wFR + wBL - wBR) / 4.0,
-                omegaRadiansPerSecond = (-wFL + wFR - wBL + wBR) / (4.0 * L)
+                vxMetersPerSecond = (wFL + wFR + wRL + wRR) / 4.0,
+                vyMetersPerSecond = (-wFL + wFR + wRL - wRR) / 4.0,
+                omegaRadiansPerSecond = (-wFL + wFR - wRL + wRR) / (4.0 * L)
             )
 
             TelemetryPublisher.publishTargetPose(currentPose)
@@ -770,11 +770,11 @@ object DesktopSimLauncher {
                 val noisyY = currentPose.y + rand.nextGaussian() * noiseTranslation
                 val noisyHeading = currentPose.heading.radians + rand.nextGaussian() * noiseRotation
                 
-                val ftcYaw = noisyHeading + Math.PI / 2.0
+                val ftcYaw = noisyHeading
                 
                 val position = org.firstinspires.ftc.robotcore.external.navigation.Position(
                     org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER,
-                    -noisyY, noisyX, 0.0
+                    noisyX, noisyY, 0.0
                 )
                 val orientation = org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles(
                     org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS,
@@ -841,18 +841,7 @@ object DesktopSimLauncher {
             // Step physics engine
             world.step(1, TIMESTEP_SEC)
 
-            // Synchronize RobotState telemetry values
-            state = state.copy(
-                superstructure = state.superstructure.copy(
-                    intakeActive = simIntakeActive,
-                    flywheelActive = simFlywheelActive,
-                    flywheelRPM = simFlywheelRPM,
-                    transferActive = simTransferActive,
-                    inventoryCount = simInventoryCount
-                )
-            )
-
-            // AdvantageScope outputs
+            // Synchronize RobotState telemetry values            // AdvantageScope outputs
             TelemetryPublisher.publishChassisSpeeds(chassisSpeeds)
             TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode, driverStation.isRedAlliance)
             TelemetryPublisher.publishEstimatedPose(currentPose)

@@ -141,42 +141,16 @@ interface RobotAction {
         override val timestampMs: Long
     ) : RobotAction
 
-    // Superstructure FSM Actions
+    // Superstructure Actions
 
-    /** Activates or deactivates the intake motor. */
-    data class SetIntakeActive(
-        val active: Boolean,
-        override val timestampMs: Long
-    ) : RobotAction
-
-    /** Activates or deactivates the flywheel motor. */
-    data class SetFlywheelActive(
-        val active: Boolean,
-        override val timestampMs: Long
-    ) : RobotAction
-
-    /** Activates or deactivates the transfer motor (feeding game pieces to the flywheel). */
-    data class SetTransferActive(
-        val active: Boolean,
-        override val timestampMs: Long
-    ) : RobotAction
-
-    /** Reports the measured flywheel RPM from the encoder. */
-    data class UpdateFlywheelRPM(
-        val rpm: Double,
-        override val timestampMs: Long
-    ) : RobotAction
-
-    /** Sets the desired flywheel target RPM for the speed controller. */
-    data class SetFlywheelTargetRPM(
-        val targetRpm: Double,
-        override val timestampMs: Long
-    ) : RobotAction
-
-    /** Sets the current game piece inventory count. */
-    data class SetInventoryCount(
-        val count: Int,
-        override val timestampMs: Long
+    /**
+     * Replaces or registers a generic subsystem state implementation in the Redux store.
+     *
+     * @param state The newly updated immutable subsystem state object.
+     */
+    data class UpdateSubsystemState(
+        val state: com.areslib.state.SubsystemState,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 
     // Path Following and Switching Actions
@@ -214,5 +188,13 @@ interface RobotAction {
     data class UpdatePathProgress(
         val distanceProgressMeters: Double,
         override val timestampMs: Long
+    ) : RobotAction
+
+    /**
+     * Updates the global tuning and PID constants dynamically from the dashboard.
+     */
+    data class UpdateTuningState(
+        val tuning: com.areslib.state.TuningState,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 }

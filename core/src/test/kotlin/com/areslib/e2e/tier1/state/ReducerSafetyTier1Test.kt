@@ -41,18 +41,4 @@ class ReducerSafetyTier1Test {
         assertSame(pathState, PathReducer.reduce(pathState, invalidAction))
     }
 
-    @Test
-    fun testSuperstructureReducer_invalidModes_shouldGracefullyDiscard() {
-        val originalState = SuperstructureState()
-        
-        // Set transfer active is only valid if flywheel is ready/at speed and inventory > 0.
-        // Let's test that if we dispatch it while idle, it safely handles it without throwing.
-        val transferAction = RobotAction.SetTransferActive(active = true, timestampMs = 100L)
-        val resultState = SuperstructureReducer.reduce(originalState, transferAction)
-        
-        // Should not throw, and should maintain healthy state limits
-        assertNotNull(resultState)
-        assertEquals(SuperstructureMode.IDLE, resultState.mode)
-        assertFalse(resultState.transferActive)
-    }
 }

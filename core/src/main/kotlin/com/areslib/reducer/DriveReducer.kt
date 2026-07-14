@@ -90,7 +90,8 @@ object DriveReducer {
                     rollDegrees = action.rollDegrees,
                     xAccelerationG = action.xAccelerationG,
                     yAccelerationG = action.yAccelerationG,
-                    zAccelerationG = action.zAccelerationG
+                    zAccelerationG = action.zAccelerationG,
+                    headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians
                 ).updateDiagnostics(action.xMeters, action.yMeters, action.headingRadians, updatedEstimator)
             }
             is RobotAction.SetDriveMode -> {

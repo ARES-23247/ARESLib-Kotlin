@@ -38,8 +38,8 @@ class TaskGroupTest {
 
     @Test
     fun `test SequentialTaskGroup execution order`() {
-        val action1 = RobotAction.SetInventoryCount(1, 100L)
-        val action2 = RobotAction.SetInventoryCount(2, 200L)
+        val action1 = RobotAction.PathEventTriggered("Event1", 100L)
+        val action2 = RobotAction.PathEventTriggered("Event2", 200L)
         
         val task1 = MockTestTask("Task1", 100L, action1)
         val task2 = MockTestTask("Task2", 150L, action2)
@@ -78,8 +78,8 @@ class TaskGroupTest {
 
     @Test
     fun `test ParallelTaskGroup concurrent execution`() {
-        val action1 = RobotAction.SetInventoryCount(1, 100L)
-        val action2 = RobotAction.SetInventoryCount(2, 200L)
+        val action1 = RobotAction.PathEventTriggered("Event1", 100L)
+        val action2 = RobotAction.PathEventTriggered("Event2", 200L)
 
         val task1 = MockTestTask("Task1", 100L, action1)
         val task2 = MockTestTask("Task2", 200L, action2)

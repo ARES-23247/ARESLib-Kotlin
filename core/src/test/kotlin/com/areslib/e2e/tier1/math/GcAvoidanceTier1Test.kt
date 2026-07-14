@@ -1,7 +1,7 @@
 package com.areslib.e2e.tier1.math
 
-import com.areslib.control.LQRController
-import com.areslib.control.PIDController
+import com.areslib.control.feedback.LQRController
+import com.areslib.control.feedback.PIDController
 import com.areslib.math.HistoryBuffer
 import com.areslib.math.Pose2d
 import com.areslib.math.Matrix3x3

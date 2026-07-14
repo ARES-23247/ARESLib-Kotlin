@@ -19,7 +19,7 @@ object FieldObstacleLoader {
      * Parses a JSON string containing field obstacles and spawns them into the dyn4j World.
      * Consumes the RobotFieldConfig schema in meters directly.
      */
-    fun loadObstacles(world: World<Body>, jsonString: String, inMeters: Boolean = false): List<Body> {
+    fun loadObstacles(world: World<Body>, jsonString: String, @Suppress("UNUSED_PARAMETER") inMeters: Boolean = false): List<Body> {
         try {
             val root = gson.fromJson(jsonString, com.google.gson.JsonObject::class.java)
             if (root == null) return emptyList()

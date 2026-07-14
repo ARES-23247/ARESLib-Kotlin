@@ -1,8 +1,8 @@
 package com.areslib.ftc.control
 
 import com.areslib.ftc.FtcMecanumRobot
-import com.areslib.control.HolonomicDriveController
-import com.areslib.control.PIDController
+import com.areslib.control.drivetrain.HolonomicDriveController
+import com.areslib.control.feedback.PIDController
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathPoint
 
