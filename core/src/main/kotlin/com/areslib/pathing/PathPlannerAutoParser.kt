@@ -3,7 +3,7 @@ package com.areslib.pathing
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonArray
-import com.areslib.fsm.*
+import com.areslib.sequencer.*
 import java.io.File
 
 object PathPlannerAutoParser {

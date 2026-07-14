@@ -1,4 +1,4 @@
-package com.areslib.fsm
+package com.areslib.sequencer
 
 import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Pose2d

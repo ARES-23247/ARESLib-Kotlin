@@ -1,4 +1,4 @@
-package com.areslib.fsm
+package com.areslib.sequencer
 
 import com.google.gson.Gson
 import com.areslib.action.RobotAction

@@ -346,7 +346,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         }
     }
 
-    private var activePathfindTask: com.areslib.fsm.PathfindToPoseTask? = null
+    private var activePathfindTask: com.areslib.sequencer.PathfindToPoseTask? = null
     private var pathfindStartMs = 0L
     private val pathfindFollower by lazy { com.areslib.pathing.HolonomicPathFollower(drive) }
     private var wasPathfindRequested = false
@@ -366,7 +366,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 val config = com.areslib.state.RobotFieldManager.activeConfig
                 val costmap = com.areslib.pathing.Costmap.fromFieldConfig(config)
                 
-                activePathfindTask = com.areslib.fsm.PathfindToPoseTask(
+                activePathfindTask = com.areslib.sequencer.PathfindToPoseTask(
                     targetPose = targetPose,
                     follower = pathfindFollower,
                     costmap = costmap,

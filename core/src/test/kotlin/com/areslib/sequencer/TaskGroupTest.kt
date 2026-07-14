@@ -1,4 +1,4 @@
-package com.areslib.fsm
+package com.areslib.sequencer
 
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
@@ -157,4 +157,3 @@ class TaskGroupTest {
         assertEquals(0.0, speedsVy)
     }
 }
-

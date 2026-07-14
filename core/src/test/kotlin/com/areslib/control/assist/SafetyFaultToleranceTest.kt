@@ -1,8 +1,8 @@
 package com.areslib.control.assist
 
 import com.areslib.action.RobotAction
-import com.areslib.fsm.Task
-import com.areslib.fsm.TaskExecutor
+import com.areslib.sequencer.Task
+import com.areslib.sequencer.TaskExecutor
 import com.areslib.hardware.actuator.MotorIO
 import com.areslib.math.geometry.Translation2d
 import com.areslib.pathing.Costmap

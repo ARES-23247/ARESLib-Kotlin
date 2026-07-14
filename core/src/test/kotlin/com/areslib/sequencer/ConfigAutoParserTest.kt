@@ -1,4 +1,4 @@
-package com.areslib.fsm
+package com.areslib.sequencer
 
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
@@ -63,4 +63,3 @@ class ConfigAutoParserTest {
         }
     }
 }
-

@@ -1,6 +1,6 @@
 package com.areslib.pathing
 
-import com.areslib.fsm.Task
+import com.areslib.sequencer.Task
 
 object NamedCommands {
     private val registry = mutableMapOf<String, (Long) -> Task>()

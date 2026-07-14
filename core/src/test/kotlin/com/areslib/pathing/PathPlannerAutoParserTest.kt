@@ -1,6 +1,6 @@
 package com.areslib.pathing
 
-import com.areslib.fsm.*
+import com.areslib.sequencer.*
 import com.areslib.state.RobotState
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
