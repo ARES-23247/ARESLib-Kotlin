@@ -155,6 +155,20 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
+    fun setOffsets(xOffsetMm: Double, yOffsetMm: Double) {
+        try {
+            driver.setOffsets(xOffsetMm, yOffsetMm, DistanceUnit.MM)
+        } catch (_: Exception) {}
+    }
+
+    fun setEncoderResolution(resolution: Double) {
+        try {
+            if (resolution > 0.0) {
+                driver.setEncoderResolution(resolution)
+            }
+        } catch (_: Exception) {}
+    }
+
     override fun close() {
         running = false
         thread.interrupt()

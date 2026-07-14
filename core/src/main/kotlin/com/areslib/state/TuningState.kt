@@ -39,6 +39,19 @@ data class TuningState(
     val visionMaxAmbiguity: Double = 0.2,
     val visionMahalanobisThreshold: Double = 12.0,
 
+    // Localization / EKF Noise Tuning
+    val odomQx: Double = 0.01,
+    val odomQy: Double = 0.01,
+    val odomQtheta: Double = 0.01,
+
+    // Pinpoint Odometry Tuning
+    val pinpointXOffsetMm: Double = 0.0,
+    val pinpointYOffsetMm: Double = 0.0,
+    val pinpointEncoderResolution: Double = 20.44, // Typical Standard: 20.44 ticks/mm
+
+    // Drivetrain Ticks per Meter
+    val ticksPerMeter: Double = 2000.0,
+
     // Driver Profile Settings
     val driverDeadbandExponent: Double = 1.0,
     val driverSlewRateLimit: Double = 999.0

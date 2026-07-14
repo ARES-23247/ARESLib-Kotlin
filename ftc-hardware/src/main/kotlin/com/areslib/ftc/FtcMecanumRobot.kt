@@ -223,6 +223,17 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 currentTuning.visionStdDevsY,
                 currentTuning.visionStdDevsHeading
             )
+
+            // Dynamic EKF process noise updates
+            com.areslib.math.estimation.PoseEstimator.qX = currentTuning.odomQx
+            com.areslib.math.estimation.PoseEstimator.qY = currentTuning.odomQy
+            com.areslib.math.estimation.PoseEstimator.qTheta = currentTuning.odomQtheta
+
+            // Dynamic Pinpoint offset and resolution updates
+            pinpointIO?.let { p ->
+                p.setOffsets(currentTuning.pinpointXOffsetMm, currentTuning.pinpointYOffsetMm)
+                p.setEncoderResolution(currentTuning.pinpointEncoderResolution)
+            }
             
             lastTuning = currentTuning
         }
@@ -445,11 +456,14 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val rlPos = mecanumIO.rlIO.position
         val rrPos = mecanumIO.rrIO.position
 
+        val currentTicks = store.state.tuning.ticksPerMeter
+        val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeter
+
         // Convert ticks to meters
-        val flMeters = flPos / ticksPerMeter
-        val frMeters = frPos / ticksPerMeter
-        val rlMeters = rlPos / ticksPerMeter
-        val rrMeters = rrPos / ticksPerMeter
+        val flMeters = flPos / ticks
+        val frMeters = frPos / ticks
+        val rlMeters = rlPos / ticks
+        val rrMeters = rrPos / ticks
 
         val heading = imuIO?.let {
             val inputs = com.areslib.hardware.sensor.ImuInputs()
