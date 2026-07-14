@@ -4,6 +4,7 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.ftc.drivetrain.PinpointIO
+import com.areslib.math.wrapAngle
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
@@ -25,7 +26,7 @@ class PinpointIOTest {
         val initialUpdate = pinpointIO.getPoseUpdate()
         assertEquals(1.0, initialUpdate.xMeters, 1e-6)
         assertEquals(-1.0, initialUpdate.yMeters, 1e-6)
-        assertEquals(com.areslib.math.InputMath.wrapAngle(Math.PI), initialUpdate.headingRadians, 1e-6)
+        assertEquals(wrapAngle(Math.PI), initialUpdate.headingRadians, 1e-6)
 
         // 2. Simulate raw movement relative to the initial reset state
         // The raw driver heading is CW-positive (matching real GoBilda hardware).
@@ -43,7 +44,7 @@ class PinpointIOTest {
         // x_field = 0.5 * cos(PI) - 0.0 * sin(PI) + 1.0 = -0.5 + 1.0 = 0.5
         assertEquals(0.5, update1.xMeters, 1e-6)
         assertEquals(-1.0, update1.yMeters, 1e-6)
-        assertEquals(com.areslib.math.InputMath.wrapAngle(Math.PI), update1.headingRadians, 1e-6)
+        assertEquals(wrapAngle(Math.PI), update1.headingRadians, 1e-6)
 
         // 3. Simulate CW rotation (positive in raw hardware) and translation in driver frame
         // rawDriver.heading = 0.5 means 0.5 rad CW rotation in hardware
@@ -60,7 +61,7 @@ class PinpointIOTest {
         // y_field = 1.0 * sin(PI) + 0.5 * cos(PI) - 1.0 = 0.0 - 0.5 - 1.0 = -1.5
         assertEquals(0.0, update2.xMeters, 1e-6)
         assertEquals(-1.5, update2.yMeters, 1e-6)
-        assertEquals(com.areslib.math.InputMath.wrapAngle(0.5 + Math.PI), update2.headingRadians, 1e-6)
+        assertEquals(wrapAngle(0.5 + Math.PI), update2.headingRadians, 1e-6)
     }
  
     @Test

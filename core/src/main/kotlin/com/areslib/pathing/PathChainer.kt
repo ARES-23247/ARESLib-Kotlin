@@ -3,6 +3,7 @@ package com.areslib.pathing
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import kotlin.math.hypot
+import com.areslib.math.wrapAngle
 import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.math.PI
@@ -91,7 +92,7 @@ object PathChainer {
                     val blendedVel = (1.0 - tau) * vA + tau * vB
 
                     // Angle shortest-path interpolation
-                    val diff = com.areslib.math.InputMath.wrapAngle(headingB - headingA)
+                    val diff = wrapAngle(headingB - headingA)
                     val blendedHeading = Rotation2d(headingA + diff * tau)
 
                     stitchedPoints[idx] = pt.copy(

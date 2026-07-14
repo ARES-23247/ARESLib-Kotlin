@@ -4,6 +4,7 @@ import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.filter.LowPassFilter
 import com.areslib.pathing.Path
+import com.areslib.math.wrapAngle
 import com.areslib.control.feedback.PIDController
 
 /**
@@ -141,7 +142,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                     val prev = history[history.size - 2]
                     val dt = (latest.timestampMs - prev.timestampMs) / 1000.0
                     if (dt > 0.001) {
-                        com.areslib.math.InputMath.wrapAngle(latest.headingRad - prev.headingRad) / dt
+                        wrapAngle(latest.headingRad - prev.headingRad) / dt
                     } else 0.0
                 } else angularVelocity
 
@@ -162,7 +163,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 headingPID.d = tuning.headingKd
                 headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
 
-                val rawError = com.areslib.math.InputMath.wrapAngle(target - headingRad)
+                val rawError = wrapAngle(target - headingRad)
                 val filteredError = headingErrorFilter.calculate(rawError, 0.02)
                 finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02) / maxAngularSpeedRps
                 fromHeadingHold = true

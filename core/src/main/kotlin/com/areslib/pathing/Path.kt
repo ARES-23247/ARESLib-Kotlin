@@ -3,6 +3,7 @@ package com.areslib.pathing
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import kotlin.math.hypot
+import com.areslib.math.wrapAngle
 
 /**
  * Represents a single point along a trajectory path.
@@ -78,7 +79,7 @@ data class Path(
                 // For simplicity, linearly interpolate heading. In a production system, use AngleMath.lerp.
                 val deltaHeading = p2.pose.heading.radians - p1.pose.heading.radians
                 // Normalize delta
-                val normDelta = com.areslib.math.InputMath.wrapAngle(deltaHeading)
+                val normDelta = wrapAngle(deltaHeading)
                 
                 val interpHeading = Rotation2d(p1.pose.heading.radians + normDelta * t)
                 val interpVel = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t
@@ -86,7 +87,7 @@ data class Path(
                 
                 // Interpolate tangent with angle wrapping
                 val deltaTangent = p2.tangentRadians - p1.tangentRadians
-                val normTangentDelta = com.areslib.math.InputMath.wrapAngle(deltaTangent)
+                val normTangentDelta = wrapAngle(deltaTangent)
                 val interpTangent = p1.tangentRadians + normTangentDelta * t
                 
                 return PathPoint(
@@ -138,7 +139,7 @@ data class Path(
                 out.y = p1.pose.y + (p2.pose.y - p1.pose.y) * t
                 
                 val deltaHeading = p2.pose.heading.radians - p1.pose.heading.radians
-                val normDelta = com.areslib.math.InputMath.wrapAngle(deltaHeading)
+                val normDelta = wrapAngle(deltaHeading)
                 out.headingRad = p1.pose.heading.radians + normDelta * t
                 
                 out.velocityMps = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t
@@ -146,7 +147,7 @@ data class Path(
                 out.curvature = p1.curvature + (p2.curvature - p1.curvature) * t
                 
                 val deltaTangent = p2.tangentRadians - p1.tangentRadians
-                val normTangentDelta = com.areslib.math.InputMath.wrapAngle(deltaTangent)
+                val normTangentDelta = wrapAngle(deltaTangent)
                 out.tangentRadians = p1.tangentRadians + normTangentDelta * t
                 return
             }

@@ -4,6 +4,7 @@ import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.math.geometry.Translation2d
 import kotlin.math.*
+import com.areslib.math.wrapAngle
 
 /**
  * Pre-allocated result container for zero-allocation ShotSetup calculations.
@@ -154,7 +155,7 @@ class ShotSetup(private val config: ShotConfig) {
         // Rearward-facing shooter: robot's front is 180° from the aim direction
         val robotTargetHeading = if (config.shooterFacesRearward) aimAngle + PI else aimAngle
 
-        val wrappedRobotHeading = com.areslib.math.InputMath.wrapAngle(robotTargetHeading)
+        val wrappedRobotHeading = wrapAngle(robotTargetHeading)
 
         // 6. Direct derivative for exact heading angular velocity feedforward
         val angularVelFF = if (aimDistance > 0.05) {

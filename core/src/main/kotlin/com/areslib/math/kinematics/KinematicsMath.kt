@@ -1,4 +1,4 @@
-package com.areslib.math
+package com.areslib.math.kinematics
 
 import kotlin.math.sqrt
 

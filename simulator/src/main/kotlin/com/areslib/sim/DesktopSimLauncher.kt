@@ -7,6 +7,7 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
 import com.areslib.util.RobotClock
+import com.areslib.math.wrapAngle
 import com.qualcomm.hardware.limelightvision.LLResult
 import com.qualcomm.hardware.limelightvision.LLResultTypes
 import org.dyn4j.dynamics.Body
@@ -733,7 +734,7 @@ object DesktopSimLauncher {
                 
                 // Calculate angle from robot to tag to check FOV
                 val angleToTag = kotlin.math.atan2(tagPose.translation.y - currentPose.y, tagPose.translation.x - currentPose.x)
-                val angleDiff = com.areslib.math.InputMath.wrapAngle(angleToTag - currentPose.heading.radians)
+                val angleDiff = wrapAngle(angleToTag - currentPose.heading.radians)
                 
                 // Calculate Target Space coordinates
                 val tagYaw = tagPose.rotation.z

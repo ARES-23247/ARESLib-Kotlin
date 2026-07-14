@@ -1,7 +1,7 @@
 package com.areslib.math.estimation
 
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.FieldLayouts
+import com.areslib.math.coordinate.FieldLayouts
 import com.areslib.math.geometry.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue

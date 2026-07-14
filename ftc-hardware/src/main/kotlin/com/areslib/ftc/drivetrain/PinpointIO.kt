@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import com.areslib.math.wrapAngle
 
 /**
  * Interface to the GoBilda Pinpoint Odometry Computer.
@@ -62,7 +63,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 val sinH = kotlin.math.sin(offsetHeading)
                 val x = rawX * cosH - rawY * sinH + offsetX
                 val y = rawX * sinH + rawY * cosH + offsetY
-                val heading = com.areslib.math.InputMath.wrapAngle(rawHeading + offsetHeading)
+                val heading = wrapAngle(rawHeading + offsetHeading)
 
                 synchronized(lock) {
                     lastX = x
@@ -137,7 +138,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 val rawHeading = driver.getHeading(AngleUnit.RADIANS)
 
                 synchronized(lock) {
-                    offsetHeading = com.areslib.math.InputMath.wrapAngle(pose.heading.radians - rawHeading)
+                    offsetHeading = wrapAngle(pose.heading.radians - rawHeading)
                     val cosH = kotlin.math.cos(offsetHeading)
                     val sinH = kotlin.math.sin(offsetHeading)
                     offsetX = pose.x - (rawX * cosH - rawY * sinH)

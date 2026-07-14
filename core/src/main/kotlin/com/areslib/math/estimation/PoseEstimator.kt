@@ -1,8 +1,8 @@
 package com.areslib.math.estimation
 
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.InputMath
-import com.areslib.math.FieldLayouts
+import com.areslib.math.coordinate.FieldLayouts
+import com.areslib.math.wrapAngle
 import com.areslib.math.geometry.*
 
 data class PoseHistoryEntry(
@@ -389,7 +389,7 @@ object PoseEstimator {
             val dx = tagPose.x - baseEntry.x
             val dy = tagPose.y - baseEntry.y
             val losHeading = kotlin.math.atan2(dy, dx)
-            val phi = InputMath.wrapAngle(losHeading - tagPose.rotation.z)
+            val phi = wrapAngle(losHeading - tagPose.rotation.z)
             val cosPhi = kotlin.math.cos(phi)
             incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 10.0)
             kotlin.math.sqrt(dx * dx + dy * dy)
@@ -453,7 +453,7 @@ object PoseEstimator {
 
         // Innovation residual y = z - Hx (where H is identity since we directly measure pose)
         val measurementPose2d = measurement.targetPose.toPose2d()
-        val headingDiff = InputMath.wrapAngle(measurementPose2d.heading.radians - baseEntry.headingRad)
+        val headingDiff = wrapAngle(measurementPose2d.heading.radians - baseEntry.headingRad)
 
         val yX = measurementPose2d.x - baseEntry.x
         val yY = measurementPose2d.y - baseEntry.y
@@ -529,7 +529,7 @@ object PoseEstimator {
         // Now we must replay all odometry deltas from closestIndex + 1 to the end
         var currentX = baseEntry.x + dxX
         var currentY = baseEntry.y + dxY
-        var currentHeadingRad = InputMath.wrapAngle(baseEntry.headingRad + dxZ)
+        var currentHeadingRad = wrapAngle(baseEntry.headingRad + dxZ)
         var currentCov = scratchCov
 
         scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, currentCov, baseEntry.qScale)
@@ -546,7 +546,7 @@ object PoseEstimator {
             // Re-apply delta to our updated state
             currentX += deltaX
             currentY += deltaY
-            currentHeadingRad = InputMath.wrapAngle(currentHeadingRad + deltaHeading)
+            currentHeadingRad = wrapAngle(currentHeadingRad + deltaHeading)
 
             val scale = currRaw.qScale
             scratchCov2.m00 = currentCov.m00 + Q.m00 * scale

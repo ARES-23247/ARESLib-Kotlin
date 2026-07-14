@@ -9,6 +9,7 @@ import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Vector3
 import com.areslib.subsystem.VisionTracker
+import com.areslib.math.wrapAngle
 
 /**
  * Manages the robot's AprilTag vision tracking system.
@@ -70,7 +71,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val dy = fieldPose2d.y - robotPose.y
         val distance = kotlin.math.sqrt(dx * dx + dy * dy)
         val fieldYaw = fieldPose3d.rotation.z
-        val headingDiff = com.areslib.math.InputMath.wrapAngle(fieldYaw - robotHeading)
+        val headingDiff = wrapAngle(fieldYaw - robotHeading)
 
         lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
         val filterConfig = store.state.vision.filterConfig
@@ -183,7 +184,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                         
                         val yX = fieldPose2d.x - baseEntry.pose.x
                         val yY = fieldPose2d.y - baseEntry.pose.y
-                        val yZ = com.areslib.math.InputMath.wrapAngle(fieldPose2d.heading.radians - baseEntry.pose.heading.radians)
+                        val yZ = wrapAngle(fieldPose2d.heading.radians - baseEntry.pose.heading.radians)
                         
                         val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
                         if (dMSquared > filterConfig.mahalanobisThreshold) {

@@ -1,7 +1,8 @@
-package com.areslib.math
+package com.areslib.math.coordinate
 
 import com.areslib.state.Alliance
 import com.areslib.math.geometry.*
+import com.areslib.math.wrapAngle
 
 object CoordinateTransformers {
     const val FTC_FIELD_SIZE = 3.6576
@@ -59,7 +60,7 @@ object CoordinateTransformers {
         return Pose2d(
             x = -pose.x,
             y = -pose.y,
-            heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
+            heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
         )
     }
 
@@ -80,7 +81,7 @@ object CoordinateTransformers {
         return Pose2d(
             x = fieldLength - pose.x,
             y = fieldWidth - pose.y,
-            heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
+            heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
         )
     }
 
@@ -93,7 +94,7 @@ object CoordinateTransformers {
         return Pose2d(
             x = fieldLength - pose.x,
             y = pose.y,
-            heading = Rotation2d(InputMath.wrapAngle(Math.PI - pose.heading.radians))
+            heading = Rotation2d(wrapAngle(Math.PI - pose.heading.radians))
         )
     }
 

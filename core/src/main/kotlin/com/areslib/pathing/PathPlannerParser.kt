@@ -6,6 +6,8 @@ import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
 import kotlin.math.hypot
+import com.areslib.math.wrapAngle
+import com.areslib.math.kinematics.KinematicsMath
 
 object PathPlannerParser {
     private val gson = Gson()
@@ -52,14 +54,14 @@ object PathPlannerParser {
         if (parsedWaypoints.size > 1) {
             val wp1 = parsedWaypoints[0]
             val wp2 = parsedWaypoints[1]
-            initialTangent = com.areslib.math.BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 0.0)
+            initialTangent = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 0.0)
         }
 
         var finalTangent = Rotation2d(0.0)
         if (parsedWaypoints.size > 1) {
             val wp1 = parsedWaypoints[parsedWaypoints.size - 2]
             val wp2 = parsedWaypoints[parsedWaypoints.size - 1]
-            finalTangent = com.areslib.math.BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 1.0)
+            finalTangent = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 1.0)
         }
 
         val startState = when {
@@ -142,8 +144,8 @@ object PathPlannerParser {
             val numSamples = 20
             for (step in 1..numSamples) {
                 val t = step.toDouble() / numSamples
-                val point = com.areslib.math.BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
-                val heading = com.areslib.math.BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
+                val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
+                val heading = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
                 
                 // Calculate distance from previous point
                 val prevPathPoint = pathPoints.last()
@@ -173,7 +175,7 @@ object PathPlannerParser {
             
             val ds = pNext.distanceMeters - pPrev.distanceMeters
             val dTheta = pNext.pose.heading.radians - pPrev.pose.heading.radians
-            val normDTheta = com.areslib.math.InputMath.wrapAngle(dTheta)
+            val normDTheta = wrapAngle(dTheta)
             
             val kappa = if (ds > 1e-4) normDTheta / ds else 0.0
             
@@ -242,7 +244,7 @@ object PathPlannerParser {
                 val t2 = (1.0 - Math.cos(t * Math.PI)) / 2.0
                 val startAngle = explicitRotations[prevIdx]!!
                 val endAngle = explicitRotations[nextIdx]!!
-                val delta = com.areslib.math.InputMath.wrapAngle(endAngle - startAngle)
+                val delta = wrapAngle(endAngle - startAngle)
                 val interpAngle = startAngle + delta * t2
                 val p = pathPoints[idx]
                 pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(interpAngle)))
@@ -277,7 +279,7 @@ object PathPlannerParser {
                 activeMaxVel
             }
 
-            val maxReachable = com.areslib.math.KinematicsMath.finalVelocity(prev.velocityMps, activeMaxAccel, dx)
+            val maxReachable = KinematicsMath.finalVelocity(prev.velocityMps, activeMaxAccel, dx)
             val newVel = minOf(pointMaxVel, maxReachable)
             pathPoints[i] = curr.copy(velocityMps = newVel)
         }
@@ -310,7 +312,7 @@ object PathPlannerParser {
                 activeMaxVel
             }
 
-            val maxReachable = com.areslib.math.KinematicsMath.finalVelocity(next.velocityMps, activeMaxAccel, dx)
+            val maxReachable = KinematicsMath.finalVelocity(next.velocityMps, activeMaxAccel, dx)
             val newVel = minOf(curr.velocityMps, minOf(pointMaxVel, maxReachable))
             pathPoints[i] = curr.copy(velocityMps = newVel)
         }
@@ -407,8 +409,8 @@ object PathPlannerParser {
             val numSamples = 20
             for (step in 1..numSamples) {
                 val t = step.toDouble() / numSamples
-                val point = com.areslib.math.BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
-                val heading = com.areslib.math.BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
+                val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
+                val heading = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
                 val prevPathPoint = pathPoints.last()
                 val dx = point.x - prevPathPoint.pose.x
                 val dy = point.y - prevPathPoint.pose.y
@@ -432,7 +434,7 @@ object PathPlannerParser {
             val pNext = pathPoints[nextIdx]
             val ds = pNext.distanceMeters - pPrev.distanceMeters
             val dTheta = pNext.pose.heading.radians - pPrev.pose.heading.radians
-            val normDTheta = com.areslib.math.InputMath.wrapAngle(dTheta)
+            val normDTheta = wrapAngle(dTheta)
             val kappa = if (ds > 1e-4) normDTheta / ds else 0.0
             pathPoints[idx] = pathPoints[idx].copy(curvature = kappa)
         }
@@ -445,7 +447,7 @@ object PathPlannerParser {
             val dCurr = pathPoints[idx].distanceMeters
             val t = if (totalDist < 1e-6) 0.0 else dCurr / totalDist
             val t2 = (1.0 - Math.cos(t * Math.PI)) / 2.0
-            val delta = com.areslib.math.InputMath.wrapAngle(endAngle - startAngle)
+            val delta = wrapAngle(endAngle - startAngle)
             val interpAngle = startAngle + delta * t2
             val p = pathPoints[idx]
             pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(interpAngle)))
@@ -464,7 +466,7 @@ object PathPlannerParser {
             } else {
                 maxVelocityMps
             }
-            val maxReachable = com.areslib.math.KinematicsMath.finalVelocity(prev.velocityMps, maxAccelerationMps2, dx)
+            val maxReachable = KinematicsMath.finalVelocity(prev.velocityMps, maxAccelerationMps2, dx)
             val newVel = minOf(pointMaxVel, maxReachable)
             pathPoints[i] = curr.copy(velocityMps = newVel)
         }
@@ -482,7 +484,7 @@ object PathPlannerParser {
             } else {
                 maxVelocityMps
             }
-            val maxReachable = com.areslib.math.KinematicsMath.finalVelocity(next.velocityMps, maxAccelerationMps2, dx)
+            val maxReachable = KinematicsMath.finalVelocity(next.velocityMps, maxAccelerationMps2, dx)
             val newVel = minOf(curr.velocityMps, minOf(pointMaxVel, maxReachable))
             pathPoints[i] = curr.copy(velocityMps = newVel)
         }

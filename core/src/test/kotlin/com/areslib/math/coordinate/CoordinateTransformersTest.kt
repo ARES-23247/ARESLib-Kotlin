@@ -1,4 +1,4 @@
-package com.areslib.math
+package com.areslib.math.coordinate
 
 import org.junit.jupiter.api.Test
 import com.areslib.math.geometry.*
@@ -7,6 +7,7 @@ import com.areslib.state.Alliance
 import com.areslib.state.DriveState
 import com.areslib.action.RobotAction
 import com.areslib.reducer.DriveReducer
+import com.areslib.math.wrapAngle
 
 class CoordinateTransformersTest {
 
@@ -25,7 +26,7 @@ class CoordinateTransformersTest {
         assertEquals(-1.0, redFlipped.x, 0.001)
         assertEquals(1.5, redFlipped.y, 0.001)
         
-        val expectedHeading = InputMath.wrapAngle(0.5 + Math.PI)
+        val expectedHeading = wrapAngle(0.5 + Math.PI)
         assertEquals(expectedHeading, redFlipped.heading.radians, 0.001)
     }
 
@@ -55,7 +56,7 @@ class CoordinateTransformersTest {
         // 3.6576 - 1.0 = 2.6576
         assertEquals(2.6576, redFlipped.x, 0.001)
         assertEquals(2.6576, redFlipped.y, 0.001)
-        val expectedHeading = InputMath.wrapAngle(0.0 + Math.PI)
+        val expectedHeading = wrapAngle(0.0 + Math.PI)
         assertEquals(expectedHeading, redFlipped.heading.radians, 0.001)
     }
 
@@ -72,7 +73,7 @@ class CoordinateTransformersTest {
         assertEquals(2.6576, redMirrored.x, 0.001)
         assertEquals(2.0, redMirrored.y, 0.001)
         
-        val expectedHeading = InputMath.wrapAngle(Math.PI - 0.5)
+        val expectedHeading = wrapAngle(Math.PI - 0.5)
         assertEquals(expectedHeading, redMirrored.heading.radians, 0.001)
     }
 

@@ -1,9 +1,10 @@
-package com.areslib.math
+package com.areslib.math.coordinate
 
 import com.areslib.state.Alliance
 import com.areslib.math.geometry.*
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathPoint
+import com.areslib.math.wrapAngle
 
 enum class FieldSymmetry {
     ROTATIONAL,
@@ -36,12 +37,12 @@ object AllianceMirroring {
                 FieldSymmetry.ROTATIONAL -> Pose2d(
                     x = -pose.x,
                     y = -pose.y,
-                    heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
+                    heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
                 )
                 FieldSymmetry.MIRRORED -> Pose2d(
                     x = pose.x,
                     y = -pose.y,
-                    heading = Rotation2d(InputMath.wrapAngle(-pose.heading.radians))
+                    heading = Rotation2d(wrapAngle(-pose.heading.radians))
                 )
             }
         } else {
@@ -49,12 +50,12 @@ object AllianceMirroring {
                 FieldSymmetry.ROTATIONAL -> Pose2d(
                     x = fieldLength - pose.x,
                     y = fieldWidth - pose.y,
-                    heading = Rotation2d(InputMath.wrapAngle(pose.heading.radians + Math.PI))
+                    heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
                 )
                 FieldSymmetry.MIRRORED -> Pose2d(
                     x = pose.x,
                     y = fieldWidth - pose.y,
-                    heading = Rotation2d(InputMath.wrapAngle(-pose.heading.radians))
+                    heading = Rotation2d(wrapAngle(-pose.heading.radians))
                 )
             }
         }

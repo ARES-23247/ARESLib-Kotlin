@@ -1,4 +1,4 @@
-package com.areslib.math
+package com.areslib.math.coordinate
 
 import com.areslib.state.Alliance
 import com.areslib.pathing.Path

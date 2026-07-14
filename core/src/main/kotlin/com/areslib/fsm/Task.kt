@@ -213,9 +213,9 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
 class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val follower: com.areslib.pathing.HolonomicPathFollower,
     private val path: com.areslib.pathing.Path,
-    private val symmetry: com.areslib.math.FieldSymmetry = com.areslib.math.FieldSymmetry.MIRRORED,
-    private val fieldLength: Double = com.areslib.math.CoordinateTransformers.FTC_FIELD_SIZE,
-    private val fieldWidth: Double = com.areslib.math.CoordinateTransformers.FTC_FIELD_SIZE,
+    private val symmetry: com.areslib.math.coordinate.FieldSymmetry = com.areslib.math.coordinate.FieldSymmetry.MIRRORED,
+    private val fieldLength: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
+    private val fieldWidth: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
     private val mirrorForAlliance: Boolean = true
 ) : Task {
     override val name = "FollowPath(${path.points.size} points)"
@@ -230,7 +230,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     override fun initialize(state: RobotState): List<RobotAction> {
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
-        activePath = com.areslib.math.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
+        activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
         triggeredEvents.clear()
         return listOf(
             RobotAction.SwitchPath(activePath, isDetour = false, timestampMs = lastTimeMs)

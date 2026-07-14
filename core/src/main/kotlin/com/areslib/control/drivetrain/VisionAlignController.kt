@@ -1,8 +1,8 @@
 package com.areslib.control.drivetrain
 
 import com.areslib.action.RobotAction
-import com.areslib.math.InputMath
 import com.areslib.state.RobotState
+import com.areslib.math.wrapAngle
 import com.areslib.util.RobotClock
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -69,12 +69,12 @@ class VisionAlignController {
             // Yaw (robot turning left/right) = rotation around Y axis = rotation.y
             // Negated to match the controller's sign convention (positive = CCW)
             val robotYaw = -robotPoseTargetSpace.rotation.y
-            val wrappedYaw = InputMath.wrapAngle(robotYaw)
+            val wrappedYaw = wrapAngle(robotYaw)
             
             // 1. Yaw rate-of-change sanity check (reject PnP flips/jumps > 15 degrees per frame)
             val maxHeadingChange = Math.toRadians(15.0)
             val sanitizedYaw = if (hasPrevFiltered) {
-                val diff = InputMath.wrapAngle(wrappedYaw - prevRawYaw)
+                val diff = wrapAngle(wrappedYaw - prevRawYaw)
                 if (abs(diff) > maxHeadingChange) prevRawYaw else wrappedYaw
             } else {
                 wrappedYaw
@@ -88,7 +88,7 @@ class VisionAlignController {
             
             // Heading goal: rotate to keep the tag centered in the camera FOV
             val pointingTarget = atan2(errorLeftT, distanceZ)
-            val errHeading = InputMath.wrapAngle(pointingTarget - phi)
+            val errHeading = wrapAngle(pointingTarget - phi)
             
             // 2. Low-pass filters to smooth out high-frequency vision noise
             val alphaTranslation = 0.4
@@ -98,8 +98,8 @@ class VisionAlignController {
             val errYFiltered = if (hasPrevFiltered) alphaTranslation * errY + (1.0 - alphaTranslation) * prevErrY else errY
             
             val errHeadingFiltered = if (hasPrevFiltered) {
-                val diff = InputMath.wrapAngle(errHeading - prevErrHeading)
-                InputMath.wrapAngle(prevErrHeading + alphaHeading * diff)
+                val diff = wrapAngle(errHeading - prevErrHeading)
+                wrapAngle(prevErrHeading + alphaHeading * diff)
             } else {
                 errHeading
             }
@@ -132,7 +132,7 @@ class VisionAlignController {
             val dtSec = ((now - prevLoopTimeMs).coerceIn(1, 200)) / 1000.0
             prevLoopTimeMs = now
             val headingErrorRate = if (hasPrevFiltered) {
-                InputMath.wrapAngle(errHeadingFiltered - prevErrHeadingForD) / dtSec
+                wrapAngle(errHeadingFiltered - prevErrHeadingForD) / dtSec
             } else 0.0
             prevErrHeadingForD = errHeadingFiltered
             

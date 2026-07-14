@@ -1,6 +1,6 @@
 package com.areslib.control.assist
 
-import com.areslib.math.InputMath
+import com.areslib.math.wrapAngle
 import kotlin.math.sqrt
 
 enum class SysIdMechanism {
@@ -84,7 +84,7 @@ class SysIdManager {
                 return false // Distance safety limit
             }
         } else {
-            val diff = InputMath.wrapAngle(heading - lastHeading)
+            val diff = wrapAngle(heading - lastHeading)
             accumulatedHeadingChange += kotlin.math.abs(diff)
             lastHeading = heading
             if (accumulatedHeadingChange > 4.0 * kotlin.math.PI) {

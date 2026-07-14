@@ -3,7 +3,7 @@ package com.areslib.fsm
 import com.areslib.action.RobotAction
 import com.areslib.pathing.Path
 import com.areslib.pathing.HolonomicPathFollower
-import com.areslib.math.FieldSymmetry
+import com.areslib.math.coordinate.FieldSymmetry
 
 /**
  * A fluid builder API to construct sequential and parallel autonomous sequences of [Task] objects.

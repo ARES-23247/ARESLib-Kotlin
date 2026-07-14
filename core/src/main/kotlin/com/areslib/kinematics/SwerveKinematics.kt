@@ -5,6 +5,7 @@ import com.areslib.math.geometry.Translation2d
 import com.areslib.math.geometry.Rotation2d
 import kotlin.math.hypot
 import kotlin.math.atan2
+import com.areslib.math.wrapAngle
 
 class SwerveKinematics(
     val moduleTranslations: List<Translation2d>,
@@ -70,7 +71,7 @@ class SwerveKinematics(
                 val prevAngleRad = pState.angle.radians
 
                 // Compute shortest angle difference
-                val angleDiff = com.areslib.math.InputMath.wrapAngle(targetAngleRad - prevAngleRad)
+                val angleDiff = wrapAngle(targetAngleRad - prevAngleRad)
 
                 // Target steering velocity
                 val targetSteerVel = angleDiff / dtSeconds

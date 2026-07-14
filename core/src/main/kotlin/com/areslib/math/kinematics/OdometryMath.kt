@@ -1,4 +1,4 @@
-package com.areslib.math
+package com.areslib.math.kinematics
 
 import com.areslib.math.geometry.*
 

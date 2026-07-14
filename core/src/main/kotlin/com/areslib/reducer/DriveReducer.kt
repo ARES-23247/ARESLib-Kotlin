@@ -3,7 +3,8 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.DriveState
 import com.areslib.state.DriveMode
-import com.areslib.math.InputMath
+import com.areslib.math.wrapAngle
+import com.areslib.math.kinematics.OdometryMath
 import com.areslib.math.estimation.HistoryBuffer
 import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.geometry.Pose2d
@@ -61,17 +62,12 @@ object DriveReducer {
                 } else {
                     val deltaX = action.xMeters - state.odometryX
                     val deltaY = action.yMeters - state.odometryY
-                    val deltaHeading = InputMath.wrapAngle(action.headingRadians - state.odometryHeading)
+                    val deltaHeading = wrapAngle(action.headingRadians - state.odometryHeading)
 
                     // Rotate the Pinpoint's world-frame delta into the EKF's world-frame
                     // by applying the rotational difference between their coordinate systems.
                     val headingDiff = state.poseEstimator.estimatedPose.heading.radians - state.odometryHeading
-                    val cosH = kotlin.math.cos(headingDiff)
-                    val sinH = kotlin.math.sin(headingDiff)
-                    val rotatedDeltaX = deltaX * cosH - deltaY * sinH
-                    val rotatedDeltaY = deltaX * sinH + deltaY * cosH
-
-                    val deltaTrans = Translation2d(rotatedDeltaX, rotatedDeltaY)
+                    val deltaTrans = OdometryMath.calculateDeltaPose(headingDiff, deltaX, deltaY)
                     PoseEstimator.addOdometryObservation(
                         state = state.poseEstimator,
                         timestampMs = action.timestampMs,

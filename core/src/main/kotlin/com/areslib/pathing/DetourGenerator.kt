@@ -3,7 +3,6 @@ package com.areslib.pathing
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
-import com.areslib.math.BezierSpline
 import kotlin.math.hypot
 
 object DetourGenerator {

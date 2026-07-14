@@ -1,4 +1,4 @@
-package com.areslib.math
+package com.areslib.pathing
 
 import com.areslib.math.geometry.*
 

@@ -5,6 +5,7 @@ import com.areslib.math.geometry.Translation2d
 import com.areslib.state.VisionMeasurement
 import kotlin.math.abs
 import kotlin.math.sqrt
+import com.areslib.math.wrapAngle
 
 /**
  * Filter configuration thresholds for AprilTag measurements.
@@ -109,7 +110,7 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
 
             // 4. Check Yaw rotation alignment relative to robot gyro heading
             val tagYaw = tagPose3d.rotation.z
-            val headingDiff = com.areslib.math.InputMath.wrapAngle(tagYaw - robotHeadingRad)
+            val headingDiff = wrapAngle(tagYaw - robotHeadingRad)
 
             if (kotlin.math.abs(headingDiff) > config.maxRotationDeviationRad) {
                 return false
