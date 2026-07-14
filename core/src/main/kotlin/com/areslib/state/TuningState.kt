@@ -37,5 +37,9 @@ data class TuningState(
     // Vision Outlier Rejection Thresholds
     val visionMaxDistanceMeters: Double = 6.0,
     val visionMaxAmbiguity: Double = 0.2,
-    val visionMahalanobisThreshold: Double = 12.0
+    val visionMahalanobisThreshold: Double = 12.0,
+
+    // Driver Profile Settings
+    val driverDeadbandExponent: Double = 1.0,
+    val driverSlewRateLimit: Double = 999.0
 )
