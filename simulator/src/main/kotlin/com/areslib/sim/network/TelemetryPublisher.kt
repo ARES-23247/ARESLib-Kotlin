@@ -56,9 +56,8 @@ object TelemetryPublisher {
     // Session log file path publisher
     private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
 
-    private val networkStatePublisher = com.areslib.telemetry.ARESNetworkStatePublisher(
-        com.areslib.telemetry.NT4Telemetry()
-    )
+    private val nt4Telemetry = com.areslib.telemetry.NT4Telemetry()
+    private val networkStatePublisher = com.areslib.telemetry.ARESNetworkStatePublisher(nt4Telemetry)
 
     init {
         ntInst.startServer()
@@ -73,6 +72,7 @@ object TelemetryPublisher {
     fun publish(state: RobotState) {
         statePublisher.set(state)
         networkStatePublisher.publish(state)
+        com.areslib.hardware.HardwareRegistry.publishAll(nt4Telemetry)
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
 
