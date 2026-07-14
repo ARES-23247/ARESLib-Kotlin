@@ -8,15 +8,15 @@ import com.areslib.pathing.Path
 import com.areslib.math.wrapAngle
 import com.areslib.control.feedback.PIDController
 
+import com.areslib.control.tuning.PIDFCoefficients
+
 /**
  * Shared base class containing common mathematical algorithms and properties for holonomic drive facades.
  * Standardizes joystick driving, field-relative coordinate rotations, heading locking, and path following.
  */
 abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
     protected val store: Store,
-    headingKp: Double = 4.5,
-    headingKi: Double = 0.0,
-    headingKd: Double = 0.25,
+    headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
     headingDeadzoneDeg: Double = 0.5
 ) {
     /**
@@ -73,7 +73,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
     val odometryHeading: Double
         get() = store.state.drive.odometryHeading
 
-    protected val headingPID = com.areslib.control.feedback.PIDController(headingKp, headingKi, headingKd).apply {
+    protected val headingPID = com.areslib.control.feedback.PIDController(headingGains.kP, headingGains.kI, headingGains.kD).apply {
         enableContinuousInput(-Math.PI, Math.PI)
         setOutputLimits(-2.0, 2.0)
         deadzone = Math.toRadians(headingDeadzoneDeg)
@@ -159,9 +159,9 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             }
             useHeadingLock && !isRotating && target != null -> {
                 val tuning = store.state.tuning
-                headingPID.p = tuning.headingKp
-                headingPID.i = tuning.headingKi
-                headingPID.d = tuning.headingKd
+                headingPID.p = tuning.headingGains.kP
+                headingPID.i = tuning.headingGains.kI
+                headingPID.d = tuning.headingGains.kD
                 headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
 
                 val rawError = wrapAngle(target - headingRad)

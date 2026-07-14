@@ -19,41 +19,38 @@ import com.areslib.control.assist.SysIdManager
 import com.areslib.control.assist.SysIdMechanism
 import com.areslib.control.assist.SysIdRoutine
 import com.areslib.ftc.telemetry.LimelightProxyAutoStart
+import com.areslib.control.tuning.PIDFCoefficients
+import com.areslib.control.tuning.SimpleFeedforwardCoeffs
 
 /**
- * Concrete Mecanum Drive robot facade.
- * Implements wheel kinematics conversions, battery sag motor compensation,
- * and publishes mecanum-specific motor currents and powers.
+ * An out-of-the-box standard FTC Mecanum Robot base class.
+ *
+ * This provides standard bindings for a 4-wheel mecanum drive and a generic superstructure.
+ * Handles WPILib-style background subsystem execution via an internal [Store].
  */
-class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
-    hardwareMap: HardwareMap,
+open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
+    hardwareMap: com.qualcomm.robotcore.hardware.HardwareMap,
     flName: String = "fl",
     frName: String = "fr",
     rlName: String = "rl",
     rrName: String = "rr",
-    pinpointName: String? = "pinpoint",
-    limelightName: String? = "limelight",
-    localTelemetry: Telemetry? = null,
-    flDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
-    frDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
-    rlDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
-    rrDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+    flDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+    frDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
+    rlDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.REVERSE,
+    rrDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
+    pinpointName: String? = null,
+    limelightName: String? = null,
+    localTelemetry: org.firstinspires.ftc.robotcore.external.Telemetry? = null,
     
     // Drivetrain Tunable Constants
     val trackWidthMeters: Double = 0.45,
     val wheelBaseMeters: Double = 0.45,
-    val headingKp: Double = 4.5,
-    val headingKi: Double = 0.0,
-    val headingKd: Double = 0.25,
+    val headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
     val headingDeadzoneDeg: Double = 0.5,
-    val driveKs: Double = 0.0,
+    val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(0.0),
     val driveSlewRateLimit: Double? = null,
-    val pathTranslationKp: Double = 2.0,
-    val pathTranslationKi: Double = 0.0,
-    val pathTranslationKd: Double = 0.02,
-    val pathRotationKp: Double = 2.5,
-    val pathRotationKi: Double = 0.0,
-    val pathRotationKd: Double = 0.05,
+    val pathTranslationGains: PIDFCoefficients = PIDFCoefficients(2.0, 0.0, 0.02),
+    val pathRotationGains: PIDFCoefficients = PIDFCoefficients(2.5, 0.0, 0.05),
     
     // EKF Process Noise Constants
     odomQx: Double = 0.01,
@@ -68,10 +65,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     
     // Motor Tunable Constants
-    val motorKp: Double? = null,
-    val motorKi: Double? = null,
-    val motorKd: Double? = null,
-    val motorKf: Double? = null,
+    val motorGains: PIDFCoefficients? = null,
     
     // Vision Filtering Constants
     visionStdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
@@ -95,7 +89,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     // Subsystem Facades
     val drive = DriveSubsystem(store)
-    val mecanumDrive = MecanumDriveFacade(store, headingKp, headingKi, headingKd, headingDeadzoneDeg)
+    val mecanumDrive = MecanumDriveFacade(store, headingGains, headingDeadzoneDeg)
 
     private val visionAlignController = VisionAlignController()
 
@@ -119,12 +113,12 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         frDirection = frDirection,
         rlDirection = rlDirection,
         rrDirection = rrDirection,
-        initialKs = driveKs,
+        initialKs = driveFeedforward.kS,
         initialSlewRateLimit = driveSlewRateLimit,
-        motorKp = motorKp,
-        motorKi = motorKi,
-        motorKd = motorKd,
-        motorKf = motorKf
+        motorKp = motorGains?.kP,
+        motorKi = motorGains?.kI,
+        motorKd = motorGains?.kD,
+        motorKf = motorGains?.kF
     )
 
     private var kinematics = MecanumKinematics(trackWidthMeters = trackWidthMeters, wheelBaseMeters = wheelBaseMeters)
@@ -191,7 +185,7 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val currentTuning = store.state.tuning
         if (currentTuning !== lastTuning) {
             kinematics = MecanumKinematics(currentTuning.trackWidthMeters, currentTuning.wheelBaseMeters)
-            mecanumIO.kS = currentTuning.driveKs
+            mecanumIO.kS = currentTuning.driveFeedforward.kS
             mecanumIO.slewRateLimit = currentTuning.driveSlewRateLimit
             
             val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
@@ -202,15 +196,15 @@ class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             
             // If the path follower was already initialized, update its PIDs
             if (wasPathfindRequested || activePathfindTask != null) {
-                pathfindFollower.xController.p = currentTuning.pathTranslationKp
-                pathfindFollower.xController.i = currentTuning.pathTranslationKi
-                pathfindFollower.xController.d = currentTuning.pathTranslationKd
-                pathfindFollower.yController.p = currentTuning.pathTranslationKp
-                pathfindFollower.yController.i = currentTuning.pathTranslationKi
-                pathfindFollower.yController.d = currentTuning.pathTranslationKd
-                pathfindFollower.thetaController.p = currentTuning.pathRotationKp
-                pathfindFollower.thetaController.i = currentTuning.pathRotationKi
-                pathfindFollower.thetaController.d = currentTuning.pathRotationKd
+                pathfindFollower.xController.p = currentTuning.pathTranslationGains.kP
+                pathfindFollower.xController.i = currentTuning.pathTranslationGains.kI
+                pathfindFollower.xController.d = currentTuning.pathTranslationGains.kD
+                pathfindFollower.yController.p = currentTuning.pathTranslationGains.kP
+                pathfindFollower.yController.i = currentTuning.pathTranslationGains.kI
+                pathfindFollower.yController.d = currentTuning.pathTranslationGains.kD
+                pathfindFollower.thetaController.p = currentTuning.pathRotationGains.kP
+                pathfindFollower.thetaController.i = currentTuning.pathRotationGains.kI
+                pathfindFollower.thetaController.d = currentTuning.pathRotationGains.kD
             }
             
             visionTracker.stdDevs = com.areslib.math.geometry.Vector3(

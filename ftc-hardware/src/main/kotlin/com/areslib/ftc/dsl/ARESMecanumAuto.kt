@@ -34,14 +34,14 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         val robot = getMecanumRobot(wrapper)
 
         // Calibrate static friction feedforward (kS) to overcome physical drivetrain deadband
-        robot.mecanumIO.kS = if (robot.driveKs > 0.0) robot.driveKs else 0.05
+        robot.mecanumIO.kS = if (robot.driveFeedforward.kS > 0.0) robot.driveFeedforward.kS else 0.05
 
         // Setup unified path follower helper
         val pathFollower = FtcMecanumPathFollower(
             robot,
-            xController = PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
-            yController = PIDController(robot.pathTranslationKp, robot.pathTranslationKi, robot.pathTranslationKd),
-            thetaController = PIDController(robot.pathRotationKp, robot.pathRotationKi, robot.pathRotationKd).apply {
+            xController = PIDController(robot.pathTranslationGains.kP, robot.pathTranslationGains.kI, robot.pathTranslationGains.kD),
+            yController = PIDController(robot.pathTranslationGains.kP, robot.pathTranslationGains.kI, robot.pathTranslationGains.kD),
+            thetaController = PIDController(robot.pathRotationGains.kP, robot.pathRotationGains.kI, robot.pathRotationGains.kD).apply {
                 enableContinuousInput(-Math.PI, Math.PI)
             }
         )

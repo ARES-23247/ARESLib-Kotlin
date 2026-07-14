@@ -183,10 +183,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             }
         }
 
-        if (!com.areslib.telemetry.RobotStatusTracker.isEnabled) {
+        if (!com.areslib.telemetry.RobotStatusTracker.isEnabled && com.areslib.telemetry.RobotStatusTracker.activeOpMode != "Init") {
+            // Start WebServer if not already running when transitioning to enabled
+            com.areslib.telemetry.RobotWebServer.start()
+        } else if (!com.areslib.telemetry.RobotStatusTracker.isEnabled) {
             com.areslib.telemetry.RobotWebServer.stop()
         }
-        com.areslib.telemetry.RobotStatusTracker.isEnabled = true
+        
+        if (com.areslib.telemetry.RobotStatusTracker.activeOpMode != "Init") {
+            com.areslib.telemetry.RobotStatusTracker.isEnabled = true
+        }
 
         try {
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()

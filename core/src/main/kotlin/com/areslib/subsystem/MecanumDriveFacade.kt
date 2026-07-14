@@ -1,6 +1,7 @@
 package com.areslib.subsystem
 
 import com.areslib.Store
+import com.areslib.control.tuning.PIDFCoefficients
 
 /**
  * A highly simplified, student-facing modular facade for a Mecanum drivetrain subsystem.
@@ -10,8 +11,6 @@ import com.areslib.Store
  */
 class MecanumDriveFacade @kotlin.jvm.JvmOverloads constructor(
     store: Store,
-    headingKp: Double = 4.5,
-    headingKi: Double = 0.0,
-    headingKd: Double = 0.25,
+    headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
     headingDeadzoneDeg: Double = 0.5
-) : HolonomicDriveFacade(store, headingKp, headingKi, headingKd, headingDeadzoneDeg)
+) : HolonomicDriveFacade(store, headingGains, headingDeadzoneDeg)
