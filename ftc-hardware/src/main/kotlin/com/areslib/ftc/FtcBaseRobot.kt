@@ -3,7 +3,7 @@ package com.areslib.ftc
 import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.subsystem.AresRobot
-import com.areslib.ftc.PinpointIO
+import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.ftc.vision.FtcLimelightIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.CompositeVisionIO

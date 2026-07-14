@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
+import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -40,8 +41,8 @@ class MecanumHardwareIOTest {
                 return when(deviceName) {
                     "fl" -> fl as T
                     "fr" -> fr as T
-                    "bl" -> bl as T
-                    "br" -> br as T
+                    "rl" -> bl as T
+                    "rr" -> br as T
                     else -> throw IllegalArgumentException()
                 }
             }
@@ -79,8 +80,8 @@ class MecanumHardwareIOTest {
                 return when(deviceName) {
                     "fl" -> fl as T
                     "fr" -> fr as T
-                    "bl" -> bl as T
-                    "br" -> br as T
+                    "rl" -> bl as T
+                    "rr" -> br as T
                     else -> throw IllegalArgumentException()
                 }
             }

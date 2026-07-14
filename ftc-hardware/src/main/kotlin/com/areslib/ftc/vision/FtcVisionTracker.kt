@@ -1,7 +1,7 @@
 package com.areslib.ftc.vision
 
 import com.areslib.action.RobotAction
-import com.areslib.ftc.PinpointIO
+import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.subsystem.Store
@@ -19,7 +19,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private val store: Store,
     val limelightIO: VisionIO?,
     private val pinpointIO: PinpointIO?,
-    val stdDevs: com.areslib.math.Vector3 = com.areslib.math.Vector3(0.05, 0.05, 0.1)
+    var stdDevs: com.areslib.math.Vector3 = com.areslib.math.Vector3(0.05, 0.05, 0.1)
 ) : VisionTracker {
     val visionInputs = VisionIOInputs()
     var lastLimelightPose: Pose2d? = null

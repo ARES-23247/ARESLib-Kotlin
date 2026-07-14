@@ -1,4 +1,4 @@
-package com.areslib.ftc
+package com.areslib.ftc.drivetrain
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.action.RobotAction
@@ -118,39 +118,37 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
      */
     @kotlin.jvm.JvmOverloads
     fun initialize(pose: com.areslib.math.Pose2d = com.areslib.math.Pose2d(), resetHardware: Boolean = false) {
-        scope.launch {
-            try {
-                if (resetHardware) {
-                    driver.resetPosAndIMU()
-                    synchronized(lock) {
-                        offsetX = pose.x
-                        offsetY = pose.y
-                        offsetHeading = pose.heading.radians
-                        lastX = pose.x
-                        lastY = pose.y
-                        lastHeading = pose.heading.radians
-                        lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                    }
-                } else {
-                    driver.update()
-                    val rawX = driver.getPosX(DistanceUnit.METER)
-                    val rawY = driver.getPosY(DistanceUnit.METER)
-                    val rawHeading = driver.getHeading(AngleUnit.RADIANS)
-
-                    synchronized(lock) {
-                        offsetHeading = com.areslib.math.InputMath.wrapAngle(pose.heading.radians - rawHeading)
-                        val cosH = kotlin.math.cos(offsetHeading)
-                        val sinH = kotlin.math.sin(offsetHeading)
-                        offsetX = pose.x - (rawX * cosH - rawY * sinH)
-                        offsetY = pose.y - (rawX * sinH + rawY * cosH)
-                        lastX = pose.x
-                        lastY = pose.y
-                        lastHeading = pose.heading.radians
-                        lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                    }
+        try {
+            if (resetHardware) {
+                driver.resetPosAndIMU()
+                synchronized(lock) {
+                    offsetX = pose.x
+                    offsetY = pose.y
+                    offsetHeading = pose.heading.radians
+                    lastX = pose.x
+                    lastY = pose.y
+                    lastHeading = pose.heading.radians
+                    lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                 }
-            } catch (_: Exception) {}
-        }
+            } else {
+                driver.update()
+                val rawX = driver.getPosX(DistanceUnit.METER)
+                val rawY = driver.getPosY(DistanceUnit.METER)
+                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+
+                synchronized(lock) {
+                    offsetHeading = com.areslib.math.InputMath.wrapAngle(pose.heading.radians - rawHeading)
+                    val cosH = kotlin.math.cos(offsetHeading)
+                    val sinH = kotlin.math.sin(offsetHeading)
+                    offsetX = pose.x - (rawX * cosH - rawY * sinH)
+                    offsetY = pose.y - (rawX * sinH + rawY * cosH)
+                    lastX = pose.x
+                    lastY = pose.y
+                    lastHeading = pose.heading.radians
+                    lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     override fun close() {
