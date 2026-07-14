@@ -14,6 +14,7 @@ import com.areslib.action.RobotAction
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.logging.populate
+import com.areslib.hardware.sensor.ImuIO
 
 /**
  * Abstract base class for all FTC robots.
@@ -24,6 +25,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
     val pinpointName: String? = "pinpoint",
     val limelightName: String? = "limelight",
+    val imuName: String? = "imu",
     protected val localTelemetry: Telemetry? = null,
     
     // EKF Process noise
@@ -95,6 +97,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         null
     }
 
+    val imuIO: ImuIO? = try {
+        imuName?.let { name ->
+            val imuDriver = hardwareMap.get(com.qualcomm.robotcore.hardware.IMU::class.java, name)
+            com.areslib.ftc.hardware.FtcImu(imuDriver)
+        }
+    } catch (_: Throwable) {
+        null
+    }
+
     val limelightIO: VisionIO? = try {
         limelightName?.let { namesStr ->
             val names = namesStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
@@ -144,12 +155,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         updateHardwareInputs()
 
         // 1. Read pinpoint sensors and update EKF pose estimation
-        val poseUpdate = pinpointIO?.getPoseUpdate() ?: RobotAction.PoseUpdate(
-            xMeters = 0.0,
-            yMeters = 0.0,
-            headingRadians = 0.0,
-            timestampMs = timestamp
-        )
+        val poseUpdate = pinpointIO?.getPoseUpdate() ?: getFallbackPoseUpdate(timestamp)
         
         val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
         val age = timestamp - poseUpdate.timestampMs
@@ -163,6 +169,20 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         // 2. Process AprilTags visual updates
         visionTracker.update(timestamp)
+    }
+
+    protected open fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
+        val heading = imuIO?.let {
+            val inputs = com.areslib.hardware.sensor.ImuInputs()
+            it.updateInputs(inputs)
+            inputs.headingRadians
+        } ?: 0.0
+        return RobotAction.PoseUpdate(
+            xMeters = 0.0,
+            yMeters = 0.0,
+            headingRadians = heading,
+            timestampMs = timestampMs
+        )
     }
 
     /**
@@ -293,6 +313,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.telemetry.RobotWebServer.stop()
         telemetryManager.close()
         pinpointIO?.close()
+        try {
+            (imuIO as? AutoCloseable)?.close()
+        } catch (_: Exception) {}
         try {
             (limelightIO as? AutoCloseable)?.close()
         } catch (_: Exception) {}

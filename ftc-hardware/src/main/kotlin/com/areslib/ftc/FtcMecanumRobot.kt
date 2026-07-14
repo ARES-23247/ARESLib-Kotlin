@@ -40,6 +40,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     rrDirection: com.qualcomm.robotcore.hardware.DcMotorSimple.Direction = com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD,
     pinpointName: String? = null,
     limelightName: String? = null,
+    imuName: String? = "imu",
     localTelemetry: org.firstinspires.ftc.robotcore.external.Telemetry? = null,
     
     // Drivetrain Tunable Constants
@@ -66,6 +67,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     
     // Motor Tunable Constants
     val motorGains: PIDFCoefficients? = null,
+    val ticksPerMeter: Double = 2000.0,
     
     // Vision Filtering Constants
     visionStdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
@@ -74,6 +76,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     hardwareMap = hardwareMap,
     pinpointName = pinpointName,
     limelightName = limelightName,
+    imuName = imuName,
     localTelemetry = localTelemetry,
     odomQx = odomQx,
     odomQy = odomQy,
@@ -425,6 +428,83 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      */
     fun stopAll() {
         com.areslib.hardware.HardwareRegistry.safeAll()
+    }
+
+    private var fallbackX = 0.0
+    private var fallbackY = 0.0
+    private var lastFlPos = 0.0
+    private var lastFrPos = 0.0
+    private var lastRlPos = 0.0
+    private var lastRrPos = 0.0
+    private var isFallbackInitialized = false
+
+    override fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
+        // Read current encoder positions (ticks)
+        val flPos = mecanumIO.flIO.position
+        val frPos = mecanumIO.frIO.position
+        val rlPos = mecanumIO.rlIO.position
+        val rrPos = mecanumIO.rrIO.position
+
+        // Convert ticks to meters
+        val flMeters = flPos / ticksPerMeter
+        val frMeters = frPos / ticksPerMeter
+        val rlMeters = rlPos / ticksPerMeter
+        val rrMeters = rrPos / ticksPerMeter
+
+        val heading = imuIO?.let {
+            val inputs = com.areslib.hardware.sensor.ImuInputs()
+            it.updateInputs(inputs)
+            inputs.headingRadians
+        } ?: 0.0
+
+        if (!isFallbackInitialized) {
+            lastFlPos = flMeters
+            lastFrPos = frMeters
+            lastRlPos = rlMeters
+            lastRrPos = rrMeters
+            isFallbackInitialized = true
+            
+            // On first init, return pose at origin (0, 0)
+            return RobotAction.PoseUpdate(
+                xMeters = 0.0,
+                yMeters = 0.0,
+                headingRadians = heading,
+                timestampMs = timestampMs
+            )
+        }
+
+        // Encoder deltas
+        val dFl = flMeters - lastFlPos
+        val dFr = frMeters - lastFrPos
+        val dRl = rlMeters - lastRlPos
+        val dRr = rrMeters - lastRrPos
+
+        // Save for next update
+        lastFlPos = flMeters
+        lastFrPos = frMeters
+        lastRlPos = rlMeters
+        lastRrPos = rrMeters
+
+        // Mecanum forward kinematics: robot-centric dx and dy
+        val dx = (dFl + dFr + dRl + dRr) / 4.0
+        val dy = (-dFl + dFr + dRl - dRr) / 4.0
+
+        // Field-centric rotation
+        val cos = kotlin.math.cos(heading)
+        val sin = kotlin.math.sin(heading)
+
+        val deltaFieldX = dx * cos - dy * sin
+        val deltaFieldY = dx * sin + dy * cos
+
+        fallbackX += deltaFieldX
+        fallbackY += deltaFieldY
+
+        return RobotAction.PoseUpdate(
+            xMeters = fallbackX,
+            yMeters = fallbackY,
+            headingRadians = heading,
+            timestampMs = timestampMs
+        )
     }
 
     override fun close() {
