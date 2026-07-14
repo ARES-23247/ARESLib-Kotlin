@@ -1,9 +1,8 @@
-package com.areslib.telemetry
+package com.areslib.logging
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import java.io.File
 
 class CloudExporterTest {
 

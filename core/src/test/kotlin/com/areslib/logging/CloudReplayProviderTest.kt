@@ -1,6 +1,6 @@
 package com.areslib.logging
 
-import com.areslib.telemetry.CloudExporter
+import com.areslib.logging.CloudExporter
 import fi.iki.elonen.NanoHTTPD
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

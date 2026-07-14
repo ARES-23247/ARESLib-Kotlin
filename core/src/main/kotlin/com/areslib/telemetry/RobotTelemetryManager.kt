@@ -1,6 +1,7 @@
 package com.areslib.telemetry
 
 import com.areslib.state.RobotState
+import com.areslib.logging.DataLoggingTelemetry
 
 /**
  * Platform-independent interface for the robot's unified telemetry pipeline.

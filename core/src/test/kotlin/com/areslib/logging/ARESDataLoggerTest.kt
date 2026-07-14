@@ -1,4 +1,4 @@
-package com.areslib.telemetry
+package com.areslib.logging
 
 import java.io.File
 import kotlin.test.Test

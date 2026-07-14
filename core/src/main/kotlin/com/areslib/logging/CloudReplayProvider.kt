@@ -2,7 +2,7 @@ package com.areslib.logging
 
 import com.areslib.math.geometry.Vector3
 import com.areslib.math.geometry.Pose2d
-import com.areslib.telemetry.CloudExporter
+
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection

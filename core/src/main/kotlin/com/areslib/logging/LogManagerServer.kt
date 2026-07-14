@@ -1,4 +1,4 @@
-package com.areslib.telemetry
+package com.areslib.logging
 
 import com.google.gson.Gson
 import fi.iki.elonen.NanoHTTPD

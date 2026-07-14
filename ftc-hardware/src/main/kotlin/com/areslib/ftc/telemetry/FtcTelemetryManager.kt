@@ -2,10 +2,10 @@ package com.areslib.ftc.telemetry
 
 import com.areslib.subsystem.Store
 import com.areslib.telemetry.NT4Telemetry
-import com.areslib.telemetry.DataLoggingTelemetry
+import com.areslib.logging.DataLoggingTelemetry
 import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.action.ActionLogger
-import com.areslib.telemetry.CloudExporter
+import com.areslib.logging.CloudExporter
 import com.areslib.state.RobotState
 import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.ITelemetry

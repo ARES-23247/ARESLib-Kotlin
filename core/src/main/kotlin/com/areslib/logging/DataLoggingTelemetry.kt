@@ -1,5 +1,7 @@
-package com.areslib.telemetry
+package com.areslib.logging
 
+import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.RobotStatusTracker
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -63,7 +65,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         val now = com.areslib.util.RobotClock.currentTimeMillis()
 
         // Check if mode transitioned
-        val detectedMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
+        val detectedMode = RobotStatusTracker.activeOpMode
         if (detectedMode != currentMode) {
             logger.stop()
             currentMode = detectedMode
@@ -84,9 +86,6 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         
         // Forward the update trigger to live streaming network tables (always unthrottled)
         ntTelemetry?.update()
-        
-        // We do not clear the frame completely because standard telemetry backends
-        // hold onto persistent states until overwritten.
     }
 
     /**

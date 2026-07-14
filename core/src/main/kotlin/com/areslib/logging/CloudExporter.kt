@@ -1,5 +1,6 @@
-package com.areslib.telemetry
+package com.areslib.logging
 
+import com.areslib.telemetry.RobotStatusTracker
 import java.io.File
 import java.io.FileInputStream
 import java.io.OutputStream

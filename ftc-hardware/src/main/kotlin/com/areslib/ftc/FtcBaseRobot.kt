@@ -52,7 +52,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     init {
         com.areslib.ftc.hardware.FtcPerformanceManager.initialize(hardwareMap)
         com.areslib.telemetry.RobotWebServer.start()
-        com.areslib.telemetry.LogManagerServer.startServer()
+        com.areslib.logging.LogManagerServer.startServer()
         com.areslib.telemetry.RobotStatusTracker.isEnabled = false
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
         activeInstance = this

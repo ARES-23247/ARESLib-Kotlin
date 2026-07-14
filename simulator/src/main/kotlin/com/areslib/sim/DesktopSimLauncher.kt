@@ -165,7 +165,7 @@ object DesktopSimLauncher {
         // 1. Initialize WPILib Telemetry
         println("Initializing Telemetry (NT4 & DataLog)...")
         TelemetryPublisher.javaClass
-        com.areslib.telemetry.LogManagerServer.startServer()
+        com.areslib.logging.LogManagerServer.startServer()
 
         // 2. Setup Virtual Driver Station
         val serverMode = opModeArg == null && opModeClassName == null
