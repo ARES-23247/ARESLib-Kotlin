@@ -35,6 +35,12 @@ object DesktopSimLauncher {
     private const val FIELD_WIDTH = 3.65
     private const val FIELD_HEIGHT = 3.65
 
+    @Volatile private var sumSqErrorX = 0.0
+    @Volatile private var sumSqErrorY = 0.0
+    @Volatile private var sumSqErrorHeading = 0.0
+    @Volatile private var maxCurrent = 0.0
+    @Volatile private var sampleCount = 0L
+
     @JvmStatic
     fun main(args: Array<String>) {
         try {
@@ -49,6 +55,32 @@ object DesktopSimLauncher {
 
     fun launch(args: Array<String>, interactionModel: SimInteractionModel, opModeArg: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode? = null) {
         println("Starting ARESLib Desktop Simulation (HIL-style actual FTC code)...")
+
+        sumSqErrorX = 0.0
+        sumSqErrorY = 0.0
+        sumSqErrorHeading = 0.0
+        maxCurrent = 0.0
+        sampleCount = 0L
+
+        Runtime.getRuntime().addShutdownHook(Thread {
+            val count = sampleCount
+            if (count > 0) {
+                val rmseX = kotlin.math.sqrt(sumSqErrorX / count)
+                val rmseY = kotlin.math.sqrt(sumSqErrorY / count)
+                val rmseHeading = kotlin.math.sqrt(sumSqErrorHeading / count)
+                val summaryJson = String.format(
+                    "{\n  \"rmseX\": %.5f,\n  \"rmseY\": %.5f,\n  \"rmseHeading\": %.5f,\n  \"maxCurrentAmps\": %.3f,\n  \"sampleCount\": %d\n}",
+                    rmseX, rmseY, rmseHeading, maxCurrent, count
+                )
+                try {
+                    val summaryFile = java.io.File("ares_run_summary.json")
+                    summaryFile.writeText(summaryJson)
+                    println("[Simulator] Wrote run summary to ${summaryFile.absolutePath}")
+                } catch (e: Exception) {
+                    System.err.println("Failed to write simulation run summary: ${e.message}")
+                }
+            }
+        })
 
         var activeConfig: com.areslib.state.RobotFieldConfig? = null
         var watchFieldConfig = false
@@ -858,6 +890,26 @@ object DesktopSimLauncher {
             TelemetryPublisher.publishEstimatedPose(currentPose)
             TelemetryPublisher.publishTargetPose(currentPose)
             TelemetryPublisher.publish(state)
+
+            com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
+                val estPose = robot.store.state.drive.poseEstimator.estimatedPose
+                val errX = estPose.x - currentPose.x
+                val errY = estPose.y - currentPose.y
+                val errH = wrapAngle(estPose.heading.radians - currentPose.heading.radians)
+                
+                sumSqErrorX += errX * errX
+                sumSqErrorY += errY * errY
+                sumSqErrorHeading += errH * errH
+                sampleCount++
+
+                val current = maxOf(
+                    robotDouble.fl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS),
+                    robotDouble.fr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS),
+                    robotDouble.rl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS),
+                    robotDouble.rr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+                )
+                maxCurrent = maxOf(maxCurrent, current)
+            }
 
             var currentBallsHash = gamePieces.size
             for (i in gamePieces.indices) {
