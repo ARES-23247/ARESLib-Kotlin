@@ -71,7 +71,7 @@ object TelemetryPublisher {
      */
     fun publish(state: RobotState) {
         statePublisher.set(state)
-        networkStatePublisher.publish(state)
+        // networkStatePublisher.publish(state) // Disabled to prevent double-publishing collision with student OpMode thread
         com.areslib.hardware.HardwareRegistry.publishAll(nt4Telemetry)
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
