@@ -89,6 +89,24 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
 
             com.areslib.telemetry.RobotStatusTracker.activeOpMode = "TeleOp"
 
+            // Set initial pose based on active alliance configuration
+            try {
+                val baseField = robot!!.javaClass.getDeclaredField("base")
+                baseField.isAccessible = true
+                val baseRobot = baseField.get(robot) as? com.areslib.ftc.FtcBaseRobot
+                if (baseRobot != null) {
+                    val alliance = baseRobot.store.state.drive.alliance
+                    val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
+                    baseRobot.resetPose(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(initialHeading)))
+                }
+            } catch (_: Exception) {
+                (robot as? com.areslib.ftc.FtcBaseRobot)?.let { baseRobot ->
+                    val alliance = baseRobot.store.state.drive.alliance
+                    val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
+                    baseRobot.resetPose(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(initialHeading)))
+                }
+            }
+
             // NOTE: Hardware specific init code (like vision tracker flags) should be handled by the team's buildRobot/wrapper logic
             com.areslib.ftc.telemetry.LimelightProxyAutoStart.stop()
             

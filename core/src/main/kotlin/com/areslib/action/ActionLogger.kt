@@ -28,6 +28,7 @@ class ActionLogger(
     private val queue = LinkedBlockingQueue<RobotAction>(1000)
     private var writer: BufferedWriter? = null
     private var isRunning = false
+    private var writeCount = 0
     
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -101,7 +102,10 @@ class ActionLogger(
         try {
             w.write(gson.toJson(envelope))
             w.newLine()
-            w.flush()
+            writeCount++
+            if (writeCount % 20 == 0) {
+                w.flush()
+            }
         } catch (e: IOException) {
             System.err.println("ActionLogger: Failed to write JSONL: ${e.message}")
         }

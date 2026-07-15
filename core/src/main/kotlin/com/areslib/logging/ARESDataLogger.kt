@@ -24,6 +24,7 @@ class ARESDataLogger(val mode: String = "Init") {
     private var writer: BufferedWriter? = null
     private var isHeaderWritten = false
     private var isRunning = false
+    private var writeCount = 0
 
     // GC-Free Map Pool to eliminate allocations during telemetry updates
     private val mapPool = LinkedBlockingQueue<HashMap<String, Any>>()
@@ -161,7 +162,10 @@ class ARESDataLogger(val mode: String = "Init") {
                 }
                 w.write(csvBuilder.toString())
                 w.newLine()
-                w.flush()
+                writeCount++
+                if (writeCount % 50 == 0) {
+                    w.flush()
+                }
             } catch (e: IOException) {
                 System.err.println("ARESDataLogger: Failed to write CSV row: ${e.message}")
             }

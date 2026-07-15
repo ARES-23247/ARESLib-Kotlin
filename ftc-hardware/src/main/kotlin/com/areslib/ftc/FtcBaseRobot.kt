@@ -363,8 +363,25 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     abstract fun safeHardware()
 
     /**
+     * Resets the robot's pose to the specified position on the field.
+     * Updates both the GoBilda Pinpoint hardware offsets and EKF pose estimator.
+     */
+    @kotlin.jvm.JvmOverloads
+    fun resetPose(pose: com.areslib.math.geometry.Pose2d = com.areslib.math.geometry.Pose2d()) {
+        pinpointIO?.initialize(pose, resetHardware = false)
+        store.dispatch(
+            com.areslib.action.RobotAction.PoseUpdate(
+                xMeters = pose.x,
+                yMeters = pose.y,
+                headingRadians = pose.heading.radians,
+                timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+                isReset = true
+            )
+        )
+    }
+
+    /**
      * Gracefully stops logging threads, closes network connections,
-     * and clears registries to prevent memory/thread leakage.
      */
     open fun close() {
         activeInstance = null

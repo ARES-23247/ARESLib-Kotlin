@@ -41,6 +41,12 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
 
     private var telemetryFrameCounter = 0
 
+    /**
+     * Disable NT4 streaming entirely (e.g. during official matches to save CPU/bandwidth).
+     * Disk logging will still occur normally.
+     */
+    var enableNetworkStreaming: Boolean = true
+
     init {
         // Intercept and record all dispatched store actions asynchronously
         store.actionListener = { action -> actionLogger.logAction(action) }
@@ -103,10 +109,10 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
             actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
         }
 
-        // Throttle NT4 network writes to every 3rd frame (~17Hz).
+        // Throttle NT4 network writes to every 3rd frame (~17Hz) if enabled.
         // Disk logging still runs every frame via currentFrame accumulation.
         telemetryFrameCounter++
-        val isNtFrame = (telemetryFrameCounter % 3 == 0)
+        val isNtFrame = enableNetworkStreaming && (telemetryFrameCounter % 3 == 0)
         dataLoggingTelemetry.ntEnabled = isNtFrame
 
         val estPose = state.drive.poseEstimator.estimatedPose
