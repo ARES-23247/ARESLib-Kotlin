@@ -145,8 +145,6 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
 
         kinematics.toWheelSpeeds(forward, left, omega, speedBuffer)
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
-        println("[MecanumHardwareIO] driveState: xVel=${driveState.xVelocityMetersPerSecond}, yVel=${driveState.yVelocityMetersPerSecond}, omega=${driveState.angularVelocityRadiansPerSecond}")
-        println("[MecanumHardwareIO] speeds: FL=${speedBuffer[0]}, FR=${speedBuffer[1]}, RL=${speedBuffer[2]}, RR=${speedBuffer[3]}")
 
         apply(
             speeds = speedBuffer,
