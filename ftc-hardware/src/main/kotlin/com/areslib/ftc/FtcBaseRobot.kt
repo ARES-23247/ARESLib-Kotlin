@@ -199,15 +199,19 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     protected open fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
-        val heading = imuIO?.let {
+        var heading = 0.0
+        var yawVel = 0.0
+        imuIO?.let {
             val inputs = com.areslib.hardware.sensor.ImuInputs()
             it.updateInputs(inputs)
-            inputs.headingRadians
-        } ?: 0.0
+            heading = inputs.headingRadians
+            yawVel = inputs.yawVelocityRadPerSec
+        }
         return RobotAction.PoseUpdate(
             xMeters = 0.0,
             yMeters = 0.0,
             headingRadians = heading,
+            angularVelocityRadiansPerSecond = yawVel,
             timestampMs = timestampMs
         )
     }

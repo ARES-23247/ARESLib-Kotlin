@@ -137,15 +137,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
             }
             useHeadingLock && !isRotating && target == null -> {
-                val history = store.state.drive.poseEstimator.history
-                val physicalAngularVelocity = if (history.size >= 2) {
-                    val latest = history[history.size - 1]
-                    val prev = history[history.size - 2]
-                    val dt = (latest.timestampMs - prev.timestampMs) / 1000.0
-                    if (dt > 0.001) {
-                        wrapAngle(latest.headingRad - prev.headingRad) / dt
-                    } else 0.0
-                } else angularVelocity
+                val physicalAngularVelocity = angularVelocity
 
                 if (kotlin.math.abs(physicalAngularVelocity) < 0.08) {
                     store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))

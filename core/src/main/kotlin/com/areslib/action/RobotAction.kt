@@ -92,7 +92,8 @@ interface RobotAction {
         val xAccelerationG: Double = 0.0,
         val yAccelerationG: Double = 0.0,
         val zAccelerationG: Double = 0.0,
-        val isReset: Boolean = false
+        val isReset: Boolean = false,
+        val angularVelocityRadiansPerSecond: Double = 0.0
     ) : RobotAction
 
     /** Sets the active alliance color for field-centric driving and EKF initialization. */

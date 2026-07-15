@@ -48,6 +48,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private var lastX = 0.0
     private var lastY = 0.0
     private var lastHeading = 0.0
+    private var lastHeadingVelocity = 0.0
     private var lastTimestampMs = 0L
     private var lastWarningTime = 0L
 
@@ -57,7 +58,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
+                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+                val rawHeadingVelocity = driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
 
                 val cosH = kotlin.math.cos(offsetHeading)
                 val sinH = kotlin.math.sin(offsetHeading)
@@ -70,6 +72,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                     lastX = x
                     lastY = y
                     lastHeading = pose.heading.radians
+                    lastHeadingVelocity = rawHeadingVelocity
                     lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                 }
             } catch (e: Exception) {
@@ -98,11 +101,13 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         val x: Double
         val y: Double
         val heading: Double
+        val headingVelocity: Double
         var ts: Long
         synchronized(lock) {
             x = lastX
             y = lastY
             heading = lastHeading
+            headingVelocity = lastHeadingVelocity
             ts = lastTimestampMs
         }
         if (ts == 0L) ts = com.areslib.util.RobotClock.currentTimeMillis()
@@ -110,6 +115,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
             xMeters = x,
             yMeters = y,
             headingRadians = heading,
+            angularVelocityRadiansPerSecond = headingVelocity,
             timestampMs = ts
         )
     }
@@ -130,13 +136,15 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                     lastX = pose.x
                     lastY = pose.y
                     lastHeading = pose.heading.radians
+                    lastHeadingVelocity = 0.0
                     lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                 }
             } else {
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
+                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
+                val rawHeadingVelocity = driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
 
                 synchronized(lock) {
                     offsetHeading = wrapAngle(pose.heading.radians - rawHeading)
@@ -147,6 +155,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                     lastX = pose.x
                     lastY = pose.y
                     lastHeading = pose.heading.radians
+                    lastHeadingVelocity = rawHeadingVelocity
                     lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                 }
             }
