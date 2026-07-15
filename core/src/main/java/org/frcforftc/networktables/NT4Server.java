@@ -32,6 +32,7 @@ public class NT4Server extends WebSocketServer {
     private final Set<WebSocket> m_connections = new CopyOnWriteArraySet<>();
     // Maps prefix to subscribers
     private final Map<String, Set<WebSocket>> m_clientSubscriptions = new ConcurrentHashMap<>();
+    private final Set<NetworkTablesEntry> m_dirtyEntries = new CopyOnWriteArraySet<>();
     private final ObjectMapper m_objectMapper = new ObjectMapper();
 
     private final org.msgpack.core.MessageBufferPacker m_packer = org.msgpack.core.MessagePack.newDefaultBufferPacker();
@@ -126,7 +127,7 @@ public class NT4Server extends WebSocketServer {
                         entry.update(newValue);
                         m_publisherUIDSMap.put(decodedMessage.id, entry);
                         entry.callListenersOfEventType(NetworkTablesEvent.kTopicUpdated, entry, newValue);
-                        broadcastBinaryUpdate(entry);
+                        m_dirtyEntries.add(entry);
                     }
                 }
             }
@@ -144,14 +145,44 @@ public class NT4Server extends WebSocketServer {
     public void onStart() {
     }
 
+    public synchronized byte[] encodeNT4Messages(long timestamp, java.util.List<NetworkTablesEntry> entries) throws IOException {
+        m_packer.clear();
+
+        // NT4 spec: WebSocket binary frame payload is a MessagePack array of arrays.
+        m_packer.packArrayHeader(entries.size());
+
+        for (NetworkTablesEntry entry : entries) {
+            int dataType = NetworkTablesValueType.getFromString(entry.getValue().getType()).id;
+            Object dataValue = entry.getValue().getAs();
+
+            m_packer.packArrayHeader(4);
+            m_packer.packLong(entry.getId());
+            m_packer.packLong(timestamp);
+            m_packer.packInt(dataType);
+
+            packDataValue(dataType, dataValue);
+        }
+
+        return m_packer.toByteArray();
+    }
+
     public synchronized byte[] encodeNT4Message(long timestamp, long topicId, long pubUID, int dataType, Object dataValue) throws IOException {
         m_packer.clear();
 
+        // Previous implementation sent a single array without wrapping. 
+        // We preserve it here for legacy single-message compatibility, 
+        // though encodeNT4Messages is strictly correct.
         m_packer.packArrayHeader(4);
         m_packer.packLong(topicId);
         m_packer.packLong(timestamp);
         m_packer.packInt(dataType);
 
+        packDataValue(dataType, dataValue);
+
+        return m_packer.toByteArray();
+    }
+
+    private void packDataValue(int dataType, Object dataValue) throws IOException {
         NetworkTablesValueType dataTypeAsEnum = NetworkTablesValueType.getFromId(dataType);
         switch (dataTypeAsEnum) {
             case Boolean:
@@ -198,8 +229,6 @@ public class NT4Server extends WebSocketServer {
                 m_packer.packNil();
                 break;
         }
-
-        return m_packer.toByteArray();
     }
 
     public NetworkTablesMessage decodeNT4Message(ByteBuffer message) throws IOException {
@@ -367,7 +396,7 @@ public class NT4Server extends WebSocketServer {
             if (changed) {
                 if (NetworkTablesValueType.determineType(newVal) != NetworkTablesValueType.Unknown) {
                     entry.update(value);
-                    broadcastBinaryUpdate(entry);
+                    m_dirtyEntries.add(entry);
                 }
             }
         } else {
@@ -402,34 +431,53 @@ public class NT4Server extends WebSocketServer {
         broadcast(messagesArray.toString());
     }
     
-    private void broadcastBinaryUpdate(NetworkTablesEntry entry) {
-        try {
-            int typeId = NetworkTablesValueType.getFromString(entry.getValue().getType()).id;
-            byte[] binMsg = encodeNT4Message(System.currentTimeMillis(), entry.getId(), entry.getId(), typeId, entry.getValue().getAs());
-            
-            Set<WebSocket> sentConns = new HashSet<>();
-            for (Map.Entry<String, Set<WebSocket>> sub : m_clientSubscriptions.entrySet()) {
-                if (entry.getTopic().startsWith(sub.getKey())) {
-                    for(WebSocket conn : sub.getValue()) {
-                        if (sentConns.add(conn)) {
-                            conn.send(binMsg);
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    
     private void sendBinaryUpdate(WebSocket conn, NetworkTablesEntry entry) {
         try {
             int typeId = NetworkTablesValueType.getFromString(entry.getValue().getType()).id;
-            byte[] binMsg = encodeNT4Message(System.currentTimeMillis(), entry.getId(), entry.getId(), typeId, entry.getValue().getAs());
+            
+            // For single initial values, wrap it in a size-1 array of arrays to be strictly spec-compliant,
+            // or use encodeNT4Messages to do it correctly.
+            java.util.List<NetworkTablesEntry> single = new ArrayList<>();
+            single.add(entry);
+            byte[] binMsg = encodeNT4Messages(System.currentTimeMillis(), single);
+            
             conn.send(binMsg);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void flush() {
+        if (m_dirtyEntries.isEmpty() || m_clientSubscriptions.isEmpty()) return;
+
+        long timestamp = System.currentTimeMillis();
+
+        for (WebSocket conn : m_connections) {
+            java.util.List<NetworkTablesEntry> entriesToSend = new ArrayList<>();
+            for (NetworkTablesEntry entry : m_dirtyEntries) {
+                boolean subscribed = false;
+                for (Map.Entry<String, Set<WebSocket>> sub : m_clientSubscriptions.entrySet()) {
+                    if (sub.getValue().contains(conn) && entry.getTopic().startsWith(sub.getKey())) {
+                        subscribed = true;
+                        break;
+                    }
+                }
+                if (subscribed) {
+                    entriesToSend.add(entry);
+                }
+            }
+
+            if (!entriesToSend.isEmpty()) {
+                try {
+                    byte[] binMsg = encodeNT4Messages(timestamp, entriesToSend);
+                    conn.send(binMsg);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        m_dirtyEntries.clear();
     }
 
     public Map<String, NetworkTablesEntry> getEntries() {

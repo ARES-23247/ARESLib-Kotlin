@@ -61,7 +61,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         if (brownoutGuard != null) {
             telemetry.putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
             telemetry.putString("Robot/BrownoutState", brownoutGuard.state.name)
-            telemetry.putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
+            telemetry.putNumber("Robot/StateOfCharge", brownoutGuard.batteryPercent)
             telemetry.putNumber("Diagnostics/Power/BrownoutCount", brownoutGuard.tripCount.toDouble())
         }
 
@@ -121,6 +121,9 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
         // ── Gamepad 2 ──
         telemetry.logGamepad("Gamepad2", gamepad2 ?: GamepadState())
+        
+        // Trigger batch flush of the telemetry values published in this frame
+        telemetry.update()
     }
 
     fun publishTopology(topologyJson: String) {

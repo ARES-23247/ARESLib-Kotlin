@@ -115,21 +115,21 @@ This section documents the **canonical coordinate and heading conventions** used
 - **Units**: Radians internally, degrees for display only
 
 ### 5.3 Hardware Boundary: GoBilda Pinpoint
-The GoBilda Pinpoint odometry computer outputs **clockwise-positive** heading, which is opposite to our convention. The negation happens **once** at the hardware boundary:
+The GoBilda Pinpoint odometry computer outputs **counter-clockwise-positive** (CCW+) heading natively, matching our standard convention. No negation is needed at the hardware boundary.
 
 ```kotlin
-// PinpointIO.kt — hardware boundary negation
-val rawHeading = -driver.getHeading(AngleUnit.RADIANS)  // CW→CCW
+// PinpointIO.kt — hardware boundary
+val rawHeading = driver.getHeading(AngleUnit.RADIANS)  // CCW+ natively
 ```
 
-**CRITICAL**: Do NOT add additional negations elsewhere in the pipeline. The heading is CCW-positive from `PinpointIO` onward through the EKF, Redux store, telemetry, and dashboard.
+**CRITICAL**: Do NOT add negations elsewhere in the pipeline. The heading is CCW-positive from `PinpointIO` onward through the EKF, Redux store, telemetry, and dashboard.
 
 ### 5.4 Simulator Heading Pipeline
 The Dyn4j physics engine uses CCW-positive heading natively (same as our convention). To simulate the real GoBilda hardware:
 
 ```
-Dyn4j body (CCW+) → MecanumRobotDouble.updateSensors() negates to CW+ 
-→ GoBildaPinpointDriver mock (CW+) → PinpointIO negates back to CCW+ 
+Dyn4j body (CCW+) → MecanumRobotDouble.updateSensors() passes CCW+ directly 
+→ GoBildaPinpointDriver mock (CCW+) → PinpointIO passes CCW+ 
 → DriveReducer → EKF → Telemetry
 ```
 

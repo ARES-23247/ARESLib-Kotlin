@@ -156,9 +156,8 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 headingPID.d = tuning.headingGains.kD
                 headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
 
-                val rawError = wrapAngle(target - headingRad)
-                val filteredError = headingErrorFilter.calculate(rawError, 0.02)
-                finalOmega = headingPID.calculate(filteredError, 0.0, 0.02) / maxAngularSpeedRps
+                // Let PIDController handle continuous input wrapping natively
+                finalOmega = headingPID.calculate(headingRad, target, 0.02) / maxAngularSpeedRps
                 fromHeadingHold = true
             }
         }

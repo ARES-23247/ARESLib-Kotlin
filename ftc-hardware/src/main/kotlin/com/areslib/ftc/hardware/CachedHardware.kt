@@ -11,7 +11,7 @@ import kotlin.math.abs
  */
 class CachedDcMotorEx(
     private val delegate: DcMotorEx,
-    private val epsilon: Double = 0.005
+    private val epsilon: Double = 0.02
 ) : DcMotorEx by delegate {
 
     private var lastPower = -10.0 // Invalid starting power to guarantee the first write

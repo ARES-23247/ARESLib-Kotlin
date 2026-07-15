@@ -129,6 +129,11 @@ class NT4Telemetry : ITelemetry {
         putDoubleArray(key, doubleArrayOf(xMeters, yMeters, rotationRadians))
     }
 
+    override fun update() {
+        if (!isInitialized) return
+        try { inst.flushServer() } catch (e: Exception) { /* swallow */ }
+    }
+
     override fun close() {
         if (!isInitialized) return
         try { inst.closeServer() } catch (e: Exception) { /* swallow */ }

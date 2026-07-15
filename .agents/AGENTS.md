@@ -53,10 +53,10 @@ The Limelight's Y-axis rotation convention is opposite to the controller's CCW-p
 The heading convention is **CCW-positive** (math standard: 0° = +X, 90° = +Y). This has been a major source of bugs. Always reference `GEMINI.md § 5` for the full coordinate system documentation.
 
 ### ⚠️ CRITICAL: Negation Rules
-1. The GoBilda Pinpoint outputs **CW-positive** heading.
-2. `PinpointIO.kt` negates it **once** at the hardware boundary: `rawHeading = -driver.getHeading()`
-3. **Do NOT add any additional negations** anywhere else in the pipeline.
-4. In the simulator, `MecanumRobotDouble.updateSensors()` feeds `-trueHeadingRad` to the mock Pinpoint to simulate CW-positive hardware output. `PinpointIO` then negates it back.
+1. The GoBilda Pinpoint outputs **CCW-positive** heading natively.
+2. `PinpointIO.kt` passes it directly: `rawHeading = driver.getHeading()`
+3. **Do NOT add any negations** anywhere else in the pipeline.
+4. In the simulator, `MecanumRobotDouble.updateSensors()` feeds `trueHeadingRad` directly to the mock Pinpoint.
 
 ### Simulator State Sync Pitfall
 The sim's `DesktopSimLauncher` maintains a local `var state = RobotState()`. This state is **NOT synced** with the OpMode's Redux store for drive data (only superstructure is synced). The `TelemetryPublisher.publishEstimatedPose()` call must use `currentPose` (Dyn4j ground truth), NOT `state.drive.poseEstimator.estimatedPose` (which is always default/zeroed).

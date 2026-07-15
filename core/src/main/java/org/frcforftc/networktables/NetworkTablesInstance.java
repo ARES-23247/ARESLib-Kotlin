@@ -199,6 +199,12 @@ public class NetworkTablesInstance {
         return m_server;
     }
 
+    public void flushServer() {
+        if (m_server != null) {
+            m_server.flush();
+        }
+    }
+
     /**
      * Custom exception class for invalid URI syntax errors in NT4Client initialization.
      */

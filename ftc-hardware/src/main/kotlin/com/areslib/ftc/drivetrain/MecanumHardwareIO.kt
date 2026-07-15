@@ -98,6 +98,11 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             )
             listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
                 motor.setPIDFCoefficients(com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER, coefficients)
+                motor.mode = com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER
+            }
+        } else {
+            listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
+                motor.mode = com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER
             }
         }
 

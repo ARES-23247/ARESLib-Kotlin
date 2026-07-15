@@ -27,7 +27,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     yOffsetMm: Double = 0.0,
     encoderResolution: Double? = null,
     xDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD,
-    yDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD
+    yDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD,
+    private val isHeadingCcwPositive: Boolean = false
 ) : AutoCloseable {
     private var offsetX = 0.0
     private var offsetY = 0.0
@@ -58,8 +59,9 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
-                val rawHeadingVelocity = -driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
+                val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
+                val rawHeading = headingMult * driver.getHeading(AngleUnit.RADIANS)
+                val rawHeadingVelocity = headingMult * driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
 
                 synchronized(lock) {
                     val cosH = kotlin.math.cos(offsetHeading)
@@ -142,8 +144,9 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
-                val rawHeadingVelocity = -driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
+                val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
+                val rawHeading = headingMult * driver.getHeading(AngleUnit.RADIANS)
+                val rawHeadingVelocity = headingMult * driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
 
                 synchronized(lock) {
                     offsetHeading = wrapAngle(pose.heading.radians - rawHeading)

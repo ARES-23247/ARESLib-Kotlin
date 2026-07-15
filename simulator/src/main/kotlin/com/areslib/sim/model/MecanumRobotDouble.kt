@@ -94,7 +94,7 @@ class MecanumRobotDouble {
     // Encoder properties
     private val encoderTicksPerMeter = 2000.0 // Ticks per meter of wheel travel
 
-    fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double) {
+    fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = false) {
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2
         // RL = vx + vy - omega * (trackWidth + wheelBase)/2
@@ -118,7 +118,7 @@ class MecanumRobotDouble {
         // Feed simulated EKF/Pinpoint sensor coordinates
         pinpoint.posX = trueX
         pinpoint.posY = trueY
-        pinpoint.heading = -trueHeadingRad
-        pinpoint.headingVelocity = -actualOmega
+        pinpoint.heading = if (isPinpointCcwPositive) trueHeadingRad else -trueHeadingRad
+        pinpoint.headingVelocity = if (isPinpointCcwPositive) actualOmega else -actualOmega
     }
 }

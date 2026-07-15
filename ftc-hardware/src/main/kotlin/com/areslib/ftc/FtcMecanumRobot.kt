@@ -64,6 +64,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     pinpointEncoderResolution: Double? = null,
     pinpointXDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
+    pinpointIsCcwPositive: Boolean = true,
     
     // Motor Tunable Constants
     val motorGains: PIDFCoefficients? = null,
@@ -86,6 +87,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     pinpointEncoderResolution = pinpointEncoderResolution,
     pinpointXDirection = pinpointXDirection,
     pinpointYDirection = pinpointYDirection,
+    pinpointIsCcwPositive = pinpointIsCcwPositive,
     visionStdDevs = visionStdDevs,
     visionFilterConfig = visionFilterConfig
 ) {
