@@ -66,8 +66,8 @@ class AresGamepad {
      * @param newState The latest polled gamepad state.
      */
     fun update(newState: GamepadState) {
-        previousState = currentState
-        currentState = newState
+        previousState.copyFrom(currentState)
+        currentState.copyFrom(newState)
 
         leftStick.updateValue(newState)
         rightStick.updateValue(newState)
@@ -77,7 +77,6 @@ class AresGamepad {
         rightStickY.updateValue(newState)
         leftTrigger.updateValue(newState)
         rightTrigger.updateValue(newState)
-        currentState = newState
         
         // Iterate through all bindable buttons and trigger actions if transitions occurred
         // Using a standard loop to avoid allocations (iterator object creation) on the hot path

@@ -142,6 +142,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     private var profHardwareInputsMs = 0.0
     private var profPinpointMs = 0.0
     private var profVisionMs = 0.0
+    private var loopOverrunCount = 0
 
     /**
      * Synchronously reads pinpoint and Limelight visual tracking sensors,
@@ -291,11 +292,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
             // Publish per-section timing (ms with 2 decimal precision)
             val dl = telemetryManager.dataLoggingTelemetry
+            val totalTimeMs = (t4 - t0) / 1_000_000.0
+            if (totalTimeMs > 25.0) { // Threshold for overrun is 25ms
+                loopOverrunCount++
+            }
+            dl.putNumber("Diagnostics/LoopOverruns", loopOverrunCount.toDouble())
             dl.putNumber("Profiling/ReadSensors_ms", (t1 - t0) / 1_000_000.0)
             dl.putNumber("Profiling/PowerManager_ms", (t2 - t1) / 1_000_000.0)
             dl.putNumber("Profiling/Subsystems_ms", (t3 - t2) / 1_000_000.0)
             dl.putNumber("Profiling/Telemetry_ms", (t4 - t3) / 1_000_000.0)
-            dl.putNumber("Profiling/Total_ms", (t4 - t0) / 1_000_000.0)
+            dl.putNumber("Profiling/Total_ms", totalTimeMs)
 
             // 6. Record frame inputs for deterministic replay (Disabled: ActionLogger handles Redux replay natively)
             /*
