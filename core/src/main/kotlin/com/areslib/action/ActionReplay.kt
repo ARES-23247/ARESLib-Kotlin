@@ -71,7 +71,7 @@ object ActionReplay {
 
     private fun deserializeAction(jsonLine: String): RobotAction? {
         return try {
-            val envelope = JsonParser.parseString(jsonLine).asJsonObject
+            val envelope = gson.fromJson(jsonLine, JsonObject::class.java)
             val type = envelope.get("type").asString
             val payload = envelope.getAsJsonObject("payload")
 

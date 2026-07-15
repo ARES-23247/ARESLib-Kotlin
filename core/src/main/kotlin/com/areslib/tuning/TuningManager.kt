@@ -28,7 +28,7 @@ class TuningManager(
         if (saveFile.exists()) {
             try {
                 val jsonStr = saveFile.readText()
-                val loadedJson = JsonParser.parseString(jsonStr).asJsonObject
+                val loadedJson = gson.fromJson(jsonStr, JsonObject::class.java)
                 
                 // Merge into the default state to preserve Kotlin defaults for missing fields
                 val defaultJson = gson.toJsonTree(store.state.tuning).asJsonObject
