@@ -12,8 +12,9 @@ import java.util.concurrent.ConcurrentHashMap
 class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelemetry {
     
     private var logger = ARESDataLogger("Init")
-    private val currentFrame = ConcurrentHashMap<String, Any>()
+    private val currentFrame = java.util.HashMap<String, Any>()
     private var currentMode = "Init"
+    private val arrayBuilder = java.lang.StringBuilder(128)
 
     /**
      * When false, NT4 network forwarding is suppressed for this frame.
@@ -50,9 +51,12 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     }
 
     override fun putDoubleArray(key: String, value: DoubleArray) {
-        // Flatten arrays by turning them into a clean colon or pipe-separated string
-        // inside CSV so we maintain the standard structure.
-        currentFrame[key] = value.joinToString("|")
+        arrayBuilder.setLength(0)
+        for (i in value.indices) {
+            if (i > 0) arrayBuilder.append('|')
+            arrayBuilder.append(value[i])
+        }
+        currentFrame[key] = arrayBuilder.toString()
         if (ntEnabled) ntTelemetry?.putDoubleArray(key, value)
     }
 

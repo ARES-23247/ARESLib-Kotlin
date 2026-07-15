@@ -39,7 +39,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val pinpointEncoderResolution: Double? = null,
     val pinpointXDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     val pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
-    val pinpointIsCcwPositive: Boolean = true,
+    val pinpointIsCcwPositive: Boolean = false,
 
     
     // Vision Configuration

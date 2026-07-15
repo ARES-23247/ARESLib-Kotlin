@@ -87,19 +87,23 @@ class ActionLogger(
     private fun writeAction(action: RobotAction) {
         val w = writer ?: return
         val typeName = action.javaClass.simpleName
-        val payloadJson = gson.toJsonTree(action) as JsonObject
         
-        val envelope = JsonObject()
-        envelope.addProperty("run_id", runId)
-        envelope.addProperty("robot_id", robotId)
-        envelope.addProperty("match_number", matchNumber)
-        envelope.addProperty("alliance", alliance)
-        envelope.addProperty("op_mode", mode)
-        envelope.addProperty("type", typeName)
-        envelope.add("payload", payloadJson)
-
         try {
-            w.write(gson.toJson(envelope))
+            w.write("{\"run_id\":\"")
+            w.write(runId)
+            w.write("\",\"robot_id\":\"")
+            w.write(robotId)
+            w.write("\",\"match_number\":")
+            w.write(matchNumber.toString())
+            w.write(",\"alliance\":\"")
+            w.write(alliance)
+            w.write("\",\"op_mode\":\"")
+            w.write(mode)
+            w.write("\",\"type\":\"")
+            w.write(typeName)
+            w.write("\",\"payload\":")
+            gson.toJson(action, w)
+            w.write("}")
             w.newLine()
         } catch (e: IOException) {
             System.err.println("ActionLogger: Failed to write JSONL: ${e.message}")
