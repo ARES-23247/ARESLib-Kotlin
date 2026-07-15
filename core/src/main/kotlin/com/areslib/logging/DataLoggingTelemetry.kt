@@ -15,6 +15,13 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     private val currentFrame = ConcurrentHashMap<String, Any>()
     private var currentMode = "Init"
 
+    /**
+     * When false, NT4 network forwarding is suppressed for this frame.
+     * Disk logging still occurs every frame regardless of this flag.
+     * Set by FtcTelemetryManager to throttle WiFi traffic.
+     */
+    var ntEnabled: Boolean = true
+
     init {
         ntTelemetry?.putString("OpMode", currentMode)
     }
@@ -29,24 +36,24 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
 
     override fun putNumber(key: String, value: Double) {
         currentFrame[key] = value
-        ntTelemetry?.putNumber(key, value)
+        if (ntEnabled) ntTelemetry?.putNumber(key, value)
     }
 
     override fun putBoolean(key: String, value: Boolean) {
         currentFrame[key] = if (value) 1.0 else 0.0
-        ntTelemetry?.putBoolean(key, value)
+        if (ntEnabled) ntTelemetry?.putBoolean(key, value)
     }
 
     override fun putString(key: String, value: String) {
         currentFrame[key] = value
-        ntTelemetry?.putString(key, value)
+        if (ntEnabled) ntTelemetry?.putString(key, value)
     }
 
     override fun putDoubleArray(key: String, value: DoubleArray) {
         // Flatten arrays by turning them into a clean colon or pipe-separated string
         // inside CSV so we maintain the standard structure.
         currentFrame[key] = value.joinToString("|")
-        ntTelemetry?.putDoubleArray(key, value)
+        if (ntEnabled) ntTelemetry?.putDoubleArray(key, value)
     }
 
     override fun getNumber(key: String, defaultValue: Double): Double {
@@ -84,8 +91,8 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
             logger.logFrame(map)
         }
         
-        // Forward the update trigger to live streaming network tables (always unthrottled)
-        ntTelemetry?.update()
+        // Forward the update trigger to live streaming network tables (only on NT-enabled frames)
+        if (ntEnabled) ntTelemetry?.update()
     }
 
     /**

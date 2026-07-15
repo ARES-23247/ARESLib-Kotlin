@@ -103,6 +103,12 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
             actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
         }
 
+        // Throttle NT4 network writes to every 3rd frame (~17Hz).
+        // Disk logging still runs every frame via currentFrame accumulation.
+        telemetryFrameCounter++
+        val isNtFrame = (telemetryFrameCounter % 3 == 0)
+        dataLoggingTelemetry.ntEnabled = isNtFrame
+
         val estPose = state.drive.poseEstimator.estimatedPose
         brownoutGuard.update(batteryVoltage)
 
@@ -111,17 +117,11 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
 
         publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, brownoutGuard)
 
-        // Log the complete state, motor currents, and EKF vision updates
-        // Obsolete: Handled by Unified ARESDataLogger
-
         // Vision telemetry status
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
 
-        // Global custom hardware telemetry (throttled to every 3rd frame to reduce NT4 overhead)
-        telemetryFrameCounter++
-        if (telemetryFrameCounter % 3 == 0) {
-            HardwareRegistry.publishAll(dataLoggingTelemetry)
-        }
+        // Global custom hardware telemetry (also governed by ntEnabled flag)
+        HardwareRegistry.publishAll(dataLoggingTelemetry)
 
         // Invoke all registered custom publishers
         for (i in 0 until customPublishers.size) {
@@ -151,8 +151,11 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
             }
         }
 
-        // Finalize frame and flush to loggers/network
+        // Finalize frame: disk log always, NT4 flush only on NT frames
         dataLoggingTelemetry.update()
+
+        // Reset NT4 enabled for any out-of-band puts between frames
+        dataLoggingTelemetry.ntEnabled = true
     }
 
     /**

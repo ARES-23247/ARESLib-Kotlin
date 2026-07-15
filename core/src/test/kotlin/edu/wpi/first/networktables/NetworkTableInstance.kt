@@ -12,6 +12,34 @@ class NetworkTableInstance {
     fun getBooleanTopic(name: String): BooleanTopic = BooleanTopic(name)
     fun getStringTopic(name: String): StringTopic = StringTopic(name)
     fun getDoubleArrayTopic(name: String): DoubleArrayTopic = DoubleArrayTopic(name)
+
+    fun getEntry(name: String): NetworkTableEntry = NetworkTableEntry(name)
+}
+
+class NetworkTableEntry(val name: String) {
+    fun setDouble(value: Double) {
+        DoublePublisher.lastValues[name] = value
+        lastValues[name] = value
+    }
+    fun setBoolean(value: Boolean) {
+        BooleanPublisher.lastValues[name] = value
+        lastValues[name] = value
+    }
+    fun setString(value: String) {
+        StringPublisher.lastValues[name] = value
+        lastValues[name] = value
+    }
+    fun setDoubleArray(value: DoubleArray) {
+        DoubleArrayPublisher.lastValues[name] = value
+        lastValues[name] = value
+    }
+    fun getDouble(defaultValue: Double): Double = (lastValues[name] as? Double) ?: defaultValue
+    fun getBoolean(defaultValue: Boolean): Boolean = (lastValues[name] as? Boolean) ?: defaultValue
+    fun getString(defaultValue: String): String = (lastValues[name] as? String) ?: defaultValue
+
+    companion object {
+        val lastValues = mutableMapOf<String, Any>()
+    }
 }
 
 class DoubleTopic(val name: String) {
@@ -23,6 +51,7 @@ class DoublePublisher(val name: String) {
     }
     fun set(v: Double) {
         lastValues[name] = v
+        NetworkTableEntry.lastValues[name] = v
     }
 }
 
@@ -35,6 +64,7 @@ class BooleanPublisher(val name: String) {
     }
     fun set(v: Boolean) {
         lastValues[name] = v
+        NetworkTableEntry.lastValues[name] = v
     }
 }
 
@@ -47,6 +77,7 @@ class StringPublisher(val name: String) {
     }
     fun set(v: String) {
         lastValues[name] = v
+        NetworkTableEntry.lastValues[name] = v
     }
 }
 
@@ -59,5 +90,6 @@ class DoubleArrayPublisher(val name: String) {
     }
     fun set(v: DoubleArray) {
         lastValues[name] = v
+        NetworkTableEntry.lastValues[name] = v
     }
 }

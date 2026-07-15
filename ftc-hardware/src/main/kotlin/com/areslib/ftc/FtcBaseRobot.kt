@@ -137,6 +137,12 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     private var hasReadSensorsThisFrame = false
     private var lastPoseUpdateTimestamp = 0L
 
+    // Profiling: sub-timings from readSensors() stored for driver station display
+    private var profBulkCacheMs = 0.0
+    private var profHardwareInputsMs = 0.0
+    private var profPinpointMs = 0.0
+    private var profVisionMs = 0.0
+
     /**
      * Synchronously reads pinpoint and Limelight visual tracking sensors,
      * updates the EKF state immediately, and clears REV expansion hub bulk caches.
@@ -146,16 +152,22 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
 
+        // === PROFILING: sub-section timing inside readSensors ===
+        val s0 = System.nanoTime()
+
         // 0. Clear manual bulk caches at the beginning of the frame
         com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()
+        val s1 = System.nanoTime()
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         
         // 0b. Read inputs from robot-specific sensors (e.g. drive encoders)
         updateHardwareInputs()
+        val s2 = System.nanoTime()
 
         // 1. Read pinpoint sensors and update EKF pose estimation
         val poseUpdate = pinpointIO?.getPoseUpdate() ?: getFallbackPoseUpdate(timestamp)
+        val s3 = System.nanoTime()
         
         val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
         val age = timestamp - poseUpdate.timestampMs
@@ -169,6 +181,20 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         // 2. Process AprilTags visual updates
         visionTracker.update(timestamp)
+        val s4 = System.nanoTime()
+
+        // Store readSensors sub-timings for driver station display
+        profBulkCacheMs = (s1 - s0) / 1_000_000.0
+        profHardwareInputsMs = (s2 - s1) / 1_000_000.0
+        profPinpointMs = (s3 - s2) / 1_000_000.0
+        profVisionMs = (s4 - s3) / 1_000_000.0
+
+        // Publish to NT4 telemetry
+        val dl = telemetryManager.dataLoggingTelemetry
+        dl.putNumber("Profiling/BulkCacheClear_ms", profBulkCacheMs)
+        dl.putNumber("Profiling/HardwareInputs_ms", profHardwareInputsMs)
+        dl.putNumber("Profiling/Pinpoint_ms", profPinpointMs)
+        dl.putNumber("Profiling/Vision_ms", profVisionMs)
     }
 
     protected open fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
@@ -219,16 +245,35 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val dtSeconds = if (lastUpdateTime == 0L) 0.02 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
+            // === PROFILING: per-section timing (nanoTime for wall-clock accuracy) ===
+            val t0 = System.nanoTime()
+
             // Ensure sensors are read
             readSensors()
             hasReadSensorsThisFrame = false // Reset for the next frame
+            val t1 = System.nanoTime()
 
             // 3. Update voltage sag filter and brownout power scaling
             val effectiveScale = powerManager.update(dtSeconds, timestamp)
             val batteryVoltage = powerManager.batteryVoltage
+            val t2 = System.nanoTime()
 
             // 4. Compute kinematics and apply outputs to actuators
             updateSubsystems(dtSeconds, batteryVoltage, effectiveScale)
+            val t3 = System.nanoTime()
+
+            // 4b. Display profiling on driver station telemetry
+            val sensorsMs = (t1 - t0) / 1_000_000.0
+            val powerMs = (t2 - t1) / 1_000_000.0
+            val subsystemsMs = (t3 - t2) / 1_000_000.0
+            localTelemetry?.let { t ->
+                t.addData("--- PROFILING", "(ms) ---")
+                t.addData("Sensors", "%.1f [bulk:%.1f hw:%.1f pp:%.1f vis:%.1f]",
+                    sensorsMs, profBulkCacheMs, profHardwareInputsMs, profPinpointMs, profVisionMs)
+                t.addData("Power", "%.1f", powerMs)
+                t.addData("Subsystems", "%.1f", subsystemsMs)
+                t.addData("TOTAL (no telem)", "%.1f", sensorsMs + powerMs + subsystemsMs)
+            }
 
             // 5. Publish logging and diagnostics
             telemetryManager.publishFull(
@@ -242,6 +287,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 localTelemetry = localTelemetry,
                 onSubclassPublish = { publishRobotTelemetry(timestamp) }
             )
+            val t4 = System.nanoTime()
+
+            // Publish per-section timing (ms with 2 decimal precision)
+            val dl = telemetryManager.dataLoggingTelemetry
+            dl.putNumber("Profiling/ReadSensors_ms", (t1 - t0) / 1_000_000.0)
+            dl.putNumber("Profiling/PowerManager_ms", (t2 - t1) / 1_000_000.0)
+            dl.putNumber("Profiling/Subsystems_ms", (t3 - t2) / 1_000_000.0)
+            dl.putNumber("Profiling/Telemetry_ms", (t4 - t3) / 1_000_000.0)
+            dl.putNumber("Profiling/Total_ms", (t4 - t0) / 1_000_000.0)
 
             // 6. Record frame inputs for deterministic replay (Disabled: ActionLogger handles Redux replay natively)
             /*

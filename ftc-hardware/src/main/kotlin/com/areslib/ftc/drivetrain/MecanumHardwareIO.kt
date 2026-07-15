@@ -107,13 +107,13 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     @Volatile private var currentPollingRunning = true
+    private val driveMotorIOs by lazy { arrayOf(flIO, frIO, rlIO, rrIO) }
     private val currentPollingThread = Thread {
+        var index = 0
         while (currentPollingRunning) {
-            flIO.pollCurrentSync()
-            frIO.pollCurrentSync()
-            rlIO.pollCurrentSync()
-            rrIO.pollCurrentSync()
-            try { Thread.sleep(50) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+            driveMotorIOs[index].pollCurrentSync()
+            index = (index + 1) and 3  // Cycles 0→1→2→3→0 (bitwise mod 4)
+            try { Thread.sleep(12) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
         }
     }.apply {
         isDaemon = true
