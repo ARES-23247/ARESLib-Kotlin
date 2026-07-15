@@ -106,7 +106,23 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         }
     }
 
+    @Volatile private var currentPollingRunning = true
+    private val currentPollingThread = Thread {
+        while (currentPollingRunning) {
+            flIO.pollCurrentSync()
+            frIO.pollCurrentSync()
+            rlIO.pollCurrentSync()
+            rrIO.pollCurrentSync()
+            try { Thread.sleep(50) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+        }
+    }.apply {
+        isDaemon = true
+        name = "ARES-DriveCurrent-Thread"
+        start()
+    }
+
     override fun close() {
+        currentPollingRunning = false
         flIO.close()
         frIO.close()
         rlIO.close()
@@ -253,8 +269,6 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         rrIO.power = rr
     }
 
-    private var currentPollIndex = 0
-
     /**
      * Updates cached motor sensor readings from the hardware bulk read caches.
      * Call this at the start of every loop iteration to ensure fresh, zero-overhead sensor access.
@@ -264,14 +278,6 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         frIO.updateInputs()
         rlIO.updateInputs()
         rrIO.updateInputs()
-        
-        when (currentPollIndex) {
-            0 -> flIO.pollCurrentSync()
-            1 -> frIO.pollCurrentSync()
-            2 -> rlIO.pollCurrentSync()
-            3 -> rrIO.pollCurrentSync()
-        }
-        currentPollIndex = (currentPollIndex + 1) % 4
     }
 
     private var lastWarningTime = 0L

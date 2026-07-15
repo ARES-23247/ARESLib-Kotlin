@@ -70,13 +70,12 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     fun enable() {
         isEnabled.set(true)
-        if (CONTROL_HUB != null && CONTROL_HUB!!.bulkCachingMode == LynxModule.BulkCachingMode.OFF) {
-            CONTROL_HUB!!.bulkCachingMode = LynxModule.BulkCachingMode.AUTO
-        }
-        if (EXPANSION_HUB != null && EXPANSION_HUB!!.bulkCachingMode == LynxModule.BulkCachingMode.OFF) {
-            EXPANSION_HUB!!.bulkCachingMode = LynxModule.BulkCachingMode.AUTO
-        }
+        // NOTE: Do NOT change bulkCachingMode here.
+        // FtcPerformanceManager.initialize() already sets MANUAL mode and
+        // FtcBaseRobot.readSensors() calls clearBulkCaches() each frame.
+        // Switching to AUTO here would conflict with that pattern.
     }
+
 
     fun disable() {
         isEnabled.set(false)

@@ -79,7 +79,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                     lastWarningTime = now
                 }
             }
-            try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+            try { Thread.sleep(15) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
         }
     }.apply {
         isDaemon = true

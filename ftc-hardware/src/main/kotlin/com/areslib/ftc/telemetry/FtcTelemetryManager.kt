@@ -39,6 +39,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     // Timestamp tracking for local Driver Station telemetry throttling
     private var lastLocalTelemetryUpdateMs = 0L
 
+    private var telemetryFrameCounter = 0
+
     init {
         // Intercept and record all dispatched store actions asynchronously
         store.actionListener = { action -> actionLogger.logAction(action) }
@@ -115,8 +117,11 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         // Vision telemetry status
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
 
-        // Global custom hardware telemetry
-        HardwareRegistry.publishAll(dataLoggingTelemetry)
+        // Global custom hardware telemetry (throttled to every 3rd frame to reduce NT4 overhead)
+        telemetryFrameCounter++
+        if (telemetryFrameCounter % 3 == 0) {
+            HardwareRegistry.publishAll(dataLoggingTelemetry)
+        }
 
         // Invoke all registered custom publishers
         for (i in 0 until customPublishers.size) {

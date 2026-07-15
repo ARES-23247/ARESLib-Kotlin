@@ -90,6 +90,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     visionFilterConfig = visionFilterConfig
 ) {
 
+    // Pre-allocated telemetry buffers (Zero-GC compliance)
+    private val EMPTY_SYSID_DATA = DoubleArray(0)
+
     // Subsystem Facades
     val drive = DriveSubsystem(store)
     val mecanumDrive = MecanumDriveFacade(store, headingGains, headingDeadzoneDeg)
@@ -455,12 +458,12 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     )
                 }
                 else -> {
-                    dataLogging.putDoubleArray("SysId/Data", doubleArrayOf())
+                    dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
                 }
             }
         } else {
             dataLogging.putString("SysId/Status", "NONE")
-            dataLogging.putDoubleArray("SysId/Data", doubleArrayOf())
+            dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
         }
     }
 

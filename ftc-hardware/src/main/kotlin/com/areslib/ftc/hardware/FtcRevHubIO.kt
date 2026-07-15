@@ -435,7 +435,7 @@ class FtcImu(private val imu: IMU) : ImuIO, AutoCloseable {
             } catch (_: Exception) {}
             
             try {
-                Thread.sleep(5) // Poll at ~200Hz
+                Thread.sleep(20) // Poll at ~50Hz (IMU is a fallback sensor, Pinpoint is primary)
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
                 break

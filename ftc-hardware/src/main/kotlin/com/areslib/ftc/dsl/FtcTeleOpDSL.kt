@@ -56,10 +56,16 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
     override fun runOpMode() {
         val builder = define()
         
+        // Manually initialize AresPhotonCore's LynxModule replacement.
+        // The @OnCreateEventLoop annotation is NOT discovered for classes in library JARs,
+        // so we must call onOpModePreInit() explicitly before buildRobot() creates motors.
+        // Note: Cast required because the mock LinearOpMode doesn't extend OpMode.
+        // On real hardware, LinearOpMode extends OpMode so this cast always succeeds.
         try {
+            com.areslib.ftc.photon.AresPhotonCore.onOpModePreInit(this as com.qualcomm.robotcore.eventloop.opmode.OpMode)
             com.areslib.ftc.photon.AresPhotonCore.enable()
         } catch(e: Exception) {
-            // Ignore in simulation
+            // Ignore in simulation or if Photon module replacement fails
         }
         
         // Configure the EKF with the tag positions of the selected field layout
