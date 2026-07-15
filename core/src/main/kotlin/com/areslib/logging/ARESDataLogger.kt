@@ -118,6 +118,37 @@ class ARESDataLogger(val mode: String = "Init") {
     // Pre-allocated StringBuilder for zero-allocation CSV row writing
     private val csvBuilder = StringBuilder(512)
 
+    private fun StringBuilder.appendDouble(d: Double, places: Int = 4) {
+        if (d.isNaN()) { append("NaN"); return }
+        if (d.isInfinite()) { append(if (d < 0) "-Infinity" else "Infinity"); return }
+        var value = d
+        if (value < 0) {
+            append('-')
+            value = -value
+        }
+        val intPart = value.toLong()
+        append(intPart)
+        val fracPart = value - intPart
+        if (fracPart > 0.0) {
+            append('.')
+            var multiplier = 1L
+            for (i in 0 until places) multiplier *= 10L
+            var fracInt = (fracPart * multiplier + 0.5).toLong()
+            if (fracInt >= multiplier) {
+                // Rare rounding case
+                fracInt = multiplier - 1
+            }
+            val digits = CharArray(places)
+            for (i in places - 1 downTo 0) {
+                digits[i] = ((fracInt % 10L) + 48L).toInt().toChar()
+                fracInt /= 10L
+            }
+            append(digits)
+        } else {
+            append(".0")
+        }
+    }
+
     private fun writeFrame(frame: Map<String, Any>) {
         val w = writer ?: return
 
@@ -157,7 +188,13 @@ class ARESDataLogger(val mode: String = "Init") {
                 for (i in 0 until activeKeys.size) {
                     if (i > 0) csvBuilder.append(',')
                     val value = frame[activeKeys[i]]
-                    if (value != null) csvBuilder.append(value.toString())
+                    if (value != null) {
+                        if (value is Double) {
+                            csvBuilder.appendDouble(value, 4)
+                        } else {
+                            csvBuilder.append(value.toString())
+                        }
+                    }
                 }
                 w.write(csvBuilder.toString())
                 w.newLine()
