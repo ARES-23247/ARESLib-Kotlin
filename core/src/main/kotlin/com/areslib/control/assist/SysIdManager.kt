@@ -5,15 +5,14 @@ import kotlin.math.sqrt
 
 enum class SysIdMechanism {
     LINEAR,
-    ANGULAR
+    ANGULAR,
+    FLYWHEEL
 }
 
 enum class SysIdRoutine {
     NONE,
-    QUASISTATIC_FORWARD,
-    QUASISTATIC_REVERSE,
-    DYNAMIC_FORWARD,
-    DYNAMIC_REVERSE
+    QUASISTATIC,
+    DYNAMIC
 }
 
 class SysIdManager {
@@ -39,6 +38,8 @@ class SysIdManager {
     
     var accumulatedHeadingChange = 0.0
         private set
+    var accumulatedPosition = 0.0
+        private set
     var calculatedAcceleration = 0.0
         private set
 
@@ -54,6 +55,7 @@ class SysIdManager {
         lastVelocity = 0.0
         lastHeading = heading
         accumulatedHeadingChange = 0.0
+        accumulatedPosition = 0.0
         calculatedAcceleration = 0.0
     }
 
@@ -74,6 +76,10 @@ class SysIdManager {
         val elapsedSec = (timestampMs - startTimeMs) / 1000.0
         if (elapsedSec > 5.0) {
             return false // Time safety limit
+        }
+
+        if (activeMechanism == SysIdMechanism.FLYWHEEL) {
+            return true
         }
 
         if (activeMechanism == SysIdMechanism.LINEAR) {
@@ -105,18 +111,29 @@ class SysIdManager {
         val elapsedSec = (timestampMs - startTimeMs) / 1000.0
         val dt = (timestampMs - lastTimeMs) / 1000.0
         
-        // Calculate acceleration
+        // Calculate acceleration and integrate position
         if (dt > 1e-4) {
+            accumulatedPosition += velocity * dt
             calculatedAcceleration = (velocity - lastVelocity) / dt
         }
         lastTimeMs = timestampMs
         lastVelocity = velocity
 
         currentVoltage = when (activeRoutine) {
-            SysIdRoutine.QUASISTATIC_FORWARD -> 0.2 * elapsedSec
-            SysIdRoutine.QUASISTATIC_REVERSE -> -0.2 * elapsedSec
-            SysIdRoutine.DYNAMIC_FORWARD -> 3.0
-            SysIdRoutine.DYNAMIC_REVERSE -> -3.0
+            SysIdRoutine.QUASISTATIC -> {
+                if (elapsedSec < 2.5) {
+                    1.2 * elapsedSec
+                } else {
+                    -1.2 * (elapsedSec - 2.5)
+                }
+            }
+            SysIdRoutine.DYNAMIC -> {
+                if (elapsedSec < 1.5) {
+                    3.0
+                } else {
+                    -3.0
+                }
+            }
             else -> 0.0
         }
         

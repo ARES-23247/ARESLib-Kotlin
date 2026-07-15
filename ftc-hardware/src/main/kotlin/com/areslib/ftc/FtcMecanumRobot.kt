@@ -145,6 +145,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     val sysIdManager = SysIdManager()
+    var customSysIdVelocityProvider: (() -> Double)? = null
     
     private var lastLocalTelemetryUpdateMs = 0L
     private var lastCommandProcessed = ""
@@ -265,23 +266,30 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         
         if (sysIdManager.isActive()) {
-            if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
-                sysIdManager.stop()
-                mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
-            } else {
-                val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
-                    store.state.drive.xVelocityMetersPerSecond
+            if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR || sysIdManager.activeMechanism == SysIdMechanism.ANGULAR) {
+                if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                    sysIdManager.stop()
+                    mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
                 } else {
-                    store.state.drive.angularVelocityRadiansPerSecond
+                    val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
+                        store.state.drive.xVelocityMetersPerSecond
+                    } else {
+                        store.state.drive.angularVelocityRadiansPerSecond
+                    }
+                    
+                    val voltage = sysIdManager.update(timestamp, velocity)
+                    val power = (voltage / batteryVoltage).coerceIn(-1.0, 1.0)
+                    
+                    if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
+                        mecanumIO.setMotorPowers(power, power, power, power)
+                    } else {
+                        mecanumIO.setMotorPowers(-power, power, -power, power)
+                    }
                 }
-                
-                val voltage = sysIdManager.update(timestamp, velocity)
-                val power = (voltage / batteryVoltage).coerceIn(-1.0, 1.0)
-                
-                if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
-                    mecanumIO.setMotorPowers(power, power, power, power)
-                } else {
-                    mecanumIO.setMotorPowers(-power, power, -power, power)
+            } else {
+                // Non-drive mechanism safety check (primarily time limit)
+                if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                    sysIdManager.stop()
                 }
             }
         } else if (activeCalibration != "NONE") {
@@ -341,18 +349,20 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         if (sysIdManager.isActive()) {
             dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
             val pose = store.state.drive.poseEstimator.estimatedPose
-            val position = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
-                val dx = pose.x - sysIdManager.startX
-                val dy = pose.y - sysIdManager.startY
-                kotlin.math.sqrt(dx * dx + dy * dy)
-            } else {
-                sysIdManager.accumulatedHeadingChange
+            val position = when (sysIdManager.activeMechanism) {
+                SysIdMechanism.LINEAR -> {
+                    val dx = pose.x - sysIdManager.startX
+                    val dy = pose.y - sysIdManager.startY
+                    kotlin.math.sqrt(dx * dx + dy * dy)
+                }
+                SysIdMechanism.ANGULAR -> sysIdManager.accumulatedHeadingChange
+                SysIdMechanism.FLYWHEEL -> sysIdManager.accumulatedPosition
             }
             
-            val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
-                store.state.drive.xVelocityMetersPerSecond
-            } else {
-                store.state.drive.angularVelocityRadiansPerSecond
+            val velocity = when (sysIdManager.activeMechanism) {
+                SysIdMechanism.LINEAR -> store.state.drive.xVelocityMetersPerSecond
+                SysIdMechanism.ANGULAR -> store.state.drive.angularVelocityRadiansPerSecond
+                SysIdMechanism.FLYWHEEL -> customSysIdVelocityProvider?.invoke() ?: 0.0
             }
             
             dataLogging.putDoubleArray(
