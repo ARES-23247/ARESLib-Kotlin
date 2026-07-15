@@ -167,7 +167,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
 
                 val rawError = wrapAngle(target - headingRad)
                 val filteredError = headingErrorFilter.calculate(rawError, 0.02)
-                finalOmega = headingPID.calculate(filteredError, 0.0, 0.02) / maxAngularSpeedRps
+                finalOmega = headingPID.calculate(-filteredError, 0.0, 0.02) / maxAngularSpeedRps
                 fromHeadingHold = true
             }
         }
