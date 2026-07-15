@@ -85,7 +85,7 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     @OnCreateEventLoop
     @JvmStatic
     fun attachEventLoop(@Suppress("UNUSED_PARAMETER") context: Context, eventLoop: FtcEventLoop) {
-        eventLoop.opModeManager.registerListener(this)
+        (eventLoop.opModeManager as? OpModeManagerNotifier)?.registerListener(this)
         opModeManager = eventLoop.opModeManager
     }
 

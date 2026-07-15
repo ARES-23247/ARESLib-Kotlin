@@ -55,7 +55,7 @@ open class GoBildaPinpointDriver {
     enum class GoBildaOdometryPods { goBilda_SWERVE_POD, goBilda_4_BAR_POD }
 
     fun setOffsets(xOffset: Double, yOffset: Double, unit: DistanceUnit) {}
-    fun setEncoderResolution(resolution: Double) {}
+    fun setEncoderResolution(resolution: Double, unit: DistanceUnit) {}
     fun setEncoderResolution(pod: GoBildaOdometryPods) {}
     fun setEncoderDirections(xDirection: EncoderDirection, yDirection: EncoderDirection) {}
 }

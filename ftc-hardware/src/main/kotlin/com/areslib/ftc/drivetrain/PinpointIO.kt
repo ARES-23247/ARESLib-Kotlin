@@ -36,7 +36,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     init {
         driver.setOffsets(xOffsetMm, yOffsetMm, org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.MM)
         if (encoderResolution != null) {
-            driver.setEncoderResolution(encoderResolution)
+            driver.setEncoderResolution(encoderResolution, DistanceUnit.MM)
         }
         driver.setEncoderDirections(xDirection, yDirection)
     }
@@ -164,7 +164,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     fun setEncoderResolution(resolution: Double) {
         try {
             if (resolution > 0.0) {
-                driver.setEncoderResolution(resolution)
+                driver.setEncoderResolution(resolution, DistanceUnit.MM)
             }
         } catch (_: Exception) {}
     }
