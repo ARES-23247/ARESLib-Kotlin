@@ -118,6 +118,7 @@ class MecanumRobotDouble {
         // Feed simulated EKF/Pinpoint sensor coordinates
         pinpoint.posX = trueX
         pinpoint.posY = trueY
-        pinpoint.heading = trueHeadingRad  // GoBilda Pinpoint hardware outputs CCW-positive natively
+        pinpoint.heading = -trueHeadingRad
+        pinpoint.headingVelocity = -actualOmega
     }
 }

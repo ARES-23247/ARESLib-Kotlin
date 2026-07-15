@@ -47,7 +47,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * The current estimated angular velocity of the robot in radians per second.
      */
     val angularVelocity: Double
-        get() = store.state.drive.angularVelocityRadiansPerSecond
+        get() = store.state.drive.measuredAngularVelocityRadiansPerSecond
 
     /**
      * The current 2D spatial pose of the robot ([Pose2d]) on the coordinate field, estimated via EKF.

@@ -58,8 +58,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
-                val rawHeadingVelocity = driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
+                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
+                val rawHeadingVelocity = -driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
 
                 synchronized(lock) {
                     val cosH = kotlin.math.cos(offsetHeading)
@@ -142,8 +142,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 driver.update()
                 val rawX = driver.getPosX(DistanceUnit.METER)
                 val rawY = driver.getPosY(DistanceUnit.METER)
-                val rawHeading = driver.getHeading(AngleUnit.RADIANS)
-                val rawHeadingVelocity = driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
+                val rawHeading = -driver.getHeading(AngleUnit.RADIANS)
+                val rawHeadingVelocity = -driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
 
                 synchronized(lock) {
                     offsetHeading = wrapAngle(pose.heading.radians - rawHeading)

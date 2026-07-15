@@ -33,6 +33,7 @@ data class DriveState(
     val xVelocityMetersPerSecond: Double = 0.0,
     val yVelocityMetersPerSecond: Double = 0.0,
     val angularVelocityRadiansPerSecond: Double = 0.0,
+    val measuredAngularVelocityRadiansPerSecond: Double = 0.0,
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
     val odometryHeading: Double = 0.0,
