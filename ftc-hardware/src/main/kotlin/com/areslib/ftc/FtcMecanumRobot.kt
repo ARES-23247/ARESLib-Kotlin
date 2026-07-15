@@ -148,6 +148,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     
     private var lastLocalTelemetryUpdateMs = 0L
     private var lastCommandProcessed = ""
+    private var activeCalibration = "NONE"
+    private var calibrationStartTimeMs = 0L
 
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
@@ -157,8 +159,29 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         val command = telemetryManager.nt4.getString("SysId/Command", "")
         if (command != lastCommandProcessed) {
             lastCommandProcessed = command
+            activeCalibration = "NONE"
+            sysIdManager.stop()
+            
             when {
-                command == "STOP" -> sysIdManager.stop()
+                command == "STOP" -> {
+                    mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                }
+                command == "START_PINPOINT_SPIN" -> {
+                    activeCalibration = "PINPOINT_SPIN"
+                    calibrationStartTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+                }
+                command == "START_TRACK_WIDTH_SPIN" -> {
+                    activeCalibration = "TRACK_WIDTH_SPIN"
+                    calibrationStartTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+                }
+                command == "START_VISION_CALIBRATION" -> {
+                    activeCalibration = "VISION_CALIBRATION"
+                    calibrationStartTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+                }
+                command == "START_LINEAR_DRIVE" -> {
+                    activeCalibration = "LINEAR_DRIVE"
+                    calibrationStartTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+                }
                 command.startsWith("START_") -> {
                     val parts = command.removePrefix("START_").split("_")
                     if (parts.size >= 2) {
@@ -261,6 +284,27 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     mecanumIO.setMotorPowers(-power, power, -power, power)
                 }
             }
+        } else if (activeCalibration != "NONE") {
+            val elapsedSec = (timestamp - calibrationStartTimeMs) / 1000.0
+            val timeoutSec = if (activeCalibration == "LINEAR_DRIVE") 3.0 else 5.0
+            
+            if (elapsedSec > timeoutSec) {
+                activeCalibration = "NONE"
+                telemetryManager.nt4.putString("SysId/Command", "STOP")
+                mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+            } else {
+                when (activeCalibration) {
+                    "PINPOINT_SPIN", "TRACK_WIDTH_SPIN" -> {
+                        mecanumIO.setMotorPowers(-0.25, 0.25, -0.25, 0.25)
+                    }
+                    "VISION_CALIBRATION" -> {
+                        mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                    }
+                    "LINEAR_DRIVE" -> {
+                        mecanumIO.setMotorPowers(0.25, 0.25, 0.25, 0.25)
+                    }
+                }
+            }
         } else {
             mecanumIO.drive(store.state.drive, kinematics, batteryVoltage, dtSeconds)
         }
@@ -292,10 +336,10 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         telemetryManager.dataLoggingTelemetry.logDriveMotor("rl", mecanumIO.rlIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("rr", mecanumIO.rrIO)
 
-        // SysId Telemetry Streaming
+        // SysId/Calibration Telemetry Streaming
         val dataLogging = telemetryManager.dataLoggingTelemetry
-        dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
         if (sysIdManager.isActive()) {
+            dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
             val pose = store.state.drive.poseEstimator.estimatedPose
             val position = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
                 val dx = pose.x - sysIdManager.startX
@@ -321,7 +365,91 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                     sysIdManager.calculatedAcceleration
                 )
             )
+        } else if (activeCalibration != "NONE") {
+            dataLogging.putString("SysId/Status", activeCalibration)
+            val pose = store.state.drive.poseEstimator.estimatedPose
+            when (activeCalibration) {
+                "PINPOINT_SPIN" -> {
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            pose.x,
+                            pose.y,
+                            pose.heading.radians,
+                            0.0
+                        )
+                    )
+                }
+                "TRACK_WIDTH_SPIN" -> {
+                    val currentTicks = store.state.tuning.ticksPerMeter
+                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeter
+                    
+                    val flPosMeters = mecanumIO.flIO.position / ticks
+                    val frPosMeters = mecanumIO.frIO.position / ticks
+                    val rlPosMeters = mecanumIO.rlIO.position / ticks
+                    val rrPosMeters = mecanumIO.rrIO.position / ticks
+                    val imuHeading = imuIO?.let {
+                        val inputs = com.areslib.hardware.sensor.ImuInputs()
+                        it.updateInputs(inputs)
+                        inputs.headingRadians
+                    } ?: 0.0
+                    
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            flPosMeters,
+                            frPosMeters,
+                            rlPosMeters,
+                            rrPosMeters,
+                            imuHeading
+                        )
+                    )
+                }
+                "VISION_CALIBRATION" -> {
+                    val lastLL = visionTracker.lastLimelightPose
+                    val tagX = lastLL?.x ?: 0.0
+                    val tagY = lastLL?.y ?: 0.0
+                    val tagHeading = lastLL?.heading?.radians ?: 0.0
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            tagX,
+                            tagY,
+                            tagHeading,
+                            0.0
+                        )
+                    )
+                }
+                "LINEAR_DRIVE" -> {
+                    val currentTicks = store.state.tuning.ticksPerMeter
+                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeter
+                    
+                    val flPosMeters = mecanumIO.flIO.position / ticks
+                    val frPosMeters = mecanumIO.frIO.position / ticks
+                    val rlPosMeters = mecanumIO.rlIO.position / ticks
+                    val rrPosMeters = mecanumIO.rrIO.position / ticks
+                    val avgDisplacement = (flPosMeters + frPosMeters + rlPosMeters + rrPosMeters) / 4.0
+                    
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            avgDisplacement,
+                            0.0,
+                            0.0,
+                            0.0
+                        )
+                    )
+                }
+                else -> {
+                    dataLogging.putDoubleArray("SysId/Data", doubleArrayOf())
+                }
+            }
         } else {
+            dataLogging.putString("SysId/Status", "NONE")
             dataLogging.putDoubleArray("SysId/Data", doubleArrayOf())
         }
     }
