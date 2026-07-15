@@ -116,7 +116,6 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         val headingRad = pose.heading.radians
         val cos = kotlin.math.cos(headingRad)
         val sin = kotlin.math.sin(headingRad)
-        println("[HolonomicDriveFacade] fieldRelativeDrive: vx=$vx, vy=$vy, headingRad=$headingRad, cos=$cos, sin=$sin")
 
         // Translate field-relative to robot-relative velocities
         val robotVx = vx * cos + vy * sin
