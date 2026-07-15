@@ -350,18 +350,43 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         }
     }
 
-    private fun setLynxObject(device: Any, replacements: HashMap<LynxModule, AresPhotonLynxModule>) {
-        val f = AresPhotonReflectionUtils.getField(device.javaClass, LynxModule::class.java)
-        if (f != null) {
-            f.isAccessible = true
-            try {
-                val module = f.get(device) as? LynxModule
-                if (module != null && replacements.containsKey(module)) {
-                    f.set(device, replacements[module])
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+    private fun setLynxObject(
+        device: Any,
+        replacements: HashMap<LynxModule, AresPhotonLynxModule>,
+        visited: MutableSet<Any> = java.util.Collections.newSetFromMap(java.util.IdentityHashMap())
+    ) {
+        if (device in visited) return
+        visited.add(device)
+
+        val clazz = device.javaClass
+        val packageName = clazz.name
+        if (!packageName.startsWith("com.qualcomm") && !packageName.startsWith("org.firstinspires") && !packageName.startsWith("com.areslib")) {
+            return
+        }
+
+        var currentClazz: Class<*>? = clazz
+        while (currentClazz != null) {
+            val fields = try {
+                currentClazz.declaredFields
+            } catch (e: Throwable) {
+                emptyArray()
             }
+            for (f in fields) {
+                f.isAccessible = true
+                try {
+                    val value = f.get(device) ?: continue
+                    if (value is LynxModule && value !is AresPhotonLynxModule) {
+                        if (replacements.containsKey(value)) {
+                            f.set(device, replacements[value])
+                        }
+                    } else if (value !is String && value !is Number && value !is Boolean && value !is Enum<*> && !value.javaClass.isPrimitive && !value.javaClass.isArray) {
+                        setLynxObject(value, replacements, visited)
+                    }
+                } catch (e: Throwable) {
+                    // Ignore exceptions for safety
+                }
+            }
+            currentClazz = currentClazz.superclass
         }
     }
 
