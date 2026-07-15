@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ReflectionWpilibTelemetry {
     private var inst: Any? = null
     private val publishers = ConcurrentHashMap<String, Any>()
+    private val subscribers = ConcurrentHashMap<String, Any>()
     
     private var getDoubleTopicMethod: Method? = null
     private var getBooleanTopicMethod: Method? = null
@@ -21,6 +22,14 @@ class ReflectionWpilibTelemetry {
     private var setBooleanMethod: Method? = null
     private var setStringMethod: Method? = null
     private var setDoubleArrayMethod: Method? = null
+
+    private var subscribeDoubleMethod: Method? = null
+    private var subscribeBooleanMethod: Method? = null
+    private var subscribeStringMethod: Method? = null
+
+    private var getDoubleMethod: Method? = null
+    private var getBooleanMethod: Method? = null
+    private var getStringMethod: Method? = null
 
     private var pubSubOptionArrayClass: Class<*>? = null
     private var emptyOptions: Any? = null
@@ -51,6 +60,21 @@ class ReflectionWpilibTelemetry {
 
             val doubleArrayPubClass = Class.forName("edu.wpi.first.networktables.DoubleArrayPublisher")
             setDoubleArrayMethod = doubleArrayPubClass.getMethod("set", DoubleArray::class.java)
+
+            val doubleTopicClass = Class.forName("edu.wpi.first.networktables.DoubleTopic")
+            subscribeDoubleMethod = doubleTopicClass.getMethod("subscribe", Double::class.javaPrimitiveType, pubSubOptionArrayClass)
+            val doubleSubClass = Class.forName("edu.wpi.first.networktables.DoubleSubscriber")
+            getDoubleMethod = doubleSubClass.getMethod("get")
+
+            val boolTopicClass = Class.forName("edu.wpi.first.networktables.BooleanTopic")
+            subscribeBooleanMethod = boolTopicClass.getMethod("subscribe", Boolean::class.javaPrimitiveType, pubSubOptionArrayClass)
+            val boolSubClass = Class.forName("edu.wpi.first.networktables.BooleanSubscriber")
+            getBooleanMethod = boolSubClass.getMethod("get")
+
+            val stringTopicClass = Class.forName("edu.wpi.first.networktables.StringTopic")
+            subscribeStringMethod = stringTopicClass.getMethod("subscribe", String::class.java, pubSubOptionArrayClass)
+            val stringSubClass = Class.forName("edu.wpi.first.networktables.StringSubscriber")
+            getStringMethod = stringSubClass.getMethod("get")
         } catch (e: Throwable) {
             System.err.println("ReflectionWpilibTelemetry: Failed to initialize reflection bindings: ${e.message}")
             e.printStackTrace()
@@ -114,6 +138,45 @@ class ReflectionWpilibTelemetry {
         } catch (e: Throwable) {
             System.err.println("ReflectionWpilibTelemetry: error putting double array for $key: ${e.message}")
             e.printStackTrace()
+        }
+    }
+
+    fun getNumber(key: String, defaultValue: Double): Double {
+        val instance = inst ?: return defaultValue
+        try {
+            val sub = subscribers.computeIfAbsent(key) {
+                val topic = getDoubleTopicMethod!!.invoke(instance, key)
+                subscribeDoubleMethod!!.invoke(topic, defaultValue, emptyOptions)
+            }
+            return getDoubleMethod!!.invoke(sub) as Double
+        } catch (e: Throwable) {
+            return defaultValue
+        }
+    }
+
+    fun getBoolean(key: String, defaultValue: Boolean): Boolean {
+        val instance = inst ?: return defaultValue
+        try {
+            val sub = subscribers.computeIfAbsent(key) {
+                val topic = getBooleanTopicMethod!!.invoke(instance, key)
+                subscribeBooleanMethod!!.invoke(topic, defaultValue, emptyOptions)
+            }
+            return getBooleanMethod!!.invoke(sub) as Boolean
+        } catch (e: Throwable) {
+            return defaultValue
+        }
+    }
+
+    fun getString(key: String, defaultValue: String): String {
+        val instance = inst ?: return defaultValue
+        try {
+            val sub = subscribers.computeIfAbsent(key) {
+                val topic = getStringTopicMethod!!.invoke(instance, key)
+                subscribeStringMethod!!.invoke(topic, defaultValue, emptyOptions)
+            }
+            return getStringMethod!!.invoke(sub) as String
+        } catch (e: Throwable) {
+            return defaultValue
         }
     }
 }

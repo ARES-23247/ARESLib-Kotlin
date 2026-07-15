@@ -89,6 +89,9 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun getNumber(key: String, defaultValue: Double): Double {
+        reflectHelper?.let { helper ->
+            return helper.getNumber(key, defaultValue)
+        }
         if (!isInitialized) return defaultValue
         return try {
             val entry = inst.get(key)
@@ -97,6 +100,9 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
+        reflectHelper?.let { helper ->
+            return helper.getBoolean(key, defaultValue)
+        }
         if (!isInitialized) return defaultValue
         return try {
             val entry = inst.get(key)
@@ -105,6 +111,9 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun getString(key: String, defaultValue: String): String {
+        reflectHelper?.let { helper ->
+            return helper.getString(key, defaultValue)
+        }
         if (!isInitialized) return defaultValue
         return try {
             val entry = inst.get(key)
