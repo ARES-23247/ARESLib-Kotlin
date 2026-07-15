@@ -61,17 +61,16 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 val rawHeading = driver.getHeading(AngleUnit.RADIANS)
                 val rawHeadingVelocity = driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
 
-                val cosH = kotlin.math.cos(offsetHeading)
-                val sinH = kotlin.math.sin(offsetHeading)
-                val x = rawX * cosH - rawY * sinH + offsetX
-                val y = rawX * sinH + rawY * cosH + offsetY
-                
-                val pose = com.areslib.math.geometry.Pose2d(x, y, com.areslib.math.geometry.Rotation2d(wrapAngle(rawHeading + offsetHeading)))
-
                 synchronized(lock) {
+                    val cosH = kotlin.math.cos(offsetHeading)
+                    val sinH = kotlin.math.sin(offsetHeading)
+                    val x = rawX * cosH - rawY * sinH + offsetX
+                    val y = rawX * sinH + rawY * cosH + offsetY
+                    val nextHeading = wrapAngle(rawHeading + offsetHeading)
+
                     lastX = x
                     lastY = y
-                    lastHeading = pose.heading.radians
+                    lastHeading = nextHeading
                     lastHeadingVelocity = rawHeadingVelocity
                     lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                 }

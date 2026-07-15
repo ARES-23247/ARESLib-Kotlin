@@ -47,11 +47,11 @@ class PinpointIOTest {
         assertEquals(wrapAngle(Math.PI), update1.headingRadians, 1e-6)
 
         // 3. Simulate CW rotation (positive in raw hardware) and translation in driver frame
-        // rawDriver.heading = 0.5 means 0.5 rad CW rotation in hardware
-        // PinpointIO negates to -0.5 rad (CCW convention)
+        // rawDriver.heading = 0.5 means 0.5 rad CCW rotation in hardware
+        // PinpointIO preserves 0.5 rad (CCW convention)
         rawDriver.posX = 1.0
         rawDriver.posY = 0.5
-        rawDriver.heading = 0.5  // 0.5 rad CW in hardware → -0.5 rad CCW after negation
+        rawDriver.heading = 0.5  // 0.5 rad CCW in hardware
         Thread.sleep(20) // Allow background thread to run
 
         val update2 = pinpointIO.getPoseUpdate()
@@ -61,7 +61,7 @@ class PinpointIOTest {
         // y_field = 1.0 * sin(PI) + 0.5 * cos(PI) - 1.0 = 0.0 - 0.5 - 1.0 = -1.5
         assertEquals(0.0, update2.xMeters, 1e-6)
         assertEquals(-1.5, update2.yMeters, 1e-6)
-        assertEquals(wrapAngle(Math.PI - 0.5), update2.headingRadians, 1e-6)
+        assertEquals(wrapAngle(Math.PI + 0.5), update2.headingRadians, 1e-6)
     }
  
     @Test
@@ -95,8 +95,8 @@ class PinpointIOTest {
         Thread.sleep(20) // Allow background thread to run
  
         val finalUpdate = pinpointIO.getPoseUpdate()
-        // CW rotation in hardware → heading decreases in CCW convention
-        assertEquals(1.4, finalUpdate.headingRadians, 1e-6)
+        // CCW rotation in hardware → heading increases in CCW convention
+        assertEquals(1.6, finalUpdate.headingRadians, 1e-6)
     }
 
     private fun waitForInit(pinpointIO: PinpointIO, expectedX: Double) {
