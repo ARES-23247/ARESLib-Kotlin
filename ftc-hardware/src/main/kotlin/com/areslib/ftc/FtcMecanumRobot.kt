@@ -174,10 +174,12 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             when {
                 command == "STOP" -> {
                     mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                    lastTuning = null // Force restoration of configured offsets
                 }
                 command == "START_PINPOINT_SPIN" -> {
                     activeCalibration = "PINPOINT_SPIN"
                     calibrationStartTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
+                    pinpointIO?.setOffsets(0.0, 0.0) // Zero out offsets for absolute calibration
                 }
                 command == "START_TRACK_WIDTH_SPIN" -> {
                     activeCalibration = "TRACK_WIDTH_SPIN"
@@ -308,6 +310,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
                 activeCalibration = "NONE"
                 telemetryManager.nt4.putString("SysId/Command", "STOP")
                 mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                lastTuning = null // Force restoration of configured offsets
             } else {
                 when (activeCalibration) {
                     "PINPOINT_SPIN", "TRACK_WIDTH_SPIN" -> {
