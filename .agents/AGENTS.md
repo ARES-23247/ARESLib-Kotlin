@@ -82,3 +82,8 @@ The FTC field→canvas transform swaps axes:
   }
   ```
   This is more idiomatic, highly readable, and maintains zero heap allocations (Zero-GC compliance).
+
+## Vision & Kidnapped Robot Recovery
+- **FtcVisionTracker.kt**: Do NOT use isInInit flag. The snap triggers ONCE when hasInitializedPoseWithVision is false, and then relies on consecutiveVisionRejections >= 10 for any further snaps during Active Play.
+- **Alliance & Field-Centric Drive**: Field-Centric Drive requires BOTH joystickForward and joystickLeft to be inverted if the alliance is BLUE. This must be handled in the OpMode before passing to ieldRelativeDrive.
+- **Simulator Alliance State**: The simulator's DesktopSimLauncher.kt teleport ONLY happens on INIT. If you switch the driver station alliance in the dashboard, the simulator MUST actively dispatch SetAlliance to the OpMode's store so the OpMode knows which field-centric direction to use. The dashboard's ARES/Input/isRedAlliance NT4 topic MUST subscribe to 	rue by default so the simulator matches the OpMode's default Red alliance on startup.

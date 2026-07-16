@@ -34,7 +34,6 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     override val isConnected: Boolean
         get() = limelightIO != null && visionInputs.isConnected
     private var consecutiveVisionRejections = 0
-    var isInInit = true
     var hasInitializedPoseWithVision = false
 
     // Pre-allocated structure to guarantee Zero-GC compliance inside EKF verification loops
@@ -76,27 +75,25 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
         val filterConfig = store.state.vision.filterConfig
 
-        if (isInInit) {
-            if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity) {
-                val snapPose = measurement.targetPose.toPose2d()
-                pinpointIO?.initialize(snapPose, resetHardware = false)
-                hasInitializedPoseWithVision = true
-                lastVisionStatus = "INIT_ALIGN_SNAP"
-                store.dispatch(RobotAction.PoseUpdate(
-                    xMeters = snapPose.x,
-                    yMeters = snapPose.y,
-                    headingRadians = snapPose.heading.radians,
-                    timestampMs = timestampMs,
-                    isReset = true
-                ))
-            }
+        if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity) {
+            val snapPose = measurement.targetPose.toPose2d()
+            pinpointIO?.initialize(snapPose, resetHardware = false)
+            hasInitializedPoseWithVision = true
+            lastVisionStatus = "INIT_ALIGN_SNAP"
+            store.dispatch(RobotAction.PoseUpdate(
+                xMeters = snapPose.x,
+                yMeters = snapPose.y,
+                headingRadians = snapPose.heading.radians,
+                timestampMs = timestampMs,
+                isReset = true
+            ))
         } else {
             // Kidnapped Robot Recovery (Active Play)
             val isRejected = lastVisionStatus.startsWith("REJ_")
             val isHighConfidence = measurement.ambiguity < filterConfig.maxAmbiguity
             val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < 0.05 &&
                                kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < 0.05 &&
-                               kotlin.math.abs(store.state.drive.angularVelocityRadiansPerSecond) < 0.05
+                               kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < 0.05
 
             if (isRejected && isHighConfidence && isStationary) {
                 consecutiveVisionRejections++

@@ -662,9 +662,9 @@ object DesktopSimLauncher {
                                     }
                                     val alliance = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
                                     startPose = if (alliance == com.areslib.state.Alliance.RED) {
-                                        Pose2d(0.0, -1.2, Rotation2d(kotlin.math.PI / 2.0))
+                                        com.areslib.math.geometry.Pose2d(0.0, -1.2, com.areslib.math.geometry.Rotation2d(kotlin.math.PI / 2.0))
                                     } else {
-                                        Pose2d(0.0, 1.2, Rotation2d(-kotlin.math.PI / 2.0))
+                                        com.areslib.math.geometry.Pose2d(0.0, 1.2, com.areslib.math.geometry.Rotation2d(-kotlin.math.PI / 2.0))
                                     }
                                     if (!teleported) {
                                         // Teleop or unknown mode: reset to startPose
@@ -673,6 +673,11 @@ object DesktopSimLauncher {
                                         robotBody.setLinearVelocity(0.0, 0.0)
                                         robotBody.angularVelocity = 0.0
                                     }
+                                    
+                                    // Make sure Redux store knows the simulator's alliance state
+                                    com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.dispatch(
+                                        com.areslib.action.RobotAction.SetAlliance(alliance)
+                                    )
 
                                     activeOpModeThread = Thread {
                                         try {
@@ -725,6 +730,12 @@ object DesktopSimLauncher {
 
             // Map dashboard inputs to gamepad fields (only for teleop)
             if (driverStation.isTeleopMode) {
+                val currentStoreAlliance = com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.state?.drive?.alliance
+                val simAlliance = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
+                if (currentStoreAlliance != null && currentStoreAlliance != simAlliance) {
+                    com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.dispatch(com.areslib.action.RobotAction.SetAlliance(simAlliance))
+                }
+
                 val driveSpeeds = driverStation.getChassisSpeeds()
                 
                 // Map stick deflection to scale [-1.0f, 1.0f]

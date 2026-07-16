@@ -42,7 +42,7 @@ object TelemetryPublisher {
     private val webTransferSub = ntInst.getBooleanTopic("ARES/Input/isTransferring").subscribe(false)
     private val webTeleopSub = ntInst.getBooleanTopic("ARES/Input/isTeleopMode").subscribe(true)
     private val webFieldCentricSub = ntInst.getBooleanTopic("ARES/Input/isFieldCentric").subscribe(false)
-    private val webRedAllianceSub = ntInst.getBooleanTopic("ARES/Input/isRedAlliance").subscribe(false)
+    private val webRedAllianceSub = ntInst.getBooleanTopic("ARES/Input/isRedAlliance").subscribe(true)
     private val webHeartbeatSub = ntInst.getIntegerTopic("ARES/Input/heartbeat").subscribe(0L)
     private val webButtonASub = ntInst.getBooleanTopic("ARES/Input/isButtonAPressed").subscribe(false)
     private val webButtonBSub = ntInst.getBooleanTopic("ARES/Input/isButtonBPressed").subscribe(false)

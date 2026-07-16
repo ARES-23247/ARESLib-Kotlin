@@ -118,6 +118,7 @@ class MecanumRobotDouble {
         // Feed simulated EKF/Pinpoint sensor coordinates
         pinpoint.posX = trueX
         pinpoint.posY = trueY
+        pinpoint.trueHeading = trueHeadingRad
         pinpoint.heading = if (isPinpointCcwPositive) trueHeadingRad else -trueHeadingRad
         pinpoint.headingVelocity = if (isPinpointCcwPositive) actualOmega else -actualOmega
     }

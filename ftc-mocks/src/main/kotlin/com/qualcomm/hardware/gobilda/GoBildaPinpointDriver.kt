@@ -10,6 +10,7 @@ open class GoBildaPinpointDriver {
     var posX: Double = 0.0
     var posY: Double = 0.0
     var heading: Double = 0.0
+    var trueHeading: Double = 0.0
     var velX: Double = 0.0
     var velY: Double = 0.0
     var headingVelocity: Double = 0.0
@@ -17,21 +18,24 @@ open class GoBildaPinpointDriver {
     private var rawOffsetX: Double = 0.0
     private var rawOffsetY: Double = 0.0
     private var rawOffsetHeading: Double = 0.0
+    private var trueOffsetHeading: Double = 0.0
     
     fun getPosX(unit: DistanceUnit): Double {
         val dx = posX - rawOffsetX
         val dy = posY - rawOffsetY
-        val cosH = kotlin.math.cos(rawOffsetHeading)
-        val sinH = kotlin.math.sin(rawOffsetHeading)
-        return dx * cosH - dy * sinH
+        // Rotate world delta by -trueOffsetHeading to get local X displacement
+        val cosH = kotlin.math.cos(trueOffsetHeading)
+        val sinH = kotlin.math.sin(trueOffsetHeading)
+        return dx * cosH + dy * sinH
     }
 
     fun getPosY(unit: DistanceUnit): Double {
         val dx = posX - rawOffsetX
         val dy = posY - rawOffsetY
-        val cosH = kotlin.math.cos(rawOffsetHeading)
-        val sinH = kotlin.math.sin(rawOffsetHeading)
-        return dx * sinH + dy * cosH
+        // Rotate world delta by -trueOffsetHeading to get local Y displacement
+        val cosH = kotlin.math.cos(trueOffsetHeading)
+        val sinH = kotlin.math.sin(trueOffsetHeading)
+        return -dx * sinH + dy * cosH
     }
 
     fun getHeading(unit: AngleUnit): Double = heading - rawOffsetHeading
@@ -49,6 +53,7 @@ open class GoBildaPinpointDriver {
         rawOffsetX = posX
         rawOffsetY = posY
         rawOffsetHeading = heading
+        trueOffsetHeading = trueHeading
     }
 
     enum class EncoderDirection { FORWARD, REVERSE }
