@@ -328,21 +328,19 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     override fun publishRobotTelemetry(timestamp: Long) {
         if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
-            localTelemetry?.let { t ->
-                t.addData("Motor Powers", String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
-                    mecanumIO.flIO.power * mecanumIO.flIO.powerScale,
-                    mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
-                    mecanumIO.rlIO.power * mecanumIO.rlIO.powerScale,
-                    mecanumIO.rrIO.power * mecanumIO.rrIO.powerScale
-                ))
+            telemetryManager.customDriverStationText["Motor Powers"] = String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
+                mecanumIO.flIO.power * mecanumIO.flIO.powerScale,
+                mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
+                mecanumIO.rlIO.power * mecanumIO.rlIO.powerScale,
+                mecanumIO.rrIO.power * mecanumIO.rrIO.powerScale
+            )
 
-                val currentStr = if (powerManager.floodgate != null) {
-                    String.format("%.1f A (Physical)", powerManager.floodgate.current)
-                } else {
-                    String.format("%.1f A (Estimated)", powerManager.currentAmps)
-                }
-                t.addData("Current Draw", currentStr)
+            val currentStr = if (powerManager.floodgate != null) {
+                String.format("%.1f A (Physical)", powerManager.floodgate.current)
+            } else {
+                String.format("%.1f A (Estimated)", powerManager.currentAmps)
             }
+            telemetryManager.customDriverStationText["Current Draw"] = currentStr
             lastLocalTelemetryUpdateMs = timestamp
         }
 
@@ -580,7 +578,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             driveToPose(wp.toPose(), isRequested, mirrorForAlliance)
         } else {
             if (isRequested) {
-                localTelemetry?.addData("Error", "Waypoint '$name' not found!")
+                telemetryManager.customDriverStationText["Error"] = "Waypoint '$name' not found!"
             }
             driveToPose(Pose2d(0.0, 0.0, Rotation2d(0.0)), false, false)
         }

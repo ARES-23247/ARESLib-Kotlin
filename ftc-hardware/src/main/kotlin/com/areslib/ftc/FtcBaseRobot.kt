@@ -277,22 +277,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val sensorsMs = (t1 - t0) / 1_000_000.0
             val powerMs = (t2 - t1) / 1_000_000.0
             val subsystemsMs = (t3 - t2) / 1_000_000.0
-            localTelemetry?.let { t ->
-                val sTr = (sensorsMs * 10.0).toLong() / 10.0
-                val bTr = (profBulkCacheMs * 10.0).toLong() / 10.0
-                val hTr = (profHardwareInputsMs * 10.0).toLong() / 10.0
-                val pTr = (profPinpointMs * 10.0).toLong() / 10.0
-                val vTr = (profVisionMs * 10.0).toLong() / 10.0
-                val pwTr = (powerMs * 10.0).toLong() / 10.0
-                val subTr = (subsystemsMs * 10.0).toLong() / 10.0
-                val totTr = ((sensorsMs + powerMs + subsystemsMs) * 10.0).toLong() / 10.0
-
-                t.addData("--- PROFILING", "(ms) ---")
-                t.addData("Sensors", "$sTr [bulk:$bTr hw:$hTr pp:$pTr vis:$vTr]")
-                t.addData("Power", pwTr)
-                t.addData("Subsystems", subTr)
-                t.addData("TOTAL (no telem)", totTr)
-            }
+            // 4b. Profiling data is now exclusively sent to ARES-Analytics via telemetryManager.
+            // Do not use localTelemetry here to avoid blocking the main thread on the synchronized SDK lock.
 
             // 5. Publish logging and diagnostics
             telemetryManager.publishFull(

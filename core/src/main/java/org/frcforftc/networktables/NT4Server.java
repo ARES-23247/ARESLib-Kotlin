@@ -339,10 +339,11 @@ public class NT4Server extends WebSocketServer {
         String type = params.has("type") ? params.get("type").asText() : "string";
         
         NetworkTablesEntry entry;
+        boolean isNew = false;
         if (m_entries.containsKey(topic)) {
             entry = m_entries.get(topic);
-            entry.setId(pubUID);
         } else {
+            isNew = true;
             Object defaultValue = "";
             if (type.equals("boolean")) defaultValue = false;
             else if (type.equals("double") || type.equals("float") || type.equals("int")) defaultValue = 0.0;
@@ -350,11 +351,15 @@ public class NT4Server extends WebSocketServer {
             else if (type.equals("double[]") || type.equals("float[]") || type.equals("int[]")) defaultValue = new double[0];
             else if (type.equals("string[]")) defaultValue = new String[0];
             
+            int id = m_entries.size() + 1;
             entry = new NetworkTablesEntry(topic, new NetworkTablesValue(defaultValue, type));
-            entry.setId(pubUID);
+            entry.setId(id);
             m_entries.put(topic, entry);
         }
         m_publisherUIDSMap.put((long) pubUID, entry);
+        if (isNew) {
+            announceEntry(entry);
+        }
         entry.callListenersOfEventType(NetworkTablesEvent.kTopicPublished, entry, entry.getValue());
     }
 

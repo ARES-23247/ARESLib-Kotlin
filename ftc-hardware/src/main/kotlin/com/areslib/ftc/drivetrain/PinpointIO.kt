@@ -42,81 +42,57 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         driver.setEncoderDirections(xDirection, yDirection)
     }
 
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private val lock = Any()
-    private var running = true
+    private var lastWarningTime = 0L
 
     private var lastX = 0.0
     private var lastY = 0.0
     private var lastHeading = 0.0
     private var lastHeadingVelocity = 0.0
     private var lastTimestampMs = 0L
-    private var lastWarningTime = 0L
-
-    private val thread = Thread {
-        while (running) {
-            try {
-                driver.update()
-                val rawX = driver.getPosX(DistanceUnit.METER)
-                val rawY = driver.getPosY(DistanceUnit.METER)
-                val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
-                val rawHeading = headingMult * driver.getHeading(AngleUnit.RADIANS)
-                val rawHeadingVelocity = headingMult * driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
-
-                synchronized(lock) {
-                    val cosH = kotlin.math.cos(offsetHeading)
-                    val sinH = kotlin.math.sin(offsetHeading)
-                    val x = rawX * cosH - rawY * sinH + offsetX
-                    val y = rawX * sinH + rawY * cosH + offsetY
-                    val nextHeading = wrapAngle(rawHeading + offsetHeading)
-
-                    lastX = x
-                    lastY = y
-                    lastHeading = nextHeading
-                    lastHeadingVelocity = rawHeadingVelocity
-                    lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                }
-            } catch (e: Exception) {
-                val now = com.areslib.util.RobotClock.currentTimeMillis()
-                if (now - lastWarningTime > 2000L) {
-                    System.err.println("PinpointIO: Communication failure with GoBildaPinpointDriver. Using last known coordinates. Error: ${e.message}")
-                    lastWarningTime = now
-                }
-            }
-            try { Thread.sleep(15) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
-        }
-    }.apply {
-        isDaemon = true
-        name = "ARES-Pinpoint-Thread"
-    }
 
     init {
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
-        thread.start()
     }
 
     /**
      * Updates the pinpoint driver and returns the current pose as a pure action.
      */
     fun getPoseUpdate(): RobotAction.PoseUpdate {
-        val x: Double
-        val y: Double
-        val heading: Double
-        val headingVelocity: Double
-        var ts: Long
-        synchronized(lock) {
-            x = lastX
-            y = lastY
-            heading = lastHeading
-            headingVelocity = lastHeadingVelocity
-            ts = lastTimestampMs
+        try {
+            driver.update()
+            val rawX = driver.getPosX(DistanceUnit.METER)
+            val rawY = driver.getPosY(DistanceUnit.METER)
+            val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
+            val rawHeading = headingMult * driver.getHeading(AngleUnit.RADIANS)
+            val rawHeadingVelocity = headingMult * driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
+
+            val cosH = kotlin.math.cos(offsetHeading)
+            val sinH = kotlin.math.sin(offsetHeading)
+            val x = rawX * cosH - rawY * sinH + offsetX
+            val y = rawX * sinH + rawY * cosH + offsetY
+            val nextHeading = wrapAngle(rawHeading + offsetHeading)
+
+            lastX = x
+            lastY = y
+            lastHeading = nextHeading
+            lastHeadingVelocity = rawHeadingVelocity
+            lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        } catch (e: Exception) {
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
+            if (now - lastWarningTime > 2000L) {
+                System.err.println("PinpointIO: Communication failure with GoBildaPinpointDriver. Using last known coordinates. Error: ${e.message}")
+                lastWarningTime = now
+            }
         }
+
+        var ts = lastTimestampMs
         if (ts == 0L) ts = com.areslib.util.RobotClock.currentTimeMillis()
+
         return RobotAction.PoseUpdate(
-            xMeters = x,
-            yMeters = y,
-            headingRadians = heading,
-            angularVelocityRadiansPerSecond = headingVelocity,
+            xMeters = lastX,
+            yMeters = lastY,
+            headingRadians = lastHeading,
+            angularVelocityRadiansPerSecond = lastHeadingVelocity,
             timestampMs = ts
         )
     }
@@ -139,36 +115,23 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         try {
             if (resetHardware) {
                 driver.resetPosAndIMU()
-                synchronized(lock) {
-                    offsetX = pose.x
-                    offsetY = pose.y
-                    offsetHeading = pose.heading.radians
-                    lastX = pose.x
-                    lastY = pose.y
-                    lastHeading = pose.heading.radians
-                    lastHeadingVelocity = 0.0
-                    lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                }
+                offsetX = pose.x
+                offsetY = pose.y
+                offsetHeading = pose.heading.radians
+                lastX = pose.x
+                lastY = pose.y
+                lastHeading = pose.heading.radians
+                lastHeadingVelocity = 0.0
+                lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
             } else {
-                driver.update()
-                val rawX = driver.getPosX(DistanceUnit.METER)
-                val rawY = driver.getPosY(DistanceUnit.METER)
-                val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
-                val rawHeading = headingMult * driver.getHeading(AngleUnit.RADIANS)
-                val rawHeadingVelocity = headingMult * driver.getHeadingVelocity(org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.RADIANS)
-
-                synchronized(lock) {
-                    offsetHeading = wrapAngle(pose.heading.radians - rawHeading)
-                    val cosH = kotlin.math.cos(offsetHeading)
-                    val sinH = kotlin.math.sin(offsetHeading)
-                    offsetX = pose.x - (rawX * cosH - rawY * sinH)
-                    offsetY = pose.y - (rawX * sinH + rawY * cosH)
-                    lastX = pose.x
-                    lastY = pose.y
-                    lastHeading = pose.heading.radians
-                    lastHeadingVelocity = rawHeadingVelocity
-                    lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                }
+                val currentPoseUpdate = getPoseUpdate()
+                offsetX += (pose.x - currentPoseUpdate.xMeters)
+                offsetY += (pose.y - currentPoseUpdate.yMeters)
+                offsetHeading = wrapAngle(offsetHeading + (pose.heading.radians - currentPoseUpdate.headingRadians))
+                
+                lastX = pose.x
+                lastY = pose.y
+                lastHeading = pose.heading.radians
             }
         } catch (_: Exception) {}
     }
@@ -188,9 +151,5 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     override fun close() {
-        running = false
-        thread.interrupt()
-        scope.cancel()
     }
 }
-
