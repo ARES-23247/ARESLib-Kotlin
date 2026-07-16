@@ -103,8 +103,10 @@ public class NT4Server extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
         try {
             JsonNode data = m_objectMapper.readTree(message);
-            if(data.isArray() && data.size() > 0) {
-                processMessage(conn, data.get(0));
+            if (data.isArray()) {
+                for (JsonNode node : data) {
+                    processMessage(conn, node);
+                }
             } else {
                 processMessage(conn, data);
             }
