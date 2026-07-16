@@ -83,7 +83,7 @@ public class NT4Server extends WebSocketServer {
                 conn.setAttachment(s);
                 conn.send("Using protocol: " + s);
                 try {
-                    heartbeat(conn, System.currentTimeMillis());
+                    heartbeat(conn, System.currentTimeMillis() * 1000L);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -333,13 +333,27 @@ public class NT4Server extends WebSocketServer {
         JsonNode params = data.get("params");
         String topic = params.get("name").asText();
         if(topic.startsWith("/")) topic = topic.substring(1);
+        int pubUID = params.get("pubuid").asInt();
+        String type = params.has("type") ? params.get("type").asText() : "string";
+        
+        NetworkTablesEntry entry;
         if (m_entries.containsKey(topic)) {
-            int pubUID = params.get("pubuid").asInt();
-            NetworkTablesEntry entry = m_entries.get(topic);
+            entry = m_entries.get(topic);
             entry.setId(pubUID);
-            m_publisherUIDSMap.put((long) pubUID, entry);
-            entry.callListenersOfEventType(NetworkTablesEvent.kTopicPublished, entry, entry.getValue());
+        } else {
+            Object defaultValue = "";
+            if (type.equals("boolean")) defaultValue = false;
+            else if (type.equals("double") || type.equals("float") || type.equals("int")) defaultValue = 0.0;
+            else if (type.equals("boolean[]")) defaultValue = new boolean[0];
+            else if (type.equals("double[]") || type.equals("float[]") || type.equals("int[]")) defaultValue = new double[0];
+            else if (type.equals("string[]")) defaultValue = new String[0];
+            
+            entry = new NetworkTablesEntry(topic, new NetworkTablesValue(defaultValue, type));
+            entry.setId(pubUID);
+            m_entries.put(topic, entry);
         }
+        m_publisherUIDSMap.put((long) pubUID, entry);
+        entry.callListenersOfEventType(NetworkTablesEvent.kTopicPublished, entry, entry.getValue());
     }
 
     private void heartbeat(WebSocket conn, long clientTime) throws IOException {
@@ -358,7 +372,7 @@ public class NT4Server extends WebSocketServer {
         message.set("params", params);
         ArrayNode messagesArray = m_objectMapper.createArrayNode();
         messagesArray.add(message);
-        conn.send(encodeNT4Message(System.currentTimeMillis(), id, 0, 2, clientTime));
+        conn.send(encodeNT4Message(System.currentTimeMillis() * 1000L, id, 0, 2, clientTime));
     }
 
     public NetworkTablesEntry putTopic(String topic, Object value) {
@@ -439,7 +453,7 @@ public class NT4Server extends WebSocketServer {
             // or use encodeNT4Messages to do it correctly.
             java.util.List<NetworkTablesEntry> single = new ArrayList<>();
             single.add(entry);
-            byte[] binMsg = encodeNT4Messages(System.currentTimeMillis(), single);
+            byte[] binMsg = encodeNT4Messages(System.currentTimeMillis() * 1000L, single);
             
             conn.send(binMsg);
         } catch (IOException e) {
@@ -450,7 +464,7 @@ public class NT4Server extends WebSocketServer {
     public void flush() {
         if (m_dirtyEntries.isEmpty() || m_clientSubscriptions.isEmpty()) return;
 
-        long timestamp = System.currentTimeMillis();
+        long timestamp = System.currentTimeMillis() * 1000L;
 
         for (WebSocket conn : m_connections) {
             java.util.List<NetworkTablesEntry> entriesToSend = new ArrayList<>();
