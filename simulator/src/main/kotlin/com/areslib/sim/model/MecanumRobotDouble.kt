@@ -19,11 +19,11 @@ import kotlin.math.abs
 
 class SimDcMotorEx : DcMotorEx {
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
-    override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
-    override var power: Double = 0.0
+    @Volatile override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+    @Volatile override var power: Double = 0.0
     
-    override var currentPosition: Int = 0
-    override var velocity: Double = 0.0
+    @Volatile override var currentPosition: Int = 0
+    @Volatile override var velocity: Double = 0.0
 
     override fun getCurrent(unit: CurrentUnit): Double {
         // Return simulated current draw: 0.15A idle, scaling up to 4.2A under load
@@ -94,7 +94,7 @@ class MecanumRobotDouble {
     // Encoder properties
     private val encoderTicksPerMeter = 2000.0 // Ticks per meter of wheel travel
 
-    fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = false) {
+    fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = true) {
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2
         // RL = vx + vy - omega * (trackWidth + wheelBase)/2

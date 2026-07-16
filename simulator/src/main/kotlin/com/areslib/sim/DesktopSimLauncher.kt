@@ -508,7 +508,7 @@ object DesktopSimLauncher {
             val initStartTime = com.areslib.util.RobotClock.currentTimeMillis()
             while (com.areslib.util.RobotClock.currentTimeMillis() - initStartTime < 1500) {
                 // Step simulator sensors at origin so EKF aligns
-                val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive == true
+                val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
                 robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians, ccwPos)
                 Thread.sleep(20)
             }
@@ -851,7 +851,7 @@ object DesktopSimLauncher {
                 currentPose.x,
                 currentPose.y,
                 currentPose.heading.radians,
-                com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive == true
+                com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
             )
 
 

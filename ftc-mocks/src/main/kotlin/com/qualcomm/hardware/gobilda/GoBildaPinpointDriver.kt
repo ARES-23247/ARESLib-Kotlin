@@ -7,18 +7,18 @@ import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D
 
 open class GoBildaPinpointDriver {
-    var posX: Double = 0.0
-    var posY: Double = 0.0
-    var heading: Double = 0.0
-    var trueHeading: Double = 0.0
-    var velX: Double = 0.0
-    var velY: Double = 0.0
-    var headingVelocity: Double = 0.0
+    @Volatile var posX: Double = 0.0
+    @Volatile var posY: Double = 0.0
+    @Volatile var heading: Double = 0.0
+    @Volatile var trueHeading: Double = 0.0
+    @Volatile var velX: Double = 0.0
+    @Volatile var velY: Double = 0.0
+    @Volatile var headingVelocity: Double = 0.0
 
-    private var rawOffsetX: Double = 0.0
-    private var rawOffsetY: Double = 0.0
-    private var rawOffsetHeading: Double = 0.0
-    private var trueOffsetHeading: Double = 0.0
+    @Volatile private var rawOffsetX: Double = 0.0
+    @Volatile private var rawOffsetY: Double = 0.0
+    @Volatile private var rawOffsetHeading: Double = 0.0
+    @Volatile private var trueOffsetHeading: Double = 0.0
     
     fun getPosX(unit: DistanceUnit): Double {
         val dx = posX - rawOffsetX
