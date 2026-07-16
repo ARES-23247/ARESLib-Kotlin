@@ -138,7 +138,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
 
     fun setOffsets(xOffsetMm: Double, yOffsetMm: Double) {
         try {
-            driver.setOffsets(xOffsetMm, yOffsetMm, DistanceUnit.MM)
+            // GoBilda Pinpoint setOffsets expects:
+            // 1st arg: X-pod offset (sideways distance from tracking center, i.e., yOffsetMm)
+            // 2nd arg: Y-pod offset (forward distance from tracking center, i.e., xOffsetMm)
+            driver.setOffsets(yOffsetMm, xOffsetMm, DistanceUnit.MM)
         } catch (_: Exception) {}
     }
 

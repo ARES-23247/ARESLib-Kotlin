@@ -75,8 +75,10 @@ open class GoBildaPinpointDriver {
 
     fun setOffsets(xOffset: Double, yOffset: Double, unit: DistanceUnit) {
         val mult = if (unit == DistanceUnit.MM) 0.001 else 1.0
-        xOffsetMeters = xOffset * mult
-        yOffsetMeters = yOffset * mult
+        // GoBilda setOffsets 1st argument (xOffset) refers to sideways distance -> robot's Y offset
+        yOffsetMeters = xOffset * mult
+        // GoBilda setOffsets 2nd argument (yOffset) refers to forward distance -> robot's X offset
+        xOffsetMeters = yOffset * mult
     }
     
     fun setEncoderResolution(resolution: Double, unit: DistanceUnit) {}
