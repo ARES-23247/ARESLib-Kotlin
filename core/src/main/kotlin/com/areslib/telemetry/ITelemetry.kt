@@ -52,11 +52,23 @@ fun ITelemetry.logPose2d(prefix: String, pose: Pose2d, useUnderscores: Boolean =
     putNumber("$prefix$sep$hStr", pose.heading.radians)
 }
 
+private val scratchPose2dArray = object : ThreadLocal<DoubleArray>() {
+    override fun initialValue() = DoubleArray(3)
+}
+
+private val scratchPose3dArray = object : ThreadLocal<DoubleArray>() {
+    override fun initialValue() = DoubleArray(7)
+}
+
 /**
  * Extension to log a 2D pose as a flat double array of [x, y, headingRad].
  */
 fun ITelemetry.logPoseArray2d(key: String, pose: Pose2d) {
-    putDoubleArray(key, doubleArrayOf(pose.x, pose.y, pose.heading.radians))
+    val arr = scratchPose2dArray.get()!!
+    arr[0] = pose.x
+    arr[1] = pose.y
+    arr[2] = pose.heading.radians
+    putDoubleArray(key, arr)
 }
 
 /**
@@ -64,15 +76,15 @@ fun ITelemetry.logPoseArray2d(key: String, pose: Pose2d) {
  */
 fun ITelemetry.logPose3d(key: String, x: Double, y: Double, headingRad: Double) {
     val halfH = headingRad / 2.0
-    putDoubleArray(key, doubleArrayOf(
-        x,
-        y,
-        0.0,
-        Math.cos(halfH),
-        0.0,
-        0.0,
-        Math.sin(halfH)
-    ))
+    val arr = scratchPose3dArray.get()!!
+    arr[0] = x
+    arr[1] = y
+    arr[2] = 0.0
+    arr[3] = Math.cos(halfH)
+    arr[4] = 0.0
+    arr[5] = 0.0
+    arr[6] = Math.sin(halfH)
+    putDoubleArray(key, arr)
 }
 
 /**

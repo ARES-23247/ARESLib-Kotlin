@@ -194,7 +194,9 @@ class ShotSetup(private val config: ShotConfig) {
             if (x >= keys[keys.size - 1]) return values[values.size - 1]
             for (i in 0 until keys.size - 1) {
                 if (x >= keys[i] && x <= keys[i + 1]) {
-                    val t = (x - keys[i]) / (keys[i + 1] - keys[i])
+                    val diff = keys[i + 1] - keys[i]
+                    if (diff <= 1e-9) return values[i]
+                    val t = (x - keys[i]) / diff
                     return values[i] + t * (values[i + 1] - values[i])
                 }
             }

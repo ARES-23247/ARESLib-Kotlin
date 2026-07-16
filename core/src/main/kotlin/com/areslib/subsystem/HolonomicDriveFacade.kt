@@ -179,4 +179,29 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             isReset = true
         ))
     }
+
+    /**
+     * Executes field-relative drivetrain movement effort based on standard Gamepad input,
+     * automatically handling field-centric coordinate inversion based on the robot's Alliance color.
+     *
+     * @param driver The GamepadState object containing the driver's joystick inputs.
+     * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
+     */
+    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true) {
+        var joystickForward = -driver.leftStickY.value.toDouble()
+        var joystickLeft = -driver.leftStickX.value.toDouble()
+        val rotate = -driver.rightStickX.value.toDouble()
+        
+        if (store.state.drive.alliance == com.areslib.state.Alliance.BLUE) {
+            joystickForward = -joystickForward
+            joystickLeft = -joystickLeft
+        }
+        
+        fieldRelativeDrive(
+            vx = -joystickLeft, 
+            vy = joystickForward, 
+            omega = rotate,
+            useHeadingLock = useHeadingLock
+        )
+    }
 }

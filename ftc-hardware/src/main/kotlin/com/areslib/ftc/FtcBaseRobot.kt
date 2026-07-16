@@ -396,6 +396,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
+     * Resets the robot's pose to the alliance-specific starting orientation.
+     * This ensures field-centric controls are correctly aligned immediately on startup.
+     */
+    fun resetPoseForAlliance() {
+        val alliance = store.state.drive.alliance
+        val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
+        resetPose(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(initialHeading)))
+    }
+
+    /**
      * Gracefully stops logging threads, closes network connections,
      */
     open fun close() {

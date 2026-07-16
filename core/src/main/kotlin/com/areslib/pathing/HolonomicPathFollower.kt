@@ -20,12 +20,17 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
     val driveController = HolonomicDriveController(xController, yController, thetaController)
 
     private var currentPath: Path? = null
+    private val triggeredEvents = mutableSetOf<String>()
+
+    /** Callback invoked whenever a PathEvent is crossed */
+    var onEventTriggered: ((String) -> Unit)? = null
 
     /**
      * Initializes tracking for a new path, resetting any previously triggered events.
      */
     fun startPath(path: Path) {
         currentPath = path
+        triggeredEvents.clear()
     }
 
     /**
@@ -37,6 +42,17 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
      */
     fun update(targetState: PathPoint, dtSeconds: Double) {
         val currentPose = drivetrain.getEstimatedPose()
+        
+        val path = currentPath
+        if (path != null) {
+            val currentDist = targetState.distanceMeters
+            for (event in path.events) {
+                if (currentDist >= event.triggerDistanceMeters && !triggeredEvents.contains(event.eventName)) {
+                    triggeredEvents.add(event.eventName)
+                    onEventTriggered?.invoke(event.eventName)
+                }
+            }
+        }
         
         val chassisSpeeds = driveController.calculate(
             currentPose = currentPose,

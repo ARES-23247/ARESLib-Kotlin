@@ -14,6 +14,14 @@ import com.areslib.hardware.vision.VisionOutlierFilter
  */
 private val DEFAULT_STD_DEVS = Vector3(0.05, 0.05, 0.1)
 
+private val rootReducerScratchBefore = object : ThreadLocal<DoubleArray>() {
+    override fun initialValue() = DoubleArray(9)
+}
+
+private val rootReducerScratchAfter = object : ThreadLocal<DoubleArray>() {
+    override fun initialValue() = DoubleArray(9)
+}
+
 fun rootReducer(state: RobotState, action: RobotAction): RobotState {
     return when (action) {
         is RobotAction.VisionMeasurementsReceived -> {
@@ -48,8 +56,8 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             var lastReason: String? = null
             
             // Scratchpad arrays for avoiding allocations
-            val scratchBefore = DoubleArray(9)
-            val scratchAfter = DoubleArray(9)
+            val scratchBefore = rootReducerScratchBefore.get()!!
+            val scratchAfter = rootReducerScratchAfter.get()!!
 
             for (i in 0 until validMeasurements.size) {
                 val measurement = validMeasurements[i]

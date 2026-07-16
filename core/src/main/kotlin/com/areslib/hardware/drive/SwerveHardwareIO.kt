@@ -12,9 +12,18 @@ import com.areslib.math.geometry.Pose2d
  * facilitating unit testing, simulation, and future cross-platform (FTC/FRC) swerve support.
  */
 interface SwerveHardwareIO : SubsystemIO {
+    companion object {
+        private val scratchCurrents = object : ThreadLocal<DoubleArray>() {
+            override fun initialValue() = DoubleArray(4)
+        }
+        private val scratchEncoderPositions = object : ThreadLocal<DoubleArray>() {
+            override fun initialValue() = DoubleArray(4)
+        }
+    }
+
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
-        val curr = DoubleArray(4)
-        val enc = DoubleArray(4)
+        val curr = scratchCurrents.get()!!
+        val enc = scratchEncoderPositions.get()!!
         getCurrents(curr)
         getEncoderPositions(enc)
         telemetry.putDoubleArray("$prefix/Currents", curr)

@@ -110,7 +110,11 @@ class LinearADRC(
         val u0 = kp * (actualTarget - xHat1)
 
         // Cancel out the disturbance (xHat2) and scale by the system gain
-        var u = (u0 - xHat2) / b0
+        var u = if (abs(b0) > 1e-9) {
+            (u0 - xHat2) / b0
+        } else {
+            0.0
+        }
 
         // Output Clamping
         u = when {

@@ -299,7 +299,8 @@ object PoseEstimator {
         }
 
         scratchQ.setTo(Q)
-        scratchQ.multiplyInPlace(tiltScale * slipScale)
+        val movementScale = if (isStationary) 0.001 else 1.0
+        scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale)
 
         val newHeading = Rotation2d(state.estimatedPose.heading.radians + correctedDeltaHeading)
         val newPose = Pose2d(
