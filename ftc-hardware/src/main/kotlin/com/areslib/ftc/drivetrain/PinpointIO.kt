@@ -122,6 +122,15 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
+     * Recalibrates the internal IMU while the robot is stationary.
+     */
+    fun recalibrateIMU() {
+        try {
+            driver.recalibrateIMU()
+        } catch (_: Exception) {}
+    }
+
+    /**
      * Resets the pinpoint computer and recalibrates the orientation.
      * Optionally configures starting pose tracking values.
      */

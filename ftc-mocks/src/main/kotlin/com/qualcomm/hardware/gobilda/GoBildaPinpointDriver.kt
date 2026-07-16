@@ -55,6 +55,7 @@ open class GoBildaPinpointDriver {
         rawOffsetHeading = heading
         trueOffsetHeading = trueHeading
     }
+    fun recalibrateIMU() {}
 
     enum class EncoderDirection { FORWARD, REVERSE }
     enum class GoBildaOdometryPods { goBilda_SWERVE_POD, goBilda_4_BAR_POD }

@@ -94,7 +94,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 xDirection = pinpointXDirection,
                 yDirection = pinpointYDirection,
                 isHeadingCcwPositive = pinpointIsCcwPositive
-            )
+            ).apply { recalibrateIMU() }
         }
     } catch (_: Throwable) {
         null
