@@ -135,9 +135,9 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         }
 
         // Human-readable local driver station console printouts
-        // Throttled to 10Hz (100ms) to prevent WiFi Direct network overhead from stalling the 50Hz hardware loop
+        // Throttled to 4Hz (250ms) to prevent WiFi Direct network overhead from stalling the 50Hz hardware loop
         localTelemetry?.let { t ->
-            if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
+            if (timestamp - lastLocalTelemetryUpdateMs >= 250L) {
                 t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
                 val pinpointPose = com.areslib.math.geometry.Pose2d(
                     state.drive.odometryX,

@@ -318,6 +318,9 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable {
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
     private var cachedAmps = 0.0
+    
+    private var lastPosition = 0.0
+    private var lastTime = 0L
 
     fun pollCurrentSync() {
         try {
@@ -329,9 +332,15 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable {
     fun updateInputs() {
         try {
             cachedPosition = motor.currentPosition.toDouble()
-        } catch (_: Exception) {}
-        try {
-            cachedVelocity = motor.velocity
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
+            if (lastTime != 0L) {
+                val dt = (now - lastTime) / 1000.0
+                if (dt > 0.0) {
+                    cachedVelocity = (cachedPosition - lastPosition) / dt
+                }
+            }
+            lastPosition = cachedPosition
+            lastTime = now
         } catch (_: Exception) {}
     }
 
