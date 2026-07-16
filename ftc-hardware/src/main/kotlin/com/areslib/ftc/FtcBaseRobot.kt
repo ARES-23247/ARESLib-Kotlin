@@ -275,12 +275,20 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val powerMs = (t2 - t1) / 1_000_000.0
             val subsystemsMs = (t3 - t2) / 1_000_000.0
             localTelemetry?.let { t ->
+                val sTr = (sensorsMs * 10.0).toLong() / 10.0
+                val bTr = (profBulkCacheMs * 10.0).toLong() / 10.0
+                val hTr = (profHardwareInputsMs * 10.0).toLong() / 10.0
+                val pTr = (profPinpointMs * 10.0).toLong() / 10.0
+                val vTr = (profVisionMs * 10.0).toLong() / 10.0
+                val pwTr = (powerMs * 10.0).toLong() / 10.0
+                val subTr = (subsystemsMs * 10.0).toLong() / 10.0
+                val totTr = ((sensorsMs + powerMs + subsystemsMs) * 10.0).toLong() / 10.0
+
                 t.addData("--- PROFILING", "(ms) ---")
-                t.addData("Sensors", "%.1f [bulk:%.1f hw:%.1f pp:%.1f vis:%.1f]",
-                    sensorsMs, profBulkCacheMs, profHardwareInputsMs, profPinpointMs, profVisionMs)
-                t.addData("Power", "%.1f", powerMs)
-                t.addData("Subsystems", "%.1f", subsystemsMs)
-                t.addData("TOTAL (no telem)", "%.1f", sensorsMs + powerMs + subsystemsMs)
+                t.addData("Sensors", "$sTr [bulk:$bTr hw:$hTr pp:$pTr vis:$vTr]")
+                t.addData("Power", pwTr)
+                t.addData("Subsystems", subTr)
+                t.addData("TOTAL (no telem)", totTr)
             }
 
             // 5. Publish logging and diagnostics

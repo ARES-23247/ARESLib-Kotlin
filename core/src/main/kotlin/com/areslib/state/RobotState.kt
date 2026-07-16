@@ -60,6 +60,9 @@ data class DriveState(
     val rawOdometryHeading: Double = 0.0
 ) {
     fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
+        // DELIBERATE OPTIMIZATION (Zero-GC): To avoid allocating a new DoubleArray(9) at 50Hz,
+        // we mutate the existing covariance array in-place. This technically breaks pure Redux
+        // immutability, but is required to keep the control loop allocation-free.
         var cov = this.covarianceMatrix
         if (cov.size != 9) {
             cov = DoubleArray(9)

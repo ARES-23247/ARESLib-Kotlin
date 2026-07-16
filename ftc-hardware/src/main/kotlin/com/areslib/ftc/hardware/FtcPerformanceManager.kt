@@ -1,7 +1,7 @@
 package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.hardware.HardwareMap
-import java.lang.reflect.Method
+import com.qualcomm.hardware.lynx.LynxModule
 
 /**
  * Advanced Performance & Loop Optimizer for FTC Robots.
@@ -9,9 +9,8 @@ import java.lang.reflect.Method
  * detects and initializes Photon parallelized writes if present on the classpath.
  */
 object FtcPerformanceManager {
-    private var lynxModules: List<Any> = emptyList()
+    private var lynxModules: List<LynxModule> = emptyList()
     private var srsHubs: List<SrsHubDriver> = emptyList()
-    private var clearCacheMethod: Method? = null
     var isPhotonEnabled: Boolean = false
         private set
 
@@ -21,19 +20,10 @@ object FtcPerformanceManager {
      */
     fun initialize(hardwareMap: HardwareMap) {
         try {
-            // Find all LynxModules using reflection to avoid hard dependencies on internal SDK classes in mock context
-            val lynxModuleClass = Class.forName("com.qualcomm.hardware.lynx.LynxModule")
-            val bulkCachingModeEnum = Class.forName("com.qualcomm.hardware.lynx.LynxModule\$BulkCachingMode")
-            val setBulkCachingModeMethod = lynxModuleClass.getMethod("setBulkCachingMode", bulkCachingModeEnum)
-            clearCacheMethod = lynxModuleClass.getMethod("clearBulkCache")
-
-            // Get the manual mode enum value
-            val manualMode = java.lang.Enum.valueOf(bulkCachingModeEnum as Class<out Enum<*>>, "MANUAL")
-
-            // Get all LynxModules from the hardware map
-            val modules = hardwareMap.getAll(lynxModuleClass)
-            for (module in modules) {
-                setBulkCachingModeMethod.invoke(module, manualMode)
+            // Get all LynxModules from the hardware map directly
+            val modules = hardwareMap.getAll(LynxModule::class.java)
+            for (i in 0 until modules.size) {
+                modules[i].bulkCachingMode = LynxModule.BulkCachingMode.MANUAL
             }
             this.lynxModules = modules
             println("ARES Performance: Successfully enabled Manual Bulk Caching for ${modules.size} REV Hubs.")
@@ -69,10 +59,10 @@ object FtcPerformanceManager {
      * MUST be called exactly once at the beginning of your robot's command/opmode run loop.
      */
     fun clearBulkCaches() {
-        // Clear caches for all standard REV Hubs
-        for (module in lynxModules) {
+        // Clear caches for all standard REV Hubs using a zero-allocation loop
+        for (i in 0 until lynxModules.size) {
             try {
-                clearCacheMethod?.invoke(module)
+                lynxModules[i].clearBulkCache()
             } catch (e: Exception) {
                 // Ignore failures in mock context
             }

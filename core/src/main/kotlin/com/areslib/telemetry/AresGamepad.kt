@@ -104,7 +104,7 @@ class AresGamepad {
         private var onReleaseAction: (() -> Unit)? = null
         private var whilePressedAction: (() -> Unit)? = null
 
-        fun label(description: String) {
+        fun label(@Suppress("UNUSED_PARAMETER") description: String) {
             // No-op at runtime, used statically for ARES-Analytics parsing
         }
 

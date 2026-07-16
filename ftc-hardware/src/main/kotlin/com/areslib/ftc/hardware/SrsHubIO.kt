@@ -267,7 +267,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         } catch (_: Exception) {}
     }
 
-    fun updateI2cOdometry(port: Int) {
+    fun updateI2cOdometry() {
         // Handled asynchronously in background thread
     }
 

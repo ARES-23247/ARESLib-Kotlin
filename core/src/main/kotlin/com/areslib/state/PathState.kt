@@ -10,5 +10,8 @@ data class PathState(
     val currentDistanceMeters: Double = 0.0,
     val isChained: Boolean = false,
     val detourActive: Boolean = false,
-    val originalPathBeforeDetour: Path? = null
+    val originalPathBeforeDetour: Path? = null,
+    val crossTrackErrorMeters: Double = 0.0,
+    val alongTrackErrorMeters: Double = 0.0,
+    val headingErrorRadians: Double = 0.0
 )

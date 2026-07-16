@@ -136,18 +136,18 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
         return when {
             measurement.ambiguity > filterConfig.maxAmbiguity -> {
-                String.format("REJ_AMBIG (%.2f > %.2f)", measurement.ambiguity, filterConfig.maxAmbiguity)
+                "REJ_AMBIG"
             }
             fieldPose3d.x < filterConfig.minFieldX || fieldPose3d.x > filterConfig.maxFieldX ||
             fieldPose3d.y < filterConfig.minFieldY || fieldPose3d.y > filterConfig.maxFieldY ||
             fieldPose3d.z < filterConfig.minFieldZ || fieldPose3d.z > filterConfig.maxFieldZ -> {
-                String.format("REJ_BOUNDS (Z: %.2f)", fieldPose3d.z)
+                "REJ_BOUNDS"
             }
             distance > filterConfig.maxDistanceMeters -> {
-                String.format("REJ_DIST (%.2fm > %.2fm)", distance, filterConfig.maxDistanceMeters)
+                "REJ_DIST"
             }
             kotlin.math.abs(headingDiff) > filterConfig.maxRotationDeviationRad -> {
-                String.format("REJ_YAW (%.1f° > %.1f°)", Math.toDegrees(headingDiff), Math.toDegrees(filterConfig.maxRotationDeviationRad))
+                "REJ_YAW"
             }
             else -> {
                 // Dry run of EKF Mahalanobis distance checks using pre-allocated stdDev vector

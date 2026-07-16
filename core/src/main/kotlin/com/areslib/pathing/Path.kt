@@ -157,4 +157,22 @@ data class Path(
         out.velocityMps = last.velocityMps; out.distanceMeters = last.distanceMeters; out.curvature = last.curvature
         out.tangentRadians = last.tangentRadians
     }
+
+    /**
+     * Creates a mirrored version of this path across the X-axis for the Blue Alliance.
+     * FTC Field coordinates: Red is -Y, Blue is +Y.
+     * Mirroring across the X-axis negates Y coordinates, headings, tangents, and curvatures.
+     */
+    fun mirrorForBlueAlliance(): Path {
+        val mirroredPoints = points.map { p ->
+            PathPoint(
+                pose = Pose2d(p.pose.x, -p.pose.y, Rotation2d(-p.pose.heading.radians)),
+                velocityMps = p.velocityMps,
+                distanceMeters = p.distanceMeters,
+                curvature = -p.curvature,
+                tangentRadians = -p.tangentRadians
+            )
+        }
+        return Path(mirroredPoints, events)
+    }
 }

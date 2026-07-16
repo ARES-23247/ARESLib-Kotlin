@@ -2,6 +2,7 @@ package com.areslib.ftc.vision
 
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
+import com.areslib.action.RobotAction
 import com.areslib.state.VisionMeasurement
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Translation3d
@@ -65,5 +66,46 @@ class FtcVisionTrackerTest {
         assertEquals(0.0, estPose.x, 1e-6)
         assertTrue(tracker.lastVisionStatus.startsWith("REJ_AMBIG"))
     }
+    @Test
+    fun `test kidnapped robot recovery snap`() {
+        val store = Store(RobotState(), ::rootReducer)
+        // Set the state so that the robot is stationary
+        store.dispatch(RobotAction.DriveHardwareUpdate(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0L))
+        
+        // High confidence target but far away (disjointed from 0,0,0)
+        val mockMeasurement = VisionMeasurement(
+            tagId = 3,
+            targetPose = Pose3d(Translation3d(1.0, 2.0, 0.0), Rotation3d(0.0, 0.0, 0.5)),
+            ambiguity = 0.01,
+            timestampMs = 100
+        )
+        val visionIO = MockVisionIO(listOf(mockMeasurement))
+        val tracker = FtcVisionTracker(store, visionIO, pinpointIO = null)
+        
+        // Initial snap
+        tracker.update(100)
+        assertEquals("INIT_ALIGN_SNAP", tracker.lastVisionStatus)
+        
+        // Move the physical robot to 0,0 (in EKF) to simulate driving away
+        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, 200L, isReset = true))
+        
+        // Now feed 9 consecutive high-confidence but highly disjointed readings (Mahalanobis rejection)
+        for (i in 1..9) {
+            val m = mockMeasurement.copy(timestampMs = 200L + i * 100L)
+            visionIO.mockMeasurements = listOf(m)
+            tracker.update(200L + i * 100L)
+            assertTrue(tracker.lastVisionStatus.startsWith("REJ_"))
+            // Pose should NOT snap yet
+            assertEquals(0.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
+        }
+        
+        // Feed the 10th reading
+        val m10 = mockMeasurement.copy(timestampMs = 1200L)
+        visionIO.mockMeasurements = listOf(m10)
+        tracker.update(1200L)
+        
+        // It SHOULD snap
+        assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
+        assertEquals(1.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
+    }
 }
-

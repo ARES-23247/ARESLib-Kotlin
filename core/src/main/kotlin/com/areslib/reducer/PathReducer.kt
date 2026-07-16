@@ -24,7 +24,10 @@ object PathReducer {
             }
             is RobotAction.UpdatePathProgress -> {
                 state.copy(
-                    currentDistanceMeters = action.distanceProgressMeters
+                    currentDistanceMeters = action.distanceProgressMeters,
+                    crossTrackErrorMeters = action.crossTrackErrorMeters,
+                    alongTrackErrorMeters = action.alongTrackErrorMeters,
+                    headingErrorRadians = action.headingErrorRadians
                 )
             }
             else -> state

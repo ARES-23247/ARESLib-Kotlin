@@ -226,12 +226,17 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val scratchMutablePoint = com.areslib.pathing.MutablePathPoint()
     private val scratchPathPoint = com.areslib.pathing.PathPoint(Pose2d(), 0.0)
     private val actionsList = mutableListOf<RobotAction>()
+    
+    private val activeEventTasks = mutableListOf<Task>()
+    private val taskStartTimes = mutableMapOf<Task, Long>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
         activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
         triggeredEvents.clear()
+        activeEventTasks.clear()
+        taskStartTimes.clear()
         return listOf(
             RobotAction.SwitchPath(activePath, isDetour = false, timestampMs = lastTimeMs)
         )
@@ -267,8 +272,25 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
         val progressSpeed = kotlin.math.max(scratchPathPoint.velocityMps, 0.1)
         val nextDistance = currentDistance + progressSpeed * dt
+        
+        val currentPose = state.drive.poseEstimator.estimatedPose
+        val targetPose = scratchPathPoint.pose
+        val xError = targetPose.x - currentPose.x
+        val yError = targetPose.y - currentPose.y
+        val pathTangent = scratchPathPoint.tangentRadians
+        val crossTrack = xError * kotlin.math.sin(pathTangent) - yError * kotlin.math.cos(pathTangent)
+        val alongTrack = xError * kotlin.math.cos(pathTangent) + yError * kotlin.math.sin(pathTangent)
+        var headingError = targetPose.heading.radians - currentPose.heading.radians
+        headingError = kotlin.math.atan2(kotlin.math.sin(headingError), kotlin.math.cos(headingError))
+        
         actionsList.clear()
-        actionsList.add(RobotAction.UpdatePathProgress(nextDistance, currentTimestamp))
+        actionsList.add(RobotAction.UpdatePathProgress(
+            distanceProgressMeters = nextDistance,
+            crossTrackErrorMeters = crossTrack,
+            alongTrackErrorMeters = alongTrack,
+            headingErrorRadians = headingError,
+            timestampMs = currentTimestamp
+        ))
 
         // Check path events using index-based loop to prevent iterator allocation
         for (i in 0 until activePath.events.size) {
@@ -276,6 +298,29 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             if (event.eventName !in triggeredEvents && event.triggerDistanceMeters <= nextDistance) {
                 triggeredEvents.add(event.eventName)
                 actionsList.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
+                
+                // Spawn the named command as a background task
+                val cmdTask = com.areslib.pathing.NamedCommands.getCommand(event.eventName, currentTimestamp)
+                if (cmdTask != null) {
+                    actionsList.addAll(cmdTask.initialize(state))
+                    activeEventTasks.add(cmdTask)
+                    taskStartTimes[cmdTask] = currentTimestamp
+                }
+            }
+        }
+        
+        // Execute active event tasks
+        val it = activeEventTasks.iterator()
+        while (it.hasNext()) {
+            val cmdTask = it.next()
+            val startTime = taskStartTimes[cmdTask] ?: currentTimestamp
+            val cmdElapsed = currentTimestamp - startTime
+            if (cmdTask.isCompleted(state, cmdElapsed)) {
+                actionsList.addAll(cmdTask.end(state, false))
+                it.remove()
+                taskStartTimes.remove(cmdTask)
+            } else {
+                actionsList.addAll(cmdTask.execute(state, cmdElapsed))
             }
         }
 
@@ -284,7 +329,13 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         follower.stop()
-        return emptyList()
+        val actions = mutableListOf<RobotAction>()
+        for (cmdTask in activeEventTasks) {
+            actions.addAll(cmdTask.end(state, interrupted = true))
+        }
+        activeEventTasks.clear()
+        taskStartTimes.clear()
+        return actions
     }
 }
 

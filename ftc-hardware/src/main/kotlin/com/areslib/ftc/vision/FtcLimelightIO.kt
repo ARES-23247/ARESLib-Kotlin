@@ -67,7 +67,7 @@ class FtcLimelightIO(
                     )
                     
                     val fiducials = result.getFiducialResults()
-                    if (fiducials?.isNotEmpty() == true) {
+                    if (fiducials.isNotEmpty()) {
                         scratchMeasurements.clear()
                         for (i in 0 until fiducials.size) {
                             val f = fiducials[i]

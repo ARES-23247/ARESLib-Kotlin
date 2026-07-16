@@ -226,7 +226,7 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
         var usbDevice: LynxUsbDeviceImpl? = null
         for (s in moduleNames) {
-            val module = map.get(LynxModule::class.java, s) ?: continue
+            val module = map.get(LynxModule::class.java, s)
             
             val targetModule: AresPhotonLynxModule
             if (module is AresPhotonLynxModule) {
@@ -275,11 +275,11 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
                             usbDevice = tmp as? LynxUsbDeviceImpl
                         }
                         if (usbDevice != null) {
-                            val f2 = AresPhotonReflectionUtils.getField(usbDevice!!.javaClass.superclass, "robotUsbDevice")
+                            val f2 = AresPhotonReflectionUtils.getField(usbDevice.javaClass.superclass, "robotUsbDevice")
                             f2?.isAccessible = true
                             robotUsbDevice = f2?.get(usbDevice) as? RobotUsbDevice
                             
-                            val f3 = AresPhotonReflectionUtils.getField(usbDevice!!.javaClass, "engageLock")
+                            val f3 = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "engageLock")
                             f3?.isAccessible = true
                             syncLock = f3?.get(usbDevice)
 
@@ -299,6 +299,7 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
             for (m in replacements.keys) {
                 usbDevice.removeConfiguredModule(m)
                 try {
+                    @Suppress("UNCHECKED_CAST")
                     val knownModules = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "knownModules")?.get(usbDevice) as? ConcurrentHashMap<Int, LynxModule>
                     if (knownModules != null) {
                         synchronized(knownModules) {
@@ -394,8 +395,8 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     override fun onOpModePostStop(opMode: OpMode) {
         isEnabled.set(false)
         threadEnabled.set(false)
-        
         if (lastUsbDevice != null) {
+            @Suppress("UNCHECKED_CAST")
             val knownModules = AresPhotonReflectionUtils.getField(lastUsbDevice!!.javaClass, "knownModules")?.get(lastUsbDevice!!) as? ConcurrentHashMap<Int, LynxModule>
             if (knownModules != null) {
                 synchronized(knownModules) {

@@ -95,6 +95,16 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putBoolean("Path/IsChained", path.isChained)
         telemetry.putBoolean("Path/DetourActive", path.detourActive)
         
+        // Tuning errors
+        telemetry.putNumber("Path/Error_CrossTrack", path.crossTrackErrorMeters)
+        telemetry.putNumber("Path/Error_AlongTrack", path.alongTrackErrorMeters)
+        telemetry.putNumber("Path/Error_Heading", path.headingErrorRadians)
+        
+        // EKF Drift/Diagnostics
+        telemetry.putNumber("Drive/EKF_Drift_X", state.drive.ekfDriftX)
+        telemetry.putNumber("Drive/EKF_Drift_Y", state.drive.ekfDriftY)
+        telemetry.putNumber("Drive/Innovation_Theta", state.drive.lastInnovationTheta)
+        
         val activePath = path.activePath
         if (activePath != null) {
             if (activePath !== lastPublishedPath) {

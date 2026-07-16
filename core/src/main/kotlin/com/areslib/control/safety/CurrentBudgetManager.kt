@@ -141,7 +141,7 @@ class CurrentBudgetManager(
                     slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
                     
                     totalAmps = 0.0
-                    for (s in slots) totalAmps += s.estimatedAmps
+                    for (i in slots.indices) totalAmps += slots[i].estimatedAmps
                 }
             } catch (_: Exception) {
                 // Current read failed — stick with estimate
@@ -205,7 +205,8 @@ class CurrentBudgetManager(
         totalEstimatedAmps = 0.0
         tripCount = 0
         calibrationIndex = 0
-        for (slot in slots) {
+        for (i in slots.indices) {
+            val slot = slots[i]
             slot.estimatedAmps = 0.0
             slot.lastCalibratedAmps = 0.0
             slot.calibrationOffset = 0.0

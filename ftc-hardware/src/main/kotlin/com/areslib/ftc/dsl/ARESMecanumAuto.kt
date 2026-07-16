@@ -2,13 +2,8 @@ package com.areslib.ftc.dsl
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
-import com.areslib.control.drivetrain.HolonomicDriveController
-import com.areslib.control.feedback.PIDController
-import com.areslib.pathing.Path
-import com.areslib.pathing.DynamicPathLoader
 import com.areslib.util.RobotClock
 import com.areslib.ftc.FtcMecanumRobot
-import com.areslib.ftc.control.FtcMecanumPathFollower
 
 /**
  * A simplified, clean autonomous OpMode base class.
@@ -36,31 +31,21 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         // Calibrate static friction feedforward (kS) to overcome physical drivetrain deadband
         robot.mecanumIO.kS = if (robot.driveFeedforward.kS > 0.0) robot.driveFeedforward.kS else 0.05
 
-        // Setup unified path follower helper
-        val pathFollower = FtcMecanumPathFollower(
-            robot,
-            xController = PIDController(robot.pathTranslationGains.kP, robot.pathTranslationGains.kI, robot.pathTranslationGains.kD),
-            yController = PIDController(robot.pathTranslationGains.kP, robot.pathTranslationGains.kI, robot.pathTranslationGains.kD),
-            thetaController = PIDController(robot.pathRotationGains.kP, robot.pathRotationGains.kI, robot.pathRotationGains.kD).apply {
-                enableContinuousInput(-Math.PI, Math.PI)
-            }
-        )
-
-        // Parse trajectory spline path
-        var path: Path? = null
+        // Parse trajectory spline path using the new declarative AutoBuilder
+        var autoTask: com.areslib.sequencer.Task? = null
         var pathLoadError: String? = null
         try {
-            path = DynamicPathLoader.loadPath(pathName)
+            autoTask = robot.autoBuilder.buildAuto(pathName, RobotClock.currentTimeMillis())
         } catch (e: Exception) {
             pathLoadError = e.message ?: "Unknown error"
         }
 
-        if (pathLoadError != null) {
+        if (pathLoadError != null || autoTask == null) {
             telemetry.addData("Error", "Failed to load dynamic path: $pathLoadError")
             telemetry.addData("Status", "Initialization Failed!")
             telemetry.update()
         } else {
-            telemetry.addData("Status", "Initialized. Path loaded.")
+            telemetry.addData("Status", "Initialized. Auto Task built successfully.")
             telemetry.update()
         }
 
@@ -68,83 +53,38 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
             waitForStart()
             com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Auto"
 
-            if (path == null) {
+            if (autoTask == null) {
                 telemetry.addData("CRASH", "Aborting: Path not loaded. Error: $pathLoadError")
                 telemetry.update()
                 sleep(2000L)
                 return
             }
 
-            // Spawn the robot at the starting waypoint
-            if (path.points.isNotEmpty()) {
-                val startState = path.points.first()
-                robot.store.dispatch(
-                    com.areslib.action.RobotAction.PoseUpdate(
-                        xMeters = startState.pose.x,
-                        yMeters = startState.pose.y,
-                        headingRadians = startState.pose.heading.radians,
-                        timestampMs = RobotClock.currentTimeMillis(),
-                        isReset = true
-                    )
-                )
-            }
-
-            val startMs = RobotClock.currentTimeMillis()
-            var lastTime = 0.0
-            val totalLength = if (path.points.isNotEmpty()) path.points.last().distanceMeters else 0.0
+            // --- 2. Autonomous Loop ---
+            val executor = com.areslib.sequencer.TaskExecutor()
+            executor.addTask(autoTask)
+            
             var loopCount = 0L
             var overrunCount = 0L
-            var currentDistance = 0.0
-            val scratchPoint = com.areslib.pathing.MutablePathPoint()
-            val targetState = com.areslib.pathing.PathPoint(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(0.0)), 0.0, 0.0, 0.0, 0.0)
 
-            // --- 2. Autonomous Loop ---
-            while (opModeIsActive()) {
+            while (opModeIsActive() && !Thread.currentThread().isInterrupted) {
                 val loopStartMs = com.areslib.util.RobotClock.currentTimeMillis()
 
                 try {
-                    val currentTime = (loopStartMs - startMs) / 1000.0
-                    val dt = if (currentTime > lastTime) currentTime - lastTime else 0.02
-                    lastTime = currentTime
-
                     // A. Polls pinpoint/limelight, updates Redux EKF, and runs loop under the hood
                     updateRobot(wrapper)
 
-                    // Find closest point on path to robot's actual position
-                    val robotPose = robot.drive.odometryPose
-                    var bestDist = Double.MAX_VALUE
-                    var bestIdx = 0
-                    for (i in path.points.indices) {
-                        val pp = path.points[i]
-                        val dx = pp.pose.x - robotPose.x
-                        val dy = pp.pose.y - robotPose.y
-                        val d = dx * dx + dy * dy
-                        // Only search forward from our current progress to avoid going backwards
-                        if (d < bestDist && pp.distanceMeters >= currentDistance - 0.3) {
-                            bestDist = d
-                            bestIdx = i
-                        }
+                    // B. Evaluate sequence hierarchy
+                    if (executor.size > 0) {
+                        val actions = executor.update(robot.store.state, loopStartMs)
+                        actions.forEach { robot.store.dispatch(it) }
+                    } else {
+                        robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
                     }
-
-                    // Advance currentDistance to the closest point, plus a small lookahead
-                    val closestDist = path.points[bestIdx].distanceMeters
-                    val lookahead = path.points[bestIdx].velocityMps * dt * 2.0 + 0.05
-                    currentDistance = kotlin.math.min(closestDist + lookahead, totalLength)
-
-                    if (currentDistance >= totalLength) {
-                        break
-                    }
-
-                    // Get nominal target pose from Path spline without intermediate allocations
-                    path.sampleAtDistance(currentDistance, scratchPoint)
-                    scratchPoint.copyInto(targetState)
-
-                    // B. Calculate speeds and update motor commands via the follower
-                    pathFollower.update(targetState, dt)
                 } catch (e: Exception) {
                     // Per-iteration failsafe: disable outputs if a single iteration fails
                     try {
-                        pathFollower.stop()
+                        robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
                     } catch (_: Exception) { /* best-effort */ }
                     telemetry.addData("LOOP_ERROR", e.message ?: "Unknown error")
                 }
@@ -158,20 +98,19 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
 
                 telemetry.addData("EKF Pose X", robot.drive.odometryPose.x)
                 telemetry.addData("EKF Pose Y", robot.drive.odometryPose.y)
-                telemetry.addData("Pinpoint X", robot.drive.odometryX)
-                telemetry.addData("Pinpoint Y", robot.drive.odometryY)
-                telemetry.addData("Path Distance", "%.2f / %.2f".format(currentDistance, totalLength))
                 telemetry.addData("Loop ms", loopElapsedMs)
                 telemetry.addData("Overruns", "$overrunCount / $loopCount")
                 telemetry.update()
             }
 
             // Clean stop at target
-            pathFollower.stop()
+            executor.clear()
+            robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+            
         } catch (e: Exception) {
             // Top-level failsafe: disable all outputs and log
             try {
-                pathFollower.stop()
+                robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
             } catch (_: Exception) { /* best-effort shutoff */ }
             telemetry.addData("CRASH", e.message ?: "Unknown error")
             telemetry.update()

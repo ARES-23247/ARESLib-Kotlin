@@ -14,6 +14,7 @@ class FtcVisionPortalIO(
 ) : VisionIO {
 
     private var lastWarningTime = 0L
+    private val measurementsBuffer = ArrayList<VisionMeasurement>(10)
 
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.cameraPoses = cameraPoses
@@ -23,7 +24,9 @@ class FtcVisionPortalIO(
             if (detections != null && detections.isNotEmpty()) {
                 inputs.isConnected = true
                 
-                val measurements = detections.map { detection ->
+                measurementsBuffer.clear()
+                for (i in 0 until detections.size) {
+                    val detection = detections[i]
                     val pose = detection.ftcPose
                     // VisionPortal returns position in inches and rotation in degrees
                     // We convert inches to meters (1 inch = 0.0254 meters)
@@ -40,15 +43,21 @@ class FtcVisionPortalIO(
                         )
                     )
                     
-                    VisionMeasurement(
-                        timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-                        targetPose = poseMeters,
-                        tagId = detection.id,
-                        ambiguity = 0.0
+                    measurementsBuffer.add(
+                        VisionMeasurement(
+                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+                            targetPose = poseMeters,
+                            tagId = detection.id,
+                            ambiguity = 0.0
+                        )
                     )
                 }
                 
-                inputs.measurements = measurements
+                // Return a lightweight copy so the Redux action owns the state.
+                // We allocate an ArrayList sized perfectly to avoid resizing and map iterator allocations.
+                val safeMeasurements = ArrayList<VisionMeasurement>(measurementsBuffer.size)
+                for (i in 0 until measurementsBuffer.size) safeMeasurements.add(measurementsBuffer[i])
+                inputs.measurements = safeMeasurements
             } else {
                 inputs.isConnected = detections != null
                 inputs.measurements = emptyList()

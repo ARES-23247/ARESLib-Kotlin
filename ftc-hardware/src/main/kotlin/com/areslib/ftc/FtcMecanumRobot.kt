@@ -508,6 +508,12 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private var activePathfindTask: com.areslib.sequencer.PathfindToPoseTask? = null
     private var pathfindStartMs = 0L
     private val pathfindFollower by lazy { com.areslib.pathing.HolonomicPathFollower(drive) }
+    
+    /** 
+     * Declarative AutoBuilder facade. 
+     * Automatically configured to use this robot's physical drivetrain and pathfind PID coefficients.
+     */
+    val autoBuilder by lazy { com.areslib.pathing.AutoBuilder().configureFollower(pathfindFollower) }
     private var wasPathfindRequested = false
 
     /**

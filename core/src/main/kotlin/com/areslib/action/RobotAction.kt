@@ -190,6 +190,9 @@ interface RobotAction {
      */
     data class UpdatePathProgress(
         val distanceProgressMeters: Double,
+        val crossTrackErrorMeters: Double = 0.0,
+        val alongTrackErrorMeters: Double = 0.0,
+        val headingErrorRadians: Double = 0.0,
         override val timestampMs: Long
     ) : RobotAction
 
