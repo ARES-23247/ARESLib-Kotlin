@@ -111,8 +111,13 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         }
     }
 
-    @Volatile private var currentPollingRunning = true
+    @Volatile private var currentPollingRunning = false
     private val driveMotorIOs by lazy { arrayOf(flIO, frIO, rlIO, rrIO) }
+    
+    // We disable the background current polling thread because calling motor.getCurrent() 
+    // over I2C constantly locks the single REV Hub serial bus, causing the main loop's 
+    // bulk read cache fetches to randomly block for 5-10ms!
+    /*
     private val currentPollingThread = Thread {
         var index = 0
         while (currentPollingRunning) {
@@ -125,6 +130,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         name = "ARES-DriveCurrent-Thread"
         start()
     }
+    */
 
     override fun close() {
         currentPollingRunning = false

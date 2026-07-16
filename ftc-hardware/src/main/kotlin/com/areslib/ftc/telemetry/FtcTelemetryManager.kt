@@ -135,7 +135,10 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         }
 
         // Human-readable local driver station console printouts
-        // Throttled to 4Hz (250ms) to prevent WiFi Direct network overhead from stalling the 50Hz hardware loop
+        // COMPLETELY DISABLED: FTC SDK's `Telemetry.update()` is fully synchronous and blocks
+        // the hardware loop for 15-30ms over WiFi Direct. Since ARES robots rely on NT4 and
+        // ARES-Analytics for dashboarding, this driver station overhead is unnecessary.
+        /*
         localTelemetry?.let { t ->
             if (timestamp - lastLocalTelemetryUpdateMs >= 250L) {
                 t.addData("EKF Pose (X, Y, Deg)", estPose.toFormattedString())
@@ -156,6 +159,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
                 lastLocalTelemetryUpdateMs = timestamp
             }
         }
+        */
 
         // Finalize frame: disk log always, NT4 flush only on NT frames
         dataLoggingTelemetry.update()
