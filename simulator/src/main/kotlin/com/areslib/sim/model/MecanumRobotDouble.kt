@@ -116,8 +116,12 @@ class MecanumRobotDouble {
         rr.currentPosition += (rr.velocity * dt).toInt()
 
         // Feed simulated EKF/Pinpoint sensor coordinates
-        pinpoint.posX = trueX
-        pinpoint.posY = trueY
+        val xOff = pinpoint.xOffsetMeters
+        val yOff = pinpoint.yOffsetMeters
+        val cosH = kotlin.math.cos(trueHeadingRad)
+        val sinH = kotlin.math.sin(trueHeadingRad)
+        pinpoint.posX = trueX + (xOff * cosH - yOff * sinH)
+        pinpoint.posY = trueY + (xOff * sinH + yOff * cosH)
         pinpoint.trueHeading = trueHeadingRad
         pinpoint.heading = if (isPinpointCcwPositive) trueHeadingRad else -trueHeadingRad
         pinpoint.headingVelocity = if (isPinpointCcwPositive) actualOmega else -actualOmega
