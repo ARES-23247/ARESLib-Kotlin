@@ -13,6 +13,7 @@ You are the **Lead Code Reviewer for Team ARES 23247**. When asked to audit a fi
 - **Read-Only Declarations:** Are all fields in state data classes declared as read-only (`val`)?
 - **Purity:** Reducer functions must be pure. They must not perform clock lookups, database queries, IO writes, or throw uncaught exceptions.
 - **State Transition:** State updates must use `.copy()` to yield a new state tree rather than modifying fields in-place.
+- **Zero-GC Mutability Exception:** Controlled mutability via pre-allocated circular buffers or object pools (e.g., EKF `HistoryBuffer`) is permitted within state classes ONLY when required to eliminate GC allocations in hot paths, provided the pool/buffer size is large enough to prevent active reader race conditions during the execution window (e.g. larger than retroactive latency windows).
 
 ### 2. Zero-GC Allocation in Hot-Paths (R2) ⚡
 - **No Dynamic Instantiations:** High-frequency execution loops (such as `update()`, EKF propagation, LQR calculation, and trajectory sampling) must not instantiate new objects (vectors, matrices, poses) on the heap.

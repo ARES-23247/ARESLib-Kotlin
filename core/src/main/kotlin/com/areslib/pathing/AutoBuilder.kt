@@ -29,4 +29,16 @@ class AutoBuilder {
         val activeFollower = follower ?: error("AutoBuilder requires a configured follower. Call configureFollower() first.")
         return DynamicPathLoader.loadAuto(autoName, activeFollower, timestampMs)
     }
+
+    /**
+     * Builds a [Task] that directly follows a single PathPlanner .path file,
+     * without needing a surrounding .auto routine file.
+     * 
+     * @param pathName The name of the .path file (without extension)
+     */
+    fun buildPath(pathName: String): Task {
+        val activeFollower = follower ?: error("AutoBuilder requires a configured follower. Call configureFollower() first.")
+        val path = DynamicPathLoader.loadPath(pathName)
+        return com.areslib.sequencer.FollowPathTask(activeFollower, path)
+    }
 }

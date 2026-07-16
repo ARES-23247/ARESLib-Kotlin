@@ -35,11 +35,14 @@ class SlewRateLimiter(
         if (!input.isFinite() || !positiveRateLimit.isFinite() || !negativeRateLimit.isFinite()) return lastValue
 
         val change = input - lastValue
-        val maxPositiveChange = positiveRateLimit * dt
-        val maxNegativeChange = negativeRateLimit * dt
+        val posLimit = kotlin.math.abs(positiveRateLimit)
+        val negLimit = -kotlin.math.abs(negativeRateLimit)
+        
+        val maxPositiveChange = posLimit * dt
+        val maxNegativeChange = negLimit * dt
 
-        val minChange = kotlin.math.min(maxNegativeChange, maxPositiveChange)
-        val maxChange = kotlin.math.max(maxNegativeChange, maxPositiveChange)
+        val minChange = maxNegativeChange
+        val maxChange = maxPositiveChange
 
         lastValue += change.coerceIn(minChange, maxChange)
         return lastValue

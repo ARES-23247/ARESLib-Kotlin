@@ -136,6 +136,7 @@ class NT4Telemetry : ITelemetry {
 
     override fun close() {
         if (!isInitialized) return
-        try { inst.closeServer() } catch (e: Exception) { /* swallow */ }
+        // Do NOT close the server. It should remain alive across OpModes
+        // so that the driver station dashboard does not permanently disconnect.
     }
 }

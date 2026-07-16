@@ -359,8 +359,14 @@ object PoseEstimator {
     ): PoseEstimatorState {
         if (state.history.isEmpty()) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "empty_history")
         
-        // Outlier rejection: Reject high-ambiguity decodes instantly to prevent "pose-flipping"
-        if (measurement.ambiguity > maxAmbiguity) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "high_ambiguity")
+        // Outlier rejection: Reject high-ambiguity or NaN decodes instantly
+        if (measurement.ambiguity.isNaN() || measurement.ambiguity > maxAmbiguity) {
+            return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "high_ambiguity")
+        }
+        if (measurement.targetPose.x.isNaN() || measurement.targetPose.y.isNaN() || measurement.targetPose.z.isNaN() ||
+            measurement.targetPose.rotation.x.isNaN() || measurement.targetPose.rotation.y.isNaN() || measurement.targetPose.rotation.z.isNaN()) {
+            return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "nan_measurement")
+        }
         
         if (numTags <= 0) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "no_tags")
         if (visionStdDevs.x.isNaN() || visionStdDevs.x.isInfinite() || 
@@ -467,10 +473,10 @@ object PoseEstimator {
 
         if (useMahalanobisRejection) {
             val dMSquared = yX * sInvYX + yY * sInvYY + yZ * sInvYZ
-            if (dMSquared > mahalanobisThreshold) {
+            if (dMSquared.isNaN() || dMSquared > mahalanobisThreshold) {
                 return state.copy(
                     lastMeasurementAccepted = false,
-                    lastRejectionReason = "mahalanobis_rejected",
+                    lastRejectionReason = if (dMSquared.isNaN()) "nan_innovation" else "mahalanobis_rejected",
                     lastInnovationX = yX,
                     lastInnovationY = yY,
                     lastInnovationTheta = yZ

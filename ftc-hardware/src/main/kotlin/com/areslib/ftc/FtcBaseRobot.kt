@@ -15,6 +15,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.logging.populate
 import com.areslib.hardware.sensor.ImuIO
+import com.areslib.reducer.rootReducer
 
 /**
  * Abstract base class for all FTC robots.
@@ -44,13 +45,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     
     // Vision Configuration
     val visionStdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
-    val visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
+    val visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
+    val reducer: (com.areslib.state.RobotState, com.areslib.action.RobotAction) -> com.areslib.state.RobotState = ::rootReducer
 ) : AresRobot(
     initialState = com.areslib.state.RobotState(
         vision = com.areslib.state.VisionState(
             filterConfig = visionFilterConfig
         )
-    )
+    ),
+    reducer = reducer
 ) {
 
     init {

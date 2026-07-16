@@ -101,20 +101,37 @@ interface SubsystemState
 data class SuperstructureState(
     // Custom extensible container for season/robot-specific states
     val custom: Any? = null,
-    val states: Map<Class<out SubsystemState>, SubsystemState> = emptyMap()
+    val states: List<SubsystemState> = emptyList()
 ) {
+    fun <T : SubsystemState> get(clazz: Class<T>): T {
+        for (i in 0 until states.size) {
+            val state = states[i]
+            if (clazz.isInstance(state)) {
+                return clazz.cast(state)
+            }
+        }
+        error("Subsystem state of type ${clazz.simpleName} was not registered at startup!")
+    }
+
     inline fun <reified T : SubsystemState> get(): T {
-        return (states[T::class.java] as? T)
-            ?: error("Subsystem state of type ${T::class.java.simpleName} was not registered at startup!")
+        return get(T::class.java)
     }
 
     inline fun <reified T : SubsystemState> update(block: T.() -> T): SuperstructureState {
         val current = get<T>()
         val updated = current.block()
-        return this.copy(states = this.states + (T::class.java to updated))
+        val index = states.indexOf(current)
+        val newStates = ArrayList<SubsystemState>(states)
+        newStates[index] = updated
+        return this.copy(states = newStates)
     }
 
-    fun has(clazz: Class<out SubsystemState>): Boolean = states.containsKey(clazz)
+    fun has(clazz: Class<out SubsystemState>): Boolean {
+        for (i in 0 until states.size) {
+            if (clazz.isInstance(states[i])) return true
+        }
+        return false
+    }
 }
 
 /**

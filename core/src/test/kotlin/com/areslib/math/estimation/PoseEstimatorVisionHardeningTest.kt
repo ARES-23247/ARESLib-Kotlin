@@ -5,14 +5,28 @@ import com.areslib.math.coordinate.FieldLayouts
 import com.areslib.math.geometry.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 
 class PoseEstimatorVisionHardeningTest {
 
     private val testCovariance = Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01)
+    private val originalTags = PoseEstimator.activeTags
+
+    @BeforeEach
+    fun setUp() {
+        PoseEstimator.activeTags = mapOf(
+            3 to Pose3d(Translation3d(-1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, 0.0))
+        )
+    }
+
+    @AfterEach
+    fun tearDown() {
+        PoseEstimator.activeTags = originalTags
+    }
 
     @Test
-    @org.junit.jupiter.api.Disabled("Math logic for incidence scale needs to be corrected for activeTags layout")
     fun `test angle of incidence covariance scaling`() {
         // Tag 3 is at (-1.8, 1.8, 0.5) with yaw 0.0
         

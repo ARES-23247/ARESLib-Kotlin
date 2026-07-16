@@ -10,9 +10,18 @@ object SuperstructureReducer {
     fun reduce(state: SuperstructureState, action: RobotAction): SuperstructureState {
         return when (action) {
             is RobotAction.UpdateSubsystemState -> {
-                // Generically merge the new sub-state into the states map
-                val updatedStates = state.states + (action.state::class.java to action.state)
-                state.copy(states = updatedStates)
+                val index = state.states.indexOfFirst { it::class.java == action.state::class.java }
+                val newStates = if (index != -1) {
+                    val list = ArrayList<com.areslib.state.SubsystemState>(state.states)
+                    list[index] = action.state
+                    list
+                } else {
+                    val list = ArrayList<com.areslib.state.SubsystemState>(state.states.size + 1)
+                    list.addAll(state.states)
+                    list.add(action.state)
+                    list
+                }
+                state.copy(states = newStates)
             }
             else -> state
         }

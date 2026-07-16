@@ -21,6 +21,7 @@ import com.areslib.control.assist.SysIdRoutine
 import com.areslib.ftc.telemetry.LimelightProxyAutoStart
 import com.areslib.control.tuning.PIDFCoefficients
 import com.areslib.control.tuning.SimpleFeedforwardCoeffs
+import com.areslib.reducer.rootReducer
 
 /**
  * An out-of-the-box standard FTC Mecanum Robot base class.
@@ -72,7 +73,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     
     // Vision Filtering Constants
     visionStdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
-    visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults()
+    visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
+    reducer: (com.areslib.state.RobotState, com.areslib.action.RobotAction) -> com.areslib.state.RobotState = ::rootReducer
 ) : FtcBaseRobot(
     hardwareMap = hardwareMap,
     pinpointName = pinpointName,
@@ -89,7 +91,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     pinpointYDirection = pinpointYDirection,
     pinpointIsCcwPositive = pinpointIsCcwPositive,
     visionStdDevs = visionStdDevs,
-    visionFilterConfig = visionFilterConfig
+    visionFilterConfig = visionFilterConfig,
+    reducer = reducer
 ) {
 
     // Pre-allocated telemetry buffers (Zero-GC compliance)
