@@ -49,4 +49,27 @@ class GamepadState(
         this.start = other.start
         this.back = other.back
     }
+
+    fun reset() {
+        this.leftStickX = 0f
+        this.leftStickY = 0f
+        this.rightStickX = 0f
+        this.rightStickY = 0f
+        this.leftTrigger = 0f
+        this.rightTrigger = 0f
+        this.a = false
+        this.b = false
+        this.x = false
+        this.y = false
+        this.dpadUp = false
+        this.dpadDown = false
+        this.dpadLeft = false
+        this.dpadRight = false
+        this.leftBumper = false
+        this.rightBumper = false
+        this.leftStickButton = false
+        this.rightStickButton = false
+        this.start = false
+        this.back = false
+    }
 }

@@ -153,6 +153,7 @@ object ThetaStarPlanner {
         // Out of bounds check
         if (startX !in 0 until costmap.widthCells || startY !in 0 until costmap.heightCells) return emptyList()
         if (endX !in 0 until costmap.widthCells || endY !in 0 until costmap.heightCells) return emptyList()
+        if (!costmap.isCellTraversable(endX, endY)) return emptyList()
 
         val capacity = costmap.widthCells * costmap.heightCells
         val state = threadLocalState.get()

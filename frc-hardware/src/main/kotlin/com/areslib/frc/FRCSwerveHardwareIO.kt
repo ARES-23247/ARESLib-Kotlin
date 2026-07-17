@@ -21,8 +21,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
     private val scratchSpeeds = ChassisSpeeds()
     
-    // Pre-allocated DriveState to prevent GC in the hot path
-    private val cachedDriveState = DriveState()
+
 
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
     private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent
@@ -39,7 +38,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     private val faultBrownout = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_BridgeBrownout() }
     private val faultTemp = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_DeviceTemp() }
 
-    private val pigeon = com.ctre.phoenix6.hardware.Pigeon2(9, com.ctre.phoenix6.CANBus("CAN2"))
+    private val pigeon = drivetrain.pigeon2
     private val pitchSignal = pigeon.pitch
     private val rollSignal = pigeon.roll
     private val yawSignal = pigeon.yaw
@@ -47,14 +46,14 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
 
     init {
         for (i in 0..3) {
-            drivetrain.getModule(i).driveMotor.supplyCurrent.setUpdateFrequency(20.0)
-            (drivetrain.getModule(i).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition.setUpdateFrequency(50.0)
-            faultHardware[i].setUpdateFrequency(4.0)
-            faultBrownout[i].setUpdateFrequency(4.0)
-            faultTemp[i].setUpdateFrequency(4.0)
+            drivetrain.getModule(i).driveMotor.supplyCurrent.setUpdateFrequency(20.0, 0.0)
+            (drivetrain.getModule(i).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition.setUpdateFrequency(50.0, 0.0)
+            faultHardware[i].setUpdateFrequency(4.0, 0.0)
+            faultBrownout[i].setUpdateFrequency(4.0, 0.0)
+            faultTemp[i].setUpdateFrequency(4.0, 0.0)
         }
-        pitchSignal.setUpdateFrequency(20.0)
-        rollSignal.setUpdateFrequency(20.0)
+        pitchSignal.setUpdateFrequency(20.0, 0.0)
+        rollSignal.setUpdateFrequency(20.0, 0.0)
 
         // Register CTRE native telemetry for AdvantageScope and SignalLogger
         drivetrain.registerTelemetry { swerveDriveState ->
@@ -67,7 +66,10 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         BaseStatusSignal.refreshAll(
             currentDraw1, currentDraw2, currentDraw3, currentDraw4,
             absEnc1, absEnc2, absEnc3, absEnc4,
-            pitchSignal, rollSignal, yawSignal, yawRateSignal
+            pitchSignal, rollSignal, yawSignal, yawRateSignal,
+            faultHardware[0], faultHardware[1], faultHardware[2], faultHardware[3],
+            faultBrownout[0], faultBrownout[1], faultBrownout[2], faultBrownout[3],
+            faultTemp[0], faultTemp[1], faultTemp[2], faultTemp[3]
         )
     }
 
@@ -110,15 +112,14 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         val driveStateObj = drivetrain.state
         val pose = driveStateObj.Pose
 
-        // Mutate the cached object (Zero-GC optimization)
-        cachedDriveState.xVelocityMetersPerSecond = driveStateObj.Speeds.vxMetersPerSecond
-        cachedDriveState.yVelocityMetersPerSecond = driveStateObj.Speeds.vyMetersPerSecond
-        cachedDriveState.angularVelocityRadiansPerSecond = driveStateObj.Speeds.omegaRadiansPerSecond
-        cachedDriveState.odometryX = pose.x
-        cachedDriveState.odometryY = pose.y
-        cachedDriveState.odometryHeading = pose.rotation.radians
-
-        return cachedDriveState
+        return DriveState(
+            xVelocityMetersPerSecond = driveStateObj.Speeds.vxMetersPerSecond,
+            yVelocityMetersPerSecond = driveStateObj.Speeds.vyMetersPerSecond,
+            angularVelocityRadiansPerSecond = driveStateObj.Speeds.omegaRadiansPerSecond,
+            odometryX = pose.x,
+            odometryY = pose.y,
+            odometryHeading = pose.rotation.radians
+        )
     }
 
     override val rawGyroYawDegrees: Double

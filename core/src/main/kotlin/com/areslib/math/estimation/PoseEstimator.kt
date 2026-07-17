@@ -335,9 +335,9 @@ object PoseEstimator {
         // Result[i][j] = (F*P)[i][0]*F^T[0][j] + (F*P)[i][1]*F^T[1][j] + (F*P)[i][2]*F^T[2][j]
         // F^T[0][j]: col0=[1,0,0], col1=[0,1,0], col2=[f02,f12,1]
         val newCovariance = Matrix3x3(
-            fp00 + scratchQ.m00,                fp01 + scratchQ.m01,                fp00 * f02 + fp01 * f12 + fp02 + scratchQ.m02,
-            fp10 + scratchQ.m10,                fp11 + scratchQ.m11,                fp10 * f02 + fp11 * f12 + fp12 + scratchQ.m12,
-            fp20 + scratchQ.m20,                fp21 + scratchQ.m21,                fp20 * f02 + fp21 * f12 + fp22 + scratchQ.m22
+            fp00 + f02 * fp02 + scratchQ.m00, fp01 + f12 * fp02 + scratchQ.m01, fp02 + scratchQ.m02,
+            fp10 + f02 * fp12 + scratchQ.m10, fp11 + f12 * fp12 + scratchQ.m11, fp12 + scratchQ.m12,
+            fp20 + f02 * fp22 + scratchQ.m20, fp21 + f12 * fp22 + scratchQ.m21, fp22 + scratchQ.m22
         )
 
         val newHistory = HistoryBuffer.obtainCopy(state.history)
@@ -597,15 +597,15 @@ object PoseEstimator {
             val reFp21 = currentCov.m21
             val reFp22 = currentCov.m22
             // (F*P) * F^T + Q*scale
-            scratchCov2.m00 = reFp00 + Q.m00 * scale
-            scratchCov2.m01 = reFp01 + Q.m01 * scale
-            scratchCov2.m02 = reFp00 * reF02 + reFp01 * reF12 + reFp02 + Q.m02 * scale
-            scratchCov2.m10 = reFp10 + Q.m10 * scale
-            scratchCov2.m11 = reFp11 + Q.m11 * scale
-            scratchCov2.m12 = reFp10 * reF02 + reFp11 * reF12 + reFp12 + Q.m12 * scale
-            scratchCov2.m20 = reFp20 + Q.m20 * scale
-            scratchCov2.m21 = reFp21 + Q.m21 * scale
-            scratchCov2.m22 = reFp20 * reF02 + reFp21 * reF12 + reFp22 + Q.m22 * scale
+            scratchCov2.m00 = reFp00 + reF02 * reFp02 + Q.m00 * scale
+            scratchCov2.m01 = reFp01 + reF12 * reFp02 + Q.m01 * scale
+            scratchCov2.m02 = reFp02 + Q.m02 * scale
+            scratchCov2.m10 = reFp10 + reF02 * reFp12 + Q.m10 * scale
+            scratchCov2.m11 = reFp11 + reF12 * reFp12 + Q.m11 * scale
+            scratchCov2.m12 = reFp12 + Q.m12 * scale
+            scratchCov2.m20 = reFp20 + reF02 * reFp22 + Q.m20 * scale
+            scratchCov2.m21 = reFp21 + reF12 * reFp22 + Q.m21 * scale
+            scratchCov2.m22 = reFp22 + Q.m22 * scale
             
             scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, currRaw.qScale)
             currentCov = scratchCov2

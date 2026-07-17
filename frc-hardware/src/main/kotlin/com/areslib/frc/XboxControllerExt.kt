@@ -31,6 +31,10 @@ fun XboxController.toState() = GamepadState(
 )
 
 fun XboxController.updateState(state: GamepadState) {
+    if (!edu.wpi.first.wpilibj.DriverStation.isJoystickConnected(this.port)) {
+        state.reset()
+        return
+    }
     state.leftStickX = leftX.toFloat()
     state.leftStickY = leftY.toFloat()
     state.rightStickX = rightX.toFloat()

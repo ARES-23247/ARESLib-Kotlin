@@ -124,10 +124,18 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 lastHeadingVelocity = 0.0
                 lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
             } else {
-                val currentPoseUpdate = getPoseUpdate()
-                offsetX += (pose.x - currentPoseUpdate.xMeters)
-                offsetY += (pose.y - currentPoseUpdate.yMeters)
-                offsetHeading = wrapAngle(offsetHeading + (pose.heading.radians - currentPoseUpdate.headingRadians))
+                driver.update()
+                val rawX = driver.getPosX(DistanceUnit.METER)
+                val rawY = driver.getPosY(DistanceUnit.METER)
+                val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
+                val rawHeading = headingMult * driver.getHeading(AngleUnit.RADIANS)
+
+                offsetHeading = wrapAngle(pose.heading.radians - rawHeading)
+                val cosH = kotlin.math.cos(offsetHeading)
+                val sinH = kotlin.math.sin(offsetHeading)
+                
+                offsetX = pose.x - (rawX * cosH - rawY * sinH)
+                offsetY = pose.y - (rawX * sinH + rawY * cosH)
                 
                 lastX = pose.x
                 lastY = pose.y

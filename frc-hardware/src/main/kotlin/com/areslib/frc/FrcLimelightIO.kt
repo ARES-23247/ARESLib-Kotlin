@@ -6,6 +6,7 @@ import com.areslib.state.VisionMeasurement
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Translation3d
 import com.areslib.math.geometry.Rotation3d
+import com.areslib.math.geometry.Quaternion
 import edu.wpi.first.networktables.NetworkTableInstance
 
 /**
@@ -107,12 +108,6 @@ class FrcLimelightIO(
             // to a stable constant (0.02) as multitag pose estimations are extremely stable.
             val ambiguity = 0.02
             
-            // Update the pre-allocated cached object
-            cachedMeasurement.timestampMs = timestampMs
-            cachedMeasurement.targetPose.translation.x = x
-            cachedMeasurement.targetPose.translation.y = y
-            cachedMeasurement.targetPose.translation.z = z
-            
             // Set rotation
             val cr = Math.cos(roll * 0.5)
             val sr = Math.sin(roll * 0.5)
@@ -121,32 +116,39 @@ class FrcLimelightIO(
             val cy = Math.cos(yaw * 0.5)
             val sy = Math.sin(yaw * 0.5)
 
-            cachedMeasurement.targetPose.rotation.q.w = cr * cp * cy + sr * sp * sy
-            cachedMeasurement.targetPose.rotation.q.x = sr * cp * cy - cr * sp * sy
-            cachedMeasurement.targetPose.rotation.q.y = cr * sp * cy + sr * cp * sy
-            cachedMeasurement.targetPose.rotation.q.z = cr * cp * sy - sr * sp * cy
-            
-            cachedMeasurement.tagId = -1
-            cachedMeasurement.ambiguity = ambiguity
+            val targetPose = Pose3d(
+                Translation3d(x, y, z),
+                Rotation3d(
+                    Quaternion(
+                        cr * cp * cy + sr * sp * sy,
+                        sr * cp * cy - cr * sp * sy,
+                        cr * sp * cy + sr * cp * sy,
+                        cr * cp * sy - sr * sp * cy
+                    )
+                )
+            )
             
             // Populate target-space pose for alignment controllers
             val targetSpace = botposeTargetSpaceSub.get()
-            if (targetSpace.size >= 6) {
-                cachedMeasurement.robotPoseTargetSpace.translation.x = targetSpace[0]
-                cachedMeasurement.robotPoseTargetSpace.translation.y = targetSpace[1]
-                cachedMeasurement.robotPoseTargetSpace.translation.z = targetSpace[2]
-                // Rotation3d stores a quaternion; x/y/z are read-only Euler getters.
-                // Construct from Euler angles and copy the quaternion to avoid allocation.
-                val tsRot = Rotation3d(Math.toRadians(targetSpace[3]), Math.toRadians(targetSpace[4]), Math.toRadians(targetSpace[5]))
-                cachedMeasurement.robotPoseTargetSpace.rotation.q.w = tsRot.q.w
-                cachedMeasurement.robotPoseTargetSpace.rotation.q.x = tsRot.q.x
-                cachedMeasurement.robotPoseTargetSpace.rotation.q.y = tsRot.q.y
-                cachedMeasurement.robotPoseTargetSpace.rotation.q.z = tsRot.q.z
+            val robotPoseTargetSpace = if (targetSpace.size >= 6) {
+                Pose3d(
+                    Translation3d(targetSpace[0], targetSpace[1], targetSpace[2]),
+                    Rotation3d(Math.toRadians(targetSpace[3]), Math.toRadians(targetSpace[4]), Math.toRadians(targetSpace[5]))
+                )
+            } else {
+                Pose3d()
             }
-            cachedMeasurement.tagId = tidSub.get().toInt()
+            val tagId = tidSub.get().toInt()
             
-            // Zero-GC list wrapper
-            inputs.measurements = cachedMeasurementList
+            val measurement = VisionMeasurement(
+                timestampMs = timestampMs,
+                targetPose = targetPose,
+                tagId = tagId,
+                ambiguity = ambiguity,
+                robotPoseTargetSpace = robotPoseTargetSpace
+            )
+            
+            inputs.measurements = listOf(measurement)
         } else {
             inputs.measurements = emptyList()
         }

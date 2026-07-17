@@ -23,6 +23,7 @@ open class GoBildaPinpointDriver {
     @Volatile private var rawOffsetHeading: Double = 0.0
     @Volatile private var trueOffsetHeading: Double = 0.0
     
+    @Synchronized
     fun getPosX(unit: DistanceUnit): Double {
         val cosH = kotlin.math.cos(trueHeading)
         val sinH = kotlin.math.sin(trueHeading)
@@ -36,6 +37,7 @@ open class GoBildaPinpointDriver {
         return dx * cosOffset + dy * sinOffset
     }
 
+    @Synchronized
     fun getPosY(unit: DistanceUnit): Double {
         val cosH = kotlin.math.cos(trueHeading)
         val sinH = kotlin.math.sin(trueHeading)
@@ -49,17 +51,25 @@ open class GoBildaPinpointDriver {
         return -dx * sinOffset + dy * cosOffset
     }
 
+    @Synchronized
     fun getHeading(unit: AngleUnit): Double = heading - rawOffsetHeading
+    @Synchronized
     fun getHeading(unit: UnnormalizedAngleUnit): Double = heading - rawOffsetHeading
+    @Synchronized
     fun getHeadingVelocity(unit: UnnormalizedAngleUnit): Double = headingVelocity
+    @Synchronized
     fun getVelX(unit: DistanceUnit): Double = velX
+    @Synchronized
     fun getVelY(unit: DistanceUnit): Double = velY
     
+    @Synchronized
     fun getPosition(): Pose2D {
         return Pose2D(DistanceUnit.METER, getPosX(DistanceUnit.METER), getPosY(DistanceUnit.METER), AngleUnit.RADIANS, heading - rawOffsetHeading)
     }
     
     fun update() {}
+    
+    @Synchronized
     fun resetPosAndIMU() {
         val cosH = kotlin.math.cos(trueHeading)
         val sinH = kotlin.math.sin(trueHeading)
@@ -73,6 +83,7 @@ open class GoBildaPinpointDriver {
     enum class EncoderDirection { FORWARD, REVERSE }
     enum class GoBildaOdometryPods { goBilda_SWERVE_POD, goBilda_4_BAR_POD }
 
+    @Synchronized
     fun setOffsets(xOffset: Double, yOffset: Double, unit: DistanceUnit) {
         val mult = if (unit == DistanceUnit.MM) 0.001 else 1.0
         // GoBilda setOffsets 1st argument (xOffset) refers to sideways distance -> robot's Y offset

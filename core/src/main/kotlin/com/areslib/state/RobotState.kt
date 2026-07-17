@@ -30,13 +30,13 @@ enum class DriveMode {
 }
 
 data class DriveState(
-    var xVelocityMetersPerSecond: Double = 0.0,
-    var yVelocityMetersPerSecond: Double = 0.0,
-    var angularVelocityRadiansPerSecond: Double = 0.0,
-    var measuredAngularVelocityRadiansPerSecond: Double = 0.0,
-    var odometryX: Double = 0.0,
-    var odometryY: Double = 0.0,
-    var odometryHeading: Double = 0.0,
+    val xVelocityMetersPerSecond: Double = 0.0,
+    val yVelocityMetersPerSecond: Double = 0.0,
+    val angularVelocityRadiansPerSecond: Double = 0.0,
+    val measuredAngularVelocityRadiansPerSecond: Double = 0.0,
+    val odometryX: Double = 0.0,
+    val odometryY: Double = 0.0,
+    val odometryHeading: Double = 0.0,
     val poseEstimator: PoseEstimatorState = PoseEstimatorState(),
     val pitchDegrees: Double = 0.0,
     val rollDegrees: Double = 0.0,
@@ -190,11 +190,11 @@ data class SuperstructureState(
  *   for driving the robot square to the tag at a desired standoff distance.
  */
 data class VisionMeasurement(
-    var timestampMs: Long = 0L,
-    var targetPose: Pose3d = Pose3d(),
-    var tagId: Int = -1,
-    var ambiguity: Double = 0.0,
-    var robotPoseTargetSpace: Pose3d = Pose3d()
+    val timestampMs: Long = 0L,
+    val targetPose: Pose3d = Pose3d(),
+    val tagId: Int = -1,
+    val ambiguity: Double = 0.0,
+    val robotPoseTargetSpace: Pose3d = Pose3d()
 )
 
 data class VisionState(

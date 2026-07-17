@@ -35,6 +35,13 @@ abstract class LinearOpMode {
     }
     
     fun sleep(milliseconds: Long) {
-        Thread.sleep(milliseconds)
+        if (com.areslib.util.RobotClock.isMocked) {
+            val targetTime = com.areslib.util.RobotClock.currentTimeMillis() + milliseconds
+            while (com.areslib.util.RobotClock.currentTimeMillis() < targetTime && !isStopRequested && !Thread.currentThread().isInterrupted) {
+                Thread.sleep(1)
+            }
+        } else {
+            Thread.sleep(milliseconds)
+        }
     }
 }
