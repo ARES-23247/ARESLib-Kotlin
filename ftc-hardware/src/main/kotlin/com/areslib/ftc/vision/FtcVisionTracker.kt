@@ -91,13 +91,15 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             // Kidnapped Robot Recovery (Active Play)
             val isRejected = lastVisionStatus.startsWith("REJ_")
             val isHighConfidence = measurement.ambiguity < filterConfig.maxAmbiguity
-            val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < 0.05 &&
-                               kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < 0.05 &&
-                               kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < 0.05
+            val tuning = store.state.tuning
+            val velThreshold = tuning.stolenRobotVelocityThreshold
+            val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < velThreshold &&
+                               kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < velThreshold &&
+                               kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < velThreshold
 
             if (isRejected && isHighConfidence && isStationary) {
                 consecutiveVisionRejections++
-                if (consecutiveVisionRejections >= 10) {
+                if (consecutiveVisionRejections >= tuning.stolenRobotRejectionThreshold.toInt()) {
                     val snapPose = measurement.targetPose.toPose2d()
                     pinpointIO?.initialize(snapPose, resetHardware = false)
                     consecutiveVisionRejections = 0

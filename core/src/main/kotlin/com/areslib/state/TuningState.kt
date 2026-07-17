@@ -54,5 +54,9 @@ data class TuningState(
 
     // Driver Profile Settings
     val driverDeadbandExponent: Double = 1.0,
-    val driverSlewRateLimit: Double = 999.0
+    val driverSlewRateLimit: Double = 999.0,
+
+    // Kidnapped / Stolen Robot Recovery
+    val stolenRobotRejectionThreshold: Double = 10.0,
+    val stolenRobotVelocityThreshold: Double = 0.05
 )
