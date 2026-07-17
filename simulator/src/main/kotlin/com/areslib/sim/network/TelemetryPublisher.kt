@@ -7,6 +7,11 @@ import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
 import edu.wpi.first.wpilibj.DataLogManager
 
+/**
+ * World-class Telemetry Publisher for the ARES simulation environment.
+ * Coordinates real-time NetworkTables (NT4) state publishing, client-side input polling,
+ * and AdvantageScope-compatible swerve/pose visualizations.
+ */
 object TelemetryPublisher {
     private val ntInst = NetworkTableInstance.getDefault()
     private val statePublisher: StructPublisher<RobotState>
@@ -48,6 +53,10 @@ object TelemetryPublisher {
     private val webButtonBSub = ntInst.getBooleanTopic("ARES/Input/isButtonBPressed").subscribe(false)
     private val webButtonXSub = ntInst.getBooleanTopic("ARES/Input/isButtonXPressed").subscribe(false)
     private val webPoseResetSub = ntInst.getBooleanTopic("ARES/Input/isPoseReset").subscribe(false)
+    
+    /**
+     * Obstacles input subscriber path. Receives costmap bounding boxes and obstacles from the dashboard editor.
+     */
     val obstaclesSub = ntInst.getStringTopic("ARES/Input/obstacles").subscribe("")
 
     private var lastWebHeartbeatTimestamp = 0L
@@ -68,6 +77,8 @@ object TelemetryPublisher {
 
     /**
      * Publishes the current state to NT4 and DataLog.
+     *
+     * @param state The current immutable robot state to serialize and publish.
      */
     fun publish(state: RobotState) {
         statePublisher.set(state)
@@ -79,6 +90,8 @@ object TelemetryPublisher {
     /**
      * Publishes the target trajectory pose for AdvantageScope "ghost" rendering.
      * AdvantageScope 2D/3D pose arrays expect [x, y, rotation_radians].
+     *
+     * @param pose The field-relative target pose.
      */
     fun publishTargetPose(pose: com.areslib.math.geometry.Pose2d) {
         targetPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
@@ -86,6 +99,8 @@ object TelemetryPublisher {
 
     /**
      * Publishes the estimated pose from the Kalman Filter (EKF) for AdvantageScope rendering.
+     *
+     * @param pose The field-relative estimated pose.
      */
     fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
         estimatedPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
@@ -93,6 +108,8 @@ object TelemetryPublisher {
 
     /**
      * Publishes the locations of game pieces on the field.
+     *
+     * @param gamePieces Packed array representation of game pieces coordinates.
      */
     fun publishGamePieces(gamePieces: DoubleArray) {
         gamePiecesPublisher.set(gamePieces)
@@ -101,6 +118,11 @@ object TelemetryPublisher {
     /**
      * Publishes per-module swerve telemetry (AdvantageKit-level).
      * Each array is 4 elements [FL, FR, BL, BR].
+     *
+     * @param speedsTarget Command target speeds per module (m/s).
+     * @param anglesTarget Command target angles per module (rad).
+     * @param speedsActual Measured speeds per module (m/s).
+     * @param anglesActual Measured rotation angles per module (rad).
      */
     fun publishSwerveModules(
         speedsTarget: DoubleArray, anglesTarget: DoubleArray,
@@ -114,6 +136,8 @@ object TelemetryPublisher {
 
     /**
      * Publishes commanded chassis speeds.
+     *
+     * @param speeds Commands chassis relative linear/angular velocities.
      */
     fun publishChassisSpeeds(speeds: ChassisSpeeds) {
         chassisVxPub.set(speeds.vxMetersPerSecond)
@@ -123,6 +147,10 @@ object TelemetryPublisher {
 
     /**
      * Publishes drive mode flags.
+     *
+     * @param fieldCentric Whether field-centric driving is currently active.
+     * @param teleopMode Whether TeleOp mode is active.
+     * @param redAlliance Active alliance selection flag (true for Red, false for Blue).
      */
     fun publishDriveMode(fieldCentric: Boolean, teleopMode: Boolean, redAlliance: Boolean) {
         fieldCentricPub.set(fieldCentric)
@@ -133,6 +161,8 @@ object TelemetryPublisher {
     /**
      * Polls `/ARES/Input` topics from NT4. If fresh updates are found,
      * pushes them directly into the VirtualDriverStation instance.
+     *
+     * @param driverStation Target VirtualDriverStation instance to synchronize inputs with.
      */
     fun pollWebInputs(driverStation: VirtualDriverStation) {
         val heartbeatEntry = webHeartbeatSub.getAtomic()
@@ -180,12 +210,14 @@ object TelemetryPublisher {
 
     /**
      * Publishes superstructure state (flywheel RPM, mode, active flags).
+     *
+     * @param state The current immutable robot state.
      */
     fun publishSuperstructure(@Suppress("UNUSED_PARAMETER") state: RobotState) {
     }
 
     /**
-     * Shutdown telemetry.
+     * Shutdown telemetry server.
      */
     fun stop() {
         ntInst.stopServer()
