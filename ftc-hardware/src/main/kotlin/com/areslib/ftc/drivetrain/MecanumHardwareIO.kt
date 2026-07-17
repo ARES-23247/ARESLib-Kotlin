@@ -26,6 +26,8 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val rlDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD,
     val rrDirection: DcMotorSimple.Direction = DcMotorSimple.Direction.REVERSE,
     initialKs: Double = 0.0,
+    val useClosedLoopVelocity: Boolean = false,
+    var ticksPerMeter: Double = 2000.0,
     val initialSlewRateLimit: Double? = null,
     val motorKp: Double? = null,
     val motorKi: Double? = null,
@@ -46,6 +48,25 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val rlIO = EstimateMotorIO(rearLeft)
     val rrIO = EstimateMotorIO(rearRight)
     private val speedBuffer = DoubleArray(4)
+    private var flController = if (motorKp != null) com.areslib.control.feedback.PIDController(motorKp, motorKi ?: 0.0, motorKd ?: 0.0) else null
+    private var frController = if (motorKp != null) com.areslib.control.feedback.PIDController(motorKp, motorKi ?: 0.0, motorKd ?: 0.0) else null
+    private var rlController = if (motorKp != null) com.areslib.control.feedback.PIDController(motorKp, motorKi ?: 0.0, motorKd ?: 0.0) else null
+    private var rrController = if (motorKp != null) com.areslib.control.feedback.PIDController(motorKp, motorKi ?: 0.0, motorKd ?: 0.0) else null
+
+    fun updateMotorGains(kp: Double, ki: Double, kd: Double) {
+        val fl = flController
+        if (fl == null) {
+            flController = com.areslib.control.feedback.PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
+            frController = com.areslib.control.feedback.PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
+            rlController = com.areslib.control.feedback.PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
+            rrController = com.areslib.control.feedback.PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
+        } else {
+            fl.p = kp; fl.i = ki; fl.d = kd
+            frController?.let { it.p = kp; it.i = ki; it.d = kd }
+            rlController?.let { it.p = kp; it.i = ki; it.d = kd }
+            rrController?.let { it.p = kp; it.i = ki; it.d = kd }
+        }
+    }
 
     private var flLimiter: SlewRateLimiter? = null
     private var frLimiter: SlewRateLimiter? = null
@@ -79,6 +100,11 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     var enableVoltageCompensatedSlew: Boolean = false
 
     init {
+        flController?.setOutputLimits(-1.0, 1.0)
+        frController?.setOutputLimits(-1.0, 1.0)
+        rlController?.setOutputLimits(-1.0, 1.0)
+        rrController?.setOutputLimits(-1.0, 1.0)
+        
         frontLeft.direction = flDirection
         frontRight.direction = frDirection
         rearLeft.direction = rlDirection
@@ -92,13 +118,17 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         com.areslib.hardware.HardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
 
-        if (motorKp != null || motorKi != null || motorKd != null || motorKf != null) {
-            val coefficients = com.qualcomm.robotcore.hardware.PIDFCoefficients(
-                motorKp ?: 0.0, motorKi ?: 0.0, motorKd ?: 0.0, motorKf ?: 0.0
-            )
+        if (useClosedLoopVelocity) {
             listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
-                motor.setPIDFCoefficients(com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER, coefficients)
                 motor.mode = com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER
+            }
+            if (motorKp != null || motorKi != null || motorKd != null || motorKf != null) {
+                val coefficients = com.qualcomm.robotcore.hardware.PIDFCoefficients(
+                    motorKp ?: 0.0, motorKi ?: 0.0, motorKd ?: 0.0, motorKf ?: 0.0
+                )
+                listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
+                    motor.setPIDFCoefficients(com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER, coefficients)
+                }
             }
         } else {
             listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
@@ -202,10 +232,36 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             return (velocityFF + staticFF) * voltageCompensationFactor
         }
         
-        var flPower = (applyFeedforward(speeds[0]) * powerScale).coerceIn(-1.0, 1.0)
-        var frPower = (applyFeedforward(speeds[1]) * powerScale).coerceIn(-1.0, 1.0)
-        var rlPower = (applyFeedforward(speeds[2]) * powerScale).coerceIn(-1.0, 1.0)
-        var rrPower = (applyFeedforward(speeds[3]) * powerScale).coerceIn(-1.0, 1.0)
+        if (kotlin.math.abs(speeds[0]) < 1e-4) flController?.reset()
+        if (kotlin.math.abs(speeds[1]) < 1e-4) frController?.reset()
+        if (kotlin.math.abs(speeds[2]) < 1e-4) rlController?.reset()
+        if (kotlin.math.abs(speeds[3]) < 1e-4) rrController?.reset()
+
+        val fl = flController
+        val fr = frController
+        val rl = rlController
+        val rr = rrController
+
+        val flFeedback = if (!useClosedLoopVelocity && fl != null) {
+            fl.calculate(flIO.velocity / ticksPerMeter, speeds[0], dtSeconds)
+        } else 0.0
+
+        val frFeedback = if (!useClosedLoopVelocity && fr != null) {
+            fr.calculate(frIO.velocity / ticksPerMeter, speeds[1], dtSeconds)
+        } else 0.0
+
+        val rlFeedback = if (!useClosedLoopVelocity && rl != null) {
+            rl.calculate(rlIO.velocity / ticksPerMeter, speeds[2], dtSeconds)
+        } else 0.0
+
+        val rrFeedback = if (!useClosedLoopVelocity && rr != null) {
+            rr.calculate(rrIO.velocity / ticksPerMeter, speeds[3], dtSeconds)
+        } else 0.0
+
+        var flPower = ((applyFeedforward(speeds[0]) + flFeedback) * powerScale).coerceIn(-1.0, 1.0)
+        var frPower = ((applyFeedforward(speeds[1]) + frFeedback) * powerScale).coerceIn(-1.0, 1.0)
+        var rlPower = ((applyFeedforward(speeds[2]) + rlFeedback) * powerScale).coerceIn(-1.0, 1.0)
+        var rrPower = ((applyFeedforward(speeds[3]) + rrFeedback) * powerScale).coerceIn(-1.0, 1.0)
 
         // Adjust positive slew rate limits based on battery voltage if enabled
         val baseLimit = slewRateLimit

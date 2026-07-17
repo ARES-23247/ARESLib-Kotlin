@@ -85,7 +85,6 @@ fun main(args: Array<String>) {
     // 4. Command START
     cmdPub.set("START")
     println("Sent START command.")
-    Thread.sleep(1500) // Wait for match start sync
 
     fun getPose(): Triple<Double, Double, Double> {
         val arr = estPoseSub.get()
@@ -95,6 +94,24 @@ fun main(args: Array<String>) {
             Triple(0.0, 0.0, 0.0)
         }
     }
+
+    // Wait for EKF starting pose sync (wait for simulator to start and reset EKF pose)
+    println("Waiting for EKF starting pose sync from simulator...")
+    val startSyncTime = System.currentTimeMillis()
+    var synced = false
+    while (System.currentTimeMillis() - startSyncTime < 25000) {
+        val (_, y, _) = getPose()
+        if (abs(y) > 0.5) {
+            synced = true
+            break
+        }
+        Thread.sleep(100)
+    }
+    if (!synced) {
+        System.err.println("Verification Failed: Simulator did not sync starting pose in 25s! Current pose Y: " + getPose().second)
+        System.exit(1)
+    }
+    println("EKF starting pose synced successfully.")
 
     fun rotateToTarget(targetRad: Double, toleranceRad: Double = 0.03, timeoutMs: Long = 6000): Boolean {
         println("Rotating to target: %.3f rad...".format(targetRad))

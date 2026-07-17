@@ -49,7 +49,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val wheelBaseMeters: Double = 0.45,
     val headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
     val headingDeadzoneDeg: Double = 0.5,
-    val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(0.0),
+    val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(0.05, 0.12, 0.01),
+    val useClosedLoopVelocity: Boolean = false,
     val driveSlewRateLimit: Double? = null,
     val pathTranslationGains: PIDFCoefficients = PIDFCoefficients(2.0, 0.0, 0.02),
     val pathRotationGains: PIDFCoefficients = PIDFCoefficients(2.5, 0.0, 0.05),
@@ -68,7 +69,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     pinpointIsCcwPositive: Boolean = true,
     
     // Motor Tunable Constants
-    val motorGains: PIDFCoefficients? = null,
+    val motorGains: PIDFCoefficients? = PIDFCoefficients(0.4, 0.1, 0.01, 0.0),
     val ticksPerMeter: Double = 2000.0,
     
     // Vision Filtering Constants
@@ -131,6 +132,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         rlDirection = rlDirection,
         rrDirection = rrDirection,
         initialKs = driveFeedforward.kS,
+        useClosedLoopVelocity = useClosedLoopVelocity,
+        ticksPerMeter = ticksPerMeter,
         initialSlewRateLimit = driveSlewRateLimit,
         motorKp = motorGains?.kP,
         motorKi = motorGains?.kI,
@@ -232,6 +235,14 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             kinematics = MecanumKinematics(currentTuning.trackWidthMeters, currentTuning.wheelBaseMeters)
             mecanumIO.kS = currentTuning.driveFeedforward.kS
             mecanumIO.slewRateLimit = currentTuning.driveSlewRateLimit
+            mecanumIO.ticksPerMeter = currentTuning.ticksPerMeter
+            if (currentTuning.driveFeedforward.kV > 1e-4) {
+                mecanumIO.maxWheelSpeedMetersPerSecond = 1.0 / currentTuning.driveFeedforward.kV
+            }
+            val gains = currentTuning.motorGains
+            if (gains != null) {
+                mecanumIO.updateMotorGains(gains.kP, gains.kI, gains.kD)
+            }
             
             val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
             val maxAngularSpeed = maxSpeed / kinematics.k

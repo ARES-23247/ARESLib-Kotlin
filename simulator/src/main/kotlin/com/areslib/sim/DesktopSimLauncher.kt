@@ -516,6 +516,9 @@ object DesktopSimLauncher {
                 // Step simulator sensors at origin so EKF aligns
                 val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
                 robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians, ccwPos)
+                if (com.areslib.util.RobotClock.isMocked) {
+                    com.areslib.util.RobotClock.useMockTime(com.areslib.util.RobotClock.currentTimeMillis() + 20)
+                }
                 Thread.sleep(20)
             }
             
