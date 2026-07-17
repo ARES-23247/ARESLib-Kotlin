@@ -138,10 +138,11 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
             actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
         }
 
-        // Throttle NT4 network writes to every 3rd frame (~17Hz) if enabled.
+        // Throttle NT4 network writes dynamically if enabled.
         // Disk logging still runs every frame via currentFrame accumulation.
         telemetryFrameCounter++
-        val isNtFrame = enableNetworkStreaming && (telemetryFrameCounter % 3 == 0)
+        val divisor = kotlin.math.max(1, state.tuning.telemetryRateDivisor)
+        val isNtFrame = enableNetworkStreaming && (telemetryFrameCounter % divisor == 0)
         dataLoggingTelemetry.ntEnabled = isNtFrame
 
         val estPose = state.drive.poseEstimator.estimatedPose

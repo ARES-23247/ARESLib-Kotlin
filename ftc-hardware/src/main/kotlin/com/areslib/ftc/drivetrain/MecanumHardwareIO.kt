@@ -151,7 +151,8 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         while (currentPollingRunning) {
             driveMotorIOs[index].pollCurrentSync()
             index = (index + 1) and 3  // Cycles 0→1→2→3→0 (bitwise mod 4)
-            try { Thread.sleep(50) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+            val sleepInterval = com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.state?.tuning?.motorCurrentPollingIntervalMs ?: 50L
+            try { Thread.sleep(kotlin.math.max(10L, sleepInterval)) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
         }
     }.apply {
         isDaemon = true

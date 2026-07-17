@@ -58,5 +58,36 @@ data class TuningState(
 
     // Kidnapped / Stolen Robot Recovery
     val stolenRobotRejectionThreshold: Double = 10.0,
-    val stolenRobotVelocityThreshold: Double = 0.05
+    val stolenRobotVelocityThreshold: Double = 0.05,
+
+    // Pathfinding / Trajectory Limits
+    val pathVelocityScale: Double = 0.85,
+    val pathAccelerationLimit: Double = 3.0,
+
+    // Vision-Based Closed-Loop Alignment
+    val visionAlignTargetDistance: Double = 2.4384, // 8 feet
+    val visionAlignMaxHeadingChangeRad: Double = 0.2618, // 15 degrees in rad
+    val visionAlignAlphaTranslation: Double = 0.4,
+    val visionAlignAlphaHeading: Double = 0.5,
+    val visionAlignKpTranslation: Double = 1.0,
+    val visionAlignKpRotation: Double = 1.1,
+    val visionAlignKdRotation: Double = 0.35,
+    val visionAlignKsRotational: Double = 0.06,
+    val visionAlignTranslationDeadband: Double = 0.04,
+    val visionAlignHeadingErrorDeadband: Double = 0.0175, // ~1 degree in rad
+    val visionAlignClampTranslationX: Double = 0.5,
+    val visionAlignClampTranslationY: Double = 0.3,
+    val visionAlignClampRotation: Double = 0.65,
+    val visionAlignSearchFirstSweepMs: Long = 1200,
+    val visionAlignSearchSecondSweepMs: Long = 2400,
+    val visionAlignSearchSpeed: Double = 0.85,
+
+    // Telemetry & Watchdog / Bus Tuning
+    val telemetryRateDivisor: Int = 3,
+    val motorCurrentPollingIntervalMs: Long = 50,
+
+    // Subsystem Presets
+    val intakeNominalVoltage: Double = 12.0,
+    val flywheelTargetRpmPreset: Double = 2000.0,
+    val driverTriggerThreshold: Double = 0.5
 )
