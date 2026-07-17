@@ -103,14 +103,26 @@ data class SuperstructureState(
     val custom: Any? = null,
     val states: List<SubsystemState> = emptyList()
 ) {
-    fun <T : SubsystemState> get(clazz: Class<T>): T {
-        for (i in 0 until states.size) {
-            val state = states[i]
-            if (clazz.isInstance(state)) {
-                return clazz.cast(state)
+    // Pre-computed index for O(1) lookups instead of O(n) linear scan with reflection.
+    // Rebuilt on copy() which only happens during reducer state transitions (not hot path).
+    @Transient
+    private val classIndex: Map<Class<*>, Int> = buildIndex(states)
+
+    private companion object {
+        fun buildIndex(states: List<SubsystemState>): Map<Class<*>, Int> {
+            val map = HashMap<Class<*>, Int>(states.size)
+            for (i in states.indices) {
+                map[states[i]::class.java] = i
             }
+            return map
         }
-        error("Subsystem state of type ${clazz.simpleName} was not registered at startup!")
+    }
+
+    fun <T : SubsystemState> get(clazz: Class<T>): T {
+        val index = classIndex[clazz]
+            ?: error("Subsystem state of type ${clazz.simpleName} was not registered at startup!")
+        @Suppress("UNCHECKED_CAST")
+        return states[index] as T
     }
 
     inline fun <reified T : SubsystemState> get(): T {
@@ -118,7 +130,7 @@ data class SuperstructureState(
     }
 
     inline fun <reified T : SubsystemState> update(block: T.() -> T): SuperstructureState {
-        val current = get<T>()
+        val current = get(T::class.java)
         val updated = current.block()
         val index = states.indexOf(current)
         val newStates = ArrayList<SubsystemState>(states)
@@ -127,10 +139,7 @@ data class SuperstructureState(
     }
 
     fun has(clazz: Class<out SubsystemState>): Boolean {
-        for (i in 0 until states.size) {
-            if (clazz.isInstance(states[i])) return true
-        }
-        return false
+        return classIndex.containsKey(clazz)
     }
 }
 

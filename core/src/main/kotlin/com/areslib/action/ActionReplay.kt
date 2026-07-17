@@ -40,30 +40,47 @@ object ActionReplay {
     }
 
     /**
-     * Replays a JSONL log file back through the pure rootReducer (or a custom reducer), returning a sequence of RobotState states.
+     * Parses a JSONL log file into a list of [RobotAction] instances without replaying them.
+     *
+     * This is useful for cursor-based replay sessions (e.g. [ActionReplaySession]) that need
+     * random-access to the raw action list without eagerly computing every intermediate state.
+     *
+     * @param logFile The `.jsonl` file recorded by [ActionLogger].
+     * @return An ordered list of successfully deserialized actions. Malformed or unknown
+     *         action lines are silently skipped (with a stderr warning).
      */
-    @JvmOverloads
-    fun replayLog(logFile: File, reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer): List<RobotState> {
-        val states = mutableListOf<RobotState>()
-        var currentState = RobotState()
-        
-        // Add initial state
-        states.add(currentState)
+    fun parseActions(logFile: File): List<RobotAction> {
+        if (!logFile.exists()) return emptyList()
 
-        if (!logFile.exists()) return states
-
+        val actions = mutableListOf<RobotAction>()
         BufferedReader(FileReader(logFile)).use { reader ->
             var line: String? = reader.readLine()
             while (line != null) {
                 if (line.trim().isNotEmpty()) {
                     val action = deserializeAction(line)
                     if (action != null) {
-                        currentState = reducer(currentState, action)
-                        states.add(currentState)
+                        actions.add(action)
                     }
                 }
                 line = reader.readLine()
             }
+        }
+        return actions
+    }
+
+    /**
+     * Replays a JSONL log file back through the pure rootReducer (or a custom reducer), returning a sequence of RobotState states.
+     */
+    @JvmOverloads
+    fun replayLog(logFile: File, reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer): List<RobotState> {
+        val actions = parseActions(logFile)
+        val states = mutableListOf<RobotState>()
+        var currentState = RobotState()
+        states.add(currentState)
+
+        for (action in actions) {
+            currentState = reducer(currentState, action)
+            states.add(currentState)
         }
 
         return states

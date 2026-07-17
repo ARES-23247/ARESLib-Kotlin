@@ -15,7 +15,9 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
  */
 class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
 
-    // CTRE Swerve request object we will mutate every loop
+    // CTRE Swerve request objects — FieldCentric delegates the heading rotation
+    // to CTRE's 250Hz thread (uses Pigeon2 state internally), avoiding stale-heading bugs.
+    private val fieldCentricRequest = SwerveRequest.FieldCentric()
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
     private val scratchSpeeds = ChassisSpeeds()
     
@@ -45,6 +47,12 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         }
         pitchSignal.setUpdateFrequency(20.0)
         rollSignal.setUpdateFrequency(20.0)
+
+        // Register CTRE native telemetry for AdvantageScope and SignalLogger
+        drivetrain.registerTelemetry { swerveDriveState ->
+            // CTRE automatically streams this to SignalLogger (.wpilog files)
+            // and publishes to NetworkTables for AdvantageScope visualization
+        }
     }
 
     override fun refresh() {
@@ -112,25 +120,31 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         get() = yawRateSignal.valueAsDouble
 
     /**
-     * Applies the macro-level ChassisSpeeds computed by the Redux reducers 
-     * back to the CTRE SwerveDrivetrain. The CTRE firmware handles the inverse 
-     * kinematics and closed-loop motor control internally.
+     * Applies the macro-level velocities computed by the Redux reducers
+     * back to the CTRE SwerveDrivetrain.
+     *
+     * **Field-centric mode** is delegated to [SwerveRequest.FieldCentric], which
+     * performs the field-to-robot rotation internally on the CTRE 250Hz odometry
+     * thread using the Pigeon2's latest heading. This eliminates the stale-heading
+     * artifacts that occurred when we manually computed cos/sin at 50Hz.
+     *
+     * **Robot-centric mode** uses [SwerveRequest.ApplyRobotSpeeds] with a
+     * pre-allocated [ChassisSpeeds] to maintain zero-GC compliance.
      */
     override fun write(driveState: DriveState) {
         if (driveState.isFieldCentric) {
-            val c = Math.cos(driveState.odometryHeading)
-            val s = Math.sin(driveState.odometryHeading)
-            scratchSpeeds.vxMetersPerSecond = driveState.xVelocityMetersPerSecond * c + driveState.yVelocityMetersPerSecond * s
-            scratchSpeeds.vyMetersPerSecond = -driveState.xVelocityMetersPerSecond * s + driveState.yVelocityMetersPerSecond * c
-            scratchSpeeds.omegaRadiansPerSecond = driveState.angularVelocityRadiansPerSecond
+            drivetrain.setControl(
+                fieldCentricRequest
+                    .withVelocityX(driveState.xVelocityMetersPerSecond)
+                    .withVelocityY(driveState.yVelocityMetersPerSecond)
+                    .withRotationalRate(driveState.angularVelocityRadiansPerSecond)
+            )
         } else {
             scratchSpeeds.vxMetersPerSecond = driveState.xVelocityMetersPerSecond
             scratchSpeeds.vyMetersPerSecond = driveState.yVelocityMetersPerSecond
             scratchSpeeds.omegaRadiansPerSecond = driveState.angularVelocityRadiansPerSecond
+            drivetrain.setControl(robotSpeedsRequest.withSpeeds(scratchSpeeds))
         }
-        
-        // Pass the speeds to the CTRE API
-        drivetrain.setControl(robotSpeedsRequest.withSpeeds(scratchSpeeds))
     }
 
     /**
