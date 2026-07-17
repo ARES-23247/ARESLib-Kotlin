@@ -60,21 +60,25 @@ object ThetaStarPlanner {
     }
 
     private class PlannerState(capacity: Int) {
-        var gCosts = DoubleArray(capacity) { Double.POSITIVE_INFINITY }
-        var parents = IntArray(capacity) { -1 }
-        var closedSet = BooleanArray(capacity)
+        var gCosts = DoubleArray(capacity)
+        var parents = IntArray(capacity)
+        var generations = IntArray(capacity)
+        var generation = 0
         var openQueue = LongHeap(capacity)
         var pathPool = Array(capacity) { Translation2d() }
 
         fun ensureCapacity(capacity: Int) {
             if (gCosts.size < capacity) {
-                gCosts = DoubleArray(capacity) { Double.POSITIVE_INFINITY }
-                parents = IntArray(capacity) { -1 }
-                closedSet = BooleanArray(capacity)
-            } else {
-                gCosts.fill(Double.POSITIVE_INFINITY, 0, capacity)
-                parents.fill(-1, 0, capacity)
-                closedSet.fill(false, 0, capacity)
+                gCosts = DoubleArray(capacity)
+                parents = IntArray(capacity)
+                generations = IntArray(capacity)
+            }
+            // Advance epoch — all nodes with stale generation are implicitly reset
+            generation++
+            if (generation == Int.MAX_VALUE) {
+                // Overflow guard: reset epoch and zero out generations array
+                generation = 1
+                generations.fill(0, 0, generations.size)
             }
             openQueue.clear()
             if (pathPool.size < capacity) {
@@ -82,6 +86,40 @@ object ThetaStarPlanner {
                 System.arraycopy(pathPool, 0, newPool, 0, pathPool.size)
                 pathPool = newPool
             }
+        }
+
+        /** Read gCost for a node, returning POSITIVE_INFINITY if the node hasn't been touched this epoch. */
+        fun getGCost(key: Int): Double {
+            return if (generations[key] == generation) gCosts[key] else Double.POSITIVE_INFINITY
+        }
+
+        /** Write gCost for a node, marking it as active in the current epoch. */
+        fun setGCost(key: Int, value: Double) {
+            gCosts[key] = value
+            generations[key] = generation
+        }
+
+        /** Check if a node has been closed (visited) this epoch. Uses the sign bit of parents as a flag. */
+        fun isClosed(key: Int): Boolean {
+            return generations[key] == generation && parents[key] < -1
+        }
+
+        /** Mark a node as closed by encoding it into the parent value (negate and subtract 2). */
+        fun setClosed(key: Int) {
+            // Encode: closedParent = -(realParent) - 2, so realParent >= -1 maps to closedParent <= -2
+            parents[key] = -(parents[key]) - 2
+        }
+
+        /** Get the real parent key, whether the node is closed or open. */
+        fun getParent(key: Int): Int {
+            if (generations[key] != generation) return -1
+            val p = parents[key]
+            return if (p < -1) -(p + 2) else p
+        }
+
+        /** Set the parent for a node (open state). */
+        fun setParent(key: Int, parentKey: Int) {
+            parents[key] = parentKey
         }
     }
 
@@ -120,15 +158,12 @@ object ThetaStarPlanner {
         val state = threadLocalState.get()
         state.ensureCapacity(capacity)
 
-        val gCosts = state.gCosts
-        val parents = state.parents
-        val closedSet = state.closedSet
         val openQueue = state.openQueue
 
         val startKey = startY * costmap.widthCells + startX
 
-        gCosts[startKey] = 0.0
-        parents[startKey] = startKey
+        state.setGCost(startKey, 0.0)
+        state.setParent(startKey, startKey)
         
         val startH = heuristic(startX, startY, endX, endY)
         val startFloatBits = startH.toFloat().toBits().toLong() and 0xFFFFFFFFL
@@ -139,17 +174,17 @@ object ThetaStarPlanner {
             val heapVal = openQueue.poll()
             val currKey = (heapVal and 0xFFFFFFFFL).toInt()
 
-            if (closedSet[currKey]) continue
+            if (state.isClosed(currKey)) continue
 
             val currX = currKey % costmap.widthCells
             val currY = currKey / costmap.widthCells
 
             if (currX == endX && currY == endY) {
                 // Path found! Reconstruct waypoints
-                return reconstructPath(currKey, costmap, start, end, parents)
+                return reconstructPath(currKey, costmap, start, end, state)
             }
 
-            closedSet[currKey] = true
+            state.setClosed(currKey)
 
             // Explore 8-way neighbors
             for (dy in -1..1) {
@@ -163,7 +198,7 @@ object ThetaStarPlanner {
                     if (!costmap.isCellTraversable(nx, ny)) continue
 
                     val nKey = ny * costmap.widthCells + nx
-                    if (closedSet[nKey]) continue
+                    if (state.isClosed(nKey)) continue
 
                     updateVertex(currKey, currX, currY, nKey, nx, ny, costmap, endX, endY, state)
                 }
@@ -185,11 +220,9 @@ object ThetaStarPlanner {
         endY: Int,
         state: PlannerState
     ) {
-        val gCosts = state.gCosts
-        val parents = state.parents
         val openQueue = state.openQueue
 
-        var parentKey = parents[currKey]
+        var parentKey = state.getParent(currKey)
         if (parentKey == -1) parentKey = currKey
 
         val parentX = parentKey % costmap.widthCells
@@ -199,10 +232,10 @@ object ThetaStarPlanner {
         // If there is line of sight from the parent to the neighbor, 
         // bypass the current node to allow any-angle straight pathing.
         if (lineOfSight(costmap, parentX, parentY, nx, ny)) {
-            val newG = gCosts[parentKey] + distance(parentX, parentY, nx, ny)
-            if (newG < gCosts[nKey]) {
-                gCosts[nKey] = newG
-                parents[nKey] = parentKey
+            val newG = state.getGCost(parentKey) + distance(parentX, parentY, nx, ny)
+            if (newG < state.getGCost(nKey)) {
+                state.setGCost(nKey, newG)
+                state.setParent(nKey, parentKey)
                 
                 val f = newG + heuristic(nx, ny, endX, endY)
                 val floatBits = f.toFloat().toBits().toLong() and 0xFFFFFFFFL
@@ -211,10 +244,10 @@ object ThetaStarPlanner {
             }
         } else {
             // Fall back to standard A* update
-            val newG = gCosts[currKey] + distance(currX, currY, nx, ny)
-            if (newG < gCosts[nKey]) {
-                gCosts[nKey] = newG
-                parents[nKey] = currKey
+            val newG = state.getGCost(currKey) + distance(currX, currY, nx, ny)
+            if (newG < state.getGCost(nKey)) {
+                state.setGCost(nKey, newG)
+                state.setParent(nKey, currKey)
                 
                 val f = newG + heuristic(nx, ny, endX, endY)
                 val floatBits = f.toFloat().toBits().toLong() and 0xFFFFFFFFL
@@ -278,9 +311,8 @@ object ThetaStarPlanner {
         costmap: Costmap,
         start: Translation2d,
         end: Translation2d,
-        parents: IntArray
+        state: PlannerState
     ): List<Translation2d> {
-        val state = threadLocalState.get()
         var currKey = endKey
 
         var iterations = 0
@@ -304,7 +336,7 @@ object ThetaStarPlanner {
             state.pathPool[pathSize].y = fy
             pathSize++
 
-            val parentKey = parents[currKey]
+            val parentKey = state.getParent(currKey)
             if (parentKey == currKey || parentKey == -1) break
             currKey = parentKey
         }

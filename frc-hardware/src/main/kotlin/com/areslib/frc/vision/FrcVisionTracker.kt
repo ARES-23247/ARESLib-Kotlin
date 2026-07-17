@@ -61,7 +61,10 @@ class FrcVisionTracker(
             io.updateInputs(visionInputs)
             if (visionInputs.measurements.isNotEmpty()) {
                 val measurement = visionInputs.measurements[0]
-                if (!isSimulation && swerveIO != null) {
+                // Distance-based outlier rejection: skip fusion for far/ambiguous tags
+                val distance = kotlin.math.abs(measurement.robotPoseTargetSpace.z)
+                val ambiguity = measurement.ambiguity
+                if (!isSimulation && swerveIO != null && distance < 6.0 && ambiguity < 0.3) {
                     try {
                         val pose = com.areslib.math.geometry.Pose2d(
                             measurement.targetPose.translation.x,
@@ -80,7 +83,11 @@ class FrcVisionTracker(
                     timestampMs,
                     null
                 ))
-                _lastVisionStatus = "ACCEPTED"
+                _lastVisionStatus = when {
+                    distance >= 6.0 -> "REJECTED_FAR (${String.format("%.1f", distance)}m)"
+                    ambiguity >= 0.3 -> "REJECTED_AMBIGUOUS (${String.format("%.2f", ambiguity)})"
+                    else -> "ACCEPTED"
+                }
             } else {
                 _lastVisionStatus = "NO TARGET"
             }

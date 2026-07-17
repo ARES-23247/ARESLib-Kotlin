@@ -309,11 +309,35 @@ object PoseEstimator {
             newHeading
         )
         
-        // Simple propagation: P = P + dynamic Q
+        // Jacobian-based EKF propagation: P = F * P * F^T + Q
+        // F = [1, 0, -dx*sin(θ_mid) - dy*cos(θ_mid)]
+        //     [0, 1,  dx*cos(θ_mid) - dy*sin(θ_mid)]
+        //     [0, 0,  1                              ]
+        val thetaMid = state.estimatedPose.heading.radians + correctedDeltaHeading * 0.5
+        val sinMid = kotlin.math.sin(thetaMid)
+        val cosMid = kotlin.math.cos(thetaMid)
+        val f02 = -deltaTranslation.x * sinMid - deltaTranslation.y * cosMid
+        val f12 =  deltaTranslation.x * cosMid - deltaTranslation.y * sinMid
+        // F * P (rows expanded, F has identity structure except column 2)
+        // Row 0: [P00 + f02*P20,  P01 + f02*P21,  P02 + f02*P22]
+        // Row 1: [P10 + f12*P20,  P11 + f12*P21,  P12 + f12*P22]
+        // Row 2: [P20,            P21,            P22           ]
+        val fp00 = state.covariance.m00 + f02 * state.covariance.m20
+        val fp01 = state.covariance.m01 + f02 * state.covariance.m21
+        val fp02 = state.covariance.m02 + f02 * state.covariance.m22
+        val fp10 = state.covariance.m10 + f12 * state.covariance.m20
+        val fp11 = state.covariance.m11 + f12 * state.covariance.m21
+        val fp12 = state.covariance.m12 + f12 * state.covariance.m22
+        val fp20 = state.covariance.m20
+        val fp21 = state.covariance.m21
+        val fp22 = state.covariance.m22
+        // (F*P) * F^T: F^T column 2 = [f02, f12, 1]^T
+        // Result[i][j] = (F*P)[i][0]*F^T[0][j] + (F*P)[i][1]*F^T[1][j] + (F*P)[i][2]*F^T[2][j]
+        // F^T[0][j]: col0=[1,0,0], col1=[0,1,0], col2=[f02,f12,1]
         val newCovariance = Matrix3x3(
-            state.covariance.m00 + scratchQ.m00, state.covariance.m01 + scratchQ.m01, state.covariance.m02 + scratchQ.m02,
-            state.covariance.m10 + scratchQ.m10, state.covariance.m11 + scratchQ.m11, state.covariance.m12 + scratchQ.m12,
-            state.covariance.m20 + scratchQ.m20, state.covariance.m21 + scratchQ.m21, state.covariance.m22 + scratchQ.m22
+            fp00 + scratchQ.m00,                fp01 + scratchQ.m01,                fp00 * f02 + fp01 * f12 + fp02 + scratchQ.m02,
+            fp10 + scratchQ.m10,                fp11 + scratchQ.m11,                fp10 * f02 + fp11 * f12 + fp12 + scratchQ.m12,
+            fp20 + scratchQ.m20,                fp21 + scratchQ.m21,                fp20 * f02 + fp21 * f12 + fp22 + scratchQ.m22
         )
 
         val newHistory = HistoryBuffer.obtainCopy(state.history)
@@ -556,15 +580,32 @@ object PoseEstimator {
             currentHeadingRad = wrapAngle(currentHeadingRad + deltaHeading)
 
             val scale = currRaw.qScale
-            scratchCov2.m00 = currentCov.m00 + Q.m00 * scale
-            scratchCov2.m01 = currentCov.m01 + Q.m01 * scale
-            scratchCov2.m02 = currentCov.m02 + Q.m02 * scale
-            scratchCov2.m10 = currentCov.m10 + Q.m10 * scale
-            scratchCov2.m11 = currentCov.m11 + Q.m11 * scale
-            scratchCov2.m12 = currentCov.m12 + Q.m12 * scale
-            scratchCov2.m20 = currentCov.m20 + Q.m20 * scale
-            scratchCov2.m21 = currentCov.m21 + Q.m21 * scale
-            scratchCov2.m22 = currentCov.m22 + Q.m22 * scale
+            // Jacobian-based re-propagation: P = F * P * F^T + Q * scale
+            val reThetaMid = currentHeadingRad + deltaHeading * 0.5
+            val reSinMid = kotlin.math.sin(reThetaMid)
+            val reCosMid = kotlin.math.cos(reThetaMid)
+            val reF02 = -deltaX * reSinMid - deltaY * reCosMid
+            val reF12 =  deltaX * reCosMid - deltaY * reSinMid
+            // F * P
+            val reFp00 = currentCov.m00 + reF02 * currentCov.m20
+            val reFp01 = currentCov.m01 + reF02 * currentCov.m21
+            val reFp02 = currentCov.m02 + reF02 * currentCov.m22
+            val reFp10 = currentCov.m10 + reF12 * currentCov.m20
+            val reFp11 = currentCov.m11 + reF12 * currentCov.m21
+            val reFp12 = currentCov.m12 + reF12 * currentCov.m22
+            val reFp20 = currentCov.m20
+            val reFp21 = currentCov.m21
+            val reFp22 = currentCov.m22
+            // (F*P) * F^T + Q*scale
+            scratchCov2.m00 = reFp00 + Q.m00 * scale
+            scratchCov2.m01 = reFp01 + Q.m01 * scale
+            scratchCov2.m02 = reFp00 * reF02 + reFp01 * reF12 + reFp02 + Q.m02 * scale
+            scratchCov2.m10 = reFp10 + Q.m10 * scale
+            scratchCov2.m11 = reFp11 + Q.m11 * scale
+            scratchCov2.m12 = reFp10 * reF02 + reFp11 * reF12 + reFp12 + Q.m12 * scale
+            scratchCov2.m20 = reFp20 + Q.m20 * scale
+            scratchCov2.m21 = reFp21 + Q.m21 * scale
+            scratchCov2.m22 = reFp20 * reF02 + reFp21 * reF12 + reFp22 + Q.m22 * scale
             
             scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, currRaw.qScale)
             currentCov = scratchCov2

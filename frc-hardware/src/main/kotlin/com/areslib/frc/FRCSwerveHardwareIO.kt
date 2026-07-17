@@ -34,6 +34,11 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     private val absEnc3 = (drivetrain.getModule(2).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
     private val absEnc4 = (drivetrain.getModule(3).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
 
+    // Pre-cached fault StatusSignals — avoids allocating new StatusSignal objects in getFaults() hot path
+    private val faultHardware = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_Hardware() }
+    private val faultBrownout = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_BridgeBrownout() }
+    private val faultTemp = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_DeviceTemp() }
+
     private val pigeon = com.ctre.phoenix6.hardware.Pigeon2(9, com.ctre.phoenix6.CANBus("CAN2"))
     private val pitchSignal = pigeon.pitch
     private val rollSignal = pigeon.roll
@@ -44,6 +49,9 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         for (i in 0..3) {
             drivetrain.getModule(i).driveMotor.supplyCurrent.setUpdateFrequency(20.0)
             (drivetrain.getModule(i).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition.setUpdateFrequency(50.0)
+            faultHardware[i].setUpdateFrequency(4.0)
+            faultBrownout[i].setUpdateFrequency(4.0)
+            faultTemp[i].setUpdateFrequency(4.0)
         }
         pitchSignal.setUpdateFrequency(20.0)
         rollSignal.setUpdateFrequency(20.0)
@@ -174,12 +182,10 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     override fun getFaults(out: IntArray) {
         if (out.size >= 4) {
             for (i in 0..3) {
-                val motor = drivetrain.getModule(i).driveMotor
                 var faultCode = 0
-                // Check CTRE individual faults and build a bitfield
-                if (motor.getFault_Hardware().value) faultCode = faultCode or 1
-                if (motor.getFault_BridgeBrownout().value) faultCode = faultCode or 2
-                if (motor.getFault_DeviceTemp().value) faultCode = faultCode or 4
+                if (faultHardware[i].value) faultCode = faultCode or 1
+                if (faultBrownout[i].value) faultCode = faultCode or 2
+                if (faultTemp[i].value) faultCode = faultCode or 4
                 out[i] = faultCode
             }
         }

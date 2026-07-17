@@ -23,6 +23,8 @@ class FrcLimelightIO(
     private val botposeSub = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(DoubleArray(0))
     private val botposeMt2Sub = table.getDoubleArrayTopic("botpose_wpiblue_mt2").subscribe(DoubleArray(0))
     private val tvSub = table.getIntegerTopic("tv").subscribe(0)
+    private val botposeTargetSpaceSub = table.getDoubleArrayTopic("botpose_targetspace").subscribe(DoubleArray(0))
+    private val tidSub = table.getIntegerTopic("tid").subscribe(-1)
     
     private val orientationPub = table.getDoubleArrayTopic("orientation_megatag2").publish()
 
@@ -126,6 +128,22 @@ class FrcLimelightIO(
             
             cachedMeasurement.tagId = -1
             cachedMeasurement.ambiguity = ambiguity
+            
+            // Populate target-space pose for alignment controllers
+            val targetSpace = botposeTargetSpaceSub.get()
+            if (targetSpace.size >= 6) {
+                cachedMeasurement.robotPoseTargetSpace.translation.x = targetSpace[0]
+                cachedMeasurement.robotPoseTargetSpace.translation.y = targetSpace[1]
+                cachedMeasurement.robotPoseTargetSpace.translation.z = targetSpace[2]
+                // Rotation3d stores a quaternion; x/y/z are read-only Euler getters.
+                // Construct from Euler angles and copy the quaternion to avoid allocation.
+                val tsRot = Rotation3d(Math.toRadians(targetSpace[3]), Math.toRadians(targetSpace[4]), Math.toRadians(targetSpace[5]))
+                cachedMeasurement.robotPoseTargetSpace.rotation.q.w = tsRot.q.w
+                cachedMeasurement.robotPoseTargetSpace.rotation.q.x = tsRot.q.x
+                cachedMeasurement.robotPoseTargetSpace.rotation.q.y = tsRot.q.y
+                cachedMeasurement.robotPoseTargetSpace.rotation.q.z = tsRot.q.z
+            }
+            cachedMeasurement.tagId = tidSub.get().toInt()
             
             // Zero-GC list wrapper
             inputs.measurements = cachedMeasurementList

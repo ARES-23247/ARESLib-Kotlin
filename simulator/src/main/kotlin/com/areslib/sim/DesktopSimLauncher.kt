@@ -56,6 +56,9 @@ object DesktopSimLauncher {
     fun launch(args: Array<String>, interactionModel: SimInteractionModel, opModeArg: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode? = null) {
         println("Starting ARESLib Desktop Simulation (HIL-style actual FTC code)...")
 
+        // Initialize deterministic mock clock before any RobotClock usage
+        RobotClock.useMockTime(0L)
+
         sumSqErrorX = 0.0
         sumSqErrorY = 0.0
         sumSqErrorHeading = 0.0
@@ -63,6 +66,9 @@ object DesktopSimLauncher {
         sampleCount = 0L
 
         Runtime.getRuntime().addShutdownHook(Thread {
+            // Restore system clock on shutdown
+            RobotClock.useSystemTime()
+
             val count = sampleCount
             if (count > 0) {
                 val rmseX = kotlin.math.sqrt(sumSqErrorX / count)
@@ -612,7 +618,10 @@ object DesktopSimLauncher {
         val loopAutoPub = ntInst.getStringTopic("ARES/DriverStation/AutonomousList").publish()
 
         while (true) {
-            val startTime = RobotClock.currentTimeMillis()
+            // Advance deterministic mock clock by one fixed timestep
+            RobotClock.useMockTime(RobotClock.currentTimeMillis() + TIMESTEP_MS)
+            // Wall clock used for real-time pacing (not RobotClock, which is mocked)
+            val wallStartTime = System.currentTimeMillis()
             try {
             if (!headless && !serverMode) {
                 org.lwjgl.glfw.GLFW.glfwPollEvents()
@@ -981,8 +990,8 @@ object DesktopSimLauncher {
             }
 
             // Loop timing
-            val elapsed = RobotClock.currentTimeMillis() - startTime
-            val sleepTime = TIMESTEP_MS - elapsed
+            val wallElapsed = System.currentTimeMillis() - wallStartTime
+            val sleepTime = TIMESTEP_MS - wallElapsed
             if (sleepTime > 0) {
                 Thread.sleep(sleepTime)
             }
