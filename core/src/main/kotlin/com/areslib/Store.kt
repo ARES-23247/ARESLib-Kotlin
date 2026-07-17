@@ -18,31 +18,37 @@ class Store(
      */
     var actionListener: ((RobotAction) -> Unit)? = null
 
-    @Synchronized
     fun dispatch(action: RobotAction) {
-        actionListener?.invoke(action)
-        state = reducer(state, action)
+        val currentState: RobotState
+        synchronized(this) {
+            actionListener?.invoke(action)
+            state = reducer(state, action)
+            currentState = state
+        }
         val size = listeners.size
         for (i in 0 until size) {
             try {
-                listeners[i](state)
+                listeners[i](currentState)
             } catch (_: IndexOutOfBoundsException) {
                 break
             }
         }
     }
 
-    @Synchronized
     fun dispatchAll(vararg actions: RobotAction) {
-        val actionCount = actions.size
-        for (i in 0 until actionCount) {
-            actionListener?.invoke(actions[i])
-            state = reducer(state, actions[i])
+        val currentState: RobotState
+        synchronized(this) {
+            val actionCount = actions.size
+            for (i in 0 until actionCount) {
+                actionListener?.invoke(actions[i])
+                state = reducer(state, actions[i])
+            }
+            currentState = state
         }
         val size = listeners.size
         for (i in 0 until size) {
             try {
-                listeners[i](state)
+                listeners[i](currentState)
             } catch (_: IndexOutOfBoundsException) {
                 break
             }

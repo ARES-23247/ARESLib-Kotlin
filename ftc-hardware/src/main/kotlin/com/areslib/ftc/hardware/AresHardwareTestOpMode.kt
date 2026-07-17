@@ -3,7 +3,7 @@ package com.areslib.ftc.hardware
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.areslib.ftc.FtcTestbedRobot
-import com.areslib.ftc.toState
+import com.areslib.ftc.update
 import com.areslib.telemetry.AresGamepad
 
 /**
@@ -39,6 +39,7 @@ class AresHardwareTestOpMode : LinearOpMode() {
         
         waitForStart()
 
+        val g1State = com.areslib.telemetry.GamepadState()
         var loopCount = 0L
         var overrunCount = 0L
 
@@ -48,7 +49,8 @@ class AresHardwareTestOpMode : LinearOpMode() {
 
                 // 1. Coordinates sensor reading, Redux updates, and motor command execution in the background
                 robot.update()
-                driver.update(gamepad1.toState())
+                g1State.update(gamepad1)
+                driver.update(g1State)
 
                 // 2. Simple student-level drive control using the mapped stick values
                 robot.drive.joystickDrive(
