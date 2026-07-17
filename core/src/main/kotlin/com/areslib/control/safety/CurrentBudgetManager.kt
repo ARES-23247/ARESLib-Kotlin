@@ -126,19 +126,26 @@ class CurrentBudgetManager(
             try {
                 val actualAmps = slot.motor.currentAmps
                 if (actualAmps.isFinite() && actualAmps >= 0.0) {
-                    slot.lastCalibratedAmps = actualAmps
-                    
                     val motor = slot.motor
                     val appliedVoltage = vBat * kotlin.math.abs(motor.power * slot.motor.powerScale)
-                    val backEmf = slot.kv * kotlin.math.abs(motor.velocity)
-                    val rawEstimate = ((appliedVoltage - backEmf) / slot.resistance).coerceAtLeast(0.0)
                     
-                    // Blend error offset: difference between actual and raw model estimate
-                    val currentError = actualAmps - rawEstimate
-                    slot.calibrationOffset = (slot.calibrationOffset * 0.3 + currentError * 0.7)
-                    
-                    // Recalculate this slot's estimate and the total
-                    slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
+                    // Skip calibration if sensor returns exactly 0.0 while voltage is applied, 
+                    // indicating missing/un-polled sensor hardware
+                    if (actualAmps == 0.0 && appliedVoltage > 0.5) {
+                        // Skip updating calibrationOffset, keep using rawEstimate or last valid estimate
+                        slot.estimatedAmps = slot.estimatedAmps
+                    } else {
+                        slot.lastCalibratedAmps = actualAmps
+                        val backEmf = slot.kv * kotlin.math.abs(motor.velocity)
+                        val rawEstimate = ((appliedVoltage - backEmf) / slot.resistance).coerceAtLeast(0.0)
+                        
+                        // Blend error offset: difference between actual and raw model estimate
+                        val currentError = actualAmps - rawEstimate
+                        slot.calibrationOffset = (slot.calibrationOffset * 0.3 + currentError * 0.7)
+                        
+                        // Recalculate this slot's estimate and the total
+                        slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
+                    }
                     
                     totalAmps = 0.0
                     for (i in slots.indices) totalAmps += slots[i].estimatedAmps

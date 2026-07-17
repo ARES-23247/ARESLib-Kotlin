@@ -18,6 +18,7 @@ class Store(
      */
     var actionListener: ((RobotAction) -> Unit)? = null
 
+    @Synchronized
     fun dispatch(action: RobotAction) {
         actionListener?.invoke(action)
         state = reducer(state, action)
@@ -31,6 +32,7 @@ class Store(
         }
     }
 
+    @Synchronized
     fun dispatchAll(vararg actions: RobotAction) {
         val actionCount = actions.size
         for (i in 0 until actionCount) {

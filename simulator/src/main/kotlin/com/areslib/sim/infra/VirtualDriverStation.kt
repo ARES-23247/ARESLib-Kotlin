@@ -24,7 +24,7 @@ import org.lwjgl.glfw.GLFW.*
  */
 class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener {
 
-    private val pressedKeys = mutableSetOf<Int>()
+    private val pressedKeys = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
 
     // Teleop maximum speeds
     private val MAX_LINEAR_SPEED = 4.0 // m/s
