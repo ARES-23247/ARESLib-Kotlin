@@ -125,5 +125,7 @@ class MecanumRobotDouble {
         pinpoint.trueHeading = trueHeadingRad
         pinpoint.heading = if (isPinpointCcwPositive) trueHeadingRad else -trueHeadingRad
         pinpoint.headingVelocity = if (isPinpointCcwPositive) actualOmega else -actualOmega
+        pinpoint.velX = actualVx
+        pinpoint.velY = actualVy
     }
 }

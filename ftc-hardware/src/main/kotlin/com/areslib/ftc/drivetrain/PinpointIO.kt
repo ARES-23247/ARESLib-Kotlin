@@ -48,6 +48,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private var lastY = 0.0
     private var lastHeading = 0.0
     private var lastHeadingVelocity = 0.0
+    private var lastVelX = 0.0
+    private var lastVelY = 0.0
     private var lastTimestampMs = 0L
 
     init {
@@ -76,6 +78,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
             lastY = y
             lastHeading = nextHeading
             lastHeadingVelocity = rawHeadingVelocity
+            lastVelX = driver.getVelX(DistanceUnit.METER)
+            lastVelY = driver.getVelY(DistanceUnit.METER)
             lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         } catch (e: Exception) {
             val now = com.areslib.util.RobotClock.currentTimeMillis()
@@ -93,7 +97,9 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
             yMeters = lastY,
             headingRadians = lastHeading,
             angularVelocityRadiansPerSecond = lastHeadingVelocity,
-            timestampMs = ts
+            timestampMs = ts,
+            xVelocityMetersPerSecond = lastVelX,
+            yVelocityMetersPerSecond = lastVelY
         )
     }
 
