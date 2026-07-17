@@ -30,8 +30,12 @@ class FrcLimelightIO(
     private var lastYawRateDegPerSec = 0.0
     
     // Pre-allocated buffers to prevent GC
+    private val scratchBotpose = DoubleArray(7)
     private val scratchOrientation = DoubleArray(6)
-    private val scratchMeasurements = ArrayList<VisionMeasurement>(1)
+    
+    // Single pre-allocated instance for Zero-GC
+    private val cachedMeasurement = VisionMeasurement()
+    private val cachedMeasurementList = java.util.Collections.singletonList(cachedMeasurement)
 
     init {
         // Enforce match-ready settings to NetworkTables on startup
@@ -101,20 +105,30 @@ class FrcLimelightIO(
             // to a stable constant (0.02) as multitag pose estimations are extremely stable.
             val ambiguity = 0.02
             
-            val pose = Pose3d(
-                translation = Translation3d(x, y, z),
-                rotation = Rotation3d(roll, pitch, yaw)
-            )
+            // Update the pre-allocated cached object
+            cachedMeasurement.timestampMs = timestampMs
+            cachedMeasurement.targetPose.translation.x = x
+            cachedMeasurement.targetPose.translation.y = y
+            cachedMeasurement.targetPose.translation.z = z
             
-            scratchMeasurements.clear()
-            scratchMeasurements.add(VisionMeasurement(
-                timestampMs = timestampMs,
-                targetPose = pose,
-                tagId = -1,
-                ambiguity = ambiguity
-            ))
+            // Set rotation
+            val cr = Math.cos(roll * 0.5)
+            val sr = Math.sin(roll * 0.5)
+            val cp = Math.cos(pitch * 0.5)
+            val sp = Math.sin(pitch * 0.5)
+            val cy = Math.cos(yaw * 0.5)
+            val sy = Math.sin(yaw * 0.5)
+
+            cachedMeasurement.targetPose.rotation.q.w = cr * cp * cy + sr * sp * sy
+            cachedMeasurement.targetPose.rotation.q.x = sr * cp * cy - cr * sp * sy
+            cachedMeasurement.targetPose.rotation.q.y = cr * sp * cy + sr * cp * sy
+            cachedMeasurement.targetPose.rotation.q.z = cr * cp * sy - sr * sp * cy
             
-            inputs.measurements = scratchMeasurements.toList()
+            cachedMeasurement.tagId = -1
+            cachedMeasurement.ambiguity = ambiguity
+            
+            // Zero-GC list wrapper
+            inputs.measurements = cachedMeasurementList
         } else {
             inputs.measurements = emptyList()
         }

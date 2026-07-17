@@ -53,6 +53,14 @@ interface SwerveHardwareIO : SubsystemIO {
     val rollDegrees: Double
         get() = 0.0
 
+    /** Gets raw gyro yaw degrees (unfused, for MegaTag2). */
+    val rawGyroYawDegrees: Double
+        get() = 0.0
+
+    /** Gets raw gyro yaw rate in degrees per second (for MegaTag2). */
+    val yawRateDegreesPerSecond: Double
+        get() = 0.0
+
     /** Gets measured module linear velocities. */
     fun getModuleSpeeds(out: DoubleArray) {}
 

@@ -2,13 +2,13 @@ package com.areslib.math.geometry
 
 import kotlin.math.*
 
-data class Translation3d(val x: Double = 0.0, val y: Double = 0.0, val z: Double = 0.0) {
+data class Translation3d(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
     val norm: Double get() = sqrt(x * x + y * y + z * z)
     operator fun plus(other: Translation3d) = Translation3d(x + other.x, y + other.y, z + other.z)
     operator fun minus(other: Translation3d) = Translation3d(x - other.x, y - other.y, z - other.z)
 }
 
-data class Quaternion(val w: Double = 1.0, val x: Double = 0.0, val y: Double = 0.0, val z: Double = 0.0) {
+data class Quaternion(var w: Double = 1.0, var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
     fun normalize(): Quaternion {
         val norm = sqrt(w * w + x * x + y * y + z * z)
         if (norm.isNaN() || norm.isInfinite() || norm == 0.0) return Quaternion()
@@ -30,7 +30,7 @@ data class Quaternion(val w: Double = 1.0, val x: Double = 0.0, val y: Double = 
     }
 }
 
-data class Rotation3d(val q: Quaternion = Quaternion()) {
+data class Rotation3d(var q: Quaternion = Quaternion()) {
     constructor(roll: Double, pitch: Double, yaw: Double) : this(
         fromEulerAngles(roll, pitch, yaw)
     )
@@ -84,8 +84,8 @@ data class Rotation3d(val q: Quaternion = Quaternion()) {
 }
 
 data class Pose3d(
-    val translation: Translation3d = Translation3d(),
-    val rotation: Rotation3d = Rotation3d()
+    var translation: Translation3d = Translation3d(),
+    var rotation: Rotation3d = Rotation3d()
 ) {
     val x: Double get() = translation.x
     val y: Double get() = translation.y

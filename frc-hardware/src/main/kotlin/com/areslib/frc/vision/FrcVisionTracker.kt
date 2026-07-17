@@ -46,9 +46,12 @@ class FrcVisionTracker(
     override fun update(timestampMs: Long) {
         visionIO?.let { io ->
             val drive = store.state.drive
+            val yawRate = swerveIO?.yawRateDegreesPerSecond ?: Math.toDegrees(drive.angularVelocityRadiansPerSecond)
+            val yaw = swerveIO?.rawGyroYawDegrees ?: Math.toDegrees(drive.odometryHeading)
+            
             io.setOrientation(
-                yawDegrees = Math.toDegrees(drive.odometryHeading),
-                yawRateDegPerSec = Math.toDegrees(drive.angularVelocityRadiansPerSecond),
+                yawDegrees = yaw,
+                yawRateDegPerSec = yawRate,
                 pitchDegrees = drive.pitchDegrees,
                 pitchRateDegPerSec = 0.0,
                 rollDegrees = drive.rollDegrees,

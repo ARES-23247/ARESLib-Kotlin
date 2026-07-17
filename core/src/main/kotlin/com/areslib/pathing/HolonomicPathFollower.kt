@@ -41,34 +41,39 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
      * @param dtSeconds Elapsed time since the last controller update in seconds.
      */
     fun update(targetState: PathPoint, dtSeconds: Double) {
-        val currentPose = drivetrain.getEstimatedPose()
-        
-        val path = currentPath
-        if (path != null) {
-            val currentDist = targetState.distanceMeters
-            for (event in path.events) {
-                if (currentDist >= event.triggerDistanceMeters && !triggeredEvents.contains(event.eventName)) {
-                    triggeredEvents.add(event.eventName)
-                    onEventTriggered?.invoke(event.eventName)
+        try {
+            val currentPose = drivetrain.getEstimatedPose()
+            
+            val path = currentPath
+            if (path != null) {
+                val currentDist = targetState.distanceMeters
+                for (event in path.events) {
+                    if (currentDist >= event.triggerDistanceMeters && !triggeredEvents.contains(event.eventName)) {
+                        triggeredEvents.add(event.eventName)
+                        onEventTriggered?.invoke(event.eventName)
+                    }
                 }
             }
-        }
-        
-        val chassisSpeeds = driveController.calculate(
-            currentPose = currentPose,
-            targetPose = targetState.pose,
-            targetVelocityMps = targetState.velocityMps,
-            targetHeading = targetState.pose.heading,
-            dtSeconds = dtSeconds,
-            pathTangentRadians = targetState.tangentRadians,
-            curvature = targetState.curvature
-        )
+            
+            val chassisSpeeds = driveController.calculate(
+                currentPose = currentPose,
+                targetPose = targetState.pose,
+                targetVelocityMps = targetState.velocityMps,
+                targetHeading = targetState.pose.heading,
+                dtSeconds = dtSeconds,
+                pathTangentRadians = targetState.tangentRadians,
+                curvature = targetState.curvature
+            )
 
-        drivetrain.setChassisSpeeds(
-            vx = chassisSpeeds.vxMetersPerSecond,
-            vy = chassisSpeeds.vyMetersPerSecond,
-            omega = chassisSpeeds.omegaRadiansPerSecond
-        )
+            drivetrain.setChassisSpeeds(
+                vx = chassisSpeeds.vxMetersPerSecond,
+                vy = chassisSpeeds.vyMetersPerSecond,
+                omega = chassisSpeeds.omegaRadiansPerSecond
+            )
+        } catch (e: Throwable) {
+            System.err.println("HolonomicPathFollower FATAL ERROR: ${e.message}")
+            stop()
+        }
     }
 
     /**

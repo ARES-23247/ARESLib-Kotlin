@@ -137,65 +137,72 @@ class LQRController(
         xRef: DoubleArray,
         dtSeconds: Double
     ): DoubleArray {
-        require(y.size == numOutputs) { "Measurement dimensions mismatch" }
-        require(xRef.size == numStates) { "Reference state dimensions mismatch" }
-        var inputsValid = true
-        for (idx in y.indices) { if (!y[idx].isFinite()) { inputsValid = false; break } }
-        if (inputsValid) { for (idx in xRef.indices) { if (!xRef[idx].isFinite()) { inputsValid = false; break } } }
-        if (!inputsValid || dtSeconds <= 0.0) {
-            val now = RobotClock.currentTimeMillis()
-            if (now - lastWarningTime > 2000L) {
-                System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
-                lastWarningTime = now
+        try {
+            require(y.size == numOutputs) { "Measurement dimensions mismatch" }
+            require(xRef.size == numStates) { "Reference state dimensions mismatch" }
+            var inputsValid = true
+            for (idx in y.indices) { if (!y[idx].isFinite()) { inputsValid = false; break } }
+            if (inputsValid) { for (idx in xRef.indices) { if (!xRef[idx].isFinite()) { inputsValid = false; break } } }
+            if (!inputsValid || dtSeconds <= 0.0) {
+                val now = RobotClock.currentTimeMillis()
+                if (now - lastWarningTime > 2000L) {
+                    System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
+                    lastWarningTime = now
+                }
+                return outU
             }
+
+            yMat.copyFrom(y)
+            xRefMat.copyFrom(xRef)
+
+            // 1. Calculate control input: u = -K * (xHat - xRef)
+            xHat.subtractInto(xRefMat, stateError)
+            K.multiplyInto(stateError, kTimesError)
+            kTimesError.multiplyScalarInto(-1.0, rawU)
+
+            // 2. Apply motor saturation constraints
+            for (i in 0 until numInputs) {
+                var inputVal = rawU.get(i, 0)
+                
+                // Apply slew rate limits
+                if (!maxUChangePerSec.isNaN()) {
+                    val maxChange = kotlin.math.abs(maxUChangePerSec) * dtSeconds
+                    val lastVal = u.get(i, 0)
+                    val change = (inputVal - lastVal).coerceIn(-maxChange, maxChange)
+                    inputVal = lastVal + change
+                }
+
+                // Apply voltage clipping and NaN protection
+                val lowLimit = kotlin.math.min(minU, maxU)
+                val highLimit = kotlin.math.max(minU, maxU)
+                inputVal = inputVal.coerceIn(lowLimit, highLimit)
+                if (inputVal.isNaN() || inputVal.isInfinite()) inputVal = 0.0
+
+                saturatedU.set(i, 0, inputVal)
+                outU[i] = inputVal
+            }
+
+            // 3. Update Discrete Kalman Filter Observer:
+            // xHat_next = A * xHat + B * u + L * (y - C * xHat)
+            A.multiplyInto(xHat, aTimesXHat)
+            B.multiplyInto(saturatedU, bTimesU)
+            aTimesXHat.addInto(bTimesU, prediction)
+            
+            C.multiplyInto(xHat, cTimesXHat)
+            yMat.subtractInto(cTimesXHat, measuredDiff)
+            L.multiplyInto(measuredDiff, correction)
+            
+            prediction.addInto(correction, nextXHat)
+            xHat.copyFrom(nextXHat)
+
+            u.copyFrom(saturatedU)
+            return outU
+        } catch (e: Throwable) {
+            System.err.println("LQRController FATAL ERROR: ${e.message}")
+            // Zero the outputs to prevent runaway
+            for (i in 0 until numInputs) outU[i] = 0.0
             return outU
         }
-
-        yMat.copyFrom(y)
-        xRefMat.copyFrom(xRef)
-
-        // 1. Calculate control input: u = -K * (xHat - xRef)
-        xHat.subtractInto(xRefMat, stateError)
-        K.multiplyInto(stateError, kTimesError)
-        kTimesError.multiplyScalarInto(-1.0, rawU)
-
-        // 2. Apply motor saturation constraints
-        for (i in 0 until numInputs) {
-            var inputVal = rawU.get(i, 0)
-            
-            // Apply slew rate limits
-            if (!maxUChangePerSec.isNaN()) {
-                val maxChange = kotlin.math.abs(maxUChangePerSec) * dtSeconds
-                val lastVal = u.get(i, 0)
-                val change = (inputVal - lastVal).coerceIn(-maxChange, maxChange)
-                inputVal = lastVal + change
-            }
-
-            // Apply voltage clipping and NaN protection
-            val lowLimit = kotlin.math.min(minU, maxU)
-            val highLimit = kotlin.math.max(minU, maxU)
-            inputVal = inputVal.coerceIn(lowLimit, highLimit)
-            if (inputVal.isNaN() || inputVal.isInfinite()) inputVal = 0.0
-
-            saturatedU.set(i, 0, inputVal)
-            outU[i] = inputVal
-        }
-
-        // 3. Update Discrete Kalman Filter Observer:
-        // xHat_next = A * xHat + B * u + L * (y - C * xHat)
-        A.multiplyInto(xHat, aTimesXHat)
-        B.multiplyInto(saturatedU, bTimesU)
-        aTimesXHat.addInto(bTimesU, prediction)
-        
-        C.multiplyInto(xHat, cTimesXHat)
-        yMat.subtractInto(cTimesXHat, measuredDiff)
-        L.multiplyInto(measuredDiff, correction)
-        
-        prediction.addInto(correction, nextXHat)
-        xHat.copyFrom(nextXHat)
-
-        u.copyFrom(saturatedU)
-        return outU
     }
 
     /**

@@ -18,6 +18,9 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     // CTRE Swerve request object we will mutate every loop
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
     private val scratchSpeeds = ChassisSpeeds()
+    
+    // Pre-allocated DriveState to prevent GC in the hot path
+    private val cachedDriveState = DriveState()
 
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
     private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent
@@ -32,6 +35,8 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     private val pigeon = com.ctre.phoenix6.hardware.Pigeon2(9, com.ctre.phoenix6.CANBus("CAN2"))
     private val pitchSignal = pigeon.pitch
     private val rollSignal = pigeon.roll
+    private val yawSignal = pigeon.yaw
+    private val yawRateSignal = pigeon.angularVelocityZWorld
 
     init {
         for (i in 0..3) {
@@ -46,7 +51,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         BaseStatusSignal.refreshAll(
             currentDraw1, currentDraw2, currentDraw3, currentDraw4,
             absEnc1, absEnc2, absEnc3, absEnc4,
-            pitchSignal, rollSignal
+            pitchSignal, rollSignal, yawSignal, yawRateSignal
         )
     }
 
@@ -89,18 +94,22 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         val driveStateObj = drivetrain.state
         val pose = driveStateObj.Pose
 
-        return DriveState(
-            // We read the actual measured velocities from the drivetrain state
-            xVelocityMetersPerSecond = driveStateObj.Speeds.vxMetersPerSecond,
-            yVelocityMetersPerSecond = driveStateObj.Speeds.vyMetersPerSecond,
-            angularVelocityRadiansPerSecond = driveStateObj.Speeds.omegaRadiansPerSecond,
-            
-            // Map the internal 250Hz odometry to the Redux state
-            odometryX = pose.x,
-            odometryY = pose.y,
-            odometryHeading = pose.rotation.radians
-        )
+        // Mutate the cached object (Zero-GC optimization)
+        cachedDriveState.xVelocityMetersPerSecond = driveStateObj.Speeds.vxMetersPerSecond
+        cachedDriveState.yVelocityMetersPerSecond = driveStateObj.Speeds.vyMetersPerSecond
+        cachedDriveState.angularVelocityRadiansPerSecond = driveStateObj.Speeds.omegaRadiansPerSecond
+        cachedDriveState.odometryX = pose.x
+        cachedDriveState.odometryY = pose.y
+        cachedDriveState.odometryHeading = pose.rotation.radians
+
+        return cachedDriveState
     }
+
+    override val rawGyroYawDegrees: Double
+        get() = yawSignal.valueAsDouble
+
+    override val yawRateDegreesPerSecond: Double
+        get() = yawRateSignal.valueAsDouble
 
     /**
      * Applies the macro-level ChassisSpeeds computed by the Redux reducers 
