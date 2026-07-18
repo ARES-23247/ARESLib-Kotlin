@@ -620,6 +620,11 @@ object DesktopSimLauncher {
         val loopTeleOpPub = ntInst.getStringTopic("ARES/DriverStation/TeleOpList").publish()
         val loopAutoPub = ntInst.getStringTopic("ARES/DriverStation/AutonomousList").publish()
 
+        var filteredFL = 0.0
+        var filteredFR = 0.0
+        var filteredRL = 0.0
+        var filteredRR = 0.0
+
         while (true) {
             // Advance deterministic mock clock by one fixed timestep
             RobotClock.useMockTime(RobotClock.currentTimeMillis() + TIMESTEP_MS)
@@ -773,12 +778,19 @@ object DesktopSimLauncher {
             val pRL = robotDouble.rl.power
             val pRR = robotDouble.rr.power
 
-            // Forward kinematics: wheel powers → chassis-space velocities
+            // Filter motor powers with an EMA filter to simulate electrical/mechanical time constants (~40ms rise time)
+            val alpha = 0.5
+            filteredFL += alpha * (pFL - filteredFL)
+            filteredFR += alpha * (pFR - filteredFR)
+            filteredRL += alpha * (pRL - filteredRL)
+            filteredRR += alpha * (pRR - filteredRR)
+
+            // Forward kinematics: filtered wheel powers → chassis-space velocities
             val maxWheelSpeed = 3.5
-            val wFL = pFL * maxWheelSpeed
-            val wFR = pFR * maxWheelSpeed
-            val wRL = pRL * maxWheelSpeed
-            val wRR = pRR * maxWheelSpeed
+            val wFL = filteredFL * maxWheelSpeed
+            val wFR = filteredFR * maxWheelSpeed
+            val wRL = filteredRL * maxWheelSpeed
+            val wRR = filteredRR * maxWheelSpeed
 
             val L = 0.45
             val chassisSpeeds = ChassisSpeeds(
