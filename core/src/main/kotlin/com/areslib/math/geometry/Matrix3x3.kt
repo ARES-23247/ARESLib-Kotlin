@@ -107,7 +107,7 @@ data class Matrix3x3(
     }
 
     companion object {
-        val IDENTITY = Matrix3x3(
+        val IDENTITY get() = Matrix3x3(
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
             0.0, 0.0, 1.0

@@ -11,7 +11,8 @@ package com.areslib.control.filters
  *              0.0 means completely ignores new values (stuck on first value).
  */
 class EMAFilter(private val alpha: Double) {
-    private var previousEstimate: Double? = null
+    private var previousEstimate: Double = 0.0
+    private var hasFirstValue: Boolean = false
 
     init {
         require(alpha in 0.0..1.0) { "Alpha must be between 0.0 and 1.0" }
@@ -23,13 +24,13 @@ class EMAFilter(private val alpha: Double) {
      * @return The smoothed sensor reading.
      */
     fun calculate(input: Double): Double {
-        val prev = previousEstimate
-        if (prev == null) {
+        if (!hasFirstValue) {
             previousEstimate = input
+            hasFirstValue = true
             return input
         }
 
-        val estimate = (alpha * input) + ((1.0 - alpha) * prev)
+        val estimate = (alpha * input) + ((1.0 - alpha) * previousEstimate)
         previousEstimate = estimate
         return estimate
     }
@@ -38,6 +39,6 @@ class EMAFilter(private val alpha: Double) {
      * Resets the filter's internal state.
      */
     fun reset() {
-        previousEstimate = null
+        hasFirstValue = false
     }
 }

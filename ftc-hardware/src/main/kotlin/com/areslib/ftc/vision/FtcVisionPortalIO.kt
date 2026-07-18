@@ -6,6 +6,7 @@ import com.areslib.state.VisionMeasurement
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Translation3d
 import com.areslib.math.geometry.Rotation3d
+import com.areslib.math.geometry.transformBy
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
 
 class FtcVisionPortalIO(
@@ -37,20 +38,33 @@ class FtcVisionPortalIO(
                             z = pose.z * 0.0254
                         ),
                         rotation = com.areslib.math.geometry.Rotation3d(
-                            roll = Math.toRadians(pose.roll),
-                            pitch = Math.toRadians(pose.pitch),
-                            yaw = Math.toRadians(pose.yaw)
+                            Math.toRadians(pose.roll),
+                            Math.toRadians(pose.pitch),
+                            Math.toRadians(pose.yaw)
                         )
                     )
                     
-                    measurementsBuffer.add(
-                        VisionMeasurement(
-                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-                            targetPose = poseMeters,
-                            tagId = detection.id,
-                            ambiguity = 0.0
+                    val tagConfig = com.areslib.state.RobotFieldManager.activeConfig.apriltags.find { it.id == detection.id }
+                    if (tagConfig != null) {
+                        val tagFieldPose = Pose3d(
+                            com.areslib.math.geometry.Translation3d(tagConfig.x, tagConfig.y, tagConfig.z),
+                            com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.toRadians(tagConfig.yaw))
                         )
-                    )
+                        val cameraToTag = com.areslib.math.geometry.Transform3d(poseMeters.translation, poseMeters.rotation)
+                        val robotToCamera = com.areslib.math.geometry.Transform3d(cameraPoses[0].translation, cameraPoses[0].rotation)
+                        
+                        val absoluteRobotPose = tagFieldPose.transformBy(cameraToTag.inverse()).transformBy(robotToCamera.inverse())
+                        
+                        measurementsBuffer.add(
+                            VisionMeasurement(
+                                timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
+                                targetPose = absoluteRobotPose,
+                                tagId = detection.id,
+                                ambiguity = 0.0,
+                                robotPoseTargetSpace = poseMeters
+                            )
+                        )
+                    }
                 }
                 
                 // Return a lightweight copy so the Redux action owns the state.

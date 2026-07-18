@@ -49,8 +49,13 @@ class VisionAlignController {
         val now = RobotClock.currentTimeMillis()
         
         // Require reasonably fresh data (<= 250ms) for active closed-loop control
-        val activeMeasurement = state.vision.measurements.firstOrNull {
-            it.tagId == targetTagId && (now - it.timestampMs) < 250L
+        var activeMeasurement: com.areslib.state.VisionMeasurement? = null
+        for (i in 0 until state.vision.measurements.size) {
+            val measurement = state.vision.measurements[i]
+            if (measurement.tagId == targetTagId && (now - measurement.timestampMs) < 250L) {
+                activeMeasurement = measurement
+                break
+            }
         }
 
         if (activeMeasurement != null) {

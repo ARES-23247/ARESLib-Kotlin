@@ -914,7 +914,8 @@ object DesktopSimLauncher {
             TelemetryPublisher.publishDriveMode(driverStation.isFieldCentric, driverStation.isTeleopMode, driverStation.isRedAlliance)
             TelemetryPublisher.publishEstimatedPose(currentPose)
             TelemetryPublisher.publishTargetPose(currentPose)
-            TelemetryPublisher.publish(state)
+            val activeState = com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.state ?: state
+            TelemetryPublisher.publish(activeState)
 
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
                 val estPose = robot.store.state.drive.poseEstimator.estimatedPose

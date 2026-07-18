@@ -117,6 +117,10 @@ class FtcMotor(
         } catch (_: Exception) {}
     }
 
+    override fun refresh() {
+        updateInputs()
+    }
+
     override val velocity: Double
         get() = cachedVelocity
 
@@ -261,6 +265,10 @@ class FtcEncoder(
         try {
             cachedVelocity = motor.velocity
         } catch (_: Exception) {}
+    }
+
+    override fun refresh() {
+        updateInputs()
     }
 
     override val velocity: Double

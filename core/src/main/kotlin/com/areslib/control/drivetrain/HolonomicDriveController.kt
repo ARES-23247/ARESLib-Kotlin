@@ -81,7 +81,7 @@ class HolonomicDriveController(
         
         // Angular error normalized between -PI and PI
         var angularError = targetHeading.radians - currentPose.heading.radians
-        angularError = kotlin.math.atan2(kotlin.math.sin(angularError), kotlin.math.cos(angularError))
+        angularError = com.areslib.math.wrapAngle(angularError)
         
         // Broadcast diagnostics via telemetry if registered
         telemetry?.let { tel ->
