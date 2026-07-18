@@ -237,8 +237,14 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         triggeredEvents.clear()
         activeEventTasks.clear()
         taskStartTimes.clear()
+
+        // Closest-point projection: start tracking from the nearest point on the path
+        // to the robot's actual position, rather than always from distance 0.
+        val currentPose = state.drive.poseEstimator.estimatedPose
+        val startDistance = activePath.findClosestDistance(currentPose.x, currentPose.y)
+
         return listOf(
-            RobotAction.SwitchPath(activePath, isDetour = false, timestampMs = lastTimeMs)
+            RobotAction.SwitchPath(activePath, isDetour = false, startDistanceMeters = startDistance, timestampMs = lastTimeMs)
         )
     }
 

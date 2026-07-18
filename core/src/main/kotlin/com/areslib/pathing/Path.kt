@@ -175,4 +175,59 @@ data class Path(
         }
         return Path(mirroredPoints, events)
     }
+
+    /**
+     * Finds the arc-length distance along this path that is closest to the given field position.
+     * Uses point-to-segment projection with sub-sample interpolation for accuracy.
+     * 
+     * This is used for **closest-point projection**: given the robot's actual position,
+     * find where on the planned path it currently is, enabling path resumption
+     * or start-offset correction.
+     *
+     * @param x field X coordinate in meters
+     * @param y field Y coordinate in meters
+     * @return arc-length distance (meters) of the closest point on the path
+     */
+    fun findClosestDistance(x: Double, y: Double): Double {
+        if (points.isEmpty()) return 0.0
+        if (points.size == 1) return points[0].distanceMeters
+
+        var bestDist2 = Double.MAX_VALUE
+        var bestArcLength = 0.0
+
+        // Project onto each segment and find the nearest point
+        for (i in 0 until points.size - 1) {
+            val p1 = points[i]
+            val p2 = points[i + 1]
+
+            // Segment vector
+            val segX = p2.pose.x - p1.pose.x
+            val segY = p2.pose.y - p1.pose.y
+            val segLen2 = segX * segX + segY * segY
+
+            // Project query point onto segment, clamped to [0, 1]
+            val t = when {
+                segLen2 < 1e-12 -> 0.0  // degenerate segment
+                else -> {
+                    val dotProduct = (x - p1.pose.x) * segX + (y - p1.pose.y) * segY
+                    (dotProduct / segLen2).coerceIn(0.0, 1.0)
+                }
+            }
+
+            // Closest point on segment
+            val closestX = p1.pose.x + segX * t
+            val closestY = p1.pose.y + segY * t
+            val dx = x - closestX
+            val dy = y - closestY
+            val d2 = dx * dx + dy * dy
+
+            if (d2 < bestDist2) {
+                bestDist2 = d2
+                // Interpolate arc-length between the two path points
+                bestArcLength = p1.distanceMeters + (p2.distanceMeters - p1.distanceMeters) * t
+            }
+        }
+
+        return bestArcLength
+    }
 }

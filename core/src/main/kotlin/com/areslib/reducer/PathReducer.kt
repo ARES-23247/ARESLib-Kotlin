@@ -17,7 +17,7 @@ object PathReducer {
                 }
                 state.copy(
                     activePath = action.path,
-                    currentDistanceMeters = 0.0,
+                    currentDistanceMeters = action.startDistanceMeters,
                     detourActive = action.isDetour,
                     originalPathBeforeDetour = backupPath
                 )

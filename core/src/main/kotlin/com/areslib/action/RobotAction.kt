@@ -183,6 +183,8 @@ interface RobotAction {
     data class SwitchPath(
         val path: com.areslib.pathing.Path,
         val isDetour: Boolean = false,
+        /** Arc-length distance to start tracking from. 0.0 = path start. Set via closest-point projection for placement error correction. */
+        val startDistanceMeters: Double = 0.0,
         override val timestampMs: Long
     ) : RobotAction
 
