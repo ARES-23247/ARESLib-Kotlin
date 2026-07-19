@@ -16,20 +16,20 @@ class NT4TelemetryReflectionTest {
         
         // 1. Write double telemetry
         telemetry.putNumber("Test/DoubleValue", 42.1)
-        assertEquals(42.1, DoublePublisher.lastValues["Test/DoubleValue"])
+        assertEquals(42.1, DoublePublisher.lastValues["/Test/DoubleValue"])
 
         // 2. Write boolean telemetry
         telemetry.putBoolean("Test/BooleanValue", true)
-        assertEquals(true, BooleanPublisher.lastValues["Test/BooleanValue"])
+        assertEquals(true, BooleanPublisher.lastValues["/Test/BooleanValue"])
 
         // 3. Write string telemetry
         telemetry.putString("Test/StringValue", "ARES-Simulation")
-        assertEquals("ARES-Simulation", StringPublisher.lastValues["Test/StringValue"])
+        assertEquals("ARES-Simulation", StringPublisher.lastValues["/Test/StringValue"])
 
         // 4. Write double array telemetry
         val arr = doubleArrayOf(1.0, 2.0, 3.0)
         telemetry.putDoubleArray("Test/ArrayValue", arr)
-        val resultArr = DoubleArrayPublisher.lastValues["Test/ArrayValue"]
+        val resultArr = DoubleArrayPublisher.lastValues["/Test/ArrayValue"]
         assertTrue(resultArr != null)
         assertEquals(3, resultArr.size)
         assertEquals(1.0, resultArr[0])

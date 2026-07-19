@@ -53,70 +53,77 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun putNumber(key: String, value: Double) {
+        val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
-            helper.putNumber(key, value)
+            helper.putNumber(ntKey, value)
             return
         }
         if (!isInitialized) return
-        try { inst.putNumber(key, value) } catch (e: Exception) { /* swallow */ }
+        try { inst.putNumber(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putBoolean(key: String, value: Boolean) {
+        val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
-            helper.putBoolean(key, value)
+            helper.putBoolean(ntKey, value)
             return
         }
         if (!isInitialized) return
-        try { inst.putBoolean(key, value) } catch (e: Exception) { /* swallow */ }
+        try { inst.putBoolean(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putString(key: String, value: String) {
+        val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
-            helper.putString(key, value)
+            helper.putString(ntKey, value)
             return
         }
         if (!isInitialized) return
-        try { inst.putString(key, value) } catch (e: Exception) { /* swallow */ }
+        try { inst.putString(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putDoubleArray(key: String, value: DoubleArray) {
+        val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
-            helper.putDoubleArray(key, value)
+            helper.putDoubleArray(ntKey, value)
             return
         }
         if (!isInitialized) return
-        try { inst.putNumberArray(key, value) } catch (e: Exception) { /* swallow */ }
+        try { inst.putNumberArray(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun getNumber(key: String, defaultValue: Double): Double {
+        val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
-            return helper.getNumber(key, defaultValue)
+            return helper.getNumber(ntKey, defaultValue)
         }
         if (!isInitialized) return defaultValue
         return try {
-            val entry = inst.get(key)
+            val entry = inst.get(ntKey)
             (entry?.value?.get() as? Number)?.toDouble() ?: defaultValue
         } catch (e: Exception) { defaultValue }
     }
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
+        val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
-            return helper.getBoolean(key, defaultValue)
+            return helper.getBoolean(ntKey, defaultValue)
         }
         if (!isInitialized) return defaultValue
         return try {
-            val entry = inst.get(key)
+            val entry = inst.get(ntKey)
             (entry?.value?.get() as? Boolean) ?: defaultValue
         } catch (e: Exception) { defaultValue }
     }
 
     override fun getString(key: String, defaultValue: String): String {
+        val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
-            return helper.getString(key, defaultValue)
+            return helper.getString(ntKey, defaultValue)
         }
         if (!isInitialized) return defaultValue
         return try {
-            val entry = inst.get(key)
+            val entry = inst.get(ntKey)
             (entry?.value?.get() as? String) ?: defaultValue
         } catch (e: Exception) { defaultValue }
     }
