@@ -4,6 +4,8 @@ import com.areslib.action.RobotAction
 import com.areslib.pathing.Path
 import com.areslib.pathing.HolonomicPathFollower
 import com.areslib.math.coordinate.FieldSymmetry
+import com.areslib.sequencer.tasks.BlinkIndicatorTask
+import com.areslib.sequencer.tasks.SetIndicatorColorTask
 
 /**
  * A fluid builder API to construct sequential and parallel autonomous sequences of [Task] objects.
@@ -69,6 +71,38 @@ class RobotSequence {
      */
     fun addSequential(vararg tasks: Task): RobotSequence {
         this.tasks.add(SequentialTaskGroup(tasks.toList()))
+        return this
+    }
+
+    /**
+     * Sets a named indicator light to a predefined color.
+     * This is an instant task — it dispatches the action and completes immediately.
+     *
+     * @param name Hardware map name of the indicator light (e.g. "indicator").
+     * @param color The target [IndicatorLightColor].
+     */
+    fun setIndicator(name: String, color: com.areslib.hardware.actuator.IndicatorLightColor): RobotSequence {
+        tasks.add(SetIndicatorColorTask(name, color))
+        return this
+    }
+
+    /**
+     * Blinks a named indicator light between two colors for a duration.
+     *
+     * @param name Hardware map name of the indicator light.
+     * @param colorA First blink color (shown initially and on completion).
+     * @param colorB Second blink color (alternates with colorA).
+     * @param durationMs Total blink duration in milliseconds.
+     * @param periodMs Full blink cycle period in ms (default 500ms = 1Hz blink).
+     */
+    fun blinkIndicator(
+        name: String,
+        colorA: com.areslib.hardware.actuator.IndicatorLightColor,
+        colorB: com.areslib.hardware.actuator.IndicatorLightColor = com.areslib.hardware.actuator.IndicatorLightColor.OFF,
+        durationMs: Long,
+        periodMs: Long = 500L
+    ): RobotSequence {
+        tasks.add(BlinkIndicatorTask(name, colorA, colorB, durationMs, periodMs))
         return this
     }
 

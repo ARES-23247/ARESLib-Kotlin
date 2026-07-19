@@ -141,27 +141,16 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         }
     }
 
-    @Volatile private var currentPollingRunning = true
     private val driveMotorIOs by lazy { arrayOf(flIO, frIO, rlIO, rrIO) }
     
-    // We re-enable the background current polling thread but with a safer, throttled 50ms sleep.
-    // This runs the aggregate polling rate at a very low ~20Hz, preventing REV Hub serial bus lockups.
-    private val currentPollingThread = Thread {
-        var index = 0
-        while (currentPollingRunning) {
-            driveMotorIOs[index].pollCurrentSync()
-            index = (index + 1) and 3  // Cycles 0→1→2→3→0 (bitwise mod 4)
-            val sleepInterval = com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.state?.tuning?.motorCurrentPollingIntervalMs ?: 50L
-            try { Thread.sleep(kotlin.math.max(10L, sleepInterval)) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
-        }
-    }.apply {
-        isDaemon = true
-        name = "ARES-DriveCurrent-Thread"
-        start()
+    init {
+        com.areslib.hardware.HardwareRegistry.registerSyncPolledDevice(flIO)
+        com.areslib.hardware.HardwareRegistry.registerSyncPolledDevice(frIO)
+        com.areslib.hardware.HardwareRegistry.registerSyncPolledDevice(rlIO)
+        com.areslib.hardware.HardwareRegistry.registerSyncPolledDevice(rrIO)
     }
 
     override fun close() {
-        currentPollingRunning = false
         flIO.close()
         frIO.close()
         rlIO.close()
@@ -372,7 +361,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
  * A lightweight MotorIO wrapper that records target power changes locally to avoid 
  * making blocking I2C current/power writes or reads when estimating current draw.
  */
-class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable {
+class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, com.areslib.hardware.SyncPolledDevice {
     override var power: Double = 0.0
     override var powerScale: Double = 1.0
     private var cachedPosition = 0.0
@@ -382,7 +371,7 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable {
     private var lastPosition = 0.0
     private var lastTime = 0L
 
-    fun pollCurrentSync() {
+    override fun pollSync() {
         try {
             cachedAmps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
         } catch (_: Exception) {}

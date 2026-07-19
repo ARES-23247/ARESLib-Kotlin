@@ -22,6 +22,17 @@ class FtcLimelightIO(
     private var lastWarningTime = 0L
     private val ioScope = CoroutineScope(Dispatchers.IO)
     private val frameRotation = com.areslib.math.geometry.Rotation3d(0.0, 0.0, -Math.PI / 2.0)
+    
+    // Object pools to prevent GC overhead
+    private val visionMeasurementPool = Array(10) { VisionMeasurement() }
+    private val translationPool = Array(20) { Translation3d() }
+    private val rotationPool = Array(20) { Rotation3d() }
+    private val posePool = Array(20) { Pose3d() }
+    private var measurementPoolIndex = 0
+    private var translationPoolIndex = 0
+    private var rotationPoolIndex = 0
+    private var posePoolIndex = 0
+
     private val scratchMeasurements = ArrayList<VisionMeasurement>(10)
 
     init {
@@ -48,23 +59,27 @@ class FtcLimelightIO(
                     val pos = botpose.position.toUnit(DistanceUnit.METER)
                     val orient = botpose.orientation
                     
-                    // Limelight outputs botpose directly in standard WPILib field coordinates (+X forward, +Y left)
-                    val wpiTranslation = com.areslib.math.geometry.Translation3d(
-                        x = pos.x,
-                        y = pos.y,
+                    val wpiTranslation = translationPool[translationPoolIndex].apply {
+                        x = pos.x
+                        y = pos.y
                         z = pos.z
-                    )
+                    }
+                    translationPoolIndex = (translationPoolIndex + 1) % 20
                     
-                    val wpiRotation = com.areslib.math.geometry.Rotation3d(
-                        roll = orient.getRoll(AngleUnit.RADIANS),
-                        pitch = orient.getPitch(AngleUnit.RADIANS),
-                        yaw = orient.getYaw(AngleUnit.RADIANS)
-                    )
+                    val wpiRotation = rotationPool[rotationPoolIndex].apply {
+                        setEulerAngles(
+                            orient.getRoll(AngleUnit.RADIANS),
+                            orient.getPitch(AngleUnit.RADIANS),
+                            orient.getYaw(AngleUnit.RADIANS)
+                        )
+                    }
+                    rotationPoolIndex = (rotationPoolIndex + 1) % 20
                     
-                    val pose = Pose3d(
-                        translation = wpiTranslation,
+                    val pose = posePool[posePoolIndex].apply {
+                        translation = wpiTranslation
                         rotation = wpiRotation
-                    )
+                    }
+                    posePoolIndex = (posePoolIndex + 1) % 20
                     
                     val fiducials = result.getFiducialResults()
                     if (fiducials.isNotEmpty()) {
@@ -85,40 +100,51 @@ class FtcLimelightIO(
                             //
                             // Consumers should use: -rotation.y for heading, NOT rotation.z.
                             // See VisionMeasurement KDoc for the full axis mapping table.
-                            val robotPoseTargetSpaceWpi = Pose3d(
-                                translation = com.areslib.math.geometry.Translation3d(
-                                    x = posTargetMeters.x,
-                                    y = posTargetMeters.y,
-                                    z = posTargetMeters.z
-                                ),
-                                rotation = com.areslib.math.geometry.Rotation3d(
-                                    roll = orientTarget.getRoll(AngleUnit.RADIANS),
-                                    pitch = orientTarget.getPitch(AngleUnit.RADIANS),
-                                    yaw = orientTarget.getYaw(AngleUnit.RADIANS)
+                            val targetTranslation = translationPool[translationPoolIndex].apply {
+                                x = posTargetMeters.x
+                                y = posTargetMeters.y
+                                z = posTargetMeters.z
+                            }
+                            translationPoolIndex = (translationPoolIndex + 1) % 20
+                            
+                            val targetRotation = rotationPool[rotationPoolIndex].apply {
+                                setEulerAngles(
+                                    orientTarget.getRoll(AngleUnit.RADIANS),
+                                    orientTarget.getPitch(AngleUnit.RADIANS),
+                                    orientTarget.getYaw(AngleUnit.RADIANS)
                                 )
-                            )
+                            }
+                            rotationPoolIndex = (rotationPoolIndex + 1) % 20
+                            
+                            val robotPoseTargetSpaceWpi = posePool[posePoolIndex].apply {
+                                translation = targetTranslation
+                                rotation = targetRotation
+                            }
+                            posePoolIndex = (posePoolIndex + 1) % 20
                             
                             val distance = kotlin.math.hypot(posTargetMeters.x, posTargetMeters.z)
                             val estAmbiguity = if (distance > 0.0) (0.02 * (distance * distance)).coerceAtMost(0.99) else 0.0
 
-                            val measurement = VisionMeasurement(
-                                timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-                                targetPose = pose,
-                                tagId = f.getFiducialId(),
-                                ambiguity = estAmbiguity,
+                            val measurement = visionMeasurementPool[measurementPoolIndex].apply {
+                                timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                                targetPose = pose
+                                tagId = f.getFiducialId()
+                                ambiguity = estAmbiguity
                                 robotPoseTargetSpace = robotPoseTargetSpaceWpi
-                            )
+                            }
+                            measurementPoolIndex = (measurementPoolIndex + 1) % 10
                             scratchMeasurements.add(measurement)
                         }
                         // Copy to avoid mutating the list in the Redux state
                         inputs.measurements = scratchMeasurements.toList()
                     } else {
-                        val measurement = VisionMeasurement(
-                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-                            targetPose = pose,
-                            tagId = -1,
+                        val measurement = visionMeasurementPool[measurementPoolIndex].apply {
+                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                            targetPose = pose
+                            tagId = -1
                             ambiguity = 0.0
-                        )
+                        }
+                        measurementPoolIndex = (measurementPoolIndex + 1) % 10
                         inputs.measurements = listOf(measurement)
                     }
                 } else {

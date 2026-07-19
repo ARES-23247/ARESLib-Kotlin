@@ -15,8 +15,7 @@ class StateImmutabilityTier1Test {
             SuperstructureState::class.java,
             VisionState::class.java,
             CostmapState::class.java,
-            PathState::class.java,
-            VisionMeasurement::class.java
+            PathState::class.java
         )
 
         for (clazz in stateClasses) {

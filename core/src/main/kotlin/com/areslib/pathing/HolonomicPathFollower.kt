@@ -47,7 +47,9 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
             val path = currentPath
             if (path != null) {
                 val currentDist = targetState.distanceMeters
-                for (event in path.events) {
+                val eventsSize = path.events.size
+                for (i in 0 until eventsSize) {
+                    val event = path.events[i]
                     if (currentDist >= event.triggerDistanceMeters && !triggeredEvents.contains(event.eventName)) {
                         triggeredEvents.add(event.eventName)
                         onEventTriggered?.invoke(event.eventName)

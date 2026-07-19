@@ -128,6 +128,7 @@ interface RobotAction {
      * @property targetYVelocity Desired lateral velocity as a normalized value [-1.0, 1.0] (WPILib: +Y = left).
      * @property targetAngularVelocity Desired rotational velocity as a normalized value [-1.0, 1.0] (CCW-positive).
      * @property isFieldCentric If true, X/Y are relative to the field; if false, relative to the robot chassis.
+     * @property isXLock If true, locks X movement.
      */
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
         val targetXVelocity: Double,
@@ -135,7 +136,8 @@ interface RobotAction {
         val targetAngularVelocity: Double,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
         val isFieldCentric: Boolean = true,
-        val fromHeadingHold: Boolean = false
+        val fromHeadingHold: Boolean = false,
+        val isXLock: Boolean = false
     ) : RobotAction
 
     // Autonomous Events
@@ -155,6 +157,25 @@ interface RobotAction {
      */
     data class UpdateSubsystemState(
         val state: com.areslib.state.SubsystemState,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction
+
+    data class UpdateSuperstructure(
+        val intakeActive: Boolean? = null,
+        val flywheelActive: Boolean? = null,
+        val flywheelTargetRPM: Double? = null,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction
+
+    /**
+     * Sets a named indicator light to a specific PWM position (0.0 to 1.0).
+     * Use [com.areslib.hardware.actuator.IndicatorLightColor.position] for predefined colors.
+     * @param name The hardware map name of the indicator light.
+     * @param position The servo position (0.0 to 1.0) on the color gradient.
+     */
+    data class SetIndicatorLight(
+        val name: String,
+        val position: Double,
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 

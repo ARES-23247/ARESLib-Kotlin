@@ -29,12 +29,13 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
     val angularVelocity: Double
         get() = store.state.drive.angularVelocityRadiansPerSecond
 
-    fun joystickDrive(x: Double, y: Double, rot: Double, isFieldCentric: Boolean = true) {
+    fun joystickDrive(x: Double, y: Double, rot: Double, isFieldCentric: Boolean = true, isXLock: Boolean = false) {
         store.dispatch(RobotAction.JoystickDriveIntent(
             targetXVelocity = x,
             targetYVelocity = y,
             targetAngularVelocity = rot,
             isFieldCentric = isFieldCentric,
+            isXLock = isXLock,
             timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         ))
     }

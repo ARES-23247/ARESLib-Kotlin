@@ -127,10 +127,15 @@ object AllianceMirroring {
                 FieldSymmetry.ROTATIONAL -> point.curvature
                 FieldSymmetry.MIRRORED -> -point.curvature
             }
+            val mirroredTangent = when (symmetry) {
+                FieldSymmetry.ROTATIONAL -> wrapAngle(point.tangentRadians + Math.PI)
+                FieldSymmetry.MIRRORED -> wrapAngle(-point.tangentRadians)
+            }
             mirroredPoints.add(
                 point.copy(
                     pose = mirroredPose,
-                    curvature = mirroredCurvature
+                    curvature = mirroredCurvature,
+                    tangentRadians = mirroredTangent
                 )
             )
         }

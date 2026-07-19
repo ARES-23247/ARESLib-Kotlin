@@ -128,4 +128,31 @@ class HardwareRegistryTest {
         assertTrue(json.contains("swerve_fl"))
         assertTrue(json.contains("CAN_MOTOR_CONTROLLER"))
     }
+
+    class MockSyncPolledDevice : SyncPolledDevice {
+        var pollSyncCount = 0
+        override fun pollSync() {
+            pollSyncCount++
+        }
+    }
+
+    @Test
+    fun testRoundRobinDevicePolling() {
+        val d1 = MockSyncPolledDevice()
+        val d2 = MockSyncPolledDevice()
+        
+        HardwareRegistry.registerRoundRobinDevice(d1)
+        HardwareRegistry.registerRoundRobinDevice(d2)
+
+        // Give the background polling thread some time to spin up and poll
+        Thread.sleep(150)
+        
+        HardwareRegistry.closeAll()
+
+        // It should have polled each one at least once depending on timing
+        assertTrue(d1.pollSyncCount > 0)
+        assertTrue(d2.pollSyncCount > 0)
+        // Usually should be roughly equal (differ by at most 1)
+        assertTrue(kotlin.math.abs(d1.pollSyncCount - d2.pollSyncCount) <= 1)
+    }
 }

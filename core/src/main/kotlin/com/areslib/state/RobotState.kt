@@ -46,6 +46,7 @@ data class DriveState(
     val driveMode: DriveMode = DriveMode.TELEOP,
     val headingLockTargetRadians: Double? = null,
     val isFieldCentric: Boolean = true,
+    val isXLock: Boolean = false,
     val alliance: Alliance = Alliance.BLUE,
     // EKF diagnostics:
     val covarianceMatrix: DoubleArray = DoubleArray(0),
@@ -99,49 +100,14 @@ data class DriveState(
 interface SubsystemState
 
 data class SuperstructureState(
+    val intakeActive: Boolean = false,
+    val flywheelActive: Boolean = false,
+    val flywheelTargetRPM: Double = 0.0,
+    /** Maps indicator light hardware names to their target servo positions (0.0 to 1.0). */
+    val indicatorLights: Map<String, Double> = emptyMap(),
     // Custom extensible container for season/robot-specific states
-    val custom: Any? = null,
-    val states: List<SubsystemState> = emptyList()
-) {
-    // Pre-computed index for O(1) lookups instead of O(n) linear scan with reflection.
-    // Rebuilt on copy() which only happens during reducer state transitions (not hot path).
-    @Transient
-    private val classIndex: Map<Class<*>, Int> = buildIndex(states)
-
-    private companion object {
-        fun buildIndex(states: List<SubsystemState>): Map<Class<*>, Int> {
-            val map = HashMap<Class<*>, Int>(states.size)
-            for (i in states.indices) {
-                map[states[i]::class.java] = i
-            }
-            return map
-        }
-    }
-
-    fun <T : SubsystemState> get(clazz: Class<T>): T {
-        val index = classIndex[clazz]
-            ?: error("Subsystem state of type ${clazz.simpleName} was not registered at startup!")
-        @Suppress("UNCHECKED_CAST")
-        return states[index] as T
-    }
-
-    inline fun <reified T : SubsystemState> get(): T {
-        return get(T::class.java)
-    }
-
-    inline fun <reified T : SubsystemState> update(block: T.() -> T): SuperstructureState {
-        val current = get(T::class.java)
-        val updated = current.block()
-        val index = states.indexOf(current)
-        val newStates = ArrayList<SubsystemState>(states)
-        newStates[index] = updated
-        return this.copy(states = newStates)
-    }
-
-    fun has(clazz: Class<out SubsystemState>): Boolean {
-        return classIndex.containsKey(clazz)
-    }
-}
+    val custom: Any? = null
+)
 
 /**
  * A single AprilTag fiducial detection from the vision subsystem.
@@ -190,11 +156,11 @@ data class SuperstructureState(
  *   for driving the robot square to the tag at a desired standoff distance.
  */
 data class VisionMeasurement(
-    val timestampMs: Long = 0L,
-    val targetPose: Pose3d = Pose3d(),
-    val tagId: Int = -1,
-    val ambiguity: Double = 0.0,
-    val robotPoseTargetSpace: Pose3d = Pose3d()
+    var timestampMs: Long = 0L,
+    var targetPose: Pose3d = Pose3d(),
+    var tagId: Int = -1,
+    var ambiguity: Double = 0.0,
+    var robotPoseTargetSpace: Pose3d = Pose3d()
 )
 
 data class VisionState(

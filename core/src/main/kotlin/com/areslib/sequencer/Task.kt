@@ -262,13 +262,18 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         val dx = currentPose.x - endPose.x
         val dy = currentPose.y - endPose.y
         val distToTarget = kotlin.math.sqrt(dx * dx + dy * dy)
+        val headingError = kotlin.math.abs(com.areslib.math.wrapAngle(currentPose.heading.radians - endPose.heading.radians))
         
-        return distToTarget < 0.1 || elapsedMs >= 15000L
+        return (distToTarget < 0.03 && headingError < Math.toRadians(2.0)) || elapsedMs >= 15000L
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         val currentTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        val dt = if (lastTimeMs == 0L || currentTimestamp <= lastTimeMs) 0.02 else (currentTimestamp - lastTimeMs) / 1000.0
+        if (lastTimeMs != 0L && currentTimestamp <= lastTimeMs) {
+            actionsList.clear()
+            return actionsList
+        }
+        val dt = if (lastTimeMs == 0L) 0.02 else (currentTimestamp - lastTimeMs) / 1000.0
         lastTimeMs = currentTimestamp
 
         val currentDistance = state.pathState.currentDistanceMeters
@@ -277,9 +282,22 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         follower.update(scratchPathPoint, dt)
 
         val progressSpeed = kotlin.math.max(scratchPathPoint.velocityMps, 0.1)
-        val nextDistance = currentDistance + progressSpeed * dt
         
+        // Find closest physical point within a local window to prevent snapping backwards on overlapping paths
         val currentPose = state.drive.poseEstimator.estimatedPose
+        val closestDist = activePath.findClosestDistance(
+            x = currentPose.x, 
+            y = currentPose.y, 
+            minDistance = kotlin.math.max(0.0, currentDistance - 0.5), 
+            maxDistance = currentDistance + 1.5
+        )
+        
+        // Capped leash of 0.4 meters. If the robot gets stuck, the target point waits.
+        val maxLead = 0.4
+        var nextDistance = currentDistance + progressSpeed * dt
+        if (nextDistance > closestDist + maxLead) {
+            nextDistance = closestDist + maxLead
+        }
         val targetPose = scratchPathPoint.pose
         val xError = targetPose.x - currentPose.x
         val yError = targetPose.y - currentPose.y

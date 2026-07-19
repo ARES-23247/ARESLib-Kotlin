@@ -17,6 +17,14 @@ object RobotClock {
     }
 
     /**
+     * Get the current time in nanoseconds.
+     * Returns the mocked timestamp scaled to ns if mocked, otherwise System.nanoTime().
+     */
+    fun nanoTime(): Long {
+        return if (mocked) mockTimeMs * 1_000_000L else System.nanoTime()
+    }
+
+    /**
      * Set the global time to mock mode and inject a static timestamp.
      */
     fun useMockTime(timeMs: Long) {

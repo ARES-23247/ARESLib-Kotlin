@@ -83,7 +83,14 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 lastReason = currentEstimator.lastRejectionReason
                 if (lastAccepted) {
                     acceptedCountDelta++
-                    lastCovBefore = scratchBefore.clone()
+                    if (lastCovBefore == null) {
+                        lastCovBefore = state.vision.covarianceBeforeUpdate ?: DoubleArray(9)
+                    }
+                    if (lastCovAfter == null) {
+                        lastCovAfter = state.vision.covarianceAfterUpdate ?: DoubleArray(9)
+                    }
+                    
+                    System.arraycopy(scratchBefore, 0, lastCovBefore, 0, 9)
                     
                     scratchAfter[0] = currentEstimator.covariance.m00
                     scratchAfter[1] = currentEstimator.covariance.m01
@@ -94,7 +101,8 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                     scratchAfter[6] = currentEstimator.covariance.m20
                     scratchAfter[7] = currentEstimator.covariance.m21
                     scratchAfter[8] = currentEstimator.covariance.m22
-                    lastCovAfter = scratchAfter.clone()
+                    
+                    System.arraycopy(scratchAfter, 0, lastCovAfter, 0, 9)
                 } else {
                     rejectedCountDelta++
                 }

@@ -141,6 +141,10 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      * pre-allocated [ChassisSpeeds] to maintain zero-GC compliance.
      */
     override fun write(driveState: DriveState) {
+        if (driveState.isXLock) {
+            drivetrain.setControl(com.ctre.phoenix6.swerve.SwerveRequest.SwerveDriveBrake())
+            return
+        }
         if (driveState.isFieldCentric) {
             drivetrain.setControl(
                 fieldCentricRequest

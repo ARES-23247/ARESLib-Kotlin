@@ -65,7 +65,15 @@ object PathSafetyEvaluator {
         for (i in 0 until occupiedCount) {
             val cellX = occupiedX[i]
             val cellY = occupiedY[i]
-            val dist = hypot(px - cellX, py - cellY)
+            
+            val dx = px - cellX
+            val dy = py - cellY
+            val absDx = kotlin.math.abs(dx)
+            val absDy = kotlin.math.abs(dy)
+            
+            if (absDx >= pointMinDist || absDy >= pointMinDist) continue
+            
+            val dist = hypot(dx, dy)
             if (dist < pointMinDist) {
                 pointMinDist = dist
             }

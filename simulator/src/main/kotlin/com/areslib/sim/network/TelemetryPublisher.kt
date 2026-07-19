@@ -213,7 +213,20 @@ object TelemetryPublisher {
      *
      * @param state The current immutable robot state.
      */
-    fun publishSuperstructure(@Suppress("UNUSED_PARAMETER") state: RobotState) {
+    private val indicatorLightPublishers = mutableMapOf<String, edu.wpi.first.networktables.DoublePublisher>()
+
+    /**
+     * Publishes indicator light positions from [SuperstructureState] over NT4.
+     * Uses cached publishers to avoid per-frame topic lookups.
+     */
+    fun publishSuperstructure(state: RobotState) {
+        val lights = state.superstructure.indicatorLights
+        for ((name, position) in lights) {
+            val publisher = indicatorLightPublishers.getOrPut(name) {
+                ntInst.getDoubleTopic("Superstructure/IndicatorLight/$name").publish()
+            }
+            publisher.set(position)
+        }
     }
 
     /**

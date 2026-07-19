@@ -131,6 +131,11 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
         // ── Gamepad 2 ──
         telemetry.logGamepad("Gamepad2", gamepad2 ?: GamepadState())
+
+        // ── Indicator Lights ──
+        for (i in state.superstructure.indicatorLights.entries) {
+            telemetry.putNumber("Superstructure/IndicatorLight/${i.key}", i.value)
+        }
         
         // Trigger batch flush of the telemetry values published in this frame
         telemetry.update()

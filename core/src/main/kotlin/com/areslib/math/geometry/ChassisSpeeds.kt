@@ -1,9 +1,9 @@
 package com.areslib.math.geometry
 
 data class ChassisSpeeds(
-    val vxMetersPerSecond: Double = 0.0,
-    val vyMetersPerSecond: Double = 0.0,
-    val omegaRadiansPerSecond: Double = 0.0
+    var vxMetersPerSecond: Double = 0.0,
+    var vyMetersPerSecond: Double = 0.0,
+    var omegaRadiansPerSecond: Double = 0.0
 ) {
     companion object {
         /**

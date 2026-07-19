@@ -15,31 +15,37 @@ class SwerveKinematics(
 ) {
     private val numModules = moduleTranslations.size
     private val previousSteerVels = DoubleArray(numModules) { 0.0 }
-    private var previousStates: Array<SwerveModuleState>? = null
-    private val stoppedStates = Array(numModules) { SwerveModuleState() }
+    private val previousStates = Array(numModules) { SwerveModuleState() }
+    private var hasPreviousState = false
     private val targetStatesBuffer = Array(numModules) { SwerveModuleState() }
-    private val limitedStatesBuffer = Array(numModules) { SwerveModuleState() }
 
     constructor(vararg moduleTranslations: Translation2d) : this(moduleTranslations.toList())
 
     fun toSwerveModuleStates(chassisSpeeds: ChassisSpeeds, dtSeconds: Double = 0.02): Array<SwerveModuleState> {
-        if (!dtSeconds.isFinite() || dtSeconds <= 0.0) {
-            previousStates = stoppedStates
-            return stoppedStates
-        }
+        val out = Array(numModules) { SwerveModuleState() }
+        toSwerveModuleStates(chassisSpeeds, dtSeconds, out)
+        return out
+    }
 
-        if (!chassisSpeeds.vxMetersPerSecond.isFinite() ||
+    fun toSwerveModuleStates(
+        chassisSpeeds: ChassisSpeeds,
+        dtSeconds: Double,
+        outStates: Array<SwerveModuleState>
+    ) {
+        if (!dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            !chassisSpeeds.vxMetersPerSecond.isFinite() ||
             !chassisSpeeds.vyMetersPerSecond.isFinite() ||
-            !chassisSpeeds.omegaRadiansPerSecond.isFinite()) {
-            previousStates = stoppedStates
-            return stoppedStates
-        }
-
-        if (chassisSpeeds.vxMetersPerSecond == 0.0 && 
-            chassisSpeeds.vyMetersPerSecond == 0.0 && 
-            chassisSpeeds.omegaRadiansPerSecond == 0.0) {
-            previousStates = stoppedStates
-            return stoppedStates
+            !chassisSpeeds.omegaRadiansPerSecond.isFinite() ||
+            (chassisSpeeds.vxMetersPerSecond == 0.0 && 
+             chassisSpeeds.vyMetersPerSecond == 0.0 && 
+             chassisSpeeds.omegaRadiansPerSecond == 0.0)) {
+            
+            for (i in 0 until numModules) {
+                outStates[i].speedMetersPerSecond = 0.0
+                previousStates[i].speedMetersPerSecond = 0.0
+            }
+            hasPreviousState = true
+            return
         }
 
         for (i in 0 until numModules) {
@@ -50,13 +56,13 @@ class SwerveKinematics(
             val speed = hypot(vx, vy)
             val angle = atan2(vy, vx)
             
-            targetStatesBuffer[i] = SwerveModuleState(speed, Rotation2d(angle))
+            targetStatesBuffer[i].speedMetersPerSecond = speed
+            targetStatesBuffer[i].angle = Rotation2d(angle)
         }
 
-        val prev = previousStates
-        val limitedStates = if (prev != null && dtSeconds > 1e-6) {
+        if (hasPreviousState && dtSeconds > 1e-6) {
             for (i in 0 until numModules) {
-                val pState = prev[i]
+                val pState = previousStates[i]
                 val tState = targetStatesBuffer[i]
 
                 // Limit drive wheel acceleration
@@ -94,15 +100,24 @@ class SwerveKinematics(
                 previousSteerVels[i] = finalSteerVel
 
                 val finalAngle = prevAngleRad + finalSteerVel * dtSeconds
-                limitedStatesBuffer[i] = SwerveModuleState(limitedSpeed, Rotation2d(finalAngle))
+                
+                outStates[i].speedMetersPerSecond = limitedSpeed
+                outStates[i].angle = Rotation2d(finalAngle)
+                
+                previousStates[i].speedMetersPerSecond = limitedSpeed
+                previousStates[i].angle = Rotation2d(finalAngle)
             }
-            limitedStatesBuffer
         } else {
-            targetStatesBuffer
+            for (i in 0 until numModules) {
+                val tState = targetStatesBuffer[i]
+                outStates[i].speedMetersPerSecond = tState.speedMetersPerSecond
+                outStates[i].angle = tState.angle
+                
+                previousStates[i].speedMetersPerSecond = tState.speedMetersPerSecond
+                previousStates[i].angle = tState.angle
+            }
         }
-
-        previousStates = limitedStates
-        return limitedStates
+        hasPreviousState = true
     }
 
     /**
@@ -111,13 +126,22 @@ class SwerveKinematics(
      * physical resistance against external defensive pushing from other robots.
      */
     fun toXLockStates(): Array<SwerveModuleState> {
-        val states = Array(numModules) { i ->
+        val out = Array(numModules) { SwerveModuleState() }
+        toXLockStates(out)
+        return out
+    }
+
+    fun toXLockStates(outStates: Array<SwerveModuleState>) {
+        for (i in 0 until numModules) {
             val module = moduleTranslations[i]
             val angle = atan2(module.y, module.x)
-            SwerveModuleState(0.0, Rotation2d(angle))
+            outStates[i].speedMetersPerSecond = 0.0
+            outStates[i].angle = Rotation2d(angle)
+            
+            previousStates[i].speedMetersPerSecond = 0.0
+            previousStates[i].angle = Rotation2d(angle)
         }
-        previousStates = states
-        return states
+        hasPreviousState = true
     }
 }
 

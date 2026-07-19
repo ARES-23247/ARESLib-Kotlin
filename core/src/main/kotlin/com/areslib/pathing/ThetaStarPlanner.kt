@@ -65,7 +65,7 @@ object ThetaStarPlanner {
         var generations = IntArray(capacity)
         var generation = 0
         var openQueue = LongHeap(capacity)
-        var pathPool = Array(capacity) { Translation2d() }
+        var pathPool = DoubleArray(capacity * 2)
 
         fun ensureCapacity(capacity: Int) {
             if (gCosts.size < capacity) {
@@ -81,8 +81,8 @@ object ThetaStarPlanner {
                 generations.fill(0, 0, generations.size)
             }
             openQueue.clear()
-            if (pathPool.size < capacity) {
-                val newPool = Array(capacity) { Translation2d() }
+            if (pathPool.size < capacity * 2) {
+                val newPool = DoubleArray(capacity * 2)
                 System.arraycopy(pathPool, 0, newPool, 0, pathPool.size)
                 pathPool = newPool
             }
@@ -328,13 +328,13 @@ object ThetaStarPlanner {
             val fx = currX * costmap.resolutionMeters + costmap.origin.x
             val fy = currY * costmap.resolutionMeters + costmap.origin.y
             
-            if (pathSize >= state.pathPool.size) {
-                val newPool = Array(state.pathPool.size * 2) { Translation2d() }
+            if (pathSize * 2 >= state.pathPool.size) {
+                val newPool = DoubleArray(state.pathPool.size * 2)
                 System.arraycopy(state.pathPool, 0, newPool, 0, state.pathPool.size)
                 state.pathPool = newPool
             }
-            state.pathPool[pathSize].x = fx
-            state.pathPool[pathSize].y = fy
+            state.pathPool[pathSize * 2] = fx
+            state.pathPool[pathSize * 2 + 1] = fy
             pathSize++
 
             val parentKey = state.getParent(currKey)
@@ -348,22 +348,22 @@ object ThetaStarPlanner {
         // Reverse path in place
         for (i in 0 until pathSize / 2) {
             val opp = pathSize - 1 - i
-            val tempX = state.pathPool[i].x
-            val tempY = state.pathPool[i].y
-            state.pathPool[i].x = state.pathPool[opp].x
-            state.pathPool[i].y = state.pathPool[opp].y
-            state.pathPool[opp].x = tempX
-            state.pathPool[opp].y = tempY
+            val tempX = state.pathPool[i * 2]
+            val tempY = state.pathPool[i * 2 + 1]
+            state.pathPool[i * 2] = state.pathPool[opp * 2]
+            state.pathPool[i * 2 + 1] = state.pathPool[opp * 2 + 1]
+            state.pathPool[opp * 2] = tempX
+            state.pathPool[opp * 2 + 1] = tempY
         }
 
         // Snap start and end points perfectly to their true exact physical starting coordinates
         if (pathSize > 0) {
-            state.pathPool[0].x = start.x
-            state.pathPool[0].y = start.y
-            state.pathPool[pathSize - 1].x = end.x
-            state.pathPool[pathSize - 1].y = end.y
+            state.pathPool[0] = start.x
+            state.pathPool[1] = start.y
+            state.pathPool[(pathSize - 1) * 2] = end.x
+            state.pathPool[(pathSize - 1) * 2 + 1] = end.y
         }
 
-        return List(pathSize) { i -> Translation2d(state.pathPool[i].x, state.pathPool[i].y) }
+        return List(pathSize) { i -> Translation2d(state.pathPool[i * 2], state.pathPool[i * 2 + 1]) }
     }
 }

@@ -5,11 +5,12 @@ import kotlin.math.sin
 import kotlin.math.hypot
 import com.areslib.math.wrapAngle
 
-data class Translation2d(var x: Double = 0.0, var y: Double = 0.0) {
+data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
     val norm: Double get() = hypot(x, y)
 }
 
-data class Rotation2d(val rawRadians: Double = 0.0) {
+@JvmInline
+value class Rotation2d(val rawRadians: Double = 0.0) {
     val radians: Double get() = wrapAngle(rawRadians)
     val cos: Double get() = cos(radians)
     val sin: Double get() = sin(radians)

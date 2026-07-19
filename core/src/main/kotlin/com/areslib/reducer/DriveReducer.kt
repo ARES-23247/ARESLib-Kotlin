@@ -52,13 +52,17 @@ object DriveReducer {
                     val newHistory = HistoryBuffer(50)
                     newHistory.addEntry(action.timestampMs, newPose, Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01), 1.0)
                     
-                    state.poseEstimator.copy(
-                        estimatedPose = newPose,
-                        covariance = Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01),
-                        history = newHistory,
-                        isBeached = false,
+                    state.poseEstimator.apply {
+                        estimatedPoseX = newPose.x
+                        estimatedPoseY = newPose.y
+                        estimatedPoseHeading = newPose.heading.radians
+                        covarianceArray[0] = 0.01; covarianceArray[1] = 0.0; covarianceArray[2] = 0.0
+                        covarianceArray[3] = 0.0; covarianceArray[4] = 0.01; covarianceArray[5] = 0.0
+                        covarianceArray[6] = 0.0; covarianceArray[7] = 0.0; covarianceArray[8] = 0.01
+                        newHistory.copyInto(this.history)
+                        isBeached = false
                         lastUnbeachedTimeMs = action.timestampMs
-                    )
+                    }
                 } else {
                     val deltaX = action.xMeters - state.odometryX
                     val deltaY = action.yMeters - state.odometryY
@@ -123,7 +127,8 @@ object DriveReducer {
                     angularVelocityRadiansPerSecond = action.targetAngularVelocity,
                     driveMode = newMode,
                     headingLockTargetRadians = newTargetHeading,
-                    isFieldCentric = action.isFieldCentric
+                    isFieldCentric = action.isFieldCentric,
+                    isXLock = action.isXLock
                 )
             }
             else -> state

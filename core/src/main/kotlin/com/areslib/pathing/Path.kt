@@ -188,29 +188,43 @@ data class Path(
      * @param y field Y coordinate in meters
      * @return arc-length distance (meters) of the closest point on the path
      */
-    fun findClosestDistance(x: Double, y: Double): Double {
+    fun findClosestDistance(
+        x: Double, 
+        y: Double, 
+        minDistance: Double = 0.0, 
+        maxDistance: Double = Double.MAX_VALUE
+    ): Double {
         if (points.isEmpty()) return 0.0
         if (points.size == 1) return points[0].distanceMeters
 
         var bestDist2 = Double.MAX_VALUE
-        var bestArcLength = 0.0
+        var bestArcLength = if (minDistance == 0.0) 0.0 else minDistance
 
         // Project onto each segment and find the nearest point
         for (i in 0 until points.size - 1) {
             val p1 = points[i]
             val p2 = points[i + 1]
 
+            // Skip segments completely outside the search window
+            if (p2.distanceMeters < minDistance || p1.distanceMeters > maxDistance) {
+                continue
+            }
+
             // Segment vector
             val segX = p2.pose.x - p1.pose.x
             val segY = p2.pose.y - p1.pose.y
             val segLen2 = segX * segX + segY * segY
 
-            // Project query point onto segment, clamped to [0, 1]
+            val denom = p2.distanceMeters - p1.distanceMeters
+            val minT = if (p1.distanceMeters < minDistance && denom > 1e-6) (minDistance - p1.distanceMeters) / denom else 0.0
+            val maxT = if (p2.distanceMeters > maxDistance && denom > 1e-6) (maxDistance - p1.distanceMeters) / denom else 1.0
+
+            // Project query point onto segment, clamped to valid window [minT, maxT]
             val t = when {
-                segLen2 < 1e-12 -> 0.0  // degenerate segment
+                segLen2 < 1e-12 -> minT  // degenerate segment
                 else -> {
                     val dotProduct = (x - p1.pose.x) * segX + (y - p1.pose.y) * segY
-                    (dotProduct / segLen2).coerceIn(0.0, 1.0)
+                    (dotProduct / segLen2).coerceIn(minT, maxT)
                 }
             }
 
@@ -224,7 +238,7 @@ data class Path(
             if (d2 < bestDist2) {
                 bestDist2 = d2
                 // Interpolate arc-length between the two path points
-                bestArcLength = p1.distanceMeters + (p2.distanceMeters - p1.distanceMeters) * t
+                bestArcLength = p1.distanceMeters + denom * t
             }
         }
 

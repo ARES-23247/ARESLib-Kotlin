@@ -31,4 +31,28 @@ open class Gamepad {
 
     @JvmField var left_stick_button: Boolean = false
     @JvmField var right_stick_button: Boolean = false
+
+    fun copy(other: Gamepad) {
+        this.left_stick_x = other.left_stick_x
+        this.left_stick_y = other.left_stick_y
+        this.right_stick_x = other.right_stick_x
+        this.right_stick_y = other.right_stick_y
+        this.left_trigger = other.left_trigger
+        this.right_trigger = other.right_trigger
+        this.a = other.a
+        this.b = other.b
+        this.x = other.x
+        this.y = other.y
+        this.dpad_up = other.dpad_up
+        this.dpad_down = other.dpad_down
+        this.dpad_left = other.dpad_left
+        this.dpad_right = other.dpad_right
+        this.left_bumper = other.left_bumper
+        this.right_bumper = other.right_bumper
+        this.start = other.start
+        this.back = other.back
+        this.guide = other.guide
+        this.left_stick_button = other.left_stick_button
+        this.right_stick_button = other.right_stick_button
+    }
 }

@@ -34,6 +34,20 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
     constructor(roll: Double, pitch: Double, yaw: Double) : this(
         fromEulerAngles(roll, pitch, yaw)
     )
+    
+    fun setEulerAngles(roll: Double, pitch: Double, yaw: Double) {
+        val cr = cos(roll * 0.5)
+        val sr = sin(roll * 0.5)
+        val cp = cos(pitch * 0.5)
+        val sp = sin(pitch * 0.5)
+        val cy = cos(yaw * 0.5)
+        val sy = sin(yaw * 0.5)
+
+        q.w = cr * cp * cy + sr * sp * sy
+        q.x = sr * cp * cy - cr * sp * sy
+        q.y = cr * sp * cy + sr * cp * sy
+        q.z = cr * cp * sy - sr * sp * cy
+    }
 
     operator fun times(other: Rotation3d): Rotation3d {
         return Rotation3d((q * other.q).normalize())

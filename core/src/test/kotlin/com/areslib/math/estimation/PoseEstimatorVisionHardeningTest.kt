@@ -32,7 +32,11 @@ class PoseEstimatorVisionHardeningTest {
         
         // --- CASE 1: Face-on vision measurement (phi = 0) ---
         // Robot at (-2.8, 1.8) -> dx = 1.0, dy = 0.0 -> phi = 0
-        var stateFaceOn = PoseEstimatorState(covariance = testCovariance)
+        var stateFaceOn = PoseEstimatorState().apply {
+            covarianceArray[0] = testCovariance.m00; covarianceArray[1] = testCovariance.m01; covarianceArray[2] = testCovariance.m02
+            covarianceArray[3] = testCovariance.m10; covarianceArray[4] = testCovariance.m11; covarianceArray[5] = testCovariance.m12
+            covarianceArray[6] = testCovariance.m20; covarianceArray[7] = testCovariance.m21; covarianceArray[8] = testCovariance.m22
+        }
         stateFaceOn = PoseEstimator.addOdometryObservation(
             stateFaceOn,
             100L,
@@ -61,7 +65,11 @@ class PoseEstimatorVisionHardeningTest {
         // --- CASE 2: Skewed vision measurement (phi = 60 deg) ---
         // Robot at (-2.3, 1.8 - sqrt(3)/2) -> dx = 0.5, dy = sqrt(3)/2 -> losHeading = 60 deg -> phi = 60 deg
         // cos(phi) = 0.5 -> incidenceScale = 4.0
-        var stateSkewed = PoseEstimatorState(covariance = testCovariance)
+        var stateSkewed = PoseEstimatorState().apply {
+            covarianceArray[0] = testCovariance.m00; covarianceArray[1] = testCovariance.m01; covarianceArray[2] = testCovariance.m02
+            covarianceArray[3] = testCovariance.m10; covarianceArray[4] = testCovariance.m11; covarianceArray[5] = testCovariance.m12
+            covarianceArray[6] = testCovariance.m20; covarianceArray[7] = testCovariance.m21; covarianceArray[8] = testCovariance.m22
+        }
         stateSkewed = PoseEstimator.addOdometryObservation(
             stateSkewed,
             100L,
@@ -101,7 +109,11 @@ class PoseEstimatorVisionHardeningTest {
         // Tag 3 is at (-1.8, 1.8, 0.5) with yaw 0.0
         
         // --- CASE 1: Low ambiguity (ambiguity = 0.0) ---
-        var stateLowAmbiguity = PoseEstimatorState(covariance = testCovariance)
+        var stateLowAmbiguity = PoseEstimatorState().apply {
+            covarianceArray[0] = testCovariance.m00; covarianceArray[1] = testCovariance.m01; covarianceArray[2] = testCovariance.m02
+            covarianceArray[3] = testCovariance.m10; covarianceArray[4] = testCovariance.m11; covarianceArray[5] = testCovariance.m12
+            covarianceArray[6] = testCovariance.m20; covarianceArray[7] = testCovariance.m21; covarianceArray[8] = testCovariance.m22
+        }
         stateLowAmbiguity = PoseEstimator.addOdometryObservation(
             stateLowAmbiguity,
             100L,
@@ -128,7 +140,11 @@ class PoseEstimatorVisionHardeningTest {
         
         // --- CASE 2: High ambiguity (ambiguity = 0.5) ---
         // ambiguityScale = 1.0 + 10.0 * 0.25 = 3.5
-        var stateHighAmbiguity = PoseEstimatorState(covariance = testCovariance)
+        var stateHighAmbiguity = PoseEstimatorState().apply {
+            covarianceArray[0] = testCovariance.m00; covarianceArray[1] = testCovariance.m01; covarianceArray[2] = testCovariance.m02
+            covarianceArray[3] = testCovariance.m10; covarianceArray[4] = testCovariance.m11; covarianceArray[5] = testCovariance.m12
+            covarianceArray[6] = testCovariance.m20; covarianceArray[7] = testCovariance.m21; covarianceArray[8] = testCovariance.m22
+        }
         stateHighAmbiguity = PoseEstimator.addOdometryObservation(
             stateHighAmbiguity,
             100L,
@@ -168,7 +184,11 @@ class PoseEstimatorVisionHardeningTest {
         // ambiguity = 0.5 -> ambiguityScale = 3.5
         // finalScale = 4.0 * 3.5 = 14.0
         
-        var stateCombined = PoseEstimatorState(covariance = testCovariance)
+        var stateCombined = PoseEstimatorState().apply {
+            covarianceArray[0] = testCovariance.m00; covarianceArray[1] = testCovariance.m01; covarianceArray[2] = testCovariance.m02
+            covarianceArray[3] = testCovariance.m10; covarianceArray[4] = testCovariance.m11; covarianceArray[5] = testCovariance.m12
+            covarianceArray[6] = testCovariance.m20; covarianceArray[7] = testCovariance.m21; covarianceArray[8] = testCovariance.m22
+        }
         stateCombined = PoseEstimator.addOdometryObservation(
             stateCombined,
             100L,
@@ -197,7 +217,11 @@ class PoseEstimatorVisionHardeningTest {
         val pullCombined = finalStateCombined.estimatedPose.x - (-2.3)
         
         // Compared to pure face-on low ambiguity case
-        var stateBase = PoseEstimatorState(covariance = testCovariance)
+        var stateBase = PoseEstimatorState().apply {
+            covarianceArray[0] = testCovariance.m00; covarianceArray[1] = testCovariance.m01; covarianceArray[2] = testCovariance.m02
+            covarianceArray[3] = testCovariance.m10; covarianceArray[4] = testCovariance.m11; covarianceArray[5] = testCovariance.m12
+            covarianceArray[6] = testCovariance.m20; covarianceArray[7] = testCovariance.m21; covarianceArray[8] = testCovariance.m22
+        }
         stateBase = PoseEstimator.addOdometryObservation(
             stateBase,
             100L,

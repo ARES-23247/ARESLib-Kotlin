@@ -16,7 +16,10 @@ class ThreadedSensorsTest {
         }
 
         val threaded = ThreadedColorSensor(mockPhysical, pollIntervalMs = 5)
-        Thread.sleep(20) // Wait for poll
+        for (i in 0 until 50) {
+            if (threaded.red == 10) break
+            Thread.sleep(20)
+        }
 
         assertEquals(10, threaded.red)
         assertEquals(20, threaded.green)
@@ -34,7 +37,10 @@ class ThreadedSensorsTest {
         }
 
         val threaded = ThreadedDistanceSensor(mockPhysical, pollIntervalMs = 5)
-        Thread.sleep(20) // Wait for poll
+        for (i in 0 until 50) {
+            if (threaded.distanceMeters > 0.0) break
+            Thread.sleep(20)
+        }
 
         assertEquals(1.25, threaded.distanceMeters, 1e-6)
 
@@ -50,7 +56,10 @@ class ThreadedSensorsTest {
         }
 
         val threaded = ThreadedMultizoneDistanceSensor(mockPhysical, pollIntervalMs = 5)
-        Thread.sleep(20) // Wait for poll
+        for (i in 0 until 50) {
+            if (threaded.distancesMeters.isNotEmpty() && threaded.distancesMeters[0] > 0.0) break
+            Thread.sleep(20)
+        }
 
         assertEquals(2, threaded.rows)
         assertEquals(2, threaded.columns)

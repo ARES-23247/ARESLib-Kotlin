@@ -18,12 +18,83 @@ object HardwareRegistry {
     private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
     private val cachedMotorsWithNames = ConcurrentHashMap<String, MotorIO>()
     private val cachedMotorsList = CopyOnWriteArrayList<MotorIO>()
+    private val syncPolledDevices = CopyOnWriteArrayList<SyncPolledDevice>()
+    private val roundRobinDevices = CopyOnWriteArrayList<SyncPolledDevice>()
+    
+    @Volatile private var pollingRunning = false
+    private var pollingThread: Thread? = null
 
     /**
      * Registers a closeable hardware wrapper to ensure background threads are terminated on close.
      */
     fun registerCloseable(closeable: AutoCloseable) {
         closeables.add(closeable)
+    }
+
+    /**
+     * Registers a device that requires periodic synchronous polling (like motor current).
+     * Automatically starts the background polling daemon if not already running.
+     */
+    fun registerSyncPolledDevice(device: SyncPolledDevice) {
+        if (!syncPolledDevices.contains(device)) {
+            syncPolledDevices.add(device)
+        }
+        startPollingThreadIfNeeded()
+    }
+
+    fun registerRoundRobinDevice(device: SyncPolledDevice) {
+        if (!roundRobinDevices.contains(device)) {
+            roundRobinDevices.add(device)
+        }
+        startPollingThreadIfNeeded()
+    }
+
+    private fun startPollingThreadIfNeeded() {
+        if (pollingThread == null || !(pollingThread!!.isAlive)) {
+            pollingRunning = true
+            pollingThread = Thread {
+                var index = 0
+                var roundRobinIndex = 0
+                while (pollingRunning) {
+                    var polledAny = false
+                    if (syncPolledDevices.isNotEmpty()) {
+                        val idx = index % syncPolledDevices.size
+                        syncPolledDevices[idx].pollSync()
+                        index++
+                        polledAny = true
+                    }
+                    if (roundRobinDevices.isNotEmpty()) {
+                        val idx = roundRobinIndex % roundRobinDevices.size
+                        roundRobinDevices[idx].pollSync()
+                        roundRobinIndex++
+                        polledAny = true
+                    }
+                    if (polledAny) {
+                        
+                        // Default 50ms sleep, can be overridden by tuning if FtcBaseRobot is active
+                        var sleepInterval = 50L
+                        try {
+                            val activeInstance = Class.forName("com.areslib.ftc.FtcBaseRobot").getMethod("getActiveInstance").invoke(null)
+                            if (activeInstance != null) {
+                                val store = activeInstance.javaClass.getMethod("getStore").invoke(activeInstance)
+                                val state = store.javaClass.getMethod("getState").invoke(store)
+                                val tuning = state.javaClass.getMethod("getTuning").invoke(state)
+                                val interval = tuning.javaClass.getMethod("getMotorCurrentPollingIntervalMs").invoke(tuning) as? Long
+                                if (interval != null) sleepInterval = interval
+                            }
+                        } catch (_: Exception) {}
+                        
+                        try { Thread.sleep(kotlin.math.max(10L, sleepInterval)) } catch (_: InterruptedException) { break }
+                    } else {
+                        try { Thread.sleep(50L) } catch (_: InterruptedException) { break }
+                    }
+                }
+            }.apply {
+                isDaemon = true
+                name = "ARES-HardwarePolling-Thread"
+                start()
+            }
+        }
     }
 
     /**
@@ -192,6 +263,12 @@ object HardwareRegistry {
      * Clears all registered devices and terminates background threads.
      */
     fun closeAll() {
+        pollingRunning = false
+        pollingThread?.interrupt()
+        pollingThread = null
+        syncPolledDevices.clear()
+        roundRobinDevices.clear()
+
         for (i in 0 until closeables.size) {
             try {
                 closeables[i].close()

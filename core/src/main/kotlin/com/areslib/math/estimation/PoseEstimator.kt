@@ -121,19 +121,31 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
  * @property history The rolling history of past state estimations used for retroactive latency compensation.
  */
 data class PoseEstimatorState(
-    val estimatedPose: Pose2d = Pose2d(),
-    val covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+    var estimatedPoseX: Double = 0.0,
+    var estimatedPoseY: Double = 0.0,
+    var estimatedPoseHeading: Double = 0.0,
+    val covarianceArray: DoubleArray = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
     val history: HistoryBuffer = HistoryBuffer(50), // Max size typically ~50
-    val isBeached: Boolean = false,
-    val lastUnbeachedTimeMs: Long = 0L,
-    val gyroBiasRadPerSec: Double = 0.0,
-    val lastInnovationX: Double = 0.0,
-    val lastInnovationY: Double = 0.0,
-    val lastInnovationTheta: Double = 0.0,
-    val lastKalmanGain: DoubleArray = DoubleArray(0),
-    val lastMeasurementAccepted: Boolean = false,
-    val lastRejectionReason: String? = null
-)
+    var isBeached: Boolean = false,
+    var lastUnbeachedTimeMs: Long = 0L,
+    var gyroBiasRadPerSec: Double = 0.0,
+    var lastInnovationX: Double = 0.0,
+    var lastInnovationY: Double = 0.0,
+    var lastInnovationTheta: Double = 0.0,
+    var lastKalmanGain: DoubleArray = DoubleArray(9),
+    var lastMeasurementAccepted: Boolean = false,
+    var lastRejectionReason: String? = null
+) {
+    val estimatedPose: Pose2d
+        get() = Pose2d(estimatedPoseX, estimatedPoseY, Rotation2d(estimatedPoseHeading))
+
+    val covariance: Matrix3x3
+        get() = Matrix3x3(
+            covarianceArray[0], covarianceArray[1], covarianceArray[2],
+            covarianceArray[3], covarianceArray[4], covarianceArray[5],
+            covarianceArray[6], covarianceArray[7], covarianceArray[8]
+        )
+}
 
 /**
  * A world-class, high-fidelity Extended Kalman Filter (EKF) state estimator.
@@ -248,9 +260,10 @@ object PoseEstimator {
 
         // Catastrophic tilt / beaching check: Freeze odometry updates
         if (currentlyBeached) {
-            val newHistory = HistoryBuffer.obtainCopy(state.history)
-            newHistory.addEntry(timestampMs, state.estimatedPose, state.covariance, 1.0)
-            return state.copy(history = newHistory, isBeached = true, lastUnbeachedTimeMs = unbeachedTime)
+            state.history.addEntry(timestampMs, state.estimatedPose, state.covariance, 1.0)
+            state.isBeached = true
+            state.lastUnbeachedTimeMs = unbeachedTime
+            return state
         }
 
         val timeSinceUnbeachedMs = timestampMs - unbeachedTime
@@ -339,18 +352,27 @@ object PoseEstimator {
             fp10 + f02 * fp12 + scratchQ.m10, fp11 + f12 * fp12 + scratchQ.m11, fp12 + scratchQ.m12,
             fp20 + f02 * fp22 + scratchQ.m20, fp21 + f12 * fp22 + scratchQ.m21, fp22 + scratchQ.m22
         )
+        
+        state.covarianceArray[0] = newCovariance.m00
+        state.covarianceArray[1] = newCovariance.m01
+        state.covarianceArray[2] = newCovariance.m02
+        state.covarianceArray[3] = newCovariance.m10
+        state.covarianceArray[4] = newCovariance.m11
+        state.covarianceArray[5] = newCovariance.m12
+        state.covarianceArray[6] = newCovariance.m20
+        state.covarianceArray[7] = newCovariance.m21
+        state.covarianceArray[8] = newCovariance.m22
 
-        val newHistory = HistoryBuffer.obtainCopy(state.history)
-        newHistory.addEntry(timestampMs, newPose, newCovariance, tiltScale * slipScale)
+        state.history.addEntry(timestampMs, newPose, newCovariance, tiltScale * slipScale)
 
-        return state.copy(
-            estimatedPose = newPose,
-            covariance = newCovariance,
-            history = newHistory,
-            isBeached = currentlyBeached,
-            lastUnbeachedTimeMs = unbeachedTime,
-            gyroBiasRadPerSec = newBias
-        )
+        state.estimatedPoseX = newPose.x
+        state.estimatedPoseY = newPose.y
+        state.estimatedPoseHeading = newPose.heading.radians
+        state.isBeached = currentlyBeached
+        state.lastUnbeachedTimeMs = unbeachedTime
+        state.gyroBiasRadPerSec = newBias
+
+        return state
     }
 
     /**
@@ -381,22 +403,42 @@ object PoseEstimator {
         mahalanobisThreshold: Double = 12.0,
         maxAmbiguity: Double = 0.2
     ): PoseEstimatorState {
-        if (state.history.isEmpty()) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "empty_history")
+        if (state.history.isEmpty()) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "empty_history"
+            return state
+        }
         
         // Outlier rejection: Reject high-ambiguity or NaN decodes instantly
         if (measurement.ambiguity.isNaN() || measurement.ambiguity > maxAmbiguity) {
-            return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "high_ambiguity")
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "high_ambiguity"
+            return state
         }
         if (measurement.targetPose.x.isNaN() || measurement.targetPose.y.isNaN() || measurement.targetPose.z.isNaN() ||
             measurement.targetPose.rotation.x.isNaN() || measurement.targetPose.rotation.y.isNaN() || measurement.targetPose.rotation.z.isNaN()) {
-            return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "nan_measurement")
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "nan_measurement"
+            return state
         }
         
-        if (numTags <= 0) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "no_tags")
+        if (numTags <= 0) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "no_tags"
+            return state
+        }
         if (visionStdDevs.x.isNaN() || visionStdDevs.x.isInfinite() || 
             visionStdDevs.y.isNaN() || visionStdDevs.y.isInfinite() || 
-            visionStdDevs.z.isNaN() || visionStdDevs.z.isInfinite()) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "invalid_std_devs")
-        if (mahalanobisThreshold.isNaN() || mahalanobisThreshold.isInfinite() || mahalanobisThreshold <= 0.0) return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "invalid_threshold")
+            visionStdDevs.z.isNaN() || visionStdDevs.z.isInfinite()) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "invalid_std_devs"
+            return state
+        }
+        if (mahalanobisThreshold.isNaN() || mahalanobisThreshold.isInfinite() || mahalanobisThreshold <= 0.0) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "invalid_threshold"
+            return state
+        }
 
         var closestIndex = -1
         for (i in state.history.size - 1 downTo 0) {
@@ -408,7 +450,9 @@ object PoseEstimator {
 
         if (closestIndex == -1) {
             // Vision measurement is too old or we have no history, ignore it
-            return state.copy(lastMeasurementAccepted = false, lastRejectionReason = "vision_too_old")
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "vision_too_old"
+            return state
         }
 
         val baseEntry = state.history[closestIndex]
@@ -498,13 +542,12 @@ object PoseEstimator {
         if (useMahalanobisRejection) {
             val dMSquared = yX * sInvYX + yY * sInvYY + yZ * sInvYZ
             if (dMSquared.isNaN() || dMSquared > mahalanobisThreshold) {
-                return state.copy(
-                    lastMeasurementAccepted = false,
-                    lastRejectionReason = if (dMSquared.isNaN()) "nan_innovation" else "mahalanobis_rejected",
-                    lastInnovationX = yX,
-                    lastInnovationY = yY,
-                    lastInnovationTheta = yZ
-                )
+                state.lastMeasurementAccepted = false
+                state.lastRejectionReason = if (dMSquared.isNaN()) "nan_innovation" else "mahalanobis_rejected"
+                state.lastInnovationX = yX
+                state.lastInnovationY = yY
+                state.lastInnovationTheta = yZ
+                return state
             }
         }
 
@@ -553,9 +596,7 @@ object PoseEstimator {
         scratchCov.m10 = cov10; scratchCov.m11 = cov11; scratchCov.m12 = cov12
         scratchCov.m20 = cov20; scratchCov.m21 = cov21; scratchCov.m22 = cov22
 
-        val newHistory = HistoryBuffer.obtainCopy(state.history)
-        // Copy current state history to scratch history for mutating
-        newHistory.copyInto(scratchHistory)
+        state.history.copyInto(scratchHistory)
 
         // Now we must replay all odometry deltas from closestIndex + 1 to the end
         var currentX = baseEntry.x + dxX
@@ -611,8 +652,8 @@ object PoseEstimator {
             currentCov = scratchCov2
         }
 
-        // Copy mutated scratch history back to newHistory in-place
-        scratchHistory.copyInto(newHistory)
+        // Copy mutated scratch history back to original history in-place
+        scratchHistory.copyInto(state.history)
 
         val kg = kalmanGainPool[kalmanGainPoolIndex]
         kg[0] = scratchK.m00; kg[1] = scratchK.m01; kg[2] = scratchK.m02
@@ -620,16 +661,27 @@ object PoseEstimator {
         kg[6] = scratchK.m20; kg[7] = scratchK.m21; kg[8] = scratchK.m22
         kalmanGainPoolIndex = (kalmanGainPoolIndex + 1) % 16
 
-        return state.copy(
-            estimatedPose = Pose2d(currentX, currentY, Rotation2d(currentHeadingRad)),
-            covariance = Matrix3x3(currentCov.m00, currentCov.m01, currentCov.m02, currentCov.m10, currentCov.m11, currentCov.m12, currentCov.m20, currentCov.m21, currentCov.m22),
-            history = newHistory,
-            lastInnovationX = yX,
-            lastInnovationY = yY,
-            lastInnovationTheta = yZ,
-            lastKalmanGain = kg,
-            lastMeasurementAccepted = true,
-            lastRejectionReason = null
-        )
+        state.estimatedPoseX = currentX
+        state.estimatedPoseY = currentY
+        state.estimatedPoseHeading = currentHeadingRad
+        
+        state.covarianceArray[0] = currentCov.m00
+        state.covarianceArray[1] = currentCov.m01
+        state.covarianceArray[2] = currentCov.m02
+        state.covarianceArray[3] = currentCov.m10
+        state.covarianceArray[4] = currentCov.m11
+        state.covarianceArray[5] = currentCov.m12
+        state.covarianceArray[6] = currentCov.m20
+        state.covarianceArray[7] = currentCov.m21
+        state.covarianceArray[8] = currentCov.m22
+
+        state.lastInnovationX = yX
+        state.lastInnovationY = yY
+        state.lastInnovationTheta = yZ
+        state.lastKalmanGain = kg
+        state.lastMeasurementAccepted = true
+        state.lastRejectionReason = null
+
+        return state
     }
 }

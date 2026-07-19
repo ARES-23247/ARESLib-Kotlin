@@ -110,6 +110,9 @@ class FtcMotor(
 
     fun pollCurrentSync() {
         try {
+            if (motor.javaClass.simpleName.contains("Mock")) {
+                Thread.sleep(2) // Simulate I2C read latency and throttle sim OpMode thread
+            }
             val amps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
             synchronized(currentLock) {
                 cachedAmps = amps

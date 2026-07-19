@@ -139,6 +139,7 @@ class TaskGroupTest {
         val follower = HolonomicPathFollower(mockDrivetrain)
         val task = FollowPathTask(follower, path)
 
+        com.areslib.util.RobotClock.useMockTime(1000L)
         var state = RobotState()
         val initActions = task.initialize(state)
         assertEquals(1, initActions.size)
@@ -146,6 +147,7 @@ class TaskGroupTest {
 
         state = com.areslib.reducer.rootReducer(state, initActions[0])
 
+        com.areslib.util.RobotClock.useMockTime(1020L)
         val execActions = task.execute(state, 20L)
         assertEquals(1, execActions.size)
         assertTrue(execActions[0] is RobotAction.UpdatePathProgress)
@@ -156,5 +158,7 @@ class TaskGroupTest {
         task.end(state, interrupted = false)
         assertEquals(0.0, speedsVx)
         assertEquals(0.0, speedsVy)
+        
+        com.areslib.util.RobotClock.useSystemTime()
     }
 }

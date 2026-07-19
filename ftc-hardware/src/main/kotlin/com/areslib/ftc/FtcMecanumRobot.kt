@@ -52,8 +52,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(0.05, 0.12, 0.01),
     val useClosedLoopVelocity: Boolean = false,
     val driveSlewRateLimit: Double? = null,
-    val pathTranslationGains: PIDFCoefficients = PIDFCoefficients(2.0, 0.0, 0.02),
-    val pathRotationGains: PIDFCoefficients = PIDFCoefficients(2.5, 0.0, 0.05),
+    val pathTranslationGains: PIDFCoefficients = PIDFCoefficients(2.0, 0.0, 0.2),
+    val pathRotationGains: PIDFCoefficients = PIDFCoefficients(2.5, 0.0, 0.2),
     
     // EKF Process Noise Constants
     odomQx: Double = 0.01,
