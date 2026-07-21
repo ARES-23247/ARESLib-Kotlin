@@ -66,22 +66,20 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
     /**
      * Constructs and returns the fully configured [FtcMecanumRobot] instance.
      */
-    fun build(): FtcMecanumRobot {
-        return FtcMecanumRobot(
-            hardwareMap = hardwareMap,
-            flName = frontLeftMotorName,
-            frName = frontRightMotorName,
-            rlName = rearLeftMotorName,
-            rrName = rearRightMotorName,
-            pinpointName = pinpointName,
-            limelightName = limelightName,
-            localTelemetry = telemetry,
-            flDirection = frontLeftMotorDirection,
-            frDirection = frontRightMotorDirection,
-            rlDirection = rearLeftMotorDirection,
-            rrDirection = rearRightMotorDirection
-        )
-    }
+    fun build(): FtcMecanumRobot = FtcMecanumRobot(
+        hardwareMap = hardwareMap,
+        flName = frontLeftMotorName,
+        frName = frontRightMotorName,
+        rlName = rearLeftMotorName,
+        rrName = rearRightMotorName,
+        pinpointName = pinpointName,
+        limelightName = limelightName,
+        localTelemetry = telemetry,
+        flDirection = frontLeftMotorDirection,
+        frDirection = frontRightMotorDirection,
+        rlDirection = rearLeftMotorDirection,
+        rrDirection = rearRightMotorDirection
+    )
 }
 
 /**
@@ -102,8 +100,4 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
 fun ftcMecanumRobot(
     hardwareMap: HardwareMap,
     block: FtcMecanumRobotBuilder.() -> Unit
-): FtcMecanumRobot {
-    val builder = FtcMecanumRobotBuilder(hardwareMap)
-    builder.block()
-    return builder.build()
-}
+): FtcMecanumRobot = FtcMecanumRobotBuilder(hardwareMap).apply(block).build()

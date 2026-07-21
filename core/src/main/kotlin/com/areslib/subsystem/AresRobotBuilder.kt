@@ -15,17 +15,13 @@ class AresRobotBuilder {
      * Helper to configure the initial state of the robot using a lambda block.
      */
     fun initialState(block: RobotState.() -> Unit) {
-        val state = RobotState()
-        state.block()
-        initialState = state
+        initialState = RobotState().apply(block)
     }
 
     /**
      * Constructs and returns the fully configured [AresRobot] instance.
      */
-    fun build(): AresRobot {
-        return AresRobot(initialState)
-    }
+    fun build(): AresRobot = AresRobot(initialState)
 }
 
 /**
@@ -40,8 +36,4 @@ class AresRobotBuilder {
  * }
  * ```
  */
-fun aresRobot(block: AresRobotBuilder.() -> Unit): AresRobot {
-    val builder = AresRobotBuilder()
-    builder.block()
-    return builder.build()
-}
+fun aresRobot(block: AresRobotBuilder.() -> Unit): AresRobot = AresRobotBuilder().apply(block).build()

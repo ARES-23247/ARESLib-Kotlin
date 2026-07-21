@@ -32,9 +32,8 @@ class ARESController {
      * @param buttonSelector A lambda selecting the boolean field from ControllerState.
      * @return True if the button is currently true but was false in the previous loop.
      */
-    inline fun onPressed(buttonSelector: (ControllerState) -> Boolean): Boolean {
-        return buttonSelector(currentState) && !buttonSelector(previousState)
-    }
+    inline fun onPressed(buttonSelector: (ControllerState) -> Boolean): Boolean =
+        buttonSelector(currentState) && !buttonSelector(previousState)
 
     /**
      * Checks if a specific boolean input (button, d-pad, bumper) was just released this loop.
@@ -42,9 +41,8 @@ class ARESController {
      * @param buttonSelector A lambda selecting the boolean field from ControllerState.
      * @return True if the button is currently false but was true in the previous loop.
      */
-    inline fun onReleased(buttonSelector: (ControllerState) -> Boolean): Boolean {
-        return !buttonSelector(currentState) && buttonSelector(previousState)
-    }
+    inline fun onReleased(buttonSelector: (ControllerState) -> Boolean): Boolean =
+        !buttonSelector(currentState) && buttonSelector(previousState)
 
     /**
      * Checks if a specific boolean input is currently held down.
@@ -52,9 +50,8 @@ class ARESController {
      * @param buttonSelector A lambda selecting the boolean field from ControllerState.
      * @return True if the button is currently true.
      */
-    inline fun isHeld(buttonSelector: (ControllerState) -> Boolean): Boolean {
-        return buttonSelector(currentState)
-    }
+    inline fun isHeld(buttonSelector: (ControllerState) -> Boolean): Boolean =
+        buttonSelector(currentState)
 
     /**
      * Treats an analog axis (like a trigger) as a digital button and checks if it was
@@ -64,9 +61,8 @@ class ARESController {
      * @param threshold The value above which the axis is considered "pressed".
      * @return True if the axis crossed the threshold this loop.
      */
-    inline fun triggerPressed(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean {
-        return triggerSelector(currentState) > threshold && triggerSelector(previousState) <= threshold
-    }
+    inline fun triggerPressed(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean =
+        triggerSelector(currentState) > threshold && triggerSelector(previousState) <= threshold
 
     /**
      * Treats an analog axis (like a trigger) as a digital button and checks if it is
@@ -76,7 +72,6 @@ class ARESController {
      * @param threshold The value above which the axis is considered "pressed".
      * @return True if the axis is currently above the threshold.
      */
-    inline fun triggerHeld(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean {
-        return triggerSelector(currentState) > threshold
-    }
+    inline fun triggerHeld(triggerSelector: (ControllerState) -> Double, threshold: Double = 0.5): Boolean =
+        triggerSelector(currentState) > threshold
 }
