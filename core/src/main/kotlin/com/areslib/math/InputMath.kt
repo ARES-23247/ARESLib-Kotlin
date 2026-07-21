@@ -9,10 +9,12 @@ object InputMath {
      * Applies a symmetric deadband to the input value.
      */
     fun applyDeadband(value: Double, deadband: Double): Double {
-        if (abs(value) < deadband) return 0.0
         val denominator = 1.0 - deadband
-        if (abs(denominator) < 1e-6) return 0.0 // Guard against division by zero
-        return (value - sign(value) * deadband) / denominator
+        return when {
+            abs(value) < deadband -> 0.0
+            abs(denominator) < 1e-6 -> 0.0 // Guard against division by zero
+            else -> (value - sign(value) * deadband) / denominator
+        }
     }
 
     /**

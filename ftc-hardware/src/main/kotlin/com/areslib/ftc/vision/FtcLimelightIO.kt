@@ -52,12 +52,18 @@ class FtcLimelightIO(
         inputs.cameraPoses = cameraPoses
         try {
             val result = limelight.getLatestResult()
+            val botpose = result?.getBotpose()
             
             inputs.isConnected = result != null && result.isValid()
             
-            if (result != null && result.isValid()) {
-                val botpose = result.getBotpose()
-                if (botpose != null) {
+            when {
+                result == null || !result.isValid() -> {
+                    inputs.measurements = emptyList()
+                }
+                botpose == null -> {
+                    inputs.measurements = emptyList()
+                }
+                else -> {
                     val pos = botpose.position.toUnit(DistanceUnit.METER)
                     val orient = botpose.orientation
                     
@@ -84,85 +90,84 @@ class FtcLimelightIO(
                     posePoolIndex = (posePoolIndex + 1) % 20
                     
                     val fiducials = result.getFiducialResults()
-                    if (fiducials.isNotEmpty()) {
-                        scratchMeasurements.clear()
-                        for (i in 0 until fiducials.size) {
-                            val f = fiducials[i]
-                            val robotPoseTargetSpaceFTC = f.getRobotPoseTargetSpace()
-                            val posTargetMeters = robotPoseTargetSpaceFTC.position.toUnit(DistanceUnit.METER)
-                            val orientTarget = robotPoseTargetSpaceFTC.orientation
-                            
-                            // IMPORTANT: Unlike botpose (lines 44-58), target-space rotation is
-                            // NOT coordinate-transformed from FTC→WPI. The Limelight SDK's
-                            // roll/pitch/yaw are passed directly to Rotation3d(roll, pitch, yaw).
-                            //
-                            // In target-space (Y-up, Z-forward), the robot's HEADING rotation
-                            // (left/right turning) is around the Y axis. The Limelight SDK reports
-                            // this as getPitch() (not getYaw()), which maps to Rotation3d.y.
-                            //
-                            // Consumers should use: -rotation.y for heading, NOT rotation.z.
-                            // See VisionMeasurement KDoc for the full axis mapping table.
-                            val targetTranslation = translationPool[translationPoolIndex].apply {
-                                x = posTargetMeters.x
-                                y = posTargetMeters.y
-                                z = posTargetMeters.z
+                    when {
+                        fiducials.isNotEmpty() -> {
+                            scratchMeasurements.clear()
+                            for (i in 0 until fiducials.size) {
+                                val f = fiducials[i]
+                                val robotPoseTargetSpaceFTC = f.getRobotPoseTargetSpace()
+                                val posTargetMeters = robotPoseTargetSpaceFTC.position.toUnit(DistanceUnit.METER)
+                                val orientTarget = robotPoseTargetSpaceFTC.orientation
+                                
+                                // IMPORTANT: Unlike botpose (lines 44-58), target-space rotation is
+                                // NOT coordinate-transformed from FTC→WPI. The Limelight SDK's
+                                // roll/pitch/yaw are passed directly to Rotation3d(roll, pitch, yaw).
+                                //
+                                // In target-space (Y-up, Z-forward), the robot's HEADING rotation
+                                // (left/right turning) is around the Y axis. The Limelight SDK reports
+                                // this as getPitch() (not getYaw()), which maps to Rotation3d.y.
+                                //
+                                // Consumers should use: -rotation.y for heading, NOT rotation.z.
+                                // See VisionMeasurement KDoc for the full axis mapping table.
+                                val targetTranslation = translationPool[translationPoolIndex].apply {
+                                    x = posTargetMeters.x
+                                    y = posTargetMeters.y
+                                    z = posTargetMeters.z
+                                }
+                                translationPoolIndex = (translationPoolIndex + 1) % 20
+                                
+                                val targetRotation = rotationPool[rotationPoolIndex].apply {
+                                    setEulerAngles(
+                                        orientTarget.getRoll(AngleUnit.RADIANS),
+                                        orientTarget.getPitch(AngleUnit.RADIANS),
+                                        orientTarget.getYaw(AngleUnit.RADIANS)
+                                    )
+                                }
+                                rotationPoolIndex = (rotationPoolIndex + 1) % 20
+                                
+                                val robotPoseTargetSpaceWpi = posePool[posePoolIndex].apply {
+                                    translation = targetTranslation
+                                    rotation = targetRotation
+                                }
+                                posePoolIndex = (posePoolIndex + 1) % 20
+                                
+                                val distance = kotlin.math.hypot(posTargetMeters.x, posTargetMeters.z)
+                                val estAmbiguity = if (distance > 0.0) (0.02 * (distance * distance)).coerceAtMost(0.99) else 0.0
+    
+                                val measurement = visionMeasurementPool[measurementPoolIndex].apply {
+                                    timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                                    targetPose = pose
+                                    tagId = f.getFiducialId()
+                                    ambiguity = estAmbiguity
+                                    robotPoseTargetSpace = robotPoseTargetSpaceWpi
+                                }
+                                measurementPoolIndex = (measurementPoolIndex + 1) % 10
+                                scratchMeasurements.add(measurement)
                             }
-                            translationPoolIndex = (translationPoolIndex + 1) % 20
-                            
-                            val targetRotation = rotationPool[rotationPoolIndex].apply {
-                                setEulerAngles(
-                                    orientTarget.getRoll(AngleUnit.RADIANS),
-                                    orientTarget.getPitch(AngleUnit.RADIANS),
-                                    orientTarget.getYaw(AngleUnit.RADIANS)
-                                )
-                            }
-                            rotationPoolIndex = (rotationPoolIndex + 1) % 20
-                            
-                            val robotPoseTargetSpaceWpi = posePool[posePoolIndex].apply {
-                                translation = targetTranslation
-                                rotation = targetRotation
-                            }
-                            posePoolIndex = (posePoolIndex + 1) % 20
-                            
-                            val distance = kotlin.math.hypot(posTargetMeters.x, posTargetMeters.z)
-                            val estAmbiguity = if (distance > 0.0) (0.02 * (distance * distance)).coerceAtMost(0.99) else 0.0
-
+                            // Copy to avoid mutating the list in the Redux state
+                            val safeMeasurements = measurementListPool[measurementListPoolIndex]
+                            safeMeasurements.clear()
+                            for (i in 0 until scratchMeasurements.size) safeMeasurements.add(scratchMeasurements[i])
+                            measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
+                            inputs.measurements = safeMeasurements
+                        }
+                        else -> {
                             val measurement = visionMeasurementPool[measurementPoolIndex].apply {
                                 timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                                 targetPose = pose
-                                tagId = f.getFiducialId()
-                                ambiguity = estAmbiguity
-                                robotPoseTargetSpace = robotPoseTargetSpaceWpi
+                                tagId = -1
+                                ambiguity = 0.0
                             }
                             measurementPoolIndex = (measurementPoolIndex + 1) % 10
-                            scratchMeasurements.add(measurement)
+                            
+                            val safeMeasurements = measurementListPool[measurementListPoolIndex]
+                            safeMeasurements.clear()
+                            safeMeasurements.add(measurement)
+                            measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
+                            inputs.measurements = safeMeasurements
                         }
-                        // Copy to avoid mutating the list in the Redux state
-                        val safeMeasurements = measurementListPool[measurementListPoolIndex]
-                        safeMeasurements.clear()
-                        for (i in 0 until scratchMeasurements.size) safeMeasurements.add(scratchMeasurements[i])
-                        measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
-                        inputs.measurements = safeMeasurements
-                    } else {
-                        val measurement = visionMeasurementPool[measurementPoolIndex].apply {
-                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                            targetPose = pose
-                            tagId = -1
-                            ambiguity = 0.0
-                        }
-                        measurementPoolIndex = (measurementPoolIndex + 1) % 10
-                        
-                        val safeMeasurements = measurementListPool[measurementListPoolIndex]
-                        safeMeasurements.clear()
-                        safeMeasurements.add(measurement)
-                        measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
-                        inputs.measurements = safeMeasurements
                     }
-                } else {
-                    inputs.measurements = emptyList()
                 }
-            } else {
-                inputs.measurements = emptyList()
             }
         } catch (e: Throwable) {
             inputs.isConnected = false
