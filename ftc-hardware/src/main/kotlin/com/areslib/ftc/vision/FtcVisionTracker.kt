@@ -187,7 +187,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                         
                         val dMSquared = (yX * yX / sXX) + (yY * yY / sYY) + (yZ * yZ / sZZ)
                         if (dMSquared > filterConfig.mahalanobisThreshold) {
-                            String.format("REJ_MAHALANOBIS (%.2f > %.2f)", dMSquared, filterConfig.mahalanobisThreshold)
+                            "REJ_MAHALANOBIS"
                         } else {
                             "ACCEPTED"
                         }
