@@ -9,12 +9,8 @@ object SuperstructureReducer {
      */
     fun reduce(state: SuperstructureState, action: RobotAction): SuperstructureState {
         return when (action) {
-            is RobotAction.UpdateSuperstructure -> {
-                state.copy(
-                    intakeActive = action.intakeActive ?: state.intakeActive,
-                    flywheelActive = action.flywheelActive ?: state.flywheelActive,
-                    flywheelTargetRPM = action.flywheelTargetRPM ?: state.flywheelTargetRPM
-                )
+            is RobotAction.UpdateSubsystemState -> {
+                state.copy(custom = action.state)
             }
             is RobotAction.SetIndicatorLight -> {
                 state.copy(

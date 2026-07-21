@@ -45,6 +45,13 @@ class MecanumKinematics(
          */
         fun normalize(speeds: DoubleArray, maxSpeedMetersPerSecond: Double) {
             if (speeds.size < 4) return
+            if (maxSpeedMetersPerSecond <= 0.0 || maxSpeedMetersPerSecond.isNaN()) {
+                speeds[0] = 0.0
+                speeds[1] = 0.0
+                speeds[2] = 0.0
+                speeds[3] = 0.0
+                return
+            }
             val maxMagnitude = maxOf(
                 kotlin.math.abs(speeds[0]),
                 kotlin.math.abs(speeds[1]),

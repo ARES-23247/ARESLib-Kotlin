@@ -88,15 +88,7 @@ object DynamicPathLoader {
         return PathPlannerParser.parsePath(jsonString)
     }
 
-    /**
-     * Attempts to find and parse a PathPlanner .auto file dynamically by its name.
-     *
-     * @param autoName The name of the auto (without the .auto extension).
-     * @param follower The holonomic path follower to attach to follow path commands.
-     * @param timestampMs Reference base timestamp for FSM task instantiation.
-     * @return The constructed [Task] sequence.
-     */
-    fun loadAuto(autoName: String, follower: HolonomicPathFollower, timestampMs: Long): Task {
+    fun loadAutoJsonString(autoName: String): String {
         var jsonString: String? = null
         val fileName = "$autoName.auto"
         val autoSearchPaths = SEARCH_PATHS.map {
@@ -147,7 +139,20 @@ object DynamicPathLoader {
                 "Scanned locations:\n" + scannedLocations.joinToString("\n") { "  - $it" }
             )
         }
+        
+        return jsonString
+    }
 
+    /**
+     * Attempts to find and parse a PathPlanner .auto file dynamically by its name.
+     *
+     * @param autoName The name of the auto (without the .auto extension).
+     * @param follower The holonomic path follower to attach to follow path commands.
+     * @param timestampMs Reference base timestamp for FSM task instantiation.
+     * @return The constructed [Task] sequence.
+     */
+    fun loadAuto(autoName: String, follower: HolonomicPathFollower, timestampMs: Long): Task {
+        val jsonString = loadAutoJsonString(autoName)
         return PathPlannerAutoParser.parseAuto(jsonString, follower, timestampMs)
     }
 }

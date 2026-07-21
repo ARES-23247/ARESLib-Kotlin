@@ -253,7 +253,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         try {
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-            val dtSeconds = if (lastUpdateTime == 0L) 0.02 else (timestamp - lastUpdateTime) / 1000.0
+            val dtSeconds = if (lastUpdateTime == 0L) 0.01 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
             // === PROFILING: per-section timing (nanoTime for wall-clock accuracy) ===

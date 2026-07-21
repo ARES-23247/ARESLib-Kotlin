@@ -31,6 +31,10 @@ class SimDcMotorEx : DcMotorEx {
     }
 }
 
+class SimServo : com.qualcomm.robotcore.hardware.Servo {
+    override var position: Double = 0.0
+}
+
 class SimLimelight3A : Limelight3A() {
     @Volatile
     private var result: LLResult? = null
@@ -76,8 +80,13 @@ class MecanumRobotDouble {
                 "pinpoint" -> pinpoint as T
                 "limelight" -> limelight as T
                 else -> {
-                    println("[SimHardwareMap] Unknown device '$deviceName' requested. Returning default SimDcMotorEx.")
-                    SimDcMotorEx() as T
+                    if (com.qualcomm.robotcore.hardware.Servo::class.java.isAssignableFrom(classOrType)) {
+                        println("[SimHardwareMap] Unknown device '$deviceName' requested. Returning default SimServo.")
+                        SimServo() as T
+                    } else {
+                        println("[SimHardwareMap] Unknown device '$deviceName' requested. Returning default SimDcMotorEx.")
+                        SimDcMotorEx() as T
+                    }
                 }
             }
         }

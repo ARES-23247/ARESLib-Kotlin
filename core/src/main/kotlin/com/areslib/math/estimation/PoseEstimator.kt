@@ -260,7 +260,13 @@ object PoseEstimator {
 
         // Catastrophic tilt / beaching check: Freeze odometry updates
         if (currentlyBeached) {
-            state.history.addEntry(timestampMs, state.estimatedPose, state.covariance, 1.0)
+            val poseForHistory = Pose2d(state.estimatedPoseX, state.estimatedPoseY, Rotation2d(state.estimatedPoseHeading))
+            val covForHistory = Matrix3x3(
+                state.covarianceArray[0], state.covarianceArray[1], state.covarianceArray[2],
+                state.covarianceArray[3], state.covarianceArray[4], state.covarianceArray[5],
+                state.covarianceArray[6], state.covarianceArray[7], state.covarianceArray[8]
+            )
+            state.history.addEntry(timestampMs, poseForHistory, covForHistory, 1.0)
             state.isBeached = true
             state.lastUnbeachedTimeMs = unbeachedTime
             return state
@@ -315,10 +321,10 @@ object PoseEstimator {
         val movementScale = if (isStationary) 0.001 else 1.0
         scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale)
 
-        val newHeading = Rotation2d(state.estimatedPose.heading.radians + correctedDeltaHeading)
+        val newHeading = Rotation2d(state.estimatedPoseHeading + correctedDeltaHeading)
         val newPose = Pose2d(
-            state.estimatedPose.x + deltaTranslation.x,
-            state.estimatedPose.y + deltaTranslation.y,
+            state.estimatedPoseX + deltaTranslation.x,
+            state.estimatedPoseY + deltaTranslation.y,
             newHeading
         )
         
@@ -326,7 +332,7 @@ object PoseEstimator {
         // F = [1, 0, -dx*sin(θ_mid) - dy*cos(θ_mid)]
         //     [0, 1,  dx*cos(θ_mid) - dy*sin(θ_mid)]
         //     [0, 0,  1                              ]
-        val thetaMid = state.estimatedPose.heading.radians + correctedDeltaHeading * 0.5
+        val thetaMid = state.estimatedPoseHeading + correctedDeltaHeading * 0.5
         val sinMid = kotlin.math.sin(thetaMid)
         val cosMid = kotlin.math.cos(thetaMid)
         val f02 = -deltaTranslation.x * sinMid - deltaTranslation.y * cosMid
@@ -335,15 +341,15 @@ object PoseEstimator {
         // Row 0: [P00 + f02*P20,  P01 + f02*P21,  P02 + f02*P22]
         // Row 1: [P10 + f12*P20,  P11 + f12*P21,  P12 + f12*P22]
         // Row 2: [P20,            P21,            P22           ]
-        val fp00 = state.covariance.m00 + f02 * state.covariance.m20
-        val fp01 = state.covariance.m01 + f02 * state.covariance.m21
-        val fp02 = state.covariance.m02 + f02 * state.covariance.m22
-        val fp10 = state.covariance.m10 + f12 * state.covariance.m20
-        val fp11 = state.covariance.m11 + f12 * state.covariance.m21
-        val fp12 = state.covariance.m12 + f12 * state.covariance.m22
-        val fp20 = state.covariance.m20
-        val fp21 = state.covariance.m21
-        val fp22 = state.covariance.m22
+        val fp00 = state.covarianceArray[0] + f02 * state.covarianceArray[6]
+        val fp01 = state.covarianceArray[1] + f02 * state.covarianceArray[7]
+        val fp02 = state.covarianceArray[2] + f02 * state.covarianceArray[8]
+        val fp10 = state.covarianceArray[3] + f12 * state.covarianceArray[6]
+        val fp11 = state.covarianceArray[4] + f12 * state.covarianceArray[7]
+        val fp12 = state.covarianceArray[5] + f12 * state.covarianceArray[8]
+        val fp20 = state.covarianceArray[6]
+        val fp21 = state.covarianceArray[7]
+        val fp22 = state.covarianceArray[8]
         // (F*P) * F^T: F^T column 2 = [f02, f12, 1]^T
         // Result[i][j] = (F*P)[i][0]*F^T[0][j] + (F*P)[i][1]*F^T[1][j] + (F*P)[i][2]*F^T[2][j]
         // F^T[0][j]: col0=[1,0,0], col1=[0,1,0], col2=[f02,f12,1]

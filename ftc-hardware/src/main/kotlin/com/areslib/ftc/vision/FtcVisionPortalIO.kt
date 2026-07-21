@@ -16,6 +16,19 @@ class FtcVisionPortalIO(
 
     private var lastWarningTime = 0L
     private val measurementsBuffer = ArrayList<VisionMeasurement>(10)
+    
+    // Object pools to prevent GC overhead
+    private val visionMeasurementPool = Array(10) { VisionMeasurement() }
+    private val translationPool = Array(20) { Translation3d() }
+    private val rotationPool = Array(20) { Rotation3d() }
+    private val posePool = Array(20) { Pose3d() }
+    private val measurementListPool = Array(10) { ArrayList<VisionMeasurement>(10) }
+    
+    private var measurementPoolIndex = 0
+    private var translationPoolIndex = 0
+    private var rotationPoolIndex = 0
+    private var posePoolIndex = 0
+    private var measurementListPoolIndex = 0
 
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.cameraPoses = cameraPoses
@@ -31,46 +44,71 @@ class FtcVisionPortalIO(
                     val pose = detection.ftcPose
                     // VisionPortal returns position in inches and rotation in degrees
                     // We convert inches to meters (1 inch = 0.0254 meters)
-                    val poseMeters = Pose3d(
-                        translation = com.areslib.math.geometry.Translation3d(
-                            x = pose.x * 0.0254,
-                            y = pose.y * 0.0254,
-                            z = pose.z * 0.0254
-                        ),
-                        rotation = com.areslib.math.geometry.Rotation3d(
+                    val t = translationPool[translationPoolIndex].apply {
+                        x = pose.x * 0.0254
+                        y = pose.y * 0.0254
+                        z = pose.z * 0.0254
+                    }
+                    translationPoolIndex = (translationPoolIndex + 1) % 20
+
+                    val r = rotationPool[rotationPoolIndex].apply {
+                        setEulerAngles(
                             Math.toRadians(pose.roll),
                             Math.toRadians(pose.pitch),
                             Math.toRadians(pose.yaw)
                         )
-                    )
+                    }
+                    rotationPoolIndex = (rotationPoolIndex + 1) % 20
+
+                    val poseMeters = posePool[posePoolIndex].apply {
+                        translation = t
+                        rotation = r
+                    }
+                    posePoolIndex = (posePoolIndex + 1) % 20
                     
                     val tagConfig = com.areslib.state.RobotFieldManager.activeConfig.apriltags.find { it.id == detection.id }
                     if (tagConfig != null) {
-                        val tagFieldPose = Pose3d(
-                            com.areslib.math.geometry.Translation3d(tagConfig.x, tagConfig.y, tagConfig.z),
-                            com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.toRadians(tagConfig.yaw))
-                        )
+                        val tagFieldTranslation = translationPool[translationPoolIndex].apply {
+                            x = tagConfig.x
+                            y = tagConfig.y
+                            z = tagConfig.z
+                        }
+                        translationPoolIndex = (translationPoolIndex + 1) % 20
+                        
+                        val tagFieldRotation = rotationPool[rotationPoolIndex].apply {
+                            setEulerAngles(0.0, 0.0, Math.toRadians(tagConfig.yaw))
+                        }
+                        rotationPoolIndex = (rotationPoolIndex + 1) % 20
+                        
+                        val tagFieldPose = posePool[posePoolIndex].apply {
+                            translation = tagFieldTranslation
+                            rotation = tagFieldRotation
+                        }
+                        posePoolIndex = (posePoolIndex + 1) % 20
+                        
                         val cameraToTag = com.areslib.math.geometry.Transform3d(poseMeters.translation, poseMeters.rotation)
                         val robotToCamera = com.areslib.math.geometry.Transform3d(cameraPoses[0].translation, cameraPoses[0].rotation)
                         
                         val absoluteRobotPose = tagFieldPose.transformBy(cameraToTag.inverse()).transformBy(robotToCamera.inverse())
                         
-                        measurementsBuffer.add(
-                            VisionMeasurement(
-                                timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-                                targetPose = absoluteRobotPose,
-                                tagId = detection.id,
-                                ambiguity = 0.0,
-                                robotPoseTargetSpace = poseMeters
-                            )
-                        )
+                        val measurement = visionMeasurementPool[measurementPoolIndex].apply {
+                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                            targetPose = absoluteRobotPose
+                            tagId = detection.id
+                            ambiguity = 0.0
+                            robotPoseTargetSpace = poseMeters
+                        }
+                        measurementPoolIndex = (measurementPoolIndex + 1) % 10
+                        measurementsBuffer.add(measurement)
                     }
                 }
                 
                 // Return a lightweight copy so the Redux action owns the state.
                 // We allocate an ArrayList sized perfectly to avoid resizing and map iterator allocations.
-                val safeMeasurements = ArrayList<VisionMeasurement>(measurementsBuffer.size)
+                val safeMeasurements = measurementListPool[measurementListPoolIndex]
+                safeMeasurements.clear()
                 for (i in 0 until measurementsBuffer.size) safeMeasurements.add(measurementsBuffer[i])
+                measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
                 inputs.measurements = safeMeasurements
             } else {
                 inputs.isConnected = detections != null

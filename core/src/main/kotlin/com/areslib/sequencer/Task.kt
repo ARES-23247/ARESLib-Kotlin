@@ -264,7 +264,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         val distToTarget = kotlin.math.sqrt(dx * dx + dy * dy)
         val headingError = kotlin.math.abs(com.areslib.math.wrapAngle(currentPose.heading.radians - endPose.heading.radians))
         
-        return (distToTarget < 0.03 && headingError < Math.toRadians(2.0)) || elapsedMs >= 15000L
+        return (distToTarget < 0.08 && headingError < Math.toRadians(5.0)) || elapsedMs >= 15000L
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {

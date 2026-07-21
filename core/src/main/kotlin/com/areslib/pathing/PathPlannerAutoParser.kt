@@ -10,6 +10,48 @@ object PathPlannerAutoParser {
     private val gson = Gson()
 
     /**
+     * Extracts the "startingPose" block (used in newer PathPlanner autos)
+     */
+    fun getStartingPose(jsonString: String): com.areslib.math.geometry.Pose2d? {
+        val root = gson.fromJson(jsonString, JsonObject::class.java)
+        val startingPose = root.getAsJsonObject("startingPose") ?: return null
+        val position = startingPose.getAsJsonObject("position") ?: return null
+        
+        val x = position.get("x")?.asDouble ?: return null
+        val y = position.get("y")?.asDouble ?: return null
+        val rotation = startingPose.get("rotation")?.asDouble ?: 0.0
+        
+        return com.areslib.math.geometry.Pose2d(x, y, com.areslib.math.geometry.Rotation2d.fromDegrees(rotation))
+    }
+
+    /**
+     * Fallback for older autos: recursively finds the first "path" command
+     */
+    fun getFirstPathName(jsonString: String): String? {
+        val root = gson.fromJson(jsonString, JsonObject::class.java)
+        val commandObj = root.getAsJsonObject("command") ?: return null
+        return findFirstPathRecursively(commandObj)
+    }
+
+    private fun findFirstPathRecursively(node: JsonObject): String? {
+        val type = node.get("type")?.asString ?: return null
+        val data = node.getAsJsonObject("data") ?: return null
+
+        if (type.lowercase() == "path") {
+            return data.get("pathName")?.asString
+        }
+
+        if (type.lowercase() in listOf("sequential", "parallel", "race", "deadline")) {
+            val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
+            for (i in 0 until cmdsArray.size()) {
+                val found = findFirstPathRecursively(cmdsArray.get(i).asJsonObject)
+                if (found != null) return found
+            }
+        }
+        return null
+    }
+
+    /**
      * Parses a PathPlanner .auto JSON string and compiles it into a Task.
      */
     fun parseAuto(

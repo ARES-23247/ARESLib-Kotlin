@@ -160,13 +160,6 @@ interface RobotAction {
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 
-    data class UpdateSuperstructure(
-        val intakeActive: Boolean? = null,
-        val flywheelActive: Boolean? = null,
-        val flywheelTargetRPM: Double? = null,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
-    ) : RobotAction
-
     /**
      * Sets a named indicator light to a specific PWM position (0.0 to 1.0).
      * Use [com.areslib.hardware.actuator.IndicatorLightColor.position] for predefined colors.

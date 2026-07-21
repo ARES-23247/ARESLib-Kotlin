@@ -40,5 +40,21 @@ class MecanumKinematicsTest {
         assertEquals(-1.0, normalized.backLeftMetersPerSecond, 0.001)
         assertEquals(0.25, normalized.backRightMetersPerSecond, 0.001)
     }
+
+    @Test
+    fun `normalize handles zero, negative, and NaN maxSpeed gracefully`() {
+        val arr = doubleArrayOf(2.0, -1.0, 3.0, 4.0)
+        MecanumKinematics.normalize(arr, 0.0)
+        assertEquals(0.0, arr[0], 0.001)
+        assertEquals(0.0, arr[1], 0.001)
+        
+        val arr2 = doubleArrayOf(2.0, -1.0, 3.0, 4.0)
+        MecanumKinematics.normalize(arr2, -1.5)
+        assertEquals(0.0, arr2[2], 0.001)
+        
+        val arr3 = doubleArrayOf(2.0, -1.0, 3.0, 4.0)
+        MecanumKinematics.normalize(arr3, Double.NaN)
+        assertEquals(0.0, arr3[3], 0.001)
+    }
 }
 

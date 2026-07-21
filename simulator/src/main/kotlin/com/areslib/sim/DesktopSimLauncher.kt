@@ -28,8 +28,8 @@ import com.areslib.sim.network.NT4FieldPublisher
 import com.areslib.sim.network.DynamicElementPose
 
 object DesktopSimLauncher {
-    private const val TIMESTEP_MS = 20L
-    private const val TIMESTEP_SEC = 0.02
+    private const val TIMESTEP_MS = 10L
+    private const val TIMESTEP_SEC = 0.01
     
     // FTC standard field size
     private const val FIELD_WIDTH = 3.65
@@ -484,10 +484,42 @@ object DesktopSimLauncher {
                 val method = opMode.javaClass.getMethod("getPathName")
                 val pName = method.invoke(opMode) as? String
                 if (pName != null) {
-                    val p = com.areslib.pathing.DynamicPathLoader.loadPath(pName)
-                    if (p.points.isNotEmpty()) {
-                        val firstWp = p.points.first().pose
-                        startPose = Pose2d(firstWp.x, firstWp.y, Rotation2d(firstWp.heading.radians))
+                    var extractedPose: Pose2d? = null
+                    
+                    try {
+                        val jsonString = com.areslib.pathing.DynamicPathLoader.loadAutoJsonString(pName)
+                        extractedPose = com.areslib.pathing.PathPlannerAutoParser.getStartingPose(jsonString)
+                        if (extractedPose == null) {
+                            val firstPathName = com.areslib.pathing.PathPlannerAutoParser.getFirstPathName(jsonString)
+                            if (firstPathName != null) {
+                                val p = com.areslib.pathing.DynamicPathLoader.loadPath(firstPathName)
+                                val wp = p.points.firstOrNull()
+                                if (wp != null) {
+                                    extractedPose = Pose2d(wp.pose.x, wp.pose.y, Rotation2d(wp.pose.heading.radians))
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Fallback to direct path load
+                        try {
+                            val p = com.areslib.pathing.DynamicPathLoader.loadPath(pName)
+                            val wp = p.points.firstOrNull()
+                            if (wp != null) {
+                                extractedPose = Pose2d(wp.pose.x, wp.pose.y, Rotation2d(wp.pose.heading.radians))
+                            }
+                        } catch (e2: Exception) {}
+                    }
+
+                    if (extractedPose != null) {
+                        var startX = extractedPose.x
+                        var startY = extractedPose.y
+                        var startHeading = extractedPose.heading.radians
+                        if (driverStation.isRedAlliance) {
+                            startX = -startX
+                            startY = -startY
+                            startHeading = startHeading + Math.PI
+                        }
+                        startPose = Pose2d(startX, startY, Rotation2d(startHeading))
                         robotBody.transform.setTranslation(startPose.x, startPose.y)
                         robotBody.transform.setRotation(startPose.heading.radians)
                         robotBody.setLinearVelocity(0.0, 0.0)
@@ -618,6 +650,7 @@ object DesktopSimLauncher {
         val dsCommandSub = ntInst.getStringTopic("ARES/DriverStation/Command").subscribe("")
         val dsSelectedOpModeSub = ntInst.getStringTopic("ARES/DriverStation/SelectedOpMode").subscribe("")
         val dsTelemetryPub = ntInst.getStringArrayTopic("ARES/DriverStation/Telemetry").publish()
+        val teleportSub = ntInst.getDoubleArrayTopic("ARES/Simulator/Teleport").subscribe(DoubleArray(0))
         var lastCommand = ""
 
         val loopTeleOpPub = ntInst.getStringTopic("ARES/DriverStation/TeleOpList").publish()
@@ -638,6 +671,18 @@ object DesktopSimLauncher {
                 org.lwjgl.glfw.GLFW.glfwPollEvents()
             }
             TelemetryPublisher.pollWebInputs(driverStation)
+
+            val teleportEvents = teleportSub.readQueue()
+            if (teleportEvents.isNotEmpty()) {
+                val t = teleportEvents.last().value
+                if (t.size >= 3) {
+                    robotBody.transform.setTranslation(t[0], t[1])
+                    robotBody.transform.setRotation(t[2])
+                    robotBody.setLinearVelocity(0.0, 0.0)
+                    robotBody.angularVelocity = 0.0
+                    robotBody.clearForce()
+                }
+            }
 
             if (serverMode) {
                 loopTeleOpPub.set(teleOpsJson)
@@ -665,10 +710,40 @@ object DesktopSimLauncher {
                                         val method = opMode.javaClass.getMethod("getPathName")
                                         val pName = method.invoke(opMode) as? String
                                         if (pName != null) {
-                                            val p = com.areslib.pathing.DynamicPathLoader.loadPath(pName)
-                                            if (p.points.isNotEmpty()) {
-                                                val firstWp = p.points.first().pose
-                                                startPose = Pose2d(firstWp.x, firstWp.y, Rotation2d(firstWp.heading.radians))
+                                            var extractedPose: Pose2d? = null
+                                            try {
+                                                val jsonString = com.areslib.pathing.DynamicPathLoader.loadAutoJsonString(pName)
+                                                extractedPose = com.areslib.pathing.PathPlannerAutoParser.getStartingPose(jsonString)
+                                                if (extractedPose == null) {
+                                                    val firstPathName = com.areslib.pathing.PathPlannerAutoParser.getFirstPathName(jsonString)
+                                                    if (firstPathName != null) {
+                                                        val p = com.areslib.pathing.DynamicPathLoader.loadPath(firstPathName)
+                                                        val wp = p.points.firstOrNull()
+                                                        if (wp != null) {
+                                                            extractedPose = Pose2d(wp.pose.x, wp.pose.y, Rotation2d(wp.pose.heading.radians))
+                                                        }
+                                                    }
+                                                }
+                                            } catch (e: Exception) {
+                                                try {
+                                                    val p = com.areslib.pathing.DynamicPathLoader.loadPath(pName)
+                                                    val wp = p.points.firstOrNull()
+                                                    if (wp != null) {
+                                                        extractedPose = Pose2d(wp.pose.x, wp.pose.y, Rotation2d(wp.pose.heading.radians))
+                                                    }
+                                                } catch (e2: Exception) {}
+                                            }
+                                            
+                                            if (extractedPose != null) {
+                                                var startX = extractedPose.x
+                                                var startY = extractedPose.y
+                                                var startHeading = extractedPose.heading.radians
+                                                if (driverStation.isRedAlliance) {
+                                                    startX = -startX
+                                                    startY = -startY
+                                                    startHeading = startHeading + Math.PI
+                                                }
+                                                startPose = Pose2d(startX, startY, Rotation2d(startHeading))
                                                 robotBody.transform.setTranslation(startPose.x, startPose.y)
                                                 robotBody.transform.setRotation(startPose.heading.radians)
                                                 robotBody.setLinearVelocity(0.0, 0.0)
@@ -681,12 +756,12 @@ object DesktopSimLauncher {
                                         // Not an auto OpMode with pathName, or path failed to load
                                     }
                                     val alliance = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
-                                    startPose = if (alliance == com.areslib.state.Alliance.RED) {
-                                        com.areslib.math.geometry.Pose2d(0.0, -1.2, com.areslib.math.geometry.Rotation2d(kotlin.math.PI / 2.0))
-                                    } else {
-                                        com.areslib.math.geometry.Pose2d(0.0, 1.2, com.areslib.math.geometry.Rotation2d(-kotlin.math.PI / 2.0))
-                                    }
                                     if (!teleported) {
+                                        startPose = if (alliance == com.areslib.state.Alliance.RED) {
+                                            com.areslib.math.geometry.Pose2d(0.0, -1.2, com.areslib.math.geometry.Rotation2d(kotlin.math.PI / 2.0))
+                                        } else {
+                                            com.areslib.math.geometry.Pose2d(0.0, 1.2, com.areslib.math.geometry.Rotation2d(-kotlin.math.PI / 2.0))
+                                        }
                                         // Teleop or unknown mode: reset to startPose
                                         robotBody.transform.setTranslation(startPose.x, startPose.y)
                                         robotBody.transform.setRotation(startPose.heading.radians)
@@ -934,6 +1009,7 @@ object DesktopSimLauncher {
             TelemetryPublisher.publishTargetPose(currentPose)
             val activeState = com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.state ?: state
             TelemetryPublisher.publish(activeState)
+            TelemetryPublisher.publishSuperstructure(activeState)
 
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
                 val estPose = robot.store.state.drive.poseEstimator.estimatedPose

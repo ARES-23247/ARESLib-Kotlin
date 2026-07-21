@@ -35,7 +35,48 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         var autoTask: com.areslib.sequencer.Task? = null
         var pathLoadError: String? = null
         try {
-            autoTask = robot.autoBuilder.buildAuto(pathName, RobotClock.currentTimeMillis())
+            val jsonString = com.areslib.pathing.DynamicPathLoader.loadAutoJsonString(pathName)
+            autoTask = robot.autoBuilder.buildAuto(pathName, com.areslib.util.RobotClock.currentTimeMillis())
+            
+            // Extract starting pose and seed EKF
+            var startPose = com.areslib.pathing.PathPlannerAutoParser.getStartingPose(jsonString)
+            if (startPose == null) {
+                val firstPath = com.areslib.pathing.PathPlannerAutoParser.getFirstPathName(jsonString)
+                if (firstPath != null) {
+                    val path = com.areslib.pathing.DynamicPathLoader.loadPath(firstPath)
+                    val wp = path.points.firstOrNull()
+                    if (wp != null) {
+                        startPose = com.areslib.math.geometry.Pose2d(wp.pose.x, wp.pose.y, wp.pose.heading)
+                    }
+                }
+            }
+
+            if (startPose != null) {
+                var x = startPose.x
+                var y = startPose.y
+                var heading = startPose.heading.radians
+
+                if (robot.store.state.drive.alliance == com.areslib.state.Alliance.RED) {
+                    // Mirror pose for FTC field (0,0 center)
+                    x = -x
+                    y = -y
+                    heading = heading + Math.PI
+                }
+
+                // 1. Hard-reset the OpMode EKF
+                robot.store.dispatch(
+                    com.areslib.action.RobotAction.PoseUpdate(
+                        xMeters = x,
+                        yMeters = y,
+                        headingRadians = heading,
+                        isReset = true,
+                        timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+                    )
+                )
+
+                // The simulator intercepts PoseUpdate(isReset=true) via its sync function, 
+                // or driver station can intercept ARES/Simulator/Teleport natively via ARES-Analytics.
+            }
         } catch (e: Exception) {
             pathLoadError = e.message ?: "Unknown error"
         }

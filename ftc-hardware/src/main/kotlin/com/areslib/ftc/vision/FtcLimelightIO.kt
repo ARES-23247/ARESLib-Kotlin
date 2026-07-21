@@ -34,6 +34,8 @@ class FtcLimelightIO(
     private var posePoolIndex = 0
 
     private val scratchMeasurements = ArrayList<VisionMeasurement>(10)
+    private val measurementListPool = Array(10) { ArrayList<VisionMeasurement>(10) }
+    private var measurementListPoolIndex = 0
 
     init {
         try {
@@ -136,7 +138,11 @@ class FtcLimelightIO(
                             scratchMeasurements.add(measurement)
                         }
                         // Copy to avoid mutating the list in the Redux state
-                        inputs.measurements = scratchMeasurements.toList()
+                        val safeMeasurements = measurementListPool[measurementListPoolIndex]
+                        safeMeasurements.clear()
+                        for (i in 0 until scratchMeasurements.size) safeMeasurements.add(scratchMeasurements[i])
+                        measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
+                        inputs.measurements = safeMeasurements
                     } else {
                         val measurement = visionMeasurementPool[measurementPoolIndex].apply {
                             timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
@@ -145,7 +151,12 @@ class FtcLimelightIO(
                             ambiguity = 0.0
                         }
                         measurementPoolIndex = (measurementPoolIndex + 1) % 10
-                        inputs.measurements = listOf(measurement)
+                        
+                        val safeMeasurements = measurementListPool[measurementListPoolIndex]
+                        safeMeasurements.clear()
+                        safeMeasurements.add(measurement)
+                        measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
+                        inputs.measurements = safeMeasurements
                     }
                 } else {
                     inputs.measurements = emptyList()

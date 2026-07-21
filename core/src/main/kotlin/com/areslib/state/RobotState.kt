@@ -100,9 +100,6 @@ data class DriveState(
 interface SubsystemState
 
 data class SuperstructureState(
-    val intakeActive: Boolean = false,
-    val flywheelActive: Boolean = false,
-    val flywheelTargetRPM: Double = 0.0,
     /** Maps indicator light hardware names to their target servo positions (0.0 to 1.0). */
     val indicatorLights: Map<String, Double> = emptyMap(),
     // Custom extensible container for season/robot-specific states

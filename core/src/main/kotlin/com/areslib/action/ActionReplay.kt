@@ -26,7 +26,6 @@ object ActionReplay {
             "JoystickDriveIntent" to RobotAction.JoystickDriveIntent::class.java,
             "PathEventTriggered" to RobotAction.PathEventTriggered::class.java,
             "UpdateSubsystemState" to RobotAction.UpdateSubsystemState::class.java,
-            "UpdateSuperstructure" to RobotAction.UpdateSuperstructure::class.java,
             "ChainPaths" to RobotAction.ChainPaths::class.java,
             "SwitchPath" to RobotAction.SwitchPath::class.java,
             "UpdatePathProgress" to RobotAction.UpdatePathProgress::class.java
