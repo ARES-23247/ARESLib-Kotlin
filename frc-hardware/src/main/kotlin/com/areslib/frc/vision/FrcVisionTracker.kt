@@ -84,8 +84,8 @@ class FrcVisionTracker(
                     null
                 ))
                 _lastVisionStatus = when {
-                    distance >= 6.0 -> "REJECTED_FAR (${String.format("%.1f", distance)}m)"
-                    ambiguity >= 0.3 -> "REJECTED_AMBIGUOUS (${String.format("%.2f", ambiguity)})"
+                    distance >= 6.0 -> "REJECTED_FAR"
+                    ambiguity >= 0.3 -> "REJECTED_AMBIGUOUS"
                     else -> "ACCEPTED"
                 }
             } else {
