@@ -17,13 +17,22 @@ object SimOpModeRunner {
      */
     fun scanAndPublishOpModes() {
         try {
-            val urls = mutableListOf<java.net.URL>()
-            urls.addAll(ClasspathHelper.forJavaClassPath())
-            urls.addAll(ClasspathHelper.forClassLoader(Thread.currentThread().contextClassLoader))
+            val rawUrls = mutableListOf<java.net.URL>()
+            rawUrls.addAll(ClasspathHelper.forJavaClassPath())
+            rawUrls.addAll(ClasspathHelper.forClassLoader(Thread.currentThread().contextClassLoader))
+
+            val validUrls = rawUrls.filter { url ->
+                try {
+                    val file = java.io.File(url.toURI())
+                    file.exists()
+                } catch (_: Exception) {
+                    false
+                }
+            }.distinct()
 
             val reflections = Reflections(
                 ConfigurationBuilder()
-                    .setUrls(urls)
+                    .setUrls(validUrls)
                     .setScanners(Scanners.TypesAnnotated)
             )
 

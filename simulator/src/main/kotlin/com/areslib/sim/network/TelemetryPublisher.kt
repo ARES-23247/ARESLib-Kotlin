@@ -66,28 +66,22 @@ object TelemetryPublisher {
         val vWpi = webVxSub.get()
         val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
-        if (v != 0.0) {
-            com.areslib.telemetry.SimInputBridge.rawWebVx = v
-        }
-        return if (v != 0.0) v else com.areslib.telemetry.SimInputBridge.rawWebVx
+        com.areslib.telemetry.SimInputBridge.rawWebVx = v
+        return v
     }
     fun getWebVy(): Double {
         val vWpi = webVySub.get()
         val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
-        if (v != 0.0) {
-            com.areslib.telemetry.SimInputBridge.rawWebVy = v
-        }
-        return if (v != 0.0) v else com.areslib.telemetry.SimInputBridge.rawWebVy
+        com.areslib.telemetry.SimInputBridge.rawWebVy = v
+        return v
     }
     fun getWebOmega(): Double {
         val vWpi = webOmegaSub.get()
         val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
-        if (v != 0.0) {
-            com.areslib.telemetry.SimInputBridge.rawWebOmega = v
-        }
-        return if (v != 0.0) v else com.areslib.telemetry.SimInputBridge.rawWebOmega
+        com.areslib.telemetry.SimInputBridge.rawWebOmega = v
+        return v
     }
 
     private var lastWebHeartbeatTimestamp = 0L
