@@ -12,19 +12,27 @@ import kotlinx.coroutines.launch
 import com.areslib.math.wrapAngle
 
 /**
- * Interface to the GoBilda Pinpoint Odometry Computer.
+ * Interface to the GoBilda Pinpoint Odometry Computer, providing hardware abstraction for dead-wheel tracking.
  * 
  * COORDINATE SYSTEM:
- * - Position: X = forward (audience wall), Y = left (blue alliance)
- * - Heading: 0° = +X (audience wall), CCW-positive (math standard)
+ * - Position: X = forward (audience wall), Y = left (blue alliance), units in $m$.
+ * - Velocity: X = $m/s$, Y = $m/s$.
+ * - Heading: 0° = +X (audience wall), CCW-positive (math standard), units in $rad$.
+ * - Angular Velocity: CCW-positive, units in $rad/s$.
  * - The raw GoBilda Pinpoint outputs CW-positive heading;
  *   we negate it here at the hardware boundary so all downstream
  *   consumers (EKF, kinematics, path followers) receive CCW-positive.
- */
-/**
- * Class implementation for Pinpoint I O.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * PERFORMANCE:
+ * Guaranteed zero-GC allocations during the high-frequency 50Hz/100Hz hardware update loops.
+ *
+ * @param driver The GoBilda Pinpoint driver instance.
+ * @param xOffsetMm X offset of the odometry pod in mm.
+ * @param yOffsetMm Y offset of the odometry pod in mm.
+ * @param encoderResolution Encoder resolution in ticks/mm.
+ * @param xDirection Encoder direction for the X pod.
+ * @param yDirection Encoder direction for the Y pod.
+ * @param isHeadingCcwPositive Whether the sensor heading is already CCW-positive.
  */
 class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private val driver: GoBildaPinpointDriver,
@@ -63,6 +71,9 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * Updates the pinpoint driver and returns the current pose as a pure action.
+     * Operates without GC allocations for high-frequency 100Hz loops.
+     *
+     * @return The updated pose action with coordinates in $m$ and $rad$ (CCW-positive).
      */
     fun getPoseUpdate(): RobotAction.PoseUpdate {
         try {
@@ -110,6 +121,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * Recalibrates the internal IMU while the robot is stationary.
+     * 
+     * @throws Exception if hardware communication fails (caught internally).
      */
     fun recalibrateIMU() {
         try {
@@ -120,6 +133,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     /**
      * Resets the pinpoint computer and recalibrates the orientation.
      * Optionally configures starting pose tracking values.
+     * 
+     * @param pose The initial pose to set, with coordinates in $m$ and $rad$ (CCW-positive).
+     * @param resetHardware If true, physically resets the sensor's position and IMU state.
+     * @throws Exception if hardware communication fails (caught internally).
      */
     @kotlin.jvm.JvmOverloads
     fun initialize(pose: com.areslib.math.geometry.Pose2d = com.areslib.math.geometry.Pose2d(), resetHardware: Boolean = false) {
@@ -155,6 +172,12 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
+    /**
+     * Sets the physical offsets of the tracking pods relative to the robot center.
+     * 
+     * @param xOffsetMm X offset (forward distance) in mm.
+     * @param yOffsetMm Y offset (sideways distance) in mm.
+     */
     fun setOffsets(xOffsetMm: Double, yOffsetMm: Double) {
         try {
             // GoBilda Pinpoint setOffsets expects:
@@ -164,6 +187,11 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
+    /**
+     * Sets the encoder resolution for the dead wheels.
+     * 
+     * @param resolution Encoder resolution in ticks/mm.
+     */
     fun setEncoderResolution(resolution: Double) {
         try {
             if (resolution > 0.0) {

@@ -25,12 +25,6 @@ import kotlin.math.abs
  *
  * @param b0 Estimated input gain (responsiveness ratio $\Delta v / \Delta u$).
  * @param omegaC Controller tracking bandwidth ($\text{rad/s}$). Higher values increase response speed.
- * @param omegaO Observer estimation bandwidth ($\text{rad/s}$). Higher values speed up disturbance rejection.
- */
-/**
- * Class implementation for Linear A D R C.
- *
- * Robotics framework control component.
  */
 class LinearADRC(
     var b0: Double,

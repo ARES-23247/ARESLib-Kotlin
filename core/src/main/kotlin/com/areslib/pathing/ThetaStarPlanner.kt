@@ -14,14 +14,6 @@ import com.areslib.pathing.planner.PlannerState
  *
  * This results in mathematically optimal, straight, grid-snap-free global paths around costmap obstacles.
  */
-/**
- * Object implementation for Theta Star Planner.
- *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
- *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
- */
 object ThetaStarPlanner {
 
     private val threadLocalState = ThreadLocal.withInitial { PlannerState(10000) }

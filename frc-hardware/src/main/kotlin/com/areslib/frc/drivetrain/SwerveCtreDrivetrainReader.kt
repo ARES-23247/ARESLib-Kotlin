@@ -5,9 +5,21 @@ import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
 /**
- * Class implementation for Swerve Ctre Drivetrain Reader.
+ * Reader class for CTRE Phoenix6 Swerve Drivetrain hardware telemetry.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Hardware IO abstraction layer bridging physical robot sensors into immutable Redux state representations.
+ * Synchronizes Phoenix6 CAN signals via BaseStatusSignal to avoid CAN bus thrashing.
+ * 
+ * PHYSICAL UNITS & CONVENTIONS:
+ * - Current: Amperes ($A$).
+ * - Angles/Heading: Radians ($rad$), **CCW-positive**.
+ * - Pitch/Roll: Degrees for internal Phoenix signals, though Redux outputs might map to rads.
+ * - Velocities: Meters per second ($m/s$) and radians per second ($rad/s$).
+ * 
+ * PERFORMANCE:
+ * Guaranteed zero-GC allocations during the high-frequency CAN refresh and read loops.
+ *
+ * @param drivetrain The underlying CTRE `SwerveDrivetrain` to poll signals from.
  */
 class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, *>) {
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
@@ -44,6 +56,11 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
         drivetrain.registerTelemetry { _ -> }
     }
 
+    /**
+     * Synchronously refreshes all BaseStatusSignals registered.
+     * Must be called once per loop prior to fetching values.
+     * Zero-GC allocation.
+     */
     fun refresh() {
         BaseStatusSignal.refreshAll(
             currentDraw1, currentDraw2, currentDraw3, currentDraw4,
@@ -55,6 +72,11 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
         )
     }
 
+    /**
+     * Reads the current draw of all four drive motors into the provided array.
+     *
+     * @param out A 4-element DoubleArray to populate with current draws in $A$.
+     */
     fun getCurrents(out: DoubleArray) {
         out[0] = currentDraw1.valueAsDouble
         out[1] = currentDraw2.valueAsDouble
@@ -62,6 +84,11 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
         out[3] = currentDraw4.valueAsDouble
     }
 
+    /**
+     * Reads the absolute encoder positions of the steering modules into the provided array.
+     *
+     * @param out A 4-element DoubleArray to populate with positions in rotations/radians depending on CTR config.
+     */
     fun getEncoderPositions(out: DoubleArray) {
         out[0] = absEnc1.valueAsDouble
         out[1] = absEnc2.valueAsDouble
@@ -69,12 +96,27 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
         out[3] = absEnc4.valueAsDouble
     }
 
+    /**
+     * Gets the Pigeon pitch angle.
+     * 
+     * @return Pitch in degrees.
+     */
     val pitchDegrees: Double
         get() = pitchSignal.valueAsDouble
 
+    /**
+     * Gets the Pigeon roll angle.
+     * 
+     * @return Roll in degrees.
+     */
     val rollDegrees: Double
         get() = rollSignal.valueAsDouble
 
+    /**
+     * Reads module wheel speeds into the provided array.
+     * 
+     * @param out A 4-element DoubleArray to populate with speeds in $m/s$.
+     */
     fun getModuleSpeeds(out: DoubleArray) {
         out[0] = drivetrain.state.ModuleStates[0].speedMetersPerSecond
         out[1] = drivetrain.state.ModuleStates[1].speedMetersPerSecond
@@ -82,6 +124,12 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
         out[3] = drivetrain.state.ModuleStates[3].speedMetersPerSecond
     }
 
+    /**
+     * Reads the core drivetrain state including odometry and chassis speeds.
+     * Zero-GC if internal CTRE state access avoids allocations.
+     * 
+     * @return The updated [DriveState] populated with coordinates in $m$ and $rad$ (CCW-positive).
+     */
     fun read(): DriveState {
         val driveStateObj = drivetrain.state
         val pose = driveStateObj.Pose

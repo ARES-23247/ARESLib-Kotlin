@@ -14,12 +14,6 @@ import com.areslib.util.RobotClock
  * It incorporates:
  * - A full state Kalman observer to estimate unmeasured states (such as estimating joint velocities from raw encoder positions).
  * - Control input voltage saturation clipping to prevent motor burnouts.
- * - Optional slew-rate limits to enforce strict acceleration constraints.
- */
-/**
- * Class implementation for L Q R Controller.
- *
- * Robotics framework control component.
  */
 class LQRController(
     val numStates: Int,

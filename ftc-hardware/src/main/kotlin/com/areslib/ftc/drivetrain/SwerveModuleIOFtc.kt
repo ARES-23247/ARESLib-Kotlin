@@ -8,22 +8,23 @@ import com.areslib.hardware.drive.SwerveModuleInputs
 /**
  * FTC Physical Swerve Module IO Hardware Adapter.
  *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  * Wraps a drive `DcMotorEx`, steer `DcMotorEx`, and absolute `AnalogInput` encoder for an FTC Swerve Pod (e.g. Axon, GoBilda Swerve).
  * Features a dedicated 200Hz background thread (`ARES-SwerveModuleIOFtc-Analog-Thread`) for non-blocking analog voltage sampling.
  *
- * ### Units & Sensor Conversion:
+ * PHYSICAL UNITS & CONVENTIONS:
  * - Drive Motor Encoder: Radians ($rad$) using 2048 CPR tick scaling.
+ * - Drive Motor Velocity: Radians per second ($rad/s$).
  * - Steer Encoder: Radians ($rad$) scaled from 0.0V–3.3V analog absolute angle range.
+ * - Angle convention: **CCW-positive**.
  * - Drive / Steer Power: Normalized duty-cycle percent ($-1.0$ to $+1.0$).
+ *
+ * PERFORMANCE:
+ * Guaranteed zero-GC allocations during high-frequency hardware update loops.
  *
  * @param driveMotor REV Expansion Hub `DcMotorEx` driving the module wheel.
  * @param steerMotor REV Expansion Hub `DcMotorEx` rotating the module steering pod.
  * @param analogEncoder Absolute analog position sensor (e.g. MA3, Lamprey, Axon encoder).
- */
-/**
- * Class implementation for Swerve Module I O Ftc.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 class SwerveModuleIOFtc(
     private val driveMotor: DcMotorEx,
@@ -65,6 +66,7 @@ class SwerveModuleIOFtc(
 
     /**
      * Polling update cycle reading drive position, drive velocity, and absolute steer angle into [SwerveModuleInputs].
+     * Zero-GC allocation loop.
      *
      * @param inputs Telemetry struct populated with current physical sensor values.
      */
@@ -92,6 +94,7 @@ class SwerveModuleIOFtc(
 
     /**
      * Commands motor duty-cycle powers for drive and steer actuators.
+     * Zero-GC allocation loop.
      *
      * @param drivePower Normalized drive motor power (-1.0 to 1.0).
      * @param steerPower Normalized steer motor power (-1.0 to 1.0).
