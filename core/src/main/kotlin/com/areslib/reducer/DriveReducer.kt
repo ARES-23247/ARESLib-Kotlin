@@ -73,15 +73,15 @@ object DriveReducer {
                     val deltaY = action.yMeters - state.odometryY
                     val deltaHeading = wrapAngle(action.headingRadians - state.odometryHeading)
 
-                    // Rotate the Pinpoint's world-frame delta into the EKF's world-frame
-                    // by applying the rotational difference between their coordinate systems.
-                    val headingDiff = state.poseEstimator.estimatedPose.heading.radians - state.odometryHeading
-                    val deltaTrans = OdometryMath.calculateDeltaPose(headingDiff, deltaX, deltaY)
-                    PoseEstimator.addOdometryObservation(
+                    val headingDiff = state.poseEstimator.estimatedPoseHeading - state.odometryHeading
+                    val deltaFieldX = OdometryMath.calculateDeltaX(headingDiff, deltaX, deltaY)
+                    val deltaFieldY = OdometryMath.calculateDeltaY(headingDiff, deltaX, deltaY)
+                    PoseEstimator.addOdometryObservationDirect(
                         state = state.poseEstimator,
                         timestampMs = action.timestampMs,
-                        deltaTranslation = deltaTrans,
-                        deltaHeading = Rotation2d(deltaHeading),
+                        deltaX = deltaFieldX,
+                        deltaY = deltaFieldY,
+                        deltaHeadingRad = deltaHeading,
                         pitchDegrees = action.pitchDegrees,
                         rollDegrees = action.rollDegrees
                     )

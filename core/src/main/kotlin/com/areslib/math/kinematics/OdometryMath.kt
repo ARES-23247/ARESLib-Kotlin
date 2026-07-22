@@ -34,4 +34,12 @@ object OdometryMath {
         
         return Translation2d(deltaX, deltaY)
     }
+
+    fun calculateDeltaX(currentHeadingRadians: Double, deltaForwardMeters: Double, deltaStrafeMeters: Double): Double {
+        return deltaForwardMeters * cos(currentHeadingRadians) - deltaStrafeMeters * sin(currentHeadingRadians)
+    }
+
+    fun calculateDeltaY(currentHeadingRadians: Double, deltaForwardMeters: Double, deltaStrafeMeters: Double): Double {
+        return deltaForwardMeters * sin(currentHeadingRadians) + deltaStrafeMeters * cos(currentHeadingRadians)
+    }
 }

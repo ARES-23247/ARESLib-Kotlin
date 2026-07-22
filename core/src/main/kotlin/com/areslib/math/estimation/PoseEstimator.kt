@@ -77,6 +77,18 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         if (count < capacity) count++
     }
 
+    fun addEntryDirect(timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3, qScale: Double) {
+        val entry = entries[head]
+        entry.timestampMs = timestampMs
+        entry.x = x
+        entry.y = y
+        entry.headingRad = headingRad
+        entry.covariance.setTo(covariance)
+        entry.qScale = qScale
+        head = (head + 1) % capacity
+        if (count < capacity) count++
+    }
+
     /**
      * deepCopy declaration.
      *
@@ -148,13 +160,12 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
 
     companion object {
         private val pool = Array(256) { HistoryBuffer(50) }
-        private var poolIndex = 0
+        private val poolIndex = java.util.concurrent.atomic.AtomicInteger(0)
 
-        @Synchronized
         fun obtainCopy(src: HistoryBuffer): HistoryBuffer {
-            val dest = pool[poolIndex]
+            val idx = (poolIndex.getAndIncrement() and 0x7FFFFFFF) % 256
+            val dest = pool[idx]
             src.copyInto(dest)
-            poolIndex = (poolIndex + 1) % 256
             return dest
         }
     }
@@ -265,8 +276,28 @@ object PoseEstimator {
         gyroRateRadPerSec: Double = 0.0,
         dtSeconds: Double = 0.02
     ): PoseEstimatorState {
-        return OdometryFusionController.processOdometry(
-            state, timestampMs, deltaTranslation, deltaHeading,
+        return OdometryFusionController.processOdometryDirect(
+            state, timestampMs, deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
+            pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
+            gyroRateRadPerSec, dtSeconds, Q, scratchQ, scratchCov
+        )
+    }
+
+    fun addOdometryObservationDirect(
+        state: PoseEstimatorState,
+        timestampMs: Long,
+        deltaX: Double,
+        deltaY: Double,
+        deltaHeadingRad: Double,
+        pitchDegrees: Double = 0.0,
+        rollDegrees: Double = 0.0,
+        pitchVelocityDegPerSec: Double = 0.0,
+        rollVelocityDegPerSec: Double = 0.0,
+        gyroRateRadPerSec: Double = 0.0,
+        dtSeconds: Double = 0.02
+    ): PoseEstimatorState {
+        return OdometryFusionController.processOdometryDirect(
+            state, timestampMs, deltaX, deltaY, deltaHeadingRad,
             pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
             gyroRateRadPerSec, dtSeconds, Q, scratchQ, scratchCov
         )

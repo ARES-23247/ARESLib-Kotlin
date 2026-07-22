@@ -90,8 +90,29 @@ class HolonomicDriveController(
         maxCentripetalAccel: Double = 2.5,
         progressPercentage: Double = 0.0
     ): ChassisSpeeds {
-        val xError = targetPose.x - currentPose.x
-        val yError = targetPose.y - currentPose.y
+        return calculateDirect(
+            currentPose.x, currentPose.y, currentPose.heading.radians,
+            targetPose.x, targetPose.y, targetHeading.radians,
+            targetVelocityMps, dtSeconds, pathTangentRadians, curvature, maxCentripetalAccel, progressPercentage
+        )
+    }
+
+    fun calculateDirect(
+        currentX: Double,
+        currentY: Double,
+        currentHeadingRad: Double,
+        targetX: Double,
+        targetY: Double,
+        targetHeadingRad: Double,
+        targetVelocityMps: Double,
+        dtSeconds: Double,
+        pathTangentRadians: Double = Double.NaN,
+        curvature: Double = 0.0,
+        maxCentripetalAccel: Double = 2.5,
+        progressPercentage: Double = 0.0
+    ): ChassisSpeeds {
+        val xError = targetX - currentX
+        val yError = targetY - currentY
 
         val pathTangent = if (!pathTangentRadians.isNaN()) {
             pathTangentRadians
@@ -100,13 +121,13 @@ class HolonomicDriveController(
             if (distanceToTarget > 0.01) {
                 kotlin.math.atan2(yError, xError)
             } else {
-                targetHeading.radians
+                targetHeadingRad
             }
         }
 
         val lateralError = xError * kotlin.math.sin(pathTangent) - yError * kotlin.math.cos(pathTangent)
 
-        var angularError = targetHeading.radians - currentPose.heading.radians
+        var angularError = targetHeadingRad - currentHeadingRad
         angularError = com.areslib.math.wrapAngle(angularError)
 
         telemetry?.let { tel ->
@@ -117,14 +138,14 @@ class HolonomicDriveController(
             tel.putNumber("PathError/ProgressPercentage", progressPercentage)
         }
 
-        var xFeedback = xAdrc?.calculate(targetPose.x, currentPose.x, dtSeconds)
-            ?: xController.calculate(currentPose.x, targetPose.x, dtSeconds)
+        val xFeedback = xAdrc?.calculate(targetX, currentX, dtSeconds)
+            ?: xController.calculate(currentX, targetX, dtSeconds)
 
-        var yFeedback = yAdrc?.calculate(targetPose.y, currentPose.y, dtSeconds)
-            ?: yController.calculate(currentPose.y, targetPose.y, dtSeconds)
+        val yFeedback = yAdrc?.calculate(targetY, currentY, dtSeconds)
+            ?: yController.calculate(currentY, targetY, dtSeconds)
 
-        val thetaFeedback = thetaAdrc?.calculate(targetHeading.radians, currentPose.heading.radians, dtSeconds)
-            ?: thetaController.calculate(currentPose.heading.radians, targetHeading.radians, dtSeconds)
+        val thetaFeedback = thetaAdrc?.calculate(targetHeadingRad, currentHeadingRad, dtSeconds)
+            ?: thetaController.calculate(currentHeadingRad, targetHeadingRad, dtSeconds)
 
         val limitedVelocity = if (kotlin.math.abs(curvature) > 1e-4) {
             val maxVel = kotlin.math.sqrt(maxCentripetalAccel / kotlin.math.abs(curvature))
@@ -136,21 +157,22 @@ class HolonomicDriveController(
         val xFF = limitedVelocity * cos(pathTangent)
         val yFF = limitedVelocity * sin(pathTangent)
 
-        var fieldRelativeX = xFF + xFeedback
-        var fieldRelativeY = yFF + yFeedback
+        val fieldRelativeX = xFF + xFeedback
+        val fieldRelativeY = yFF + yFeedback
 
-        val outputMagnitude = kotlin.math.hypot(fieldRelativeX, fieldRelativeY)
-        if (outputMagnitude > maxOutputMps && outputMagnitude > 1e-4) {
-            val scale = maxOutputMps / outputMagnitude
-            fieldRelativeX *= scale
-            fieldRelativeY *= scale
+        val cosHeading = cos(currentHeadingRad)
+        val sinHeading = sin(currentHeadingRad)
+
+        var vxRobot = fieldRelativeX * cosHeading + fieldRelativeY * sinHeading
+        var vyRobot = -fieldRelativeX * sinHeading + fieldRelativeY * cosHeading
+
+        val mag = kotlin.math.hypot(vxRobot, vyRobot)
+        if (mag > maxOutputMps) {
+            val scale = maxOutputMps / mag
+            vxRobot *= scale
+            vyRobot *= scale
         }
 
-        return ChassisSpeeds.fromFieldRelativeSpeeds(
-            fieldRelativeX,
-            fieldRelativeY,
-            thetaFeedback,
-            currentPose.heading
-        )
+        return ChassisSpeeds(vxRobot, vyRobot, thetaFeedback)
     }
 }

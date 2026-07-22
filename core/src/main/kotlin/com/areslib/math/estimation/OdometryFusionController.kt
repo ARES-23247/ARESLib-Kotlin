@@ -37,9 +37,32 @@ object OdometryFusionController {
         scratchQ: Matrix3x3,
         scratchCov: Matrix3x3
     ): PoseEstimatorState {
-        if (deltaTranslation.x.isNaN() || deltaTranslation.x.isInfinite() ||
-            deltaTranslation.y.isNaN() || deltaTranslation.y.isInfinite() ||
-            deltaHeading.radians.isNaN() || deltaHeading.radians.isInfinite() ||
+        return processOdometryDirect(
+            state, timestampMs, deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
+            pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
+            gyroRateRadPerSec, dtSeconds, baseQ, scratchQ, scratchCov
+        )
+    }
+
+    fun processOdometryDirect(
+        state: PoseEstimatorState,
+        timestampMs: Long,
+        deltaX: Double,
+        deltaY: Double,
+        deltaHeadingRad: Double,
+        pitchDegrees: Double,
+        rollDegrees: Double,
+        pitchVelocityDegPerSec: Double,
+        rollVelocityDegPerSec: Double,
+        gyroRateRadPerSec: Double,
+        dtSeconds: Double,
+        baseQ: Matrix3x3,
+        scratchQ: Matrix3x3,
+        scratchCov: Matrix3x3
+    ): PoseEstimatorState {
+        if (deltaX.isNaN() || deltaX.isInfinite() ||
+            deltaY.isNaN() || deltaY.isInfinite() ||
+            deltaHeadingRad.isNaN() || deltaHeadingRad.isInfinite() ||
             pitchDegrees.isNaN() || pitchDegrees.isInfinite() ||
             rollDegrees.isNaN() || rollDegrees.isInfinite() ||
             pitchVelocityDegPerSec.isNaN() || pitchVelocityDegPerSec.isInfinite() ||
@@ -103,7 +126,7 @@ object OdometryFusionController {
         }
 
         // Online Gyro Bias Estimation & Bias Correction
-        val isStationary = deltaTranslation.x == 0.0 && deltaTranslation.y == 0.0 && deltaHeading.radians == 0.0
+        val isStationary = deltaX == 0.0 && deltaY == 0.0 && deltaHeadingRad == 0.0
         val alpha = 0.01 * dtSeconds
         val newBias = if (isStationary && gyroRateRadPerSec != 0.0) {
             state.gyroBiasRadPerSec * (1.0 - alpha) + gyroRateRadPerSec * alpha
@@ -115,11 +138,11 @@ object OdometryFusionController {
         val correctedDeltaHeading = if (isStationary) {
             0.0
         } else {
-            deltaHeading.radians - newBias * dtSeconds
+            deltaHeadingRad - newBias * dtSeconds
         }
 
         // Gyro rate mismatch check for wheel slippage detection
-        val expectedHeadingVel = deltaHeading.radians / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
+        val expectedHeadingVel = deltaHeadingRad / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
         val slipScale = if (correctedGyroRate != 0.0 && kotlin.math.abs(expectedHeadingVel - correctedGyroRate) > 0.5) {
             10.0 // Dynamic wheel slippage covariance expansion
         } else {
@@ -130,20 +153,17 @@ object OdometryFusionController {
         val movementScale = if (isStationary) 0.001 else 1.0
         scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale)
 
-        val newHeading = Rotation2d(state.estimatedPoseHeading + correctedDeltaHeading)
-        val newPose = Pose2d(
-            state.estimatedPoseX + deltaTranslation.x,
-            state.estimatedPoseY + deltaTranslation.y,
-            newHeading
-        )
+        val newX = state.estimatedPoseX + deltaX
+        val newY = state.estimatedPoseY + deltaY
+        val newHeadingRad = com.areslib.math.wrapAngle(state.estimatedPoseHeading + correctedDeltaHeading)
         
         val thetaMid = state.estimatedPoseHeading + correctedDeltaHeading * 0.5
         val newCovariance = scratchCov
 
         EKFStatePropagator.propagate(
             state.covarianceArray,
-            deltaTranslation.x,
-            deltaTranslation.y,
+            deltaX,
+            deltaY,
             thetaMid,
             scratchQ,
             newCovariance
@@ -159,11 +179,11 @@ object OdometryFusionController {
         state.covarianceArray[7] = newCovariance.m21
         state.covarianceArray[8] = newCovariance.m22
 
-        state.history.addEntry(timestampMs, newPose, newCovariance, tiltScale * slipScale)
+        state.history.addEntryDirect(timestampMs, newX, newY, newHeadingRad, newCovariance, tiltScale * slipScale)
 
-        state.estimatedPoseX = newPose.x
-        state.estimatedPoseY = newPose.y
-        state.estimatedPoseHeading = newPose.heading.radians
+        state.estimatedPoseX = newX
+        state.estimatedPoseY = newY
+        state.estimatedPoseHeading = newHeadingRad
         state.isBeached = currentlyBeached
         state.lastUnbeachedTimeMs = unbeachedTime
         state.gyroBiasRadPerSec = newBias

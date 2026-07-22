@@ -48,7 +48,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private var offsetHeading = 0.0
 
     init {
-        driver.setOffsets(xOffsetMm, yOffsetMm, org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.MM)
+        setOffsets(xOffsetMm, yOffsetMm)
         if (encoderResolution != null) {
             driver.setEncoderResolution(encoderResolution, DistanceUnit.MM)
         }

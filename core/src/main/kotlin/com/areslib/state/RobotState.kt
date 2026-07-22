@@ -178,7 +178,7 @@ data class SuperstructureState(
 /**
  * Class implementation for Vision Measurement.
  *
- * Pure Redux state definition and deterministic reducer transition handler.
+ * Object-pooled data structure for zero-GC vision pipeline measurements.
  */
 data class VisionMeasurement(
     var timestampMs: Long = 0L,
