@@ -11,6 +11,16 @@ package com.areslib.math.estimation
  * @param processNoise Confidence covariance in the system process model (Q). Smaller means model is highly trusted.
  * @param measurementNoise Confidence covariance in the sensor reading (R). Smaller means sensor is highly trusted.
  */
+/**
+ * Class implementation for Kalman Filter.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 class KalmanFilter(
     private var processNoise: Double,
     private var measurementNoise: Double,

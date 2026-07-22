@@ -11,6 +11,16 @@ enum class FieldSymmetry {
     MIRRORED
 }
 
+/**
+ * Object implementation for Alliance Mirroring.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 object AllianceMirroring {
 
     /**

@@ -20,6 +20,11 @@ import com.areslib.hardware.drive.SwerveModuleInputs
  * @param steerMotor REV Expansion Hub `DcMotorEx` rotating the module steering pod.
  * @param analogEncoder Absolute analog position sensor (e.g. MA3, Lamprey, Axon encoder).
  */
+/**
+ * Class implementation for Swerve Module I O Ftc.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SwerveModuleIOFtc(
     private val driveMotor: DcMotorEx,
     private val steerMotor: DcMotorEx,

@@ -7,6 +7,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Object implementation for Log Manager Server.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 object LogManagerServer : NanoHTTPD(5002) {
 
     private val gson = Gson()
@@ -141,6 +146,11 @@ object LogManagerServer : NanoHTTPD(5002) {
         )
     }
 
+    /**
+     * Class implementation for Log File Info.
+     *
+     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+     */
     data class LogFileInfo(
         val name: String,
         val sizeBytes: Long,

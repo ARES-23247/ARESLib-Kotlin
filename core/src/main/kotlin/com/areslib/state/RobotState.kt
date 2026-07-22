@@ -29,6 +29,11 @@ enum class DriveMode {
     X_BRAKE
 }
 
+/**
+ * Class implementation for Drive State.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class DriveState(
     val xVelocityMetersPerSecond: Double = 0.0,
     val yVelocityMetersPerSecond: Double = 0.0,
@@ -152,6 +157,11 @@ data class SuperstructureState(
  *   It is used by the alignment controller to compute translational and rotational errors
  *   for driving the robot square to the tag at a desired standoff distance.
  */
+/**
+ * Class implementation for Vision Measurement.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class VisionMeasurement(
     var timestampMs: Long = 0L,
     var targetPose: Pose3d = Pose3d(),
@@ -160,6 +170,11 @@ data class VisionMeasurement(
     var robotPoseTargetSpace: Pose3d = Pose3d()
 )
 
+/**
+ * Class implementation for Vision State.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class VisionState(
     val lastTargetTimestampMs: Long = 0L,
     val targetX: Double = 0.0,

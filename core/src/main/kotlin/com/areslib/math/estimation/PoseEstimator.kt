@@ -5,6 +5,16 @@ import com.areslib.math.coordinate.FieldLayouts
 import com.areslib.math.wrapAngle
 import com.areslib.math.geometry.*
 
+/**
+ * Class implementation for Pose History Entry.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class PoseHistoryEntry(
     var timestampMs: Long = 0L,
     var x: Double = 0.0,
@@ -22,6 +32,16 @@ data class PoseHistoryEntry(
         }
 }
 
+/**
+ * Class implementation for History Buffer.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEntry>() {
     private val entries = Array(capacity) { PoseHistoryEntry() }
     private var head = 0
@@ -120,6 +140,16 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
  * @property covariance The 3x3 error covariance matrix representing estimate uncertainty.
  * @property history The rolling history of past state estimations used for retroactive latency compensation.
  */
+/**
+ * Class implementation for Pose Estimator State.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class PoseEstimatorState(
     var estimatedPoseX: Double = 0.0,
     var estimatedPoseY: Double = 0.0,
@@ -155,6 +185,16 @@ data class PoseEstimatorState(
  * - Dynamic gyro-rate slip covariance scaling to adapt to wheel slippage.
  * - Retroactive observation rewinding to compensate for vision processing latency.
  * - Statistical 3-DOF Mahalanobis Distance outlier rejection to handle erroneous camera targets.
+ */
+/**
+ * Object implementation for Pose Estimator.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
  */
 object PoseEstimator {
     private const val MAX_HISTORY_SIZE = 50

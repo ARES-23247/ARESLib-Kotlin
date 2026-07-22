@@ -5,6 +5,11 @@ import com.areslib.state.RobotState
 import com.areslib.math.geometry.Pose2d
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Object implementation for Task Callbacks.
+ *
+ * Asynchronous superstructure task sequence execution unit.
+ */
 object TaskCallbacks {
     private val completeCallbacks = ConcurrentHashMap<Task, () -> Unit>()
     private val failCallbacks = ConcurrentHashMap<Task, () -> Unit>()

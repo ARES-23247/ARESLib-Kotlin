@@ -6,8 +6,27 @@ import kotlin.math.abs
 import kotlin.math.sign
 
 /**
- * Manages static friction feedforward ($k_S$), closed-loop wheel velocity PID feedback controllers,
- * slew rate limiters, and voltage-compensated acceleration scaling for mecanum drivetrains.
+ * Feedforward and feedback power controller for 4-wheel Mecanum drivetrains.
+ *
+ * Manages static friction feedforward ($k_S$), battery voltage compensation, wheel velocity PID feedback loops,
+ * and voltage-scaled slew rate acceleration limits.
+ *
+ * ### Mathematical Formulation:
+ * Feedforward calculation:
+ * $$u_{FF} = \left(\frac{v_{desired}}{v_{max}} + k_S \cdot \text{sign}(v_{desired})\right) \cdot \frac{12.0}{V_{battery}}$$
+ * Power effort with PID feedback and voltage scaling:
+ * $$u_{out} = \text{coerceIn}\left((u_{FF} + u_{PID}) \cdot \text{powerScale}, -1.0, 1.0\right)$$
+ *
+ * @param initialKs Static friction feedforward voltage offset $k_S$.
+ * @param motorKp Proportional gain $K_p$ for wheel velocity PID feedback.
+ * @param motorKi Integral gain $K_i$ for wheel velocity PID feedback.
+ * @param motorKd Derivative gain $K_d$ for wheel velocity PID feedback.
+ * @param initialSlewRateLimit Acceleration slew rate limit ($1/s$).
+ */
+/**
+ * Class implementation for Mecanum Drive Feedforward.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 class MecanumDriveFeedforward(
     var initialKs: Double = 0.0,
@@ -16,6 +35,7 @@ class MecanumDriveFeedforward(
     var motorKd: Double? = null,
     var initialSlewRateLimit: Double? = null
 ) {
+    /** Static friction feedforward coefficient $k_S$. */
     var kS: Double = initialKs
 
     private var flController = if (motorKp != null) PIDController(motorKp!!, motorKi ?: 0.0, motorKd ?: 0.0) else null
@@ -28,6 +48,7 @@ class MecanumDriveFeedforward(
     private var rlLimiter: SlewRateLimiter? = null
     private var rrLimiter: SlewRateLimiter? = null
 
+    /** Maximum acceleration slew rate limit. */
     var slewRateLimit: Double? = initialSlewRateLimit
         set(value) {
             field = value
@@ -44,6 +65,7 @@ class MecanumDriveFeedforward(
             }
         }
 
+    /** Enables automatic reduction of slew acceleration limits when battery voltage drops below 12.0V. */
     var enableVoltageCompensatedSlew: Boolean = false
 
     init {
@@ -57,6 +79,13 @@ class MecanumDriveFeedforward(
         }
     }
 
+    /**
+     * Dynamically updates PID gains across all 4 wheel velocity controllers.
+     *
+     * @param kp Proportional gain $K_p$.
+     * @param ki Integral gain $K_i$.
+     * @param kd Derivative gain $K_d$.
+     */
     fun updateMotorGains(kp: Double, ki: Double, kd: Double) {
         val fl = flController
         if (fl == null) {
@@ -72,6 +101,22 @@ class MecanumDriveFeedforward(
         }
     }
 
+    /**
+     * Zero-GC calculation cycle for 4 motor duty-cycle powers with feedforward, PID feedback, and slew rate limiting.
+     *
+     * @param speeds Target 4 wheel surface speeds $[v_{FL}, v_{FR}, v_{RL}, v_{RR}]$ (m/s).
+     * @param maxWheelSpeedMps Maximum physical wheel speed capability (m/s).
+     * @param batteryVolts Current battery voltage level in Volts ($V$).
+     * @param dtSeconds Time step in seconds ($s$).
+     * @param powerScale Master power scaling multiplier (0.0 to 1.0).
+     * @param useClosedLoopVelocity True if REV Control Hub internal closed-loop velocity PID is enabled.
+     * @param ticksPerMeter Encoder resolution in ticks per meter.
+     * @param flVel Front-left wheel velocity encoder reading (ticks/s).
+     * @param frVel Front-right wheel velocity encoder reading (ticks/s).
+     * @param rlVel Rear-left wheel velocity encoder reading (ticks/s).
+     * @param rrVel Rear-right wheel velocity encoder reading (ticks/s).
+     * @param outputPowers 4-element output array receiving computed motor power duty cycles (-1.0 to 1.0).
+     */
     fun calculateMotorPowers(
         speeds: DoubleArray,
         maxWheelSpeedMps: Double,

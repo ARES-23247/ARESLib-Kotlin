@@ -1,6 +1,11 @@
 @file:Suppress("UNUSED_PARAMETER")
 package org.json
 
+/**
+ * Class implementation for J S O N Object.
+ *
+ * Robotics framework control component.
+ */
 open class JSONObject {
     constructor()
     constructor(json: String)

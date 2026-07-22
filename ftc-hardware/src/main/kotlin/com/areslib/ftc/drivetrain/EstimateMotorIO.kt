@@ -7,8 +7,12 @@ import com.areslib.util.RobotClock
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 
 /**
- * A lightweight MotorIO wrapper that records target power changes locally to avoid 
- * making blocking I2C current/power writes or reads when estimating current draw.
+ * Non-blocking motor IO wrapper for REV Expansion Hub `DcMotorEx` actuators.
+ *
+ * Caches position, calculated velocity, and electrical current draw locally to prevent blocking reads/writes
+ * on high-frequency robot control loops.
+ *
+ * @param motor FTC `DcMotorEx` hardware map instance.
  */
 class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, SyncPolledDevice {
     override var power: Double = 0.0
@@ -20,13 +24,14 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     private var lastPosition = 0.0
     private var lastTime = 0L
 
+    /** Synchronously updates electrical current draw reading in Amperes. */
     override fun pollSync() {
         try {
             cachedAmps = motor.getCurrent(CurrentUnit.AMPS)
         } catch (_: Exception) {}
     }
 
-    /** Updates local caches from the bulk-cached register maps */
+    /** Updates local position and velocity estimates from REV bulk-read data. */
     fun updateInputs() {
         try {
             cachedPosition = motor.currentPosition.toDouble()
@@ -42,19 +47,24 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
         } catch (_: Exception) {}
     }
 
+    /** Measured motor velocity in encoder ticks per second. */
     override val velocity: Double
         get() = cachedVelocity
 
+    /** Measured motor position in total cumulative encoder ticks. */
     override val position: Double
         get() = cachedPosition
 
+    /** Measured electrical current draw in Amperes ($A$). */
     override val currentAmps: Double
         get() = cachedAmps
 
+    /** Resets the local motor encoder zero reference. */
     override fun resetEncoder() {
         // No-op to avoid side-effects in estimation wrapper
     }
 
+    /** Releases hardware resources upon OpMode termination. */
     override fun close() {
     }
 }

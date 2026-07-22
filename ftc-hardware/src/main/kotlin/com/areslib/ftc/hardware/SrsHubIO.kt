@@ -21,6 +21,11 @@ import com.areslib.math.geometry.Rotation2d
     xmlTag = "SrsHub",
     description = "SRS Robotics Expansion Hub over I2C"
 )
+/**
+ * Class implementation for Srs Hub Driver.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true), AutoCloseable {
     // Structured bulk cache buffers
     private val cachedAnalog = DoubleArray(4)
@@ -277,17 +282,32 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 }
 
+/**
+ * Class implementation for Srs Hub Analog I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) : AnalogVoltageInput {
     override val voltage: Double
         get() = srsHub.getAnalogVoltage(port)
 }
 
+/**
+ * Class implementation for Srs Hub Digital I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SrsHubDigitalIO(private val srsHub: SrsHubDriver, private val port: Int) {
     fun getState(): Boolean {
         return srsHub.getDigitalState(port)
     }
 }
 
+/**
+ * Class implementation for Srs Hub Servo I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SrsHubServoIO(private val srsHub: SrsHubDriver, private val port: Int) : ServoIO {
     private var currentTarget = 0.0
 
@@ -299,6 +319,11 @@ class SrsHubServoIO(private val srsHub: SrsHubDriver, private val port: Int) : S
         }
 }
 
+/**
+ * Class implementation for Srs Hub Encoder I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SrsHubEncoderIO(private val srsHub: SrsHubDriver, private val port: Int) : MotorIO {
     override var power: Double
         get() = 0.0

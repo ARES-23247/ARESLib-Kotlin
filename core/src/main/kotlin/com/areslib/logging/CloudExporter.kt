@@ -7,6 +7,11 @@ import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
+/**
+ * Object implementation for Cloud Exporter.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 object CloudExporter {
     val isAndroid: Boolean by lazy {
         val javaVendor = System.getProperty("java.vendor") ?: ""

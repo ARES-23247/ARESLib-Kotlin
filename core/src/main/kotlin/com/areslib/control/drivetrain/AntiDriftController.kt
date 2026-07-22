@@ -22,6 +22,11 @@ import com.areslib.math.geometry.Pose2d
  * @param xPid PID controller for X-axis (forward/backward) velocity drift correction.
  * @param yPid PID controller for Y-axis (strafe) velocity drift correction.
  */
+/**
+ * Class implementation for Anti Drift Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class AntiDriftController(
     private val baseOdometry: OdometryIO,
     val xPid: PIDController = PIDController(1.5, 0.0, 0.1),

@@ -1,6 +1,11 @@
 @file:Suppress("UNUSED_PARAMETER")
 package com.qualcomm.robotcore.util
 
+/**
+ * Object implementation for Robot Log.
+ *
+ * Robotics framework control component.
+ */
 object RobotLog {
     @JvmStatic fun v(message: String) { println("V/RobotLog: $message") }
     @JvmStatic fun v(format: String, vararg args: Any) { println("V/RobotLog: " + String.format(format, *args)) }

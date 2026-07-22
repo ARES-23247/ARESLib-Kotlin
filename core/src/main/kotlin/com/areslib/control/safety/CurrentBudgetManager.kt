@@ -31,6 +31,11 @@ import com.areslib.hardware.actuator.MotorIO
  *
  * Zero allocations in the hot path.
  */
+/**
+ * Class implementation for Current Budget Manager.
+ *
+ * Robotics framework control component.
+ */
 class CurrentBudgetManager(
     /** Maximum total current draw before graduated scaling begins (Amps) */
     val warningCurrentAmps: Double = 15.0,

@@ -10,6 +10,11 @@ import com.areslib.Store
 import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.control.drivetrain.HolonomicDriveController
 
+/**
+ * Class implementation for Vision Extrinsic Calibration Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class VisionExtrinsicCalibrationController(
     private val store: Store,
     private val holonomicDriveController: HolonomicDriveController,

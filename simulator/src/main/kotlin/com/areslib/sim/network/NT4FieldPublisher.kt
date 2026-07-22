@@ -2,6 +2,11 @@ package com.areslib.sim.network
 
 import edu.wpi.first.networktables.NetworkTableInstance
 
+/**
+ * Class implementation for Dynamic Element Pose.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 data class DynamicElementPose(
     val id: String,
     val x: Double,
@@ -9,6 +14,11 @@ data class DynamicElementPose(
     val rotation: Double // in degrees
 )
 
+/**
+ * Object implementation for N T4 Field Publisher.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 object NT4FieldPublisher {
     private val ntInst = NetworkTableInstance.getDefault()
     private val obstaclesPub = ntInst.getStringTopic("ARES/Field/Obstacles").publish()

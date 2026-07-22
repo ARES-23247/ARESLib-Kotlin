@@ -41,6 +41,11 @@ class CBFFilteredOutput {
  * @property c The safety margin offset representing the absolute limit threshold.
  * @property alpha The safety convergence rate (higher values allow faster approaches, lower values are more conservative).
  */
+/**
+ * Class implementation for Control Barrier Function.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class ControlBarrierFunction(
     val m: Double,
     val c: Double = 0.0,

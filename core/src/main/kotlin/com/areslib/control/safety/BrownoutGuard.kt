@@ -26,6 +26,11 @@ package com.areslib.control.safety
  *
  * Zero allocations in the hot path.
  */
+/**
+ * Class implementation for Brownout Guard.
+ *
+ * Robotics framework control component.
+ */
 class BrownoutGuard(
     /** Voltage below which graduated power reduction begins (FTC: 10.0V, FRC: 8.5V) */
     val warningVoltage: Double = 10.0,

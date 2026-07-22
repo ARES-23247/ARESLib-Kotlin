@@ -8,6 +8,14 @@ import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.math.PI
 
+/**
+ * Object implementation for Path Chainer.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 object PathChainer {
 
     /**

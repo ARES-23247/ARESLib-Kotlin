@@ -9,6 +9,16 @@ package com.areslib.math.geometry
  * Immutable operations ([plus], [minus], [times]) return new instances and should be used
  * only outside hot paths (e.g., initialization, configuration).
  */
+/**
+ * Class implementation for Matrix3x3.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class Matrix3x3(
     var m00: Double = 0.0, var m01: Double = 0.0, var m02: Double = 0.0,
     var m10: Double = 0.0, var m11: Double = 0.0, var m12: Double = 0.0,
@@ -115,6 +125,16 @@ data class Matrix3x3(
     }
 }
 
+/**
+ * Class implementation for Vector3.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class Vector3(val x: Double = 0.0, val y: Double = 0.0, val z: Double = 0.0) {
     operator fun plus(other: Vector3) = Vector3(x + other.x, y + other.y, z + other.z)
     operator fun minus(other: Vector3) = Vector3(x - other.x, y - other.y, z - other.z)

@@ -5,6 +5,11 @@ import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Pose2d
 import com.areslib.state.RobotState
 
+/**
+ * Class implementation for Drive Subsystem.
+ *
+ * Robotics framework control component.
+ */
 class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
     var maxSpeedMps: Double = 3.5
 

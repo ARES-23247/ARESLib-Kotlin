@@ -26,6 +26,11 @@ import com.areslib.state.RobotFieldPoint
  * ### Coordinate System:
  * Field-centric coordinates in meters ($m$) relative to field center $(0,0)$.
  */
+/**
+ * Object implementation for Field Obstacle Loader.
+ *
+ * Robotics framework control component.
+ */
 object FieldObstacleLoader {
     private val gson = Gson()
 

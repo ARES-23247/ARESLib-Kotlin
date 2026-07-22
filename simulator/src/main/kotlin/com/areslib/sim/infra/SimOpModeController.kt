@@ -1,5 +1,10 @@
 package com.areslib.sim.infra
 
+/**
+ * Class implementation for Sim Op Mode Controller.
+ *
+ * Robotics framework control component.
+ */
 class SimOpModeController {
     fun initOpMode() {
         // Virtual OpMode initialization

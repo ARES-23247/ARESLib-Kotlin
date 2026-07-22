@@ -6,6 +6,14 @@ import com.google.gson.JsonArray
 import com.areslib.sequencer.*
 import java.io.File
 
+/**
+ * Object implementation for Path Planner Auto Parser.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 object PathPlannerAutoParser {
     private val gson = Gson()
 

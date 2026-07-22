@@ -3,6 +3,11 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.SuperstructureState
 
+/**
+ * Object implementation for Superstructure Reducer.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 object SuperstructureReducer {
     /**
      * Reduces the generic SuperstructureState by merging dynamic SubsystemState updates.

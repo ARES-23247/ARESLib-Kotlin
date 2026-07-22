@@ -20,6 +20,11 @@ import com.areslib.reducer.rootReducer
  * @param initialState The initial immutable robot state snapshot.
  * @param reducer The root reducer function composing all domain-specific sub-reducers.
  */
+/**
+ * Class implementation for Ares Robot.
+ *
+ * Robotics framework control component.
+ */
 open class AresRobot(
     initialState: RobotState = RobotState(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer

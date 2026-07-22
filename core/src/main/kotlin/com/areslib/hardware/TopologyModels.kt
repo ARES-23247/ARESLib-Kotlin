@@ -9,6 +9,11 @@ enum class TopologyNodeType {
     CAN_CODER, PIGEON_IMU, POWER_DISTRIBUTION
 }
 
+/**
+ * Class implementation for Topology Node.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 data class TopologyNode(
     val id: String,
     val type: TopologyNodeType,
@@ -22,6 +27,11 @@ data class TopologyNode(
     val metadata: Map<String, String> = emptyMap()
 )
 
+/**
+ * Class implementation for Hardware Topology.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 data class HardwareTopology(
     val robotId: String,
     val nodes: List<TopologyNode> = emptyList()

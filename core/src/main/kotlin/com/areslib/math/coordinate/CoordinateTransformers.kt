@@ -4,6 +4,16 @@ import com.areslib.state.Alliance
 import com.areslib.math.geometry.*
 import com.areslib.math.wrapAngle
 
+/**
+ * Object implementation for Coordinate Transformers.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 object CoordinateTransformers {
     const val FTC_FIELD_SIZE = 3.6576
     const val FRC_FIELD_LENGTH = 16.54175

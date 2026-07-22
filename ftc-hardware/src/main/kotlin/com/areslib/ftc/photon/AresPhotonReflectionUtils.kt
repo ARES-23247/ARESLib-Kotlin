@@ -2,6 +2,11 @@ package com.areslib.ftc.photon
 
 import java.lang.reflect.Field
 
+/**
+ * Object implementation for Ares Photon Reflection Utils.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 object AresPhotonReflectionUtils {
     fun getField(clazz: Class<*>, fieldName: String): Field? {
         try {

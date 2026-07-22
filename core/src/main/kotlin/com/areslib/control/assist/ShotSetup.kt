@@ -40,6 +40,11 @@ class ShotResult {
  * @property delayCompensationSeconds Total latency compensation (seconds) for lookahead prediction.
  * @property shooterFacesRearward If true, the robot's front is 180° from the aim direction (back-mounted shooter).
  */
+/**
+ * Class implementation for Shot Config.
+ *
+ * Robotics framework control component.
+ */
 data class ShotConfig(
     val shooterOffsetX: Double,
     val shooterOffsetY: Double,
@@ -72,6 +77,11 @@ data class ShotConfig(
  * container is pre-allocated by the caller and populated in-place.
  *
  * @param config Robot-specific shooting geometry and ballistic tuning tables.
+ */
+/**
+ * Class implementation for Shot Setup.
+ *
+ * Robotics framework control component.
  */
 class ShotSetup(private val config: ShotConfig) {
 

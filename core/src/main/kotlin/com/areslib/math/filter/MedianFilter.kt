@@ -16,6 +16,16 @@ package com.areslib.math.filter
  *
  * @param windowSize Total number of historical samples to track ($N \ge 1$).
  */
+/**
+ * Class implementation for Median Filter.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 class MedianFilter(
     private val windowSize: Int
 ) {

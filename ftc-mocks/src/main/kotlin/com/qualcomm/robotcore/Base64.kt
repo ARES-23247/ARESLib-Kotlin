@@ -1,6 +1,11 @@
 @file:Suppress("UNUSED_PARAMETER")
 package android.util
 
+/**
+ * Object implementation for Base64.
+ *
+ * Robotics framework control component.
+ */
 object Base64 {
     @JvmField
     val NO_WRAP = 2

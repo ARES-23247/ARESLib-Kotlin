@@ -2,12 +2,32 @@ package com.areslib.math.geometry
 
 import kotlin.math.*
 
+/**
+ * Class implementation for Translation3d.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class Translation3d(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
     val norm: Double get() = sqrt(x * x + y * y + z * z)
     operator fun plus(other: Translation3d) = Translation3d(x + other.x, y + other.y, z + other.z)
     operator fun minus(other: Translation3d) = Translation3d(x - other.x, y - other.y, z - other.z)
 }
 
+/**
+ * Class implementation for Quaternion.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class Quaternion(var w: Double = 1.0, var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
     fun normalize(): Quaternion {
         val norm = sqrt(w * w + x * x + y * y + z * z)
@@ -30,6 +50,16 @@ data class Quaternion(var w: Double = 1.0, var x: Double = 0.0, var y: Double = 
     }
 }
 
+/**
+ * Class implementation for Rotation3d.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class Rotation3d(var q: Quaternion = Quaternion()) {
     constructor(roll: Double, pitch: Double, yaw: Double) : this(
         fromEulerAngles(roll, pitch, yaw)
@@ -97,6 +127,16 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
     }
 }
 
+/**
+ * Class implementation for Pose3d.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class Pose3d(
     var translation: Translation3d = Translation3d(),
     var rotation: Rotation3d = Rotation3d()
@@ -110,6 +150,16 @@ data class Pose3d(
     }
 }
 
+/**
+ * Class implementation for Transform3d.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class Transform3d(
     val translation: Translation3d = Translation3d(),
     val rotation: Rotation3d = Rotation3d()

@@ -11,6 +11,11 @@ import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldElementType
 import com.areslib.state.RobotFieldElementInstance
 
+/**
+ * Object implementation for Field Element Loader.
+ *
+ * Robotics framework control component.
+ */
 object FieldElementLoader {
     private val gson = Gson()
 

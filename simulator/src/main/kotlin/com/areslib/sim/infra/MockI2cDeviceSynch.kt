@@ -3,6 +3,11 @@ package com.areslib.sim.infra
 import com.qualcomm.robotcore.hardware.I2cAddr
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch
 
+/**
+ * Class implementation for Mock I2c Device Synch.
+ *
+ * Robotics framework control component.
+ */
 class MockI2cDeviceSynch : I2cDeviceSynch {
     override var i2cAddress: I2cAddr = I2cAddr.create7bit(0x00)
     

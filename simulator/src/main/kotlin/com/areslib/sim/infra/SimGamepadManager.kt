@@ -4,6 +4,11 @@ import com.areslib.math.geometry.ChassisSpeeds
 import java.awt.event.KeyEvent
 import org.lwjgl.glfw.GLFW.*
 
+/**
+ * Class implementation for Sim Gamepad Manager.
+ *
+ * Robotics framework control component.
+ */
 class SimGamepadManager {
     val pressedKeys = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
 

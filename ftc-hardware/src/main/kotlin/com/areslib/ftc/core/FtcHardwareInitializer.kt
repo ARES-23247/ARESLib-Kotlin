@@ -6,6 +6,11 @@ import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.hardware.sensor.ImuIO
 import com.areslib.hardware.vision.VisionIO
 
+/**
+ * Class implementation for Ftc Hardware Initializer.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcHardwareInitializer(
     private val hardwareMap: HardwareMap,
     private val pinpointName: String? = "pinpoint",

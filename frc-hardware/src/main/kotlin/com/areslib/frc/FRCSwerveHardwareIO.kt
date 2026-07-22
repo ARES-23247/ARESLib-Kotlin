@@ -22,6 +22,11 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
  *
  * @param drivetrain CTRE Phoenix 6 [SwerveDrivetrain] instance.
  */
+/**
+ * Class implementation for F R C Swerve Hardware I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FRCSwerveHardwareIO(drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
 
     private val reader = SwerveCtreDrivetrainReader(drivetrain)

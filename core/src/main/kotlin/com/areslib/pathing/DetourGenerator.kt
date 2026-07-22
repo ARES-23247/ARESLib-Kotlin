@@ -5,6 +5,14 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
 import kotlin.math.hypot
 
+/**
+ * Object implementation for Detour Generator.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 object DetourGenerator {
 
     /**

@@ -21,6 +21,11 @@ interface I2cDeviceSynch : I2cDeviceSynchSimple {
     
     var readWindow: ReadWindow
     
+    /**
+     * Class implementation for Read Window.
+     *
+     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     */
     class ReadWindow(val ireg: Int, val creg: Int, val mode: ReadMode)
     enum class ReadMode { REPEAT, BALANCED, ONLY_ONCE }
 }

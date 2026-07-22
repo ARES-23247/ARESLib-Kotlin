@@ -14,6 +14,14 @@ import com.areslib.state.TuningState
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.util.RobotClock
 
+/**
+ * Class implementation for Mecanum Trajectory Follower.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 class MecanumTrajectoryFollower(
     private val drive: DriveSubsystem
 ) {

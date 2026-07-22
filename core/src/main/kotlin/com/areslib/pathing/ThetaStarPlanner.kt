@@ -2,6 +2,7 @@ package com.areslib.pathing
 
 import com.areslib.math.geometry.Translation2d
 import kotlin.math.roundToInt
+import com.areslib.pathing.planner.PlannerState
 
 /**
  * A state-of-the-art any-angle global pathfinder implementing the **Theta\*** path planning algorithm.
@@ -13,115 +14,15 @@ import kotlin.math.roundToInt
  *
  * This results in mathematically optimal, straight, grid-snap-free global paths around costmap obstacles.
  */
+/**
+ * Object implementation for Theta Star Planner.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 object ThetaStarPlanner {
-
-    private class LongHeap(capacity: Int) {
-        var data = LongArray(capacity)
-        var size = 0
-
-        fun add(value: Long) {
-            if (size == data.size) {
-                data = data.copyOf(data.size * 2)
-            }
-            var i = size
-            size++
-            while (i > 0) {
-                val p = (i - 1) ushr 1
-                if (data[p] <= value) break
-                data[i] = data[p]
-                i = p
-            }
-            data[i] = value
-        }
-
-        fun poll(): Long {
-            val result = data[0]
-            size--
-            if (size > 0) {
-                val value = data[size]
-                var i = 0
-                while ((i shl 1) + 1 < size) {
-                    var child = (i shl 1) + 1
-                    if (child + 1 < size && data[child + 1] < data[child]) {
-                        child++
-                    }
-                    if (value <= data[child]) break
-                    data[i] = data[child]
-                    i = child
-                }
-                data[i] = value
-            }
-            return result
-        }
-
-        fun clear() { size = 0 }
-        
-        fun isNotEmpty(): Boolean = size > 0
-    }
-
-    private class PlannerState(capacity: Int) {
-        var gCosts = DoubleArray(capacity)
-        var parents = IntArray(capacity)
-        var generations = IntArray(capacity)
-        var generation = 0
-        var openQueue = LongHeap(capacity)
-        var pathPool = DoubleArray(capacity * 2)
-
-        fun ensureCapacity(capacity: Int) {
-            if (gCosts.size < capacity) {
-                gCosts = DoubleArray(capacity)
-                parents = IntArray(capacity)
-                generations = IntArray(capacity)
-            }
-            // Advance epoch — all nodes with stale generation are implicitly reset
-            generation++
-            if (generation == Int.MAX_VALUE) {
-                // Overflow guard: reset epoch and zero out generations array
-                generation = 1
-                generations.fill(0, 0, generations.size)
-            }
-            openQueue.clear()
-            if (pathPool.size < capacity * 2) {
-                val newPool = DoubleArray(capacity * 2)
-                System.arraycopy(pathPool, 0, newPool, 0, pathPool.size)
-                pathPool = newPool
-            }
-        }
-
-        /** Read gCost for a node, returning POSITIVE_INFINITY if the node hasn't been touched this epoch. */
-        fun getGCost(key: Int): Double {
-            return if (generations[key] == generation) gCosts[key] else Double.POSITIVE_INFINITY
-        }
-
-        /** Write gCost for a node, marking it as active in the current epoch. */
-        fun setGCost(key: Int, value: Double) {
-            gCosts[key] = value
-            generations[key] = generation
-        }
-
-        /** Check if a node has been closed (visited) this epoch. Uses the sign bit of parents as a flag. */
-        fun isClosed(key: Int): Boolean {
-            return generations[key] == generation && parents[key] < -1
-        }
-
-        /** Mark a node as closed by encoding it into the parent value (negate and subtract 2). */
-        fun setClosed(key: Int) {
-            // Encode: closedParent = -(realParent) - 2, so realParent >= -1 maps to closedParent <= -2
-            parents[key] = -(parents[key]) - 2
-        }
-
-        /** Get the real parent key, whether the node is closed or open. */
-        fun getParent(key: Int): Int {
-            if (generations[key] != generation) return -1
-            val p = parents[key]
-            return if (p < -1) -(p + 2) else p
-        }
-
-        /** Set the parent for a node (open state). */
-        fun setParent(key: Int, parentKey: Int) {
-            parents[key] = parentKey
-        }
-    }
 
     private val threadLocalState = ThreadLocal.withInitial { PlannerState(10000) }
 
@@ -232,7 +133,7 @@ object ThetaStarPlanner {
         // Theta* Line of Sight Check:
         // If there is line of sight from the parent to the neighbor, 
         // bypass the current node to allow any-angle straight pathing.
-        if (lineOfSight(costmap, parentX, parentY, nx, ny)) {
+        if (com.areslib.pathing.planner.LineOfSightChecker.lineOfSight(costmap, parentX, parentY, nx, ny)) {
             val newG = state.getGCost(parentKey) + distance(parentX, parentY, nx, ny)
             if (newG < state.getGCost(nKey)) {
                 state.setGCost(nKey, newG)
@@ -258,39 +159,6 @@ object ThetaStarPlanner {
         }
     }
 
-    /**
-     * High-speed Bresenham line algorithm for line-of-sight collision checking.
-     */
-    private fun lineOfSight(costmap: Costmap, x0: Int, y0: Int, x1: Int, y1: Int): Boolean {
-        var cx = x0
-        var cy = y0
-
-        val dx = kotlin.math.abs(x1 - x0)
-        val dy = kotlin.math.abs(y1 - y0)
-        val sx = if (x0 < x1) 1 else -1
-        val sy = if (y0 < y1) 1 else -1
-        var err = dx - dy
-
-        while (true) {
-            if (!costmap.isCellTraversable(cx, cy)) {
-                return false
-            }
-
-            if (cx == x1 && cy == y1) break
-
-            val e2 = 2 * err
-            if (e2 > -dy) {
-                err -= dy
-                cx += sx
-            }
-            if (e2 < dx) {
-                err += dx
-                cy += sy
-            }
-        }
-
-        return true
-    }
 
     private fun distance(x0: Int, y0: Int, x1: Int, y1: Int): Double {
         val dx = (x1 - x0).toDouble()

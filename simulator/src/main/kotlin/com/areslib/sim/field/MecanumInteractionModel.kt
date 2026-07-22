@@ -12,6 +12,11 @@ import org.dyn4j.world.World
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * Class implementation for Mecanum Interaction Model.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class MecanumInteractionModel(private val robotDouble: MecanumRobotDouble) : SimInteractionModel {
     private val intakeRange = 0.35 // Meters from robot center
     private val shootForce = 8.0 // Linear impulse

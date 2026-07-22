@@ -2,6 +2,11 @@ package com.areslib.ftc.hardware.rev
 
 import java.util.concurrent.CopyOnWriteArrayList
 
+/**
+ * Object implementation for Rev Bulk Data Reader.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 object RevBulkDataReader {
     private val motorsList = CopyOnWriteArrayList<RevMotorController>()
     @Volatile private var pollingRunning = false

@@ -18,6 +18,11 @@ import kotlin.math.abs
  * @param hardwareMap The FTC HardwareMap.
  * @param name The hardware configuration name for this indicator light servo.
  */
+/**
+ * Class implementation for Ftc Indicator Light I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcIndicatorLightIO(
     hardwareMap: HardwareMap,
     val name: String

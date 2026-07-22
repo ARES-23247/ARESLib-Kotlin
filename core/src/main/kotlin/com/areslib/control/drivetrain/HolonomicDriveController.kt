@@ -43,6 +43,11 @@ import kotlin.math.sin
  * @param yAdrc Linear ADRC controller for field Y-axis (overrides [yController] if provided).
  * @param thetaAdrc Linear ADRC controller for heading (overrides [thetaController] if provided).
  */
+/**
+ * Class implementation for Holonomic Drive Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class HolonomicDriveController(
     private val xController: PIDController,
     private val yController: PIDController,

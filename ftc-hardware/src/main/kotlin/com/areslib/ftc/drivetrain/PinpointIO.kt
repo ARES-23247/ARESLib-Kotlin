@@ -21,6 +21,11 @@ import com.areslib.math.wrapAngle
  *   we negate it here at the hardware boundary so all downstream
  *   consumers (EKF, kinematics, path followers) receive CCW-positive.
  */
+/**
+ * Class implementation for Pinpoint I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private val driver: GoBildaPinpointDriver,
     xOffsetMm: Double = 0.0,

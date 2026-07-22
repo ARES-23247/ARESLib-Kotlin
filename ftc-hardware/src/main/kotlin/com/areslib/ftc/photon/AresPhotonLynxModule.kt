@@ -8,6 +8,11 @@ import com.qualcomm.hardware.lynx.commands.LynxMessage
 import com.qualcomm.hardware.lynx.commands.LynxRespondable
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Class implementation for Ares Photon Lynx Module.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class AresPhotonLynxModule(
     lynxUsbDevice: LynxUsbDevice?,
     moduleAddress: Int,

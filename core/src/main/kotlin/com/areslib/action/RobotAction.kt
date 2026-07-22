@@ -27,6 +27,11 @@ interface RobotAction {
      * @property yAccelerationG Y-axis acceleration in G-forces (left positive).
      * @property zAccelerationG Z-axis acceleration in G-forces (up positive).
      */
+    /**
+     * Class implementation for Drive Hardware Update.
+     *
+     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     */
     data class DriveHardwareUpdate(
         val xVelocity: Double,
         val yVelocity: Double,
@@ -82,6 +87,11 @@ interface RobotAction {
      * @property zAccelerationG Z-axis acceleration in G-forces.
      * @property isReset If true, forces the EKF to hard-reset to this pose (e.g., re-initialization at match start).
      */
+    /**
+     * Class implementation for Pose Update.
+     *
+     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     */
     data class PoseUpdate(
         val xMeters: Double,
         val yMeters: Double,
@@ -129,6 +139,11 @@ interface RobotAction {
      * @property targetAngularVelocity Desired rotational velocity as a normalized value [-1.0, 1.0] (CCW-positive).
      * @property isFieldCentric If true, X/Y are relative to the field; if false, relative to the robot chassis.
      * @property isXLock If true, locks X movement.
+     */
+    /**
+     * Class implementation for Joystick Drive Intent.
+     *
+     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
      */
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
         val targetXVelocity: Double,

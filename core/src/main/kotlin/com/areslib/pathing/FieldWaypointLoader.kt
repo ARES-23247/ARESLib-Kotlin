@@ -9,6 +9,14 @@ import com.google.gson.reflect.TypeToken
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 
+/**
+ * Class implementation for Field Waypoint.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 data class FieldWaypoint(
     val id: String,
     val name: String,

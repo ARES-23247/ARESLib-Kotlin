@@ -17,6 +17,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import com.qualcomm.robotcore.hardware.HardwareMap
 import kotlin.math.abs
 
+/**
+ * Class implementation for Sim Dc Motor Ex.
+ *
+ * Robotics framework control component.
+ */
 class SimDcMotorEx : DcMotorEx {
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
     @Volatile override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
@@ -31,10 +36,20 @@ class SimDcMotorEx : DcMotorEx {
     }
 }
 
+/**
+ * Class implementation for Sim Servo.
+ *
+ * Robotics framework control component.
+ */
 class SimServo : com.qualcomm.robotcore.hardware.Servo {
     override var position: Double = 0.0
 }
 
+/**
+ * Class implementation for Sim Limelight3 A.
+ *
+ * Robotics framework control component.
+ */
 class SimLimelight3A : Limelight3A() {
     @Volatile
     private var result: LLResult? = null
@@ -46,6 +61,11 @@ class SimLimelight3A : Limelight3A() {
     override fun getLatestResult(): LLResult? = result
 }
 
+/**
+ * Class implementation for Sim L L Result.
+ *
+ * Robotics framework control component.
+ */
 class SimLLResult(
     private val valid: Boolean,
     private val fiducials: List<LLResultTypes.FiducialResult>,
@@ -56,6 +76,11 @@ class SimLLResult(
     override fun getBotpose(): Pose3D? = botpose
 }
 
+/**
+ * Class implementation for Mecanum Robot Double.
+ *
+ * Robotics framework control component.
+ */
 class MecanumRobotDouble {
     val fl = SimDcMotorEx()
     val fr = SimDcMotorEx()

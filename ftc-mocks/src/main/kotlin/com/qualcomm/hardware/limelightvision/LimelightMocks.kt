@@ -3,7 +3,17 @@ package com.qualcomm.hardware.limelightvision
 
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D
 
+/**
+ * Class implementation for L L Result Types.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class LLResultTypes {
+    /**
+     * Class implementation for Fiducial Result.
+     *
+     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     */
     open class FiducialResult(
         private val fiducialId: Int,
         private val tx: Double,
@@ -19,6 +29,11 @@ open class LLResultTypes {
     }
 }
 
+/**
+ * Class implementation for L L Result.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class LLResult {
     val ta: Double = 0.0
     val tx: Double = 0.0
@@ -29,6 +44,11 @@ open class LLResult {
     open fun getFiducialResults(): List<LLResultTypes.FiducialResult> = emptyList()
 }
 
+/**
+ * Class implementation for Limelight3 A.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class Limelight3A {
     open fun start() {}
     open fun getLatestResult(): LLResult? = null

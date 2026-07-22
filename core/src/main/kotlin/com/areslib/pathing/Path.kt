@@ -16,6 +16,14 @@ import com.areslib.math.wrapAngle
  *        This is distinct from [pose.heading], which represents the robot's desired orientation
  *        (which can differ for holonomic drivetrains that strafe while facing a different direction).
  */
+/**
+ * Class implementation for Path Point.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 data class PathPoint(
     var pose: Pose2d,
     var velocityMps: Double,
@@ -24,6 +32,14 @@ data class PathPoint(
     var tangentRadians: Double = 0.0
 )
 
+/**
+ * Class implementation for Mutable Path Point.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 class MutablePathPoint {
     var x: Double = 0.0
     var y: Double = 0.0

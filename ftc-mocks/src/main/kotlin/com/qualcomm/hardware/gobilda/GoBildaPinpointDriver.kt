@@ -6,6 +6,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D
 
+/**
+ * Class implementation for Go Bilda Pinpoint Driver.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class GoBildaPinpointDriver {
     @Volatile var posX: Double = 0.0
     @Volatile var posY: Double = 0.0

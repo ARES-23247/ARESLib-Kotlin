@@ -4,6 +4,11 @@ import java.util.concurrent.ConcurrentHashMap
 
 enum class TaskStatus { PENDING, RUNNING, COMPLETED, FAILED, CANCELLED }
 
+/**
+ * Object implementation for Task State Machine.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 object TaskStateMachine {
     private val statuses = ConcurrentHashMap<Task, TaskStatus>()
 

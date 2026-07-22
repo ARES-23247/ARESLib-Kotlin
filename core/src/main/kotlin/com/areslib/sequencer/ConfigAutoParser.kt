@@ -18,6 +18,11 @@ data class AutoStepJson(
     val eventName: String? = null
 )
 
+/**
+ * Class implementation for Auto Script Json.
+ *
+ * Asynchronous superstructure task sequence execution unit.
+ */
 data class AutoScriptJson(
     val name: String,
     val steps: List<AutoStepJson>

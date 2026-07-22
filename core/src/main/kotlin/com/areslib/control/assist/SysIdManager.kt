@@ -15,6 +15,11 @@ enum class SysIdRoutine {
     DYNAMIC
 }
 
+/**
+ * Class implementation for Sys Id Manager.
+ *
+ * Robotics framework control component.
+ */
 class SysIdManager {
     var activeMechanism = SysIdMechanism.LINEAR
         private set

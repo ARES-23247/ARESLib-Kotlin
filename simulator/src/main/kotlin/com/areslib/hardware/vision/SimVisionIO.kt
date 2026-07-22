@@ -5,6 +5,11 @@ import com.areslib.math.geometry.Rotation3d
 import com.areslib.math.geometry.Translation3d
 import com.areslib.state.VisionMeasurement
 
+/**
+ * Class implementation for Sim Vision I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SimVisionIO(
     override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
 ) : VisionIO {

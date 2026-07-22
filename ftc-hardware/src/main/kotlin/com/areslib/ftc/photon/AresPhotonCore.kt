@@ -32,6 +32,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * Object implementation for Ares Photon Core.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     val isEnabled = AtomicBoolean(true)
@@ -55,6 +60,11 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     private var opModeManager: OpModeManagerImpl? = null
 
+    /**
+     * Class implementation for Experimental Parameters.
+     *
+     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     */
     class ExperimentalParameters {
         val singlethreadedOptimized = AtomicBoolean(true)
         val maximumParallelCommands = AtomicInteger(8)

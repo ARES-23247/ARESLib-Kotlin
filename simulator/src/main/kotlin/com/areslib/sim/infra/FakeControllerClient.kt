@@ -6,6 +6,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Scanner
 
+/**
+ * Object implementation for Fake Controller Client.
+ *
+ * Robotics framework control component.
+ */
 object FakeControllerClient {
     @JvmStatic
     fun main(args: Array<String>) {

@@ -13,6 +13,11 @@ import com.qualcomm.robotcore.hardware.DigitalChannel
 import com.qualcomm.robotcore.hardware.IMU
 import com.qualcomm.robotcore.hardware.Servo
 
+/**
+ * Class implementation for Ftc Motor.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcMotor(motor: DcMotorEx, name: String? = null) : MotorIO, AutoCloseable {
     private val delegate = RevMotorController(motor, name)
     override var powerScale: Double
@@ -35,6 +40,11 @@ class FtcMotor(motor: DcMotorEx, name: String? = null) : MotorIO, AutoCloseable 
     }
 }
 
+/**
+ * Class implementation for Ftc C R Servo.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null, name: String? = null) : MotorIO {
     private val delegate = RevCRServoController(crServo, externalEncoder, name)
     override var powerScale: Double
@@ -49,6 +59,11 @@ class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null, name: Strin
     override fun resetEncoder() = delegate.resetEncoder()
 }
 
+/**
+ * Class implementation for Ftc Encoder.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcEncoder(motor: DcMotorEx, name: String? = null) : MotorIO {
     private val delegate = RevEncoderController(motor, name)
     override var power: Double
@@ -62,6 +77,11 @@ class FtcEncoder(motor: DcMotorEx, name: String? = null) : MotorIO {
     override fun resetEncoder() = delegate.resetEncoder()
 }
 
+/**
+ * Class implementation for Composite Motor I O.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class CompositeMotorIO(actuator: MotorIO, sensor: MotorIO) : MotorIO {
     private val delegate = RevCompositeMotorController(actuator, sensor)
     override var power: Double
@@ -73,6 +93,11 @@ class CompositeMotorIO(actuator: MotorIO, sensor: MotorIO) : MotorIO {
     override fun resetEncoder() = delegate.resetEncoder()
 }
 
+/**
+ * Class implementation for Ftc Absolute Analog Encoder.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     analogInput: AnalogInput,
     version: RevEncoderVersion = RevEncoderVersion.V1,
@@ -91,6 +116,11 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     override fun close() = delegate.close()
 }
 
+/**
+ * Class implementation for Ftc Servo.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcServo(servo: Servo, name: String? = null) : ServoIO {
     private val delegate = RevServoController(servo, name)
     override var position: Double
@@ -98,6 +128,11 @@ class FtcServo(servo: Servo, name: String? = null) : ServoIO {
         set(value) { delegate.position = value }
 }
 
+/**
+ * Class implementation for Ftc Imu.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcImu(imu: IMU) : ImuIO, AutoCloseable {
     private val delegate = RevImuController(imu)
     override fun updateInputs(inputs: ImuInputs) = delegate.updateInputs(inputs)
@@ -105,12 +140,22 @@ class FtcImu(imu: IMU) : ImuIO, AutoCloseable {
     override fun close() = delegate.close()
 }
 
+/**
+ * Class implementation for Ftc Analog Sensor.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcAnalogSensor(analogInput: AnalogInput) : AutoCloseable {
     private val delegate = RevAnalogSensorController(analogInput)
     fun getVoltage(): Double = delegate.getVoltage()
     override fun close() = delegate.close()
 }
 
+/**
+ * Class implementation for Ftc Digital Sensor.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class FtcDigitalSensor(digitalChannel: DigitalChannel) : AutoCloseable {
     private val delegate = RevDigitalSensorController(digitalChannel)
     fun getState(): Boolean = delegate.getState()

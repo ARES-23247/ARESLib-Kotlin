@@ -16,6 +16,14 @@ import kotlin.math.roundToInt
  * @property resolutionMeters Grid cell size resolution in meters. Defaults to `0.1` (10cm).
  * @property origin Field-relative translation coordinate mapping to the grid's top-left cell.
  */
+/**
+ * Class implementation for Costmap.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 class Costmap(
     val widthMeters: Double = 16.0,
     val heightMeters: Double = 8.0,

@@ -1,5 +1,15 @@
 package com.areslib.math.geometry
 
+/**
+ * Class implementation for Chassis Speeds.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 data class ChassisSpeeds(
     var vxMetersPerSecond: Double = 0.0,
     var vyMetersPerSecond: Double = 0.0,

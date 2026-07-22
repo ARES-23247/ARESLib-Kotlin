@@ -2,6 +2,11 @@ package com.areslib.hardware.vision
 
 import com.areslib.action.RobotAction
 
+/**
+ * Class implementation for Vision Hardware.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class VisionHardware(
     private val io: VisionIO
 ) {

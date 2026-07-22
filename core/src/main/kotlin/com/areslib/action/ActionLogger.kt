@@ -41,6 +41,11 @@ import java.util.concurrent.TimeUnit
  * @param alliance Active alliance color ("RED" or "BLUE").
  * @param mode Current operational mode ("Auto", "Teleop", or "Init").
  */
+/**
+ * Class implementation for Action Logger.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class ActionLogger(
     val runId: String = "",
     val robotId: String = "",

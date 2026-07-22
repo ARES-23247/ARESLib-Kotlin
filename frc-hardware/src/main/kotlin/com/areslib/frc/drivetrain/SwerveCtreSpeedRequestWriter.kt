@@ -5,6 +5,11 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
 import com.ctre.phoenix6.swerve.SwerveRequest
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 
+/**
+ * Class implementation for Swerve Ctre Speed Request Writer.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SwerveCtreSpeedRequestWriter(private val drivetrain: SwerveDrivetrain<*, *, *>) {
     private val fieldCentricRequest = SwerveRequest.FieldCentric()
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()

@@ -22,6 +22,11 @@ package com.areslib.telemetry
  * driver.update(latestGamepadState)
  * ```
  */
+/**
+ * Class implementation for Ares Gamepad.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 class AresGamepad {
     
     private var previousState = GamepadState()
@@ -97,6 +102,11 @@ class AresGamepad {
         }
     }
 
+    /**
+     * Class implementation for Bindable Button.
+     *
+     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+     */
     class BindableButton(val stateSelector: (GamepadState) -> Boolean) {
         var isPressed: Boolean = false
             internal set
@@ -151,6 +161,11 @@ class AresGamepad {
         }
     }
 
+    /**
+     * Class implementation for Bindable Axis.
+     *
+     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+     */
     class BindableAxis(private val valueSelector: (GamepadState) -> Float) {
         var value: Float = 0.0f
             private set
@@ -164,6 +179,11 @@ class AresGamepad {
         }
     }
 
+    /**
+     * Class implementation for Bindable Stick.
+     *
+     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+     */
     class BindableStick(private val valueSelector: (GamepadState) -> Pair<Float, Float>) {
         var x: Float = 0.0f
             private set

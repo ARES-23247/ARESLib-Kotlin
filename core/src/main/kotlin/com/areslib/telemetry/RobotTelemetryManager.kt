@@ -15,6 +15,11 @@ import com.areslib.logging.DataLoggingTelemetry
  * Both FTC and FRC platforms implement this interface with their
  * respective SDK-specific telemetry backends.
  */
+/**
+ * Interface implementation for Robot Telemetry Manager.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 interface RobotTelemetryManager : AutoCloseable {
 
     /**

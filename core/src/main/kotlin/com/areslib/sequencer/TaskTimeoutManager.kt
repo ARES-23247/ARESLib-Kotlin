@@ -3,6 +3,11 @@ package com.areslib.sequencer
 import com.areslib.util.RobotClock
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Object implementation for Task Timeout Manager.
+ *
+ * Asynchronous superstructure task sequence execution unit.
+ */
 object TaskTimeoutManager {
     private val timeouts = ConcurrentHashMap<Task, Long>()
     private val startTimes = ConcurrentHashMap<Task, Long>()

@@ -10,6 +10,16 @@ package com.areslib.control.filters
  *              1.0 means no smoothing (current value is trusted 100%).
  *              0.0 means completely ignores new values (stuck on first value).
  */
+/**
+ * Class implementation for E M A Filter.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 class EMAFilter(private val alpha: Double) {
     private var previousEstimate: Double = 0.0
     private var hasFirstValue: Boolean = false

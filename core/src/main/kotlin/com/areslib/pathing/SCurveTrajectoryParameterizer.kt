@@ -20,6 +20,14 @@ import kotlin.math.sin
  * - Local centripetal lateral acceleration boundaries ($V_{\text{limit}} = \sqrt{a_{\text{centripetal}} / |\kappa|}$)
  *   along curved path segments to prevent tipping or sliding.
  */
+/**
+ * Object implementation for S Curve Trajectory Parameterizer.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 object SCurveTrajectoryParameterizer {
 
     /**

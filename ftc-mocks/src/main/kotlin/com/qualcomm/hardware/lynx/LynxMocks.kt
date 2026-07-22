@@ -5,6 +5,11 @@ import com.qualcomm.hardware.lynx.commands.LynxMessage
 import com.qualcomm.hardware.lynx.commands.LynxRespondable
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Class implementation for Lynx Module.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class LynxModule(
     val lynxUsbDevice: LynxUsbDevice?,
     val moduleAddress: Int,
@@ -30,10 +35,35 @@ open class LynxModule(
     var unfinishedCommands = ConcurrentHashMap<Int, LynxRespondable<LynxMessage>>()
 }
 
+/**
+ * Class implementation for Lynx I2c Device Synch.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class LynxI2cDeviceSynch
+/**
+ * Class implementation for Lynx Unsupported Command Exception.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class LynxUnsupportedCommandException : Exception()
+/**
+ * Class implementation for Lynx Usb Device.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class LynxUsbDevice {
     open fun removeConfiguredModule(module: LynxModule) {}
 }
+/**
+ * Class implementation for Lynx Usb Device Delegate.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class LynxUsbDeviceDelegate : LynxUsbDevice()
+/**
+ * Class implementation for Lynx Usb Device Impl.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 open class LynxUsbDeviceImpl : LynxUsbDeviceDelegate()

@@ -24,17 +24,41 @@ object PathPlannerJsonParser {
         val eventMarkers: List<ParsedEventMarker>
     )
 
+    /**
+     * Class implementation for Waypoint Data.
+     *
+     * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+     *
+     * ### Coordinate System:
+     * Field-centric coordinates in meters ($m$) relative to field origin.
+     */
     data class WaypointData(
         val anchor: Translation2d,
         val prevControl: Translation2d,
         val nextControl: Translation2d
     )
 
+    /**
+     * Class implementation for Parsed Rotation Target.
+     *
+     * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+     *
+     * ### Coordinate System:
+     * Field-centric coordinates in meters ($m$) relative to field origin.
+     */
     data class ParsedRotationTarget(
         val waypointRelativePos: Double,
         val rotationDegrees: Double
     )
 
+    /**
+     * Class implementation for Parsed Constraints Zone.
+     *
+     * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+     *
+     * ### Coordinate System:
+     * Field-centric coordinates in meters ($m$) relative to field origin.
+     */
     data class ParsedConstraintsZone(
         val minWaypointRelativePos: Double,
         val maxWaypointRelativePos: Double,
@@ -42,6 +66,14 @@ object PathPlannerJsonParser {
         val maxAcceleration: Double
     )
 
+    /**
+     * Class implementation for Parsed Point Towards Zone.
+     *
+     * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+     *
+     * ### Coordinate System:
+     * Field-centric coordinates in meters ($m$) relative to field origin.
+     */
     data class ParsedPointTowardsZone(
         val minWaypointRelativePos: Double,
         val maxWaypointRelativePos: Double,
@@ -50,6 +82,14 @@ object PathPlannerJsonParser {
         val y: Double
     )
 
+    /**
+     * Class implementation for Parsed Event Marker.
+     *
+     * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+     *
+     * ### Coordinate System:
+     * Field-centric coordinates in meters ($m$) relative to field origin.
+     */
     data class ParsedEventMarker(
         val waypointRelativePos: Double,
         val commandName: String

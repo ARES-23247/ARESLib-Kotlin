@@ -12,6 +12,11 @@ import com.areslib.math.geometry.Translation2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.estimation.PoseEstimator
 
+/**
+ * Object implementation for Drive Reducer.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 object DriveReducer {
     /**
      * Reduces the DriveState slice independently based on drive actions.

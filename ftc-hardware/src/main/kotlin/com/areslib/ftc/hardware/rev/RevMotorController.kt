@@ -8,6 +8,11 @@ import com.qualcomm.robotcore.hardware.CRServo
 import com.areslib.hardware.actuator.ServoIO
 import com.qualcomm.robotcore.hardware.Servo
 
+/**
+ * Class implementation for Rev Motor Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevMotorController(
     private val motor: DcMotorEx,
     val name: String? = null
@@ -131,6 +136,11 @@ class RevMotorController(
     }
 }
 
+/**
+ * Class implementation for Rev C R Servo Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevCRServoController(
     private val crServo: CRServo,
     private val externalEncoder: MotorIO? = null,
@@ -180,6 +190,11 @@ class RevCRServoController(
     }
 }
 
+/**
+ * Class implementation for Rev Encoder Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevEncoderController(
     private val motor: DcMotorEx,
     val name: String? = null
@@ -226,6 +241,11 @@ class RevEncoderController(
     }
 }
 
+/**
+ * Class implementation for Rev Composite Motor Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevCompositeMotorController(
     private val actuator: MotorIO,
     private val sensor: MotorIO
@@ -250,6 +270,11 @@ class RevCompositeMotorController(
     }
 }
 
+/**
+ * Class implementation for Rev Servo Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevServoController(
     private val servo: Servo,
     val name: String? = null

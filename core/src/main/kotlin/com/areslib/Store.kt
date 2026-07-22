@@ -4,6 +4,11 @@ import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
 import com.areslib.reducer.rootReducer
 
+/**
+ * Class implementation for Store.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 class Store(
     initialState: RobotState = RobotState(),
     private val reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer

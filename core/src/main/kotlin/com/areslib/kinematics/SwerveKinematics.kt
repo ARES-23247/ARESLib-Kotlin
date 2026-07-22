@@ -35,6 +35,11 @@ import com.areslib.math.wrapAngle
  * @param maxSteerAccelRadPerSec2 Maximum steering angular acceleration limit in rad/s² (default: $8\pi$ rad/s²).
  * @param maxDriveAccelMps2 Maximum linear drive acceleration limit in m/s² (default: 8.0 m/s²).
  */
+/**
+ * Class implementation for Swerve Kinematics.
+ *
+ * Robotics framework control component.
+ */
 class SwerveKinematics(
     val moduleTranslations: List<Translation2d>,
     val maxSteerVelRadPerSec: Double = Math.PI * 4.0,

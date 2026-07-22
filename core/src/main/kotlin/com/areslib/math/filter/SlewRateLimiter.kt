@@ -20,6 +20,16 @@ package com.areslib.math.filter
  * @param negativeRateLimit Maximum allowed rate of decrease per second ($r_{neg} < 0$). Defaults to $-positiveRateLimit$.
  * @param initialValue Starting output signal value before first update (default: 0.0).
  */
+/**
+ * Class implementation for Slew Rate Limiter.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 class SlewRateLimiter(
     private var positiveRateLimit: Double,
     private var negativeRateLimit: Double = -positiveRateLimit,

@@ -5,6 +5,16 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
 import com.areslib.math.geometry.Matrix3x3
 
+/**
+ * Object implementation for Odometry Fusion Controller.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 object OdometryFusionController {
     fun processOdometry(
         state: PoseEstimatorState,

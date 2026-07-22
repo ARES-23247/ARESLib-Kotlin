@@ -11,7 +11,28 @@ import com.areslib.util.RobotClock
 
 /**
  * Manages the physical 4-motor hardware cluster (FL, FR, RL, RR) for an FTC Mecanum drivetrain.
- * Handles CachedDcMotorEx wrapping, direction mapping, encoder modes, and safety power writes.
+ *
+ * Handles CachedDcMotorEx wrapping, direction mapping, encoder modes, and exception-safe motor power writes.
+ *
+ * @param hardwareMap FTC OpMode hardware map instance.
+ * @param flName Front-left motor hardware name (default: "fl").
+ * @param frName Front-right motor hardware name (default: "fr").
+ * @param rlName Rear-left motor hardware name (default: "rl").
+ * @param rrName Rear-right motor hardware name (default: "rr").
+ * @param flDirection Front-left motor direction polarity.
+ * @param frDirection Front-right motor direction polarity.
+ * @param rlDirection Rear-left motor direction polarity.
+ * @param rrDirection Rear-right motor direction polarity.
+ * @param useClosedLoopVelocity True to configure motors in RUN_USING_ENCODER mode.
+ * @param motorKp Optional PIDF proportional gain $K_p$.
+ * @param motorKi Optional PIDF integral gain $K_i$.
+ * @param motorKd Optional PIDF derivative gain $K_d$.
+ * @param motorKf Optional PIDF feedforward gain $K_f$.
+ */
+/**
+ * Class implementation for Mecanum Motor Cluster.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 class MecanumMotorCluster(
     val hardwareMap: HardwareMap,
@@ -30,14 +51,22 @@ class MecanumMotorCluster(
     val motorKf: Double? = null
 ) : AutoCloseable {
 
+    /** Front-left `DcMotorEx` hardware wrapper. */
     val frontLeft: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, flName))
+    /** Front-right `DcMotorEx` hardware wrapper. */
     val frontRight: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, frName))
+    /** Rear-left `DcMotorEx` hardware wrapper. */
     val rearLeft: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, rlName))
+    /** Rear-right `DcMotorEx` hardware wrapper. */
     val rearRight: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, rrName))
 
+    /** Front-left motor IO hardware cache. */
     val flIO = EstimateMotorIO(frontLeft)
+    /** Front-right motor IO hardware cache. */
     val frIO = EstimateMotorIO(frontRight)
+    /** Rear-left motor IO hardware cache. */
     val rlIO = EstimateMotorIO(rearLeft)
+    /** Rear-right motor IO hardware cache. */
     val rrIO = EstimateMotorIO(rearRight)
 
     private var lastWarningTime = 0L
@@ -77,6 +106,14 @@ class MecanumMotorCluster(
         }
     }
 
+    /**
+     * Commands duty-cycle power settings (-1.0 to 1.0) to all 4 motors simultaneously.
+     *
+     * @param fl Front-left motor power.
+     * @param fr Front-right motor power.
+     * @param rl Rear-left motor power.
+     * @param rr Rear-right motor power.
+     */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
         safeSetPower(frontLeft, fl, "frontLeft")
         safeSetPower(frontRight, fr, "frontRight")
@@ -89,6 +126,11 @@ class MecanumMotorCluster(
         rrIO.power = rr
     }
 
+    /**
+     * Applies a global master power scaling factor (0.0 to 1.0) to motor IO caches.
+     *
+     * @param scale Master power scale factor.
+     */
     fun applyPowerScale(scale: Double) {
         val s = scale.coerceIn(0.0, 1.0)
         flIO.powerScale = s
@@ -97,6 +139,9 @@ class MecanumMotorCluster(
         rrIO.powerScale = s
     }
 
+    /**
+     * Updates encoder position and velocity caches for all 4 motors from bulk-read registers.
+     */
     fun updateInputs() {
         flIO.updateInputs()
         frIO.updateInputs()
@@ -104,6 +149,9 @@ class MecanumMotorCluster(
         rrIO.updateInputs()
     }
 
+    /**
+     * Safely halts all 4 motors by setting their target power to 0.0.
+     */
     fun safe() {
         safeSetPower(frontLeft, 0.0, "frontLeft")
         safeSetPower(frontRight, 0.0, "frontRight")
@@ -127,6 +175,9 @@ class MecanumMotorCluster(
         }
     }
 
+    /**
+     * Releases motor IO resources upon OpMode completion.
+     */
     override fun close() {
         flIO.close()
         frIO.close()

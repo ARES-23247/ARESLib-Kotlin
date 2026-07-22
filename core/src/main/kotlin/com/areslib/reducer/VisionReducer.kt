@@ -3,6 +3,11 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.VisionState
 
+/**
+ * Object implementation for Vision Reducer.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 object VisionReducer {
     private const val MAX_VISION_BUFFER_SIZE = 50
     private const val MAX_AMBIGUITY = 0.2

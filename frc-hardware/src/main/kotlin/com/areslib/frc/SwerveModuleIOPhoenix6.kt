@@ -6,6 +6,11 @@ import com.areslib.action.RobotAction
 import com.areslib.hardware.drive.SwerveModuleIO
 import com.areslib.hardware.drive.SwerveModuleInputs
 
+/**
+ * Class implementation for Swerve Module I O Phoenix6.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SwerveModuleIOPhoenix6(
     private val driveMotor: TalonFX,
     private val steerMotor: TalonFX,

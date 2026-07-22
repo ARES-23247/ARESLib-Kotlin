@@ -8,6 +8,11 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 
+/**
+ * Object implementation for Cloud Replay Provider.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 object CloudReplayProvider {
     /**
      * Fetches raw inputs for a given run from ARESWEB and runs sensory replay to produce a ReplaySummary.

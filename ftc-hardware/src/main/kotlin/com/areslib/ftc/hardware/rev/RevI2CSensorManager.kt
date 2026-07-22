@@ -9,6 +9,11 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.DigitalChannel
 import com.areslib.hardware.actuator.MotorIO
 
+/**
+ * Class implementation for Rev Imu Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     private var headingOffset = 0.0
     private val lock = Any()
@@ -95,6 +100,11 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     }
 }
 
+/**
+ * Class implementation for Rev Analog Sensor Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoCloseable {
     private val lock = Any()
     private var running = true
@@ -135,6 +145,11 @@ class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoClos
     }
 }
 
+/**
+ * Class implementation for Rev Digital Sensor Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : AutoCloseable {
     private val lock = Any()
     private var running = true
@@ -179,6 +194,11 @@ class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : A
     }
 }
 
+/**
+ * Class implementation for Rev Absolute Analog Encoder Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
     private val analogInput: AnalogInput,
     private val version: com.areslib.hardware.actuator.RevEncoderVersion = com.areslib.hardware.actuator.RevEncoderVersion.V1,

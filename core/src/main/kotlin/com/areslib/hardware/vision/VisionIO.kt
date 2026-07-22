@@ -7,6 +7,11 @@ import com.areslib.math.geometry.Rotation3d
 
 import com.areslib.hardware.LoggableDevice
 
+/**
+ * Class implementation for Vision I O Inputs.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 data class VisionIOInputs(
     var isConnected: Boolean = false,
     var measurements: List<VisionMeasurement> = emptyList(),

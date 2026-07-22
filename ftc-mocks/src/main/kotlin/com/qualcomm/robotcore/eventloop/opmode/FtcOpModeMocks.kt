@@ -8,6 +8,11 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 annotation class TeleOp(val name: String = "", val group: String = "")
 annotation class Autonomous(val name: String = "", val group: String = "")
 
+/**
+ * Class implementation for Linear Op Mode.
+ *
+ * Robotics framework control component.
+ */
 abstract class LinearOpMode {
     abstract fun runOpMode()
     @JvmField var hardwareMap: HardwareMap = object : HardwareMap() {

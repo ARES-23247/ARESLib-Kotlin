@@ -18,6 +18,11 @@ import java.nio.ByteOrder
     xmlTag = "OctoQuad",
     description = "OctoQuad 8-channel quadrature encoder / localizer module"
 )
+/**
+ * Class implementation for Octo Quad F Wv3.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true), AutoCloseable {
 
     companion object {
@@ -232,6 +237,11 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         } catch (_: Exception) {}
     }
 
+    /**
+     * Class implementation for Localizer Data Block.
+     *
+     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     */
     data class LocalizerDataBlock(
         var posX_mm: Short = 0,
         var posY_mm: Short = 0,

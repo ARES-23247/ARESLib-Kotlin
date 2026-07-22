@@ -31,6 +31,11 @@ import java.io.File
  * @property reducer The pure reducer function used to compute state transitions.
  * @property initialState The initial [RobotState] before any actions are applied.
  */
+/**
+ * Class implementation for Action Replay Session.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class ActionReplaySession private constructor(
     private val actions: List<RobotAction>,
     private val reducer: (RobotState, RobotAction) -> RobotState,

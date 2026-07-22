@@ -19,6 +19,16 @@ package com.areslib.math.filter
  *
  * @param timeConstantSeconds Time constant $RC$ in seconds ($s$). Larger values provide smoother filtering but introduce lag.
  */
+/**
+ * Class implementation for Low Pass Filter.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 class LowPassFilter(
     private var timeConstantSeconds: Double
 ) {

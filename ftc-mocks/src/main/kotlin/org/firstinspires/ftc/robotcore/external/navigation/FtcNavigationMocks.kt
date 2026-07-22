@@ -16,6 +16,11 @@ enum class UnnormalizedAngleUnit {
     DEGREES, RADIANS
 }
 
+/**
+ * Class implementation for Pose2 D.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class Pose2D(
     val distanceUnit: DistanceUnit,
     val x: Double,
@@ -30,10 +35,20 @@ class Pose2D(
     fun getHeading(unit: AngleUnit): Double = heading
 }
 
+/**
+ * Class implementation for Orientation.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class Orientation(val firstAngle: Float = 0f, val secondAngle: Float = 0f, val thirdAngle: Float = 0f)
 
 enum class CurrentUnit { AMPS, MILLIAMPS }
 
+/**
+ * Class implementation for Yaw Pitch Roll Angles.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class YawPitchRollAngles(
     val yawUnit: AngleUnit = AngleUnit.DEGREES,
     val yaw: Double = 0.0,
@@ -46,6 +61,11 @@ class YawPitchRollAngles(
     fun getRoll(unit: AngleUnit): Double = if (unit == yawUnit) roll else Math.toRadians(roll)
 }
 
+/**
+ * Class implementation for Angular Velocity.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class AngularVelocity(
     val unit: AngleUnit = AngleUnit.DEGREES,
     val xRotationRate: Float = 0f,
@@ -58,6 +78,11 @@ class AngularVelocity(
     fun getZRotationRate(unit: AngleUnit): Float = if (unit == this.unit) zRotationRate else Math.toRadians(zRotationRate.toDouble()).toFloat()
 }
 
+/**
+ * Class implementation for Position.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class Position(
     @JvmField val unit: DistanceUnit = DistanceUnit.METER,
     @JvmField val x: Double = 0.0,
@@ -69,6 +94,11 @@ class Position(
     fun toUnit(targetUnit: DistanceUnit): Position = this
 }
 
+/**
+ * Class implementation for Pose3 D.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class Pose3D(
     val position: Position = Position(),
     val orientation: YawPitchRollAngles = YawPitchRollAngles()

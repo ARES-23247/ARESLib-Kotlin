@@ -32,6 +32,16 @@ import com.areslib.math.wrapAngle
  * @see PoseEstimator
  * @see EKFStatePropagator
  */
+/**
+ * Object implementation for Vision Mahalanobis Filter.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 object VisionMahalanobisFilter {
     private val kalmanGainPool = Array(16) { DoubleArray(9) }
     private var kalmanGainPoolIndex = 0

@@ -11,6 +11,11 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 
+/**
+ * Class implementation for Replay Step Result.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 data class ReplayStepResult(
     val timestampMs: Long,
     val realPose: Pose2d,
@@ -18,6 +23,11 @@ data class ReplayStepResult(
     val cameraPoses: List<Pose3d> = emptyList()
 )
 
+/**
+ * Class implementation for Replay Summary.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 data class ReplaySummary(
     val steps: List<ReplayStepResult>,
     val finalRealPose: Pose2d,

@@ -21,6 +21,16 @@ import com.areslib.math.wrapAngle
  * @see PoseEstimator
  * @see VisionMahalanobisFilter
  */
+/**
+ * Object implementation for E K F State Propagator.
+ *
+ * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Seconds ($s$) or milliseconds ($ms$)
+ */
 object EKFStatePropagator {
 
     /**

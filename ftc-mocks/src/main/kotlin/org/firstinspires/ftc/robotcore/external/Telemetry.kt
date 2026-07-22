@@ -1,13 +1,28 @@
 @file:Suppress("UNUSED_PARAMETER")
 package org.firstinspires.ftc.robotcore.external
 
+/**
+ * Interface implementation for Telemetry.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 interface Telemetry {
+    /**
+     * Interface implementation for Item.
+     *
+     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+     */
     interface Item
     fun addData(caption: String, value: Any?): Item?
     fun addData(caption: String, format: String, vararg args: Any?): Item?
     fun update(): Boolean
 }
 
+/**
+ * Class implementation for Mock Telemetry.
+ *
+ * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ */
 class MockTelemetry : Telemetry {
     private val buffer = mutableListOf<String>()
     

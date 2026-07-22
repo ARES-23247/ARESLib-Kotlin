@@ -2,6 +2,14 @@ package com.areslib.pathing
 
 import com.areslib.sequencer.Task
 
+/**
+ * Object implementation for Named Commands.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 object NamedCommands {
     private val registry = mutableMapOf<String, (Long) -> Task>()
 

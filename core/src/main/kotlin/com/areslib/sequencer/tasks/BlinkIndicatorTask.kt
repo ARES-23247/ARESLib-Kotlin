@@ -25,6 +25,11 @@ import com.areslib.state.RobotState
  * @param durationMs Total blink duration in milliseconds.
  * @param periodMs Full blink cycle period in milliseconds (default 500ms = 1Hz blink).
  */
+/**
+ * Class implementation for Blink Indicator Task.
+ *
+ * Asynchronous superstructure task sequence execution unit.
+ */
 class BlinkIndicatorTask(
     private val lightName: String,
     private val colorA: IndicatorLightColor,

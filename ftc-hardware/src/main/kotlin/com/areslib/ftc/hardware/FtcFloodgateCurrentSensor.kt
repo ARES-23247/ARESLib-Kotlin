@@ -3,6 +3,11 @@ package com.areslib.ftc.hardware
 import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.util.RobotClock
 
+/**
+ * Interface implementation for Analog Voltage Input.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 interface AnalogVoltageInput {
     val voltage: Double
 }
@@ -15,6 +20,11 @@ interface AnalogVoltageInput {
  * and tracks thermal load to proactively prevent blowing the 60A main fuse or tripping the 80A smart limit.
  * 
  * Connect the Floodgate's analog telemetry port to any analog input port on your REV Control or Expansion Hub.
+ */
+/**
+ * Class implementation for Ftc Floodgate Current Sensor.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private val analogInput: AnalogVoltageInput,

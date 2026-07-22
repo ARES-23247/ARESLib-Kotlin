@@ -18,6 +18,11 @@ import com.areslib.state.RobotState
  *     .build()
  * ```
  */
+/**
+ * Class implementation for Set Indicator Color Task.
+ *
+ * Asynchronous superstructure task sequence execution unit.
+ */
 class SetIndicatorColorTask(
     private val lightName: String,
     private val color: IndicatorLightColor

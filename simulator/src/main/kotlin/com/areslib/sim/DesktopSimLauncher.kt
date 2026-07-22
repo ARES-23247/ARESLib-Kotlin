@@ -16,6 +16,11 @@ import com.areslib.state.RobotFieldManager
 import com.areslib.util.RobotClock
 import java.io.File
 
+/**
+ * Object implementation for Desktop Sim Launcher.
+ *
+ * Robotics framework control component.
+ */
 object DesktopSimLauncher {
     private const val TIMESTEP_SEC = 0.01
 

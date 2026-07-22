@@ -3,6 +3,14 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.PathState
 
+/**
+ * Object implementation for Path Reducer.
+ *
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field origin.
+ */
 object PathReducer {
     /**
      * Reduces the PathState slice based on path events, switching, and progress updates.

@@ -4,6 +4,11 @@ import android.content.Context
 import org.firstinspires.ftc.ftccommon.external.WebHandlerRegistrar
 import com.qualcomm.robotcore.util.WebHandlerManager
 
+/**
+ * Object implementation for Limelight Proxy Auto Start.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 object LimelightProxyAutoStart {
     private var proxy: LimelightProxy? = null
 

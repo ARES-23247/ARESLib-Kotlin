@@ -8,6 +8,11 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
+/**
+ * Class implementation for Sim Cli Args.
+ *
+ * Robotics framework control component.
+ */
 data class SimCliArgs(
     val fieldConfigArg: String? = null,
     val watchFieldConfig: Boolean = false,

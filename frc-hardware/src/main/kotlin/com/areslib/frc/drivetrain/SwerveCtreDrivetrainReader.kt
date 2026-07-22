@@ -4,6 +4,11 @@ import com.areslib.state.DriveState
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
+/**
+ * Class implementation for Swerve Ctre Drivetrain Reader.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, *>) {
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
     private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent

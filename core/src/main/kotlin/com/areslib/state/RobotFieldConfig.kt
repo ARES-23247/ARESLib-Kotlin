@@ -30,11 +30,21 @@ enum class ObstacleType {
     @SerializedName("ramp") RAMP
 }
 
+/**
+ * Class implementation for Robot Field Point.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class RobotFieldPoint(
     val x: Double = 0.0,
     val y: Double = 0.0
 )
 
+/**
+ * Class implementation for Robot Field Obstacle.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class RobotFieldObstacle(
     val id: String = "",
     val name: String = "",
@@ -52,6 +62,11 @@ data class RobotFieldObstacle(
     val rotation: Double = 0.0
 )
 
+/**
+ * Class implementation for Robot Field April Tag.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class RobotFieldAprilTag(
     val id: Int = 0,
     val x: Double = 0.0,
@@ -60,6 +75,11 @@ data class RobotFieldAprilTag(
     val yaw: Double = 0.0 // Yaw rotation in degrees
 )
 
+/**
+ * Class implementation for Robot Field Element Type.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class RobotFieldElementType(
     val id: String = "",
     val name: String = "",
@@ -73,6 +93,11 @@ data class RobotFieldElementType(
     val movable: Boolean = false
 )
 
+/**
+ * Class implementation for Robot Field Element Instance.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class RobotFieldElementInstance(
     val id: String = "",
     val elementTypeId: String = "",
@@ -81,6 +106,11 @@ data class RobotFieldElementInstance(
     val rotation: Double = 0.0
 )
 
+/**
+ * Class implementation for Robot Field Config.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 data class RobotFieldConfig(
     val id: String = "",
     val name: String = "",
@@ -176,6 +206,11 @@ data class RobotFieldConfig(
     }
 }
 
+/**
+ * Object implementation for Robot Field Manager.
+ *
+ * Pure Redux state definition and deterministic reducer transition handler.
+ */
 object RobotFieldManager {
     private val gson = Gson()
     

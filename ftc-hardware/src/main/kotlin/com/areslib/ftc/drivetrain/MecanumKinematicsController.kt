@@ -8,6 +8,11 @@ import com.areslib.state.TuningState
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.MecanumDriveFacade
 
+/**
+ * Class implementation for Mecanum Kinematics Controller.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 class MecanumKinematicsController(
     val mecanumIO: MecanumHardwareIO,
     private val drive: DriveSubsystem,

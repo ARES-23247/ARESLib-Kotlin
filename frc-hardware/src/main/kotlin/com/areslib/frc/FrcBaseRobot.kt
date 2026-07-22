@@ -31,6 +31,11 @@ import com.areslib.telemetry.*
  * @param isEnabledProvider Supplier returning whether the robot is currently enabled.
  * @param robotModeProvider Supplier returning the current robot mode string.
  */
+/**
+ * Class implementation for Frc Base Robot.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
 abstract class FrcBaseRobot(
     initialState: RobotState = RobotState(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
