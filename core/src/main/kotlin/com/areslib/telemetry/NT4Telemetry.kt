@@ -3,167 +3,76 @@ package com.areslib.telemetry
 import org.frcforftc.networktables.NetworkTablesInstance
 
 /**
- * An implementation of ITelemetry using the pure Java NT4 server.
- * Streams data to an external FRC dashboard like AdvantageScope.
+ * Pure Java NT4 telemetry implementation.
+ * Streams telemetry and state data directly to ARES-Analytics.
  */
 class NT4Telemetry : ITelemetry {
     private val inst = NetworkTablesInstance.getDefaultInstance()
-    private var isInitialized = false
-    private var reflectHelper: ReflectionWpilibTelemetry? = null
 
     init {
-        val isWpilibAvailable = try {
-            Class.forName("edu.wpi.first.networktables.NetworkTableInstance")
-            true
+        try {
+            if (inst.server == null) {
+                inst.startNT4Server("0.0.0.0", 5810)
+                println("NT4Telemetry: Started NT4 server on port 5810 for ARES-Analytics")
+            }
         } catch (e: Exception) {
-            false
-        }
-
-        println("NT4Telemetry: isWpilibAvailable = $isWpilibAvailable")
-
-        if (isWpilibAvailable) {
-            try {
-                reflectHelper = ReflectionWpilibTelemetry()
-                isInitialized = true
-                println("NT4Telemetry: Successfully initialized ReflectionWpilibTelemetry")
-            } catch (e: Exception) {
-                println("NT4Telemetry: Failed to initialize ReflectionWpilibTelemetry:")
-                e.printStackTrace()
-            }
-        } else {
-            try {
-                // Start the server on port 5810 (Standard NT4 port)
-                // Check if server is already running to avoid exceptions in persistent environments
-                val isUnitTest = try {
-                    Class.forName("org.junit.Test")
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-                println("NT4Telemetry: Falling back to org.frcforftc.networktables. Server status = ${inst.server}")
-                if (!isUnitTest && inst.server == null) {
-                    inst.startNT4Server("0.0.0.0", 5810)
-                    println("NT4Telemetry: Started org.frcforftc.networktables server on port 5810")
-                }
-                isInitialized = true
-            } catch (e: Exception) {
-                System.err.println("NT4Telemetry: Failed to initialize NT4 Server! ${e.message}")
-            }
+            System.err.println("NT4Telemetry: Failed to start NT4 Server! ${e.message}")
         }
     }
 
-    /**
-     * putNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun putNumber(key: String, value: Double) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.putNumber(ntKey, value)
         try { inst.putNumber(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putBoolean(key: String, value: Boolean) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.putBoolean(ntKey, value)
         try { inst.putBoolean(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putString(key: String, value: String) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.putString(ntKey, value)
         try { inst.putString(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putDoubleArray(key: String, value: DoubleArray) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.putDoubleArray(ntKey, value)
         try { inst.putNumberArray(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
-    /**
-     * getNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getNumber(key: String, defaultValue: Double): Double {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.let { helper ->
-            return helper.getNumber(ntKey, defaultValue)
-        }
-        if (!isInitialized) return defaultValue
         return try {
             val entry = inst.get(ntKey)
             (entry?.value?.get() as? Number)?.toDouble() ?: defaultValue
         } catch (e: Exception) { defaultValue }
     }
 
-    /**
-     * getBoolean declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.let { helper ->
-            return helper.getBoolean(ntKey, defaultValue)
-        }
-        if (!isInitialized) return defaultValue
         return try {
             val entry = inst.get(ntKey)
             (entry?.value?.get() as? Boolean) ?: defaultValue
         } catch (e: Exception) { defaultValue }
     }
 
-    /**
-     * getString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getString(key: String, defaultValue: String): String {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.let { helper ->
-            return helper.getString(ntKey, defaultValue)
-        }
-        if (!isInitialized) return defaultValue
         return try {
             val entry = inst.get(ntKey)
             (entry?.value?.get() as? String) ?: defaultValue
         } catch (e: Exception) { defaultValue }
     }
 
-    /**
-     * Helper specifically for Pose2d to format correctly for AdvantageScope.
-     * AdvantageScope expects [x, y, rotationRadians] format for Pose2d topics when represented as double[].
-     */
     fun putPose2d(key: String, xMeters: Double, yMeters: Double, rotationRadians: Double) {
         putDoubleArray(key, doubleArrayOf(xMeters, yMeters, rotationRadians))
     }
 
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun update() {
-        if (!isInitialized) return
         try { inst.flushServer() } catch (e: Exception) { /* swallow */ }
     }
 
-    /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun close() {
-        if (!isInitialized) return
-        // Do NOT close the server. It should remain alive across OpModes
-        // so that the driver station dashboard does not permanently disconnect.
+        // Keep server alive across OpModes
     }
 }
