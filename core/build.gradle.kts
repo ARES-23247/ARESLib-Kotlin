@@ -36,9 +36,9 @@ publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
-            groupId = "com.github.ARES-23247.ARESLib-Kotlin"
+            groupId = "com.areslib"
             artifactId = "core"
-            version = "master-SNAPSHOT"
+            version = "1.0-SNAPSHOT"
         }
     }
 }
