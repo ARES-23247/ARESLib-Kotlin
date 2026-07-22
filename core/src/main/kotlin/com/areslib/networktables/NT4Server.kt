@@ -68,13 +68,51 @@ class NT4Server(
         }
     }
 
+    private fun getEntryForId(id: Long): NT4Entry? {
+        publisherUIDSMap[id]?.let { return it }
+        entries.values.firstOrNull { it.id.toLong() == id }?.let {
+            publisherUIDSMap[id] = it
+            return it
+        }
+
+        val knownTopic = when (id) {
+            1001L -> "ARES/Input/vx"
+            1002L -> "ARES/Input/vy"
+            1003L -> "ARES/Input/omega"
+            1004L -> "ARES/Input/isIntaking"
+            1005L -> "ARES/Input/isFlywheelOn"
+            1006L -> "ARES/Input/isTransferring"
+            1007L -> "ARES/Input/isTeleopMode"
+            1008L -> "ARES/Input/isFieldCentric"
+            1009L -> "ARES/Input/isRedAlliance"
+            1010L -> "ARES/Input/heartbeat"
+            1011L -> "ARES/DriverStation/Command"
+            1012L -> "ARES/DriverStation/SelectedOpMode"
+            1013L -> "ARES/DriverStation/MatchTime"
+            1014L -> "ARES/DriverStation/MatchState"
+            1015L -> "SysId/Command"
+            1016L -> "ARES/Input/isButtonAPressed"
+            1017L -> "ARES/Input/isButtonBPressed"
+            1018L -> "ARES/Input/isButtonXPressed"
+            1019L -> "ARES/Input/isPoseReset"
+            else -> null
+        }
+
+        if (knownTopic != null) {
+            val entry = putTopic(knownTopic, "")
+            publisherUIDSMap[id] = entry
+            return entry
+        }
+        return null
+    }
+
     override fun onMessage(conn: WebSocket, message: ByteBuffer) {
         try {
             val decoded = decodeNT4Message(message)
             if (decoded.id == -1L) {
                 heartbeat(conn, (decoded.dataValue as? Number)?.toLong() ?: System.currentTimeMillis())
             } else {
-                val entry = publisherUIDSMap[decoded.id]
+                val entry = getEntryForId(decoded.id)
                 if (entry != null && decoded.dataValue != null) {
                     val newValue = NT4Value.fromObject(decoded.dataValue)
                     if (entry.update(newValue)) {
