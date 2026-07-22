@@ -1,30 +1,22 @@
 package com.areslib.telemetry
 
-import org.frcforftc.networktables.NetworkTablesInstance
+import com.areslib.networktables.NT4Instance
+import com.areslib.networktables.NT4Server
 import org.junit.jupiter.api.Test
 
-/**
- * NT4ServerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class NT4ServerTest {
     @Test
-    /**
-     * testServer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testServer() {
-        val inst = NetworkTablesInstance.getDefaultInstance()
-        println("Server initially: ${inst.server}")
+        val inst = NT4Instance.defaultInstance
+        println("Server initially: ${inst.defaultServer}")
         try {
-            inst.startNT4Server("0.0.0.0", 5810)
-            println("Server after start: ${inst.server}")
-            inst.startNT4Server("0.0.0.0", 5810)
-            println("Started again without exception!")
+            if (inst.defaultServer == null) {
+                inst.startServer("0.0.0.0", 5810)
+            }
+            println("Server after start: ${inst.defaultServer}")
+            NT4Server.publishTopic("Test/Key", 123.45)
+            val valOut = NT4Server.getDouble("Test/Key", 0.0)
+            assert(valOut == 123.45)
         } catch (e: Exception) {
             println("Exception: ${e.message}")
         }

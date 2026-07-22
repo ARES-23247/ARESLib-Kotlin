@@ -77,9 +77,8 @@ object SimOpModeRunner {
             val autoJson = gson.toJson(autos)
 
             // Publish to pure Java NT4Server for ARES-Analytics dashboard
-            val javaNtInst = org.frcforftc.networktables.NetworkTablesInstance.getDefaultInstance()
-            javaNtInst.putString("ARES/DriverStation/TeleOpList", teleOpJson)
-            javaNtInst.putString("ARES/DriverStation/AutonomousList", autoJson)
+            com.areslib.networktables.NT4Server.publishTopic("ARES/DriverStation/TeleOpList", teleOpJson)
+            com.areslib.networktables.NT4Server.publishTopic("ARES/DriverStation/AutonomousList", autoJson)
 
             // Publish to WPILib NT4 instance for AdvantageScope compatibility if active
             try {

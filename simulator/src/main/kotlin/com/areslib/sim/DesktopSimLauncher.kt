@@ -1,5 +1,7 @@
 package com.areslib.sim
 
+import com.areslib.networktables.NT4Instance
+import com.areslib.networktables.NT4Server
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.sim.cli.SimCliParser
@@ -192,14 +194,14 @@ object DesktopSimLauncher {
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
-        val ntInst = org.frcforftc.networktables.NetworkTablesInstance.getDefaultInstance()
+        val ntInst = NT4Instance.defaultInstance
         var lastDsCommand = ""
         var lastSelectedOpMode = ""
 
         while (true) {
             // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
-            val dsCommand = org.frcforftc.networktables.NT4Server.getString("ARES/DriverStation/Command", "").trim()
-            val selectedOpMode = org.frcforftc.networktables.NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
+            val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
+            val selectedOpMode = NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
 
 
             if (selectedOpMode.isNotEmpty() && selectedOpMode != lastSelectedOpMode) {
@@ -333,16 +335,16 @@ object DesktopSimLauncher {
                 TelemetryPublisher.publishEstimatedPose(ekfPose)
                 TelemetryPublisher.publishTargetPose(ekfPose)
 
-                ntInst.putNumber("Hardware/Motors/fl/Power", robotDouble.fl.power)
-                ntInst.putNumber("Hardware/Motors/fr/Power", robotDouble.fr.power)
-                ntInst.putNumber("Hardware/Motors/rl/Power", robotDouble.rl.power)
-                ntInst.putNumber("Hardware/Motors/rr/Power", robotDouble.rr.power)
+                NT4Server.publishTopic("Hardware/Motors/fl/Power", robotDouble.fl.power)
+                NT4Server.publishTopic("Hardware/Motors/fr/Power", robotDouble.fr.power)
+                NT4Server.publishTopic("Hardware/Motors/rl/Power", robotDouble.rl.power)
+                NT4Server.publishTopic("Hardware/Motors/rr/Power", robotDouble.rr.power)
 
-                ntInst.putNumber("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
-                ntInst.putNumber("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
-                ntInst.putNumber("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
-                ntInst.putNumber("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
-                ntInst.flushServer()
+                NT4Server.publishTopic("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
+                NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
+                NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
+                NT4Server.publishTopic("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
+                ntInst.defaultServer?.flush()
             }
 
             if (RobotClock.isMocked) {

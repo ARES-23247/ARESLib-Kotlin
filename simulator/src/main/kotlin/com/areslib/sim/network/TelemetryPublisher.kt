@@ -1,5 +1,6 @@
 package com.areslib.sim.network
 
+import com.areslib.networktables.NT4Server
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
 import com.areslib.sim.infra.VirtualDriverStation
@@ -90,8 +91,16 @@ object TelemetryPublisher {
     // Session log file path publisher
     private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
 
-    private val nt4Telemetry = com.areslib.telemetry.NT4Telemetry()
-    private val networkStatePublisher = com.areslib.telemetry.ARESNetworkStatePublisher(nt4Telemetry)
+    private var nt4Telemetry: com.areslib.telemetry.NT4Telemetry? = null
+    private var networkStatePublisher: com.areslib.telemetry.ARESNetworkStatePublisher? = null
+
+    fun init(
+        nt4Telemetry: com.areslib.telemetry.NT4Telemetry,
+        networkStatePublisher: com.areslib.telemetry.ARESNetworkStatePublisher
+    ) {
+        this.nt4Telemetry = nt4Telemetry
+        this.networkStatePublisher = networkStatePublisher
+    }
 
     init {
         // Register the custom struct so NT4 knows how to serialize it
@@ -106,8 +115,8 @@ object TelemetryPublisher {
      */
     fun publish(state: RobotState) {
         statePublisher.set(state)
-        networkStatePublisher.publish(state)
-        com.areslib.hardware.HardwareRegistry.publishAll(nt4Telemetry)
+        networkStatePublisher?.publish(state)
+        com.areslib.hardware.HardwareRegistry.publishAll(nt4Telemetry ?: return)
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
 
@@ -120,7 +129,7 @@ object TelemetryPublisher {
     fun publishTargetPose(pose: com.areslib.math.geometry.Pose2d) {
         val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
         targetPosePublisher.set(arr)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TargetPose", arr)
+        NT4Server.publishTopic("ARES/TargetPose", arr)
         ntInst.flush()
     }
 
@@ -132,13 +141,13 @@ object TelemetryPublisher {
     fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
         val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
         estimatedPosePublisher.set(arr)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose", arr)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose/0", pose.x)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose/1", pose.y)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose/2", pose.heading.radians)
-        org.frcforftc.networktables.NT4Server.publishTopic("Drive/Pose_X", pose.x)
-        org.frcforftc.networktables.NT4Server.publishTopic("Drive/Pose_Y", pose.y)
-        org.frcforftc.networktables.NT4Server.publishTopic("Drive/Drive_Heading", pose.heading.radians)
+        NT4Server.publishTopic("ARES/EstimatedPose", arr)
+        NT4Server.publishTopic("ARES/EstimatedPose/0", pose.x)
+        NT4Server.publishTopic("ARES/EstimatedPose/1", pose.y)
+        NT4Server.publishTopic("ARES/EstimatedPose/2", pose.heading.radians)
+        NT4Server.publishTopic("Drive/Pose_X", pose.x)
+        NT4Server.publishTopic("Drive/Pose_Y", pose.y)
+        NT4Server.publishTopic("Drive/Drive_Heading", pose.heading.radians)
         ntInst.flush()
     }
 
@@ -150,10 +159,10 @@ object TelemetryPublisher {
     fun publishTruePose(pose: com.areslib.math.geometry.Pose2d) {
         val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
         truePosePublisher.set(arr)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose", arr)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose/0", pose.x)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose/1", pose.y)
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose/2", pose.heading.radians)
+        NT4Server.publishTopic("ARES/TruePose", arr)
+        NT4Server.publishTopic("ARES/TruePose/0", pose.x)
+        NT4Server.publishTopic("ARES/TruePose/1", pose.y)
+        NT4Server.publishTopic("ARES/TruePose/2", pose.heading.radians)
         ntInst.flush()
     }
 
