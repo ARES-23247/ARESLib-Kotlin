@@ -49,7 +49,12 @@ class CurrentBudgetManagerTest {
      * @return Corresponding output value or Unit.
      */
     fun setUp() {
-        manager = CurrentBudgetManager.ftcDefaults()
+        manager = CurrentBudgetManager(
+            warningCurrentAmps = 15.0,
+            criticalCurrentAmps = 18.0,
+            minPowerScale = 0.2,
+            hysteresisAmps = 1.5
+        )
         motor1 = MockMotor()
         motor2 = MockMotor()
     }
@@ -75,21 +80,14 @@ class CurrentBudgetManagerTest {
         manager.register(motor1, stallCurrentAmps = 10.0, nominalVoltage = 12.0) // R = 1.2
         manager.register(motor2, stallCurrentAmps = 10.0, nominalVoltage = 12.0) // R = 1.2
 
-        // Command full power stall (appliedVoltage = 12.0, backEmf = 0)
-        // I1 = 12 / 1.2 = 10A
-        // I2 = 12 / 1.2 = 10A
-        // Total = 20A (exceeds criticalCurrentAmps = 18.0)
-        // Let's set power to less so it falls in warning (e.g. Total = 16A)
-        // Power = 0.8 -> appliedVoltage = 9.6. I1 = 9.6 / 1.2 = 8A. Total = 16A.
         motor1.power = 0.8
         motor2.power = 0.8
+        motor1.velocity = 0.01
+        motor2.velocity = 0.01
 
         manager.update(12.0)
 
         assertEquals(CurrentBudgetState.WARNING, manager.state)
-        // At 16A, it is halfway between 15A warning and 18A critical.
-        // Ratio = 1.0 - ((16 - 15) / 3) = 2/3
-        // Scale = minPowerScale (0.2) + Ratio * (1.0 - 0.2) = 0.2 + (2/3 * 0.8) = 0.7333
         assertEquals(0.7333, manager.powerScale, 0.01)
     }
 
@@ -98,9 +96,10 @@ class CurrentBudgetManagerTest {
         manager.register(motor1, stallCurrentAmps = 10.0, nominalVoltage = 12.0)
         manager.register(motor2, stallCurrentAmps = 10.0, nominalVoltage = 12.0)
 
-        // Command full stall at 12V
         motor1.power = 1.0
         motor2.power = 1.0
+        motor1.velocity = 0.01
+        motor2.velocity = 0.01
 
         manager.update(12.0)
 
@@ -113,23 +112,18 @@ class CurrentBudgetManagerTest {
         manager.register(motor1, stallCurrentAmps = 10.0, nominalVoltage = 12.0)
         manager.register(motor2, stallCurrentAmps = 10.0, nominalVoltage = 12.0)
 
-        // 1. Exceed warning threshold
         motor1.power = 0.8
-        motor2.power = 0.8 // Total 16A -> WARNING
+        motor2.power = 0.8
+        motor1.velocity = 0.01
+        motor2.velocity = 0.01
         manager.update(12.0)
         assertEquals(CurrentBudgetState.WARNING, manager.state)
 
-        // 2. Drop current slightly, but stay above (warning - hysteresis) = 15.0 - 1.5 = 13.5A
-        // E.g. Set to 0.7 -> appliedVoltage = 8.4 -> 7A each -> Total 14A.
-        // Should stay in WARNING due to hysteresis.
         motor1.power = 0.7
         motor2.power = 0.7
         manager.update(12.0)
         assertEquals(CurrentBudgetState.WARNING, manager.state)
 
-        // 3. Drop current below 13.5A
-        // E.g. Set to 0.6 -> appliedVoltage = 7.2 -> 6A each -> Total 12A.
-        // Should transition to HEALTHY.
         motor1.power = 0.6
         motor2.power = 0.6
         manager.update(12.0)
@@ -143,6 +137,8 @@ class CurrentBudgetManagerTest {
 
         motor1.power = 1.0
         motor2.power = 1.0
+        motor1.velocity = 0.01
+        motor2.velocity = 0.01
         // Estimation: 10A each -> 20A total
 
         // Supply actual current measurements via MockMotor

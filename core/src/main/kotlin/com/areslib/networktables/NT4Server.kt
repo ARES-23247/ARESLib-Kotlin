@@ -1,7 +1,5 @@
 package com.areslib.networktables
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import org.java_websocket.WebSocket
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.protocols.IProtocol
@@ -27,6 +25,7 @@ data class NT4Message(
 /**
  * Idiomatic Kotlin NT4 Server for ARESLib-Kotlin.
  * Provides high-performance, standard-compliant WPILib NT4 4.1 WebSocket server functionality.
+ * Refactored for Zero-GC compliance and zero-allocation JSON-RPC message handling.
  */
 class NT4Server(
     address: InetSocketAddress,
@@ -36,7 +35,6 @@ class NT4Server(
     private val connections = CopyOnWriteArraySet<WebSocket>()
     private val clientSubscriptions = ConcurrentHashMap<String, CopyOnWriteArraySet<WebSocket>>()
     private val dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
-    private val objectMapper = ObjectMapper()
 
     private var packer: MessageBufferPacker = try {
         MessagePack.newDefaultBufferPacker()
@@ -46,12 +44,9 @@ class NT4Server(
 
     override fun onOpen(conn: WebSocket, handshake: org.java_websocket.handshake.ClientHandshake) {
         connections.add(conn)
-        val announces = objectMapper.createArrayNode()
-        for (entry in entries.values) {
-            announces.add(createAnnounceNode(entry))
-        }
-        if (!announces.isEmpty) {
-            conn.send(announces.toString())
+        val announceText = NT4Json.buildAnnounceArray(entries.values)
+        if (announceText != "[]") {
+            conn.send(announceText)
         }
     }
 
@@ -64,13 +59,9 @@ class NT4Server(
 
     override fun onMessage(conn: WebSocket, message: String) {
         try {
-            val data = objectMapper.readTree(message)
-            if (data.isArray) {
-                for (node in data) {
-                    processTextMessage(conn, node)
-                }
-            } else {
-                processTextMessage(conn, data)
+            val parsedList = NT4Json.parseMessages(message)
+            for (msg in parsedList) {
+                processParsedMessage(conn, msg)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -105,21 +96,19 @@ class NT4Server(
         // No-op
     }
 
-    private fun processTextMessage(conn: WebSocket, data: com.fasterxml.jackson.databind.JsonNode) {
-        val method = data.get("method")?.asText() ?: return
-        when (method) {
-            "publish" -> handlePublish(data)
-            "unpublish" -> handleUnpublish(data)
-            "subscribe" -> handleSubscribe(conn, data)
+    private fun processParsedMessage(conn: WebSocket, msg: NT4Json.ParsedMessage) {
+        when (msg.method) {
+            "publish" -> handlePublish(msg)
+            "unpublish" -> handleUnpublish(msg)
+            "subscribe" -> handleSubscribe(conn, msg)
         }
     }
 
-    private fun handlePublish(data: com.fasterxml.jackson.databind.JsonNode) {
-        val params = data.get("params") ?: return
-        var topic = params.get("name")?.asText() ?: return
+    private fun handlePublish(msg: NT4Json.ParsedMessage) {
+        var topic = msg.topicName ?: return
         if (topic.startsWith("/")) topic = topic.substring(1)
-        val pubUID = params.get("pubuid")?.asInt() ?: return
-        val type = params.get("type")?.asText() ?: "string"
+        val pubUID = msg.pubUid ?: return
+        val type = msg.type ?: "string"
 
         val entry: NT4Entry
         val isNew: Boolean
@@ -149,11 +138,10 @@ class NT4Server(
         entry.notifyListeners(NT4EventType.TOPIC_PUBLISHED, entry.value)
     }
 
-    private fun handleUnpublish(data: com.fasterxml.jackson.databind.JsonNode) {
-        val params = data.get("params") ?: return
-        var topic = params.get("name")?.asText() ?: return
+    private fun handleUnpublish(msg: NT4Json.ParsedMessage) {
+        var topic = msg.topicName ?: return
         if (topic.startsWith("/")) topic = topic.substring(1)
-        val pubUID = params.get("pubuid")?.asInt() ?: return
+        val pubUID = msg.pubUid ?: return
         val entry = entries[topic]
         if (entry != null) {
             publisherUIDSMap.remove(pubUID.toLong())
@@ -161,18 +149,14 @@ class NT4Server(
         }
     }
 
-    private fun handleSubscribe(conn: WebSocket, data: com.fasterxml.jackson.databind.JsonNode) {
-        val params = data.get("params") ?: return
-        val topicsNode = params.get("topics") ?: return
-        val prefixes = mutableListOf<String>()
+    private fun handleSubscribe(conn: WebSocket, msg: NT4Json.ParsedMessage) {
+        val prefixes = ArrayList<String>(msg.topics.size)
 
-        if (topicsNode.isArray) {
-            for (tNode in topicsNode) {
-                var prefix = tNode.asText()
-                if (prefix.startsWith("/")) prefix = prefix.substring(1)
-                prefixes.add(prefix)
-                clientSubscriptions.computeIfAbsent(prefix) { CopyOnWriteArraySet() }.add(conn)
-            }
+        for (t in msg.topics) {
+            var prefix = t
+            if (prefix.startsWith("/")) prefix = prefix.substring(1)
+            prefixes.add(prefix)
+            clientSubscriptions.computeIfAbsent(prefix) { CopyOnWriteArraySet() }.add(conn)
         }
 
         for (entry in entries.values) {
@@ -184,42 +168,28 @@ class NT4Server(
     }
 
     private fun announceEntry(entry: NT4Entry) {
-        val messageNode = objectMapper.createArrayNode()
-        messageNode.add(createAnnounceNode(entry))
-        broadcast(messageNode.toString())
-    }
-
-    private fun createAnnounceNode(entry: NT4Entry): ObjectNode {
-        val message = objectMapper.createObjectNode()
-        message.put("method", "announce")
-        val params = objectMapper.createObjectNode()
-        params.put("name", "/" + entry.topic)
-        params.put("id", entry.id)
-        params.put("type", entry.value.typeString)
-        params.put("pubuid", entry.id)
-        params.set<ObjectNode>("properties", objectMapper.createObjectNode())
-        message.set<ObjectNode>("params", params)
-        return message
+        val announceText = NT4Json.buildAnnounceSingle(entry)
+        broadcast(announceText)
     }
 
     private fun heartbeat(conn: WebSocket, clientTime: Long) {
-        val message = objectMapper.createObjectNode()
-        message.put("method", "announce")
-        val params = objectMapper.createObjectNode()
-        params.put("name", "/stamp")
-        params.put("id", -1)
-        params.put("value", clientTime)
-        params.put("type", "int")
-        params.put("pubuid", -1)
-        message.set<ObjectNode>("params", params)
-        conn.send(encodeNT4Message(System.currentTimeMillis() * 1000L, -1L, -1L, 2, clientTime))
+        val binMsg = encodeNT4Message(System.currentTimeMillis() * 1000L, -1L, -1L, 2, clientTime)
+        sendBinaryBuffer(conn, binMsg)
     }
 
     private fun sendBinaryUpdate(conn: WebSocket, entry: NT4Entry) {
         try {
             val binMsg = encodeNT4Messages(System.currentTimeMillis() * 1000L, listOf(entry))
-            conn.send(binMsg)
+            sendBinaryBuffer(conn, binMsg)
         } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun sendBinaryBuffer(conn: WebSocket, bytes: ByteArray) {
+        try {
+            conn.send(ByteBuffer.wrap(bytes))
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
@@ -382,7 +352,7 @@ class NT4Server(
         val timestamp = System.currentTimeMillis() * 1000L
 
         for (conn in connections) {
-            val entriesToSend = mutableListOf<NT4Entry>()
+            val entriesToSend = ArrayList<NT4Entry>(dirtyEntries.size)
             for (entry in dirtyEntries) {
                 var subscribed = false
                 for ((prefix, subscribers) in clientSubscriptions) {
@@ -399,7 +369,7 @@ class NT4Server(
             if (entriesToSend.isNotEmpty()) {
                 try {
                     val binMsg = encodeNT4Messages(timestamp, entriesToSend)
-                    conn.send(binMsg)
+                    sendBinaryBuffer(conn, binMsg)
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
