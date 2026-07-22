@@ -91,7 +91,7 @@ object SimOpModeRunner {
     }
 
     /**
-     * Dynamically instantiates an OpMode class by name.
+     * Dynamically instantiates an OpMode class by name, with robust package name resolution fallback.
      */
     fun createOpModeInstance(
         opModeArg: LinearOpMode?,
@@ -99,11 +99,30 @@ object SimOpModeRunner {
     ): LinearOpMode? {
         if (opModeArg != null) return opModeArg
         if (opModeClassName.isNull_or_blank()) return null
+        
+        val candidates = listOf(
+            opModeClassName!!,
+            "org.firstinspires.ftc.teamcode.opmodes.$opModeClassName",
+            "org.firstinspires.ftc.teamcode.$opModeClassName",
+            "com.areslib.ftc.hardware.$opModeClassName"
+        )
+        
+        for (candidate in candidates) {
+            try {
+                val clazz = Class.forName(candidate)
+                val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                if (instance != null) {
+                    println("[Simulator] Successfully instantiated OpMode class: $candidate")
+                    return instance
+                }
+            } catch (_: Exception) {}
+        }
+
+        println("[Simulator] Class $opModeClassName not found. Falling back to AresHardwareTestOpMode.")
         return try {
-            val clazz = Class.forName(opModeClassName)
-            clazz.getDeclaredConstructor().newInstance() as LinearOpMode
+            com.areslib.ftc.hardware.AresHardwareTestOpMode()
         } catch (e: Exception) {
-            System.err.println("Failed to instantiate OpMode $opModeClassName: ${e.message}")
+            System.err.println("Failed to instantiate fallback OpMode: ${e.message}")
             null
         }
     }

@@ -58,12 +58,16 @@ class AresHardwareTestOpMode : LinearOpMode() {
                 g1State.update(gamepad1)
                 driver.update(g1State)
 
-                // 2. Simple student-level drive control using the mapped stick values
-                robot.drive.joystickDrive(
-                    x = driver.leftStick.x.toDouble(),
-                    y = driver.leftStick.y.toDouble(),
-                    rot = driver.rightStickX.value.toDouble()
-                )
+                val webX = com.areslib.telemetry.SimInputBridge.webVx
+                val webY = com.areslib.telemetry.SimInputBridge.webVy
+                val webRot = com.areslib.telemetry.SimInputBridge.webOmega
+
+                val driveX = if (kotlin.math.abs(driver.leftStick.x) > 0.05f) driver.leftStick.x.toDouble() else webX
+                val driveY = if (kotlin.math.abs(driver.leftStick.y) > 0.05f) driver.leftStick.y.toDouble() else webY
+                val driveRot = if (kotlin.math.abs(driver.rightStickX.value) > 0.05f) driver.rightStickX.value.toDouble() else webRot
+
+                robot.drive.joystickDrive(driveX, driveY, driveRot)
+
 
                 // 4. Loop time watchdog
                 val loopElapsedMs = com.areslib.util.RobotClock.currentTimeMillis() - loopStartMs

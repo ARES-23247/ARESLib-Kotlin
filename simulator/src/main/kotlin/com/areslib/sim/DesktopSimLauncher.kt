@@ -280,6 +280,7 @@ object DesktopSimLauncher {
 
             val activeInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
             if (activeInstance != null) {
+                activeInstance.update()
                 val state = activeInstance.store.state
                 TelemetryPublisher.publish(state)
                 
