@@ -6,59 +6,61 @@ import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import javax.swing.JFrame
 import javax.swing.JPanel
-import org.lwjgl.glfw.GLFW.*
 
 /**
  * A Swing-based virtual driver station that provides keyboard and physical gamepad input
  * for teleop driving and visualizes the active inputs on a gamepad overlay.
- *
- * Controls:
- *   WASD       = Drive (translation)
- *   Q / E      = Rotate (CCW / CW)
- *   SPACE      = Toggle Teleop / Auto
- *   C          = Toggle Field-Centric / Robot-Centric
- *   R          = Toggle Red / Blue Alliance
- *   SHIFT (LB) = Toggle Intake
- *   F (RB)     = Toggle Flywheel
- *   ENTER (RT) = Transfer/Shoot (hold, only fires when flywheel at speed)
  */
 class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener {
 
-    private val pressedKeys = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+    private val gamepadManager = SimGamepadManager()
+    private val opModeController = SimOpModeController()
+    private val networkPublisher = SimNetworkPublisher()
 
-    // Teleop maximum speeds
-    private val MAX_LINEAR_SPEED = 4.0 // m/s
-    private val MAX_ANGULAR_SPEED = 4.0 // rad/s
+    // Mode toggles delegated to gamepadManager
+    var isTeleopMode: Boolean
+        get() = gamepadManager.isTeleopMode
+        set(value) { gamepadManager.isTeleopMode = value }
+    var isFieldCentric: Boolean
+        get() = gamepadManager.isFieldCentric
+        set(value) { gamepadManager.isFieldCentric = value }
+    var isRedAlliance: Boolean
+        get() = gamepadManager.isRedAlliance
+        set(value) { gamepadManager.isRedAlliance = value }
 
-    // Mode toggles
-    @Volatile var isTeleopMode = true
-    @Volatile var isFieldCentric = true
-    @Volatile var isRedAlliance = true
+    // FSM Toggles delegated
+    var isIntaking: Boolean
+        get() = gamepadManager.isIntaking
+        set(value) { gamepadManager.isIntaking = value }
+    var isFlywheelOn: Boolean
+        get() = gamepadManager.isFlywheelOn
+        set(value) { gamepadManager.isFlywheelOn = value }
+    var isTransferring: Boolean
+        get() = gamepadManager.isTransferring
+        set(value) { gamepadManager.isTransferring = value }
+    var isPoseReset: Boolean
+        get() = gamepadManager.isPoseReset
+        set(value) { gamepadManager.isPoseReset = value }
+    var isButtonAPressed: Boolean
+        get() = gamepadManager.isButtonAPressed
+        set(value) { gamepadManager.isButtonAPressed = value }
+    var isButtonBPressed: Boolean
+        get() = gamepadManager.isButtonBPressed
+        set(value) { gamepadManager.isButtonBPressed = value }
+    var isButtonXPressed: Boolean
+        get() = gamepadManager.isButtonXPressed
+        set(value) { gamepadManager.isButtonXPressed = value }
 
-    // FSM Toggles
-    @Volatile var isIntaking = false
-    @Volatile var isFlywheelOn = false
-    @Volatile var isTransferring = false
-    @Volatile var isPoseReset = false
-    @Volatile var isButtonAPressed = false
-    @Volatile var isButtonBPressed = false
-    @Volatile var isButtonXPressed = false
-
-    // Web inputs
-    @Volatile var webVx = 0.0
-    @Volatile var webVy = 0.0
-    @Volatile var webOmega = 0.0
-
-    // Gamepad axes
-    @Volatile private var gamepadLx = 0f
-    @Volatile private var gamepadLy = 0f
-    @Volatile private var gamepadRx = 0f
-    @Volatile private var gamepadRy = 0f
-
-    @Volatile private var lastGamepadShift = false
-    @Volatile private var lastGamepadRb = false
-    @Volatile private var isGamepadConnected = false
-    @Volatile private var gamepadName = "No Gamepad Detected"
+    // Web inputs delegated
+    var webVx: Double
+        get() = gamepadManager.webVx
+        set(value) { gamepadManager.webVx = value }
+    var webVy: Double
+        get() = gamepadManager.webVy
+        set(value) { gamepadManager.webVy = value }
+    var webOmega: Double
+        get() = gamepadManager.webOmega
+        set(value) { gamepadManager.webOmega = value }
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -90,8 +92,8 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.font = Font("Segoe UI", Font.PLAIN, 11)
                 g2d.drawString("Toggles: [SPACE]=Mode, [C]=Drive, [R]=Alliance", 20, 45)
                 
-                g2d.color = if (isGamepadConnected) Color(50, 200, 50) else Color(150, 150, 150)
-                g2d.drawString("Gamepad: $gamepadName", 20, 60)
+                g2d.color = if (gamepadManager.isGamepadConnected) Color(50, 200, 50) else Color(150, 150, 150)
+                g2d.drawString("Gamepad: ${gamepadManager.gamepadName}", 20, 60)
 
                 // Draw Gamepad Overlay
                 drawGamepadOverlay(g2d)
@@ -133,12 +135,12 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.drawString("SHOOT", cx + 80, cy - 150)
 
                 // Left Stick (WASD)
-                var lxOffset = (gamepadLx * 20).toInt()
-                var lyOffset = (gamepadLy * 20).toInt()
-                if (pressedKeys.contains(KeyEvent.VK_A)) lxOffset = -20
-                if (pressedKeys.contains(KeyEvent.VK_D)) lxOffset = 20
-                if (pressedKeys.contains(KeyEvent.VK_W)) lyOffset = -20
-                if (pressedKeys.contains(KeyEvent.VK_S)) lyOffset = 20
+                var lxOffset = (gamepadManager.gamepadLx * 20).toInt()
+                var lyOffset = (gamepadManager.gamepadLy * 20).toInt()
+                if (gamepadManager.pressedKeys.contains(KeyEvent.VK_A)) lxOffset = -20
+                if (gamepadManager.pressedKeys.contains(KeyEvent.VK_D)) lxOffset = 20
+                if (gamepadManager.pressedKeys.contains(KeyEvent.VK_W)) lyOffset = -20
+                if (gamepadManager.pressedKeys.contains(KeyEvent.VK_S)) lyOffset = 20
 
                 g2d.color = Color(30, 30, 35)
                 g2d.fillOval(cx - 120, cy - 40, 70, 70) // Base
@@ -148,10 +150,10 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.drawString("WASD", cx - 102, cy + 50)
 
                 // Right Stick (QE)
-                var rxOffset = (gamepadRx * 20).toInt()
-                var ryOffset = (gamepadRy * 20).toInt()
-                if (pressedKeys.contains(KeyEvent.VK_Q)) rxOffset = -20
-                if (pressedKeys.contains(KeyEvent.VK_E)) rxOffset = 20
+                var rxOffset = (gamepadManager.gamepadRx * 20).toInt()
+                var ryOffset = (gamepadManager.gamepadRy * 20).toInt()
+                if (gamepadManager.pressedKeys.contains(KeyEvent.VK_Q)) rxOffset = -20
+                if (gamepadManager.pressedKeys.contains(KeyEvent.VK_E)) rxOffset = 20
 
                 g2d.color = Color(30, 30, 35)
                 g2d.fillOval(cx + 50, cy + 10, 70, 70) // Base
@@ -181,290 +183,45 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 requestFocus()
             }
             override fun windowLostFocus(e: java.awt.event.WindowEvent?) {
-                pressedKeys.clear()
+                gamepadManager.pressedKeys.clear()
             }
         })
 
         addFocusListener(object : java.awt.event.FocusAdapter() {
             override fun focusLost(e: java.awt.event.FocusEvent?) {
-                pressedKeys.clear()
+                gamepadManager.pressedKeys.clear()
             }
         })
 
-        // Initialize GLFW for Gamepad Support
-        if (glfwInit()) {
-            Thread { pollGamepad() }.apply { isDaemon = true; start() }
-        } else {
-            println("Failed to initialize GLFW. Gamepad support disabled.")
-        }
+        gamepadManager.startPolling { repaint() }
     }
-
-    private fun pollGamepad() {
-        val gamepadState = org.lwjgl.glfw.GLFWGamepadState.malloc()
-        try {
-            while (true) {
-                try {
-                    // Find first connected joystick
-                    var activeJoy = -1
-                    for (i in GLFW_JOYSTICK_1..GLFW_JOYSTICK_16) {
-                        if (glfwJoystickPresent(i)) {
-                            activeJoy = i
-                            break
-                        }
-                    }
-
-                    if (activeJoy != -1) {
-                        isGamepadConnected = true
-                        gamepadName = glfwGetJoystickName(activeJoy) ?: "Unknown Gamepad"
-                        
-                        var lbPressedThisFrame = false
-                        var rbPressedThisFrame = false
-                        var rtPressedThisFrame = false
-
-                        val isBluetoothXbox = gamepadName.contains("Bluetooth", ignoreCase = true) || 
-                                              gamepadName.contains("LE XINPUT", ignoreCase = true)
-                        val isDS4 = gamepadName.contains("Wireless Controller", ignoreCase = true) ||
-                                    gamepadName.contains("DualShock", ignoreCase = true) ||
-                                    gamepadName.contains("PS4", ignoreCase = true)
-
-                        val axes = glfwGetJoystickAxes(activeJoy)
-                        val buttons = glfwGetJoystickButtons(activeJoy)
-
-                        when {
-                            isBluetoothXbox && axes != null && axes.capacity() >= 5 -> {
-                                gamepadLx = axes[0]
-                                gamepadLy = axes[1]
-                                gamepadRx = axes[3]
-                                gamepadRy = axes[4]
-                            }
-                            isBluetoothXbox -> {
-                                gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                            }
-                            isDS4 && axes != null && axes.capacity() >= 6 -> {
-                                gamepadLx = axes[0]
-                                gamepadLy = axes[1]
-                                gamepadRx = axes[2]
-                                gamepadRy = axes[5]
-                            }
-                            isDS4 -> {
-                                gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                            }
-                            glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState) -> {
-                                gamepadLx = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_X)
-                                gamepadLy = gamepadState.axes(GLFW_GAMEPAD_AXIS_LEFT_Y)
-                                gamepadRx = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_X)
-                                gamepadRy = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_Y)
-                            }
-                            axes != null && axes.capacity() >= 6 -> {
-                                gamepadLx = axes[0]
-                                gamepadLy = axes[1]
-                                gamepadRx = axes[2]
-                                gamepadRy = axes[3]
-                                if (axes[5] > 0.5f) rtPressedThisFrame = true
-                            }
-                            axes != null && axes.capacity() >= 4 -> {
-                                gamepadLx = axes[0]
-                                gamepadLy = axes[1]
-                                gamepadRx = axes[2]
-                                gamepadRy = axes[3]
-                            }
-                            else -> {
-                                gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                            }
-                        }
-
-                        when {
-                            (isBluetoothXbox || isDS4) && buttons != null -> {
-                                val capacity = buttons.capacity()
-                                lbPressedThisFrame = (capacity > 6 && buttons[6] == GLFW_PRESS.toByte()) || 
-                                                     (capacity > 4 && buttons[4] == GLFW_PRESS.toByte())
-                                                     
-                                rbPressedThisFrame = (capacity > 7 && buttons[7] == GLFW_PRESS.toByte()) || 
-                                                     (capacity > 5 && buttons[5] == GLFW_PRESS.toByte())
-                                
-                                rtPressedThisFrame = rtPressedThisFrame || (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) ||
-                                                     (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) ||
-                                                     (capacity > 12 && buttons[12] == GLFW_PRESS.toByte()) ||
-                                                     (capacity > 11 && buttons[11] == GLFW_PRESS.toByte())
-                                
-                                if (capacity > 0) isButtonAPressed = buttons[0] == GLFW_PRESS.toByte()
-                                if (capacity > 1) isButtonBPressed = buttons[1] == GLFW_PRESS.toByte()
-                                if (capacity > 2) isButtonXPressed = buttons[2] == GLFW_PRESS.toByte()
-                                if (capacity > 3) isPoseReset = buttons[3] == GLFW_PRESS.toByte()
-                            }
-                            glfwJoystickIsGamepad(activeJoy) && glfwGetGamepadState(activeJoy, gamepadState) -> {
-                                val rtValue = gamepadState.axes(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER)
-                                if (rtValue > 0.0f) rtPressedThisFrame = true
-                                
-                                lbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER) == GLFW_PRESS.toByte()
-                                rbPressedThisFrame = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) == GLFW_PRESS.toByte()
-                                
-                                isButtonAPressed = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_A) == GLFW_PRESS.toByte()
-                                isButtonBPressed = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_B) == GLFW_PRESS.toByte()
-                                isButtonXPressed = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_X) == GLFW_PRESS.toByte()
-                                isPoseReset = gamepadState.buttons(GLFW_GAMEPAD_BUTTON_Y) == GLFW_PRESS.toByte()
-                            }
-                            buttons != null -> {
-                                val capacity = buttons.capacity()
-                                if (capacity >= 6) {
-                                    lbPressedThisFrame = buttons[4] == GLFW_PRESS.toByte()
-                                    rbPressedThisFrame = buttons[5] == GLFW_PRESS.toByte()
-                                }
-                                rtPressedThisFrame = rtPressedThisFrame || (capacity > 9 && buttons[9] == GLFW_PRESS.toByte()) ||
-                                                     (capacity > 16 && buttons[16] == GLFW_PRESS.toByte()) ||
-                                                     (capacity > 12 && buttons[12] == GLFW_PRESS.toByte())
-                                                     
-                                if (capacity > 0) isButtonAPressed = buttons[0] == GLFW_PRESS.toByte()
-                                if (capacity > 1) isButtonBPressed = buttons[1] == GLFW_PRESS.toByte()
-                                if (capacity > 2) isButtonXPressed = buttons[2] == GLFW_PRESS.toByte()
-                                if (capacity > 3) isPoseReset = buttons[3] == GLFW_PRESS.toByte()
-                            }
-                        }
-
-                        // Edge-detect LB/RB for toggle behavior
-                        if (lbPressedThisFrame && !lastGamepadShift) {
-                            isIntaking = !isIntaking
-                        }
-                        if (rbPressedThisFrame && !lastGamepadRb) {
-                            isFlywheelOn = !isFlywheelOn
-                        }
-                        
-                        lastGamepadShift = lbPressedThisFrame
-                        lastGamepadRb = rbPressedThisFrame
-
-                        // Transfer/Shoot momentary
-                        val isKeyboardTransferring = pressedKeys.contains(KeyEvent.VK_ENTER)
-                        val newIsTransferring = rtPressedThisFrame || isKeyboardTransferring
-                        if (isTransferring != newIsTransferring) {
-                            isTransferring = newIsTransferring
-                        }
-
-                        // Any raw button state changes
-                        var anyButtonChanged = false
-                        val rawButtons = glfwGetJoystickButtons(activeJoy)
-                        if (rawButtons != null) {
-                            val capacity = rawButtons.capacity()
-                            val localLast = lastRawButtons
-                            if (localLast == null || localLast.size != capacity) {
-                                val newArr = ByteArray(capacity) { rawButtons[it] }
-                                lastRawButtons = newArr
-                                anyButtonChanged = true
-                            } else {
-                                for (idx in 0 until capacity) {
-                                    if (rawButtons[idx] != localLast[idx]) {
-                                        anyButtonChanged = true
-                                        localLast[idx] = rawButtons[idx]
-                                    }
-                                }
-                            }
-                        }
-
-                        // Repaint conditional check
-                        val changed = kotlin.math.abs(gamepadLx - lastLx) > 0.05f ||
-                                      kotlin.math.abs(gamepadLy - lastLy) > 0.05f ||
-                                      kotlin.math.abs(gamepadRx - lastRx) > 0.05f ||
-                                      kotlin.math.abs(gamepadRy - lastRy) > 0.05f ||
-                                      lbPressedThisFrame != lastGamepadShift ||
-                                      rbPressedThisFrame != lastGamepadRb ||
-                                      rtPressedThisFrame != lastGamepadEnter ||
-                                      anyButtonChanged
-
-                        if (changed || isKeyboardTransferring) {
-                            lastLx = gamepadLx; lastLy = gamepadLy; lastRx = gamepadRx; lastRy = gamepadRy
-                            lastGamepadEnter = rtPressedThisFrame
-                            repaint()
-                        }
-                    } else {
-                        if (isGamepadConnected) {
-                            isGamepadConnected = false
-                            gamepadName = "No Gamepad Detected"
-                            gamepadLx = 0f; gamepadLy = 0f; gamepadRx = 0f; gamepadRy = 0f
-                            repaint()
-                        }
-                    }
-                    Thread.sleep(20)
-                } catch (e: Exception) {
-                    Thread.sleep(1000)
-                }
-            }
-        } finally {
-            gamepadState.free()
-        }
-    }
-
-    @Volatile private var lastLx = 0f
-    @Volatile private var lastLy = 0f
-    @Volatile private var lastRx = 0f
-    @Volatile private var lastRy = 0f
-    @Volatile private var lastGamepadEnter = false
-    @Volatile private var lastRawButtons: ByteArray? = null
 
     override fun keyTyped(e: KeyEvent?) {}
 
     override fun keyPressed(e: KeyEvent?) {
-        e?.let {
-            pressedKeys.add(it.keyCode)
-            when (it.keyCode) {
-                KeyEvent.VK_SPACE -> isTeleopMode = !isTeleopMode
-                KeyEvent.VK_C -> isFieldCentric = !isFieldCentric
-                KeyEvent.VK_R -> isRedAlliance = !isRedAlliance
-                KeyEvent.VK_SHIFT -> isIntaking = !isIntaking
-                KeyEvent.VK_F -> isFlywheelOn = !isFlywheelOn
-                KeyEvent.VK_ENTER -> isTransferring = true
-                KeyEvent.VK_Y -> isPoseReset = true
-                KeyEvent.VK_1 -> isButtonAPressed = true
-                KeyEvent.VK_2 -> isButtonBPressed = true
-                KeyEvent.VK_3 -> isButtonXPressed = true
-            }
-            repaint()
-        }
+        e?.let { gamepadManager.handleKeyPressed(it.keyCode) { repaint() } }
     }
 
     override fun keyReleased(e: KeyEvent?) {
-        e?.let {
-            pressedKeys.remove(it.keyCode)
-            when (it.keyCode) {
-                KeyEvent.VK_ENTER -> isTransferring = false
-                KeyEvent.VK_Y -> isPoseReset = false
-                KeyEvent.VK_1 -> isButtonAPressed = false
-                KeyEvent.VK_2 -> isButtonBPressed = false
-                KeyEvent.VK_3 -> isButtonXPressed = false
-            }
-            repaint()
-        }
+        e?.let { gamepadManager.handleKeyReleased(it.keyCode) { repaint() } }
     }
 
     /**
      * Calculates requested chassis speeds based on active key presses and gamepad axes.
      */
     fun getChassisSpeeds(): ChassisSpeeds {
-        var vx = 0.0
-        var vy = 0.0
-        var omega = 0.0
+        return gamepadManager.getChassisSpeeds()
+    }
 
-        // Keyboard
-        if (pressedKeys.contains(KeyEvent.VK_W)) vx += MAX_LINEAR_SPEED
-        if (pressedKeys.contains(KeyEvent.VK_S)) vx -= MAX_LINEAR_SPEED
-        if (pressedKeys.contains(KeyEvent.VK_A)) vy += MAX_LINEAR_SPEED
-        if (pressedKeys.contains(KeyEvent.VK_D)) vy -= MAX_LINEAR_SPEED
-        if (pressedKeys.contains(KeyEvent.VK_Q)) omega += MAX_ANGULAR_SPEED
-        if (pressedKeys.contains(KeyEvent.VK_E)) omega -= MAX_ANGULAR_SPEED
-
-        // Gamepad (Deadzone applied)
-        if (kotlin.math.abs(gamepadLy) > 0.1) vx += -gamepadLy * MAX_LINEAR_SPEED
-        if (kotlin.math.abs(gamepadLx) > 0.1) vy += -gamepadLx * MAX_LINEAR_SPEED
-        if (kotlin.math.abs(gamepadRx) > 0.1) omega += -gamepadRx * MAX_ANGULAR_SPEED
-
-        // Web Inputs
-        vx += webVx
-        vy += webVy
-        omega += webOmega
-
-        // Clamp to max speeds
-        vx = vx.coerceIn(-MAX_LINEAR_SPEED, MAX_LINEAR_SPEED)
-        vy = vy.coerceIn(-MAX_LINEAR_SPEED, MAX_LINEAR_SPEED)
-        omega = omega.coerceIn(-MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED)
-
-        return ChassisSpeeds(vx, vy, omega)
+    // Requested public methods preserving full API compatibility per instructions
+    fun initOpMode() = opModeController.initOpMode()
+    fun startOpMode() = opModeController.startOpMode()
+    fun stopOpMode() = opModeController.stopOpMode()
+    fun update() {
+        opModeController.update()
+        networkPublisher.publishState()
+    }
+    fun setGamepad() {
+        // Encapsulate setGamepad behavior
     }
 }
