@@ -145,12 +145,13 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
                     val webVx = com.areslib.telemetry.SimInputBridge.webVx
                     val webVy = com.areslib.telemetry.SimInputBridge.webVy
                     val webOmega = com.areslib.telemetry.SimInputBridge.webOmega
-                    if (webVx != 0.0 || webVy != 0.0 || webOmega != 0.0) {
-                        g1State.leftStickY = (-webVy).toFloat()
-                        g1State.leftStickX = webVx.toFloat()
+                    if (kotlin.math.abs(g1State.leftStickY) < 0.05f && kotlin.math.abs(g1State.leftStickX) < 0.05f) {
+                        g1State.leftStickY = (-webVx).toFloat()
+                        g1State.leftStickX = (-webVy).toFloat()
                         g1State.rightStickX = (-webOmega).toFloat()
                     }
                 } catch (_: Throwable) {}
+
                 
                 driver.update(g1State)
                 
