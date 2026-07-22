@@ -227,6 +227,7 @@ class NT4Server(
     @Synchronized
     fun encodeNT4Messages(timestamp: Long, entries: List<NT4Entry>): ByteArray {
         packer.clear()
+        packer.packArrayHeader(entries.size)
         for (entry in entries) {
             val dataType = getTypeIdFromValue(entry.value)
             val dataValue = entry.value.getAsObject()
@@ -242,6 +243,7 @@ class NT4Server(
     @Synchronized
     fun encodeNT4Message(timestamp: Long, topicId: Long, pubUID: Long, dataType: Int, dataValue: Any): ByteArray {
         packer.clear()
+        packer.packArrayHeader(1)
         packer.packArrayHeader(4)
         packer.packLong(topicId)
         packer.packLong(timestamp)
