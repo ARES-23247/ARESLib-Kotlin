@@ -259,9 +259,10 @@ object DesktopSimLauncher {
             val rlP = robotDouble.rl.power
             val rrP = robotDouble.rr.power
 
-            val robotVx = (flP + frP + rlP + rrP) / 4.0 * 2.5
-            val robotVy = (-flP + frP + rlP - rrP) / 4.0 * 2.5
-            val robotOmega = (-flP + frP - rlP + rrP) / (4.0 * 0.45) * 2.5
+            val robotVx = (flP + frP + rlP + rrP) / 4.0 * 3.5
+            val robotVy = (-flP + frP + rlP - rrP) / 4.0 * 3.5
+            val robotOmega = (-flP + frP - rlP + rrP) / (4.0 * 0.45) * 4.0
+
 
             val heading = currentPhysPose.heading.radians
             val cosH = kotlin.math.cos(heading)
