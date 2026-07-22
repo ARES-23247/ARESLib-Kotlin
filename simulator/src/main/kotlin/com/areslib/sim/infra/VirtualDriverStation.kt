@@ -198,10 +198,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
     /**
      * keyTyped declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -210,10 +206,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
     /**
      * keyPressed declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -224,10 +216,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
     /**
      * keyReleased declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -247,10 +235,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     fun initOpMode() = opModeController.initOpMode()
     /**
      * startOpMode declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -258,10 +242,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     fun startOpMode() = opModeController.startOpMode()
     /**
      * stopOpMode declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -269,10 +249,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     fun stopOpMode() = opModeController.stopOpMode()
     /**
      * update declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -283,10 +259,6 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
     }
     /**
      * setGamepad declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

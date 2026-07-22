@@ -16,10 +16,6 @@ object TaskCallbacks {
 
     /**
      * registerComplete declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -30,10 +26,6 @@ object TaskCallbacks {
 
     /**
      * registerFail declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -44,10 +36,6 @@ object TaskCallbacks {
 
     /**
      * invokeComplete declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -58,10 +46,6 @@ object TaskCallbacks {
 
     /**
      * invokeFail declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -72,10 +56,6 @@ object TaskCallbacks {
 
     /**
      * reset declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -134,10 +114,6 @@ interface Task {
 
     /**
      * cancel declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -148,10 +124,6 @@ interface Task {
 
     /**
      * reset declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -164,10 +136,6 @@ interface Task {
 
     /**
      * onComplete declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -179,10 +147,6 @@ interface Task {
 
     /**
      * onFail declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -194,10 +158,6 @@ interface Task {
 
     /**
      * withTimeout declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -218,10 +178,6 @@ class TimeWaitTask(
 
     /**
      * isCompleted declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -242,10 +198,6 @@ class PathProgressWaitTask(
 
     /**
      * isCompleted declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -267,10 +219,6 @@ class ActionDispatchTask(
 
     /**
      * initialize declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -283,10 +231,6 @@ class ActionDispatchTask(
 
     /**
      * isCompleted declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -321,10 +265,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * initialize declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -348,10 +288,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * isCompleted declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -377,10 +313,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * execute declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -467,10 +399,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * end declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

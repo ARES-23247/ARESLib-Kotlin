@@ -9,10 +9,6 @@ import kotlin.test.assertTrue
 
 /**
  * MockVoltageSensor declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -21,10 +17,6 @@ class MockVoltageSensor(override var voltage: Double = 12.0) : VoltageSensor
 
 /**
  * MockMotorCurrentIO declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -35,10 +27,6 @@ class MockMotorCurrentIO(override var currentAmps: Double = 0.0) : MotorIO {
     override val position: Double = 0.0
     /**
      * resetEncoder declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -48,10 +36,6 @@ class MockMotorCurrentIO(override var currentAmps: Double = 0.0) : MotorIO {
 
 /**
  * FtcPowerManagerTest declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.

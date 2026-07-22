@@ -11,10 +11,6 @@ import com.areslib.math.geometry.Pose2d
 interface ITelemetry {
     /**
      * putNumber declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -22,10 +18,6 @@ interface ITelemetry {
     fun putNumber(key: String, value: Double)
     /**
      * putBoolean declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -33,10 +25,6 @@ interface ITelemetry {
     fun putBoolean(key: String, value: Boolean)
     /**
      * putString declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -44,10 +32,6 @@ interface ITelemetry {
     fun putString(key: String, value: String)
     /**
      * putDoubleArray declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -56,10 +40,6 @@ interface ITelemetry {
     
     /**
      * getNumber declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -67,10 +47,6 @@ interface ITelemetry {
     fun getNumber(key: String, defaultValue: Double): Double
     /**
      * getBoolean declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -78,10 +54,6 @@ interface ITelemetry {
     fun getBoolean(key: String, defaultValue: Boolean): Boolean
     /**
      * getString declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -125,10 +97,6 @@ fun ITelemetry.logPose2d(prefix: String, pose: Pose2d, useUnderscores: Boolean =
 private val scratchPose2dArray = object : ThreadLocal<DoubleArray>() {
     /**
      * initialValue declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -139,10 +107,6 @@ private val scratchPose2dArray = object : ThreadLocal<DoubleArray>() {
 private val scratchPose3dArray = object : ThreadLocal<DoubleArray>() {
     /**
      * initialValue declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

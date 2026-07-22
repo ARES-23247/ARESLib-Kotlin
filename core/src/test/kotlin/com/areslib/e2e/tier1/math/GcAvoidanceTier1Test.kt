@@ -10,10 +10,6 @@ import org.junit.jupiter.api.Test
 
 /**
  * GcAvoidanceTier1Test declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -23,10 +19,6 @@ class GcAvoidanceTier1Test {
     @Test
     /**
      * testLqrCalculate_returnsSameArrayInstance declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -46,10 +38,6 @@ class GcAvoidanceTier1Test {
     @Test
     /**
      * testPidCalculate_returnsPrimitiveDouble declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -67,10 +55,6 @@ class GcAvoidanceTier1Test {
     @Test
     /**
      * testPoseEstimatorHistoryBuffer_reusesEntriesWhenCapacityReached declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -98,10 +82,6 @@ class GcAvoidanceTier1Test {
     @Test
     /**
      * testPoseEstimatorHistoryBuffer_updateEntryDoesNotAllocate declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -121,10 +101,6 @@ class GcAvoidanceTier1Test {
     @Test
     /**
      * testMatrixMultiplication_primitiveBackedAndInPlace declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

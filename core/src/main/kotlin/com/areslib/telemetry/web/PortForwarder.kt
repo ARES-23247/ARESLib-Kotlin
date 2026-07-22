@@ -15,10 +15,6 @@ class PortForwarder(private val localPort: Int, private val remotePort: Int, pri
 
     /**
      * run declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -55,10 +51,6 @@ class PortForwarder(private val localPort: Int, private val remotePort: Int, pri
 
     /**
      * stopForwarder declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

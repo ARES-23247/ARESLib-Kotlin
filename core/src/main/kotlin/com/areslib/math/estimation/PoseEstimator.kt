@@ -51,10 +51,6 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
 
     /**
      * get declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -67,10 +63,6 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
 
     /**
      * addEntry declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -87,10 +79,6 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
 
     /**
      * deepCopy declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -114,10 +102,6 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
 
     /**
      * copyInto declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -148,10 +132,6 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
 
     /**
      * updateEntryDirect declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -269,10 +249,6 @@ object PoseEstimator {
 
     /**
      * addOdometryObservation declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -298,10 +274,6 @@ object PoseEstimator {
 
     /**
      * addVisionMeasurement declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

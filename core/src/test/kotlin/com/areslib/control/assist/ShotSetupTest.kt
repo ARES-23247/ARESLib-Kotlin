@@ -10,10 +10,6 @@ import kotlin.math.*
 
 /**
  * ShotSetupTest declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -47,10 +43,6 @@ class ShotSetupTest {
     @Test
     /**
      * testStaticShot declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -93,10 +85,6 @@ class ShotSetupTest {
     @Test
     /**
      * testTranslatingShotCompensation declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -126,10 +114,6 @@ class ShotSetupTest {
     @Test
     /**
      * testRotatingShotCompensation declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

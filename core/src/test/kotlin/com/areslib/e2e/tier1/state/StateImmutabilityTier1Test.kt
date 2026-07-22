@@ -7,10 +7,6 @@ import java.lang.reflect.Modifier
 
 /**
  * StateImmutabilityTier1Test declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -20,10 +16,6 @@ class StateImmutabilityTier1Test {
     @Test
     /**
      * testStatePropertiesAreImmutableAndVal declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -58,10 +50,6 @@ class StateImmutabilityTier1Test {
     @Test
     /**
      * testCollectionStatePropertiesAreReadOnly declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -76,10 +64,6 @@ class StateImmutabilityTier1Test {
     @Test
     /**
      * testStateModificationCreatesNewInstance declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

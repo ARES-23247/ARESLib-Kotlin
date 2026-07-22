@@ -6,10 +6,6 @@ import kotlin.math.PI
 
 /**
  * Geometry3dTest declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -18,10 +14,6 @@ class Geometry3dTest {
     @Test
     /**
      * testQuaternionNormalization declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -35,10 +27,6 @@ class Geometry3dTest {
     @Test
     /**
      * testRotation3dEulerAngles declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -66,10 +54,6 @@ class Geometry3dTest {
     @Test
     /**
      * testTransformBy declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -91,10 +75,6 @@ class Geometry3dTest {
     @Test
     /**
      * testRelativeTo declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

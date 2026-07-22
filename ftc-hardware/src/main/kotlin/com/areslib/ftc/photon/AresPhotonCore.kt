@@ -80,10 +80,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * enable declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -99,10 +95,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * disable declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -115,10 +107,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     @JvmStatic
     /**
      * attachEventLoop declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -131,10 +119,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     @Throws(LynxUnsupportedCommandException::class, InterruptedException::class)
     /**
      * registerSend declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -206,10 +190,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * shouldParallelize declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -220,10 +200,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * shouldAckImmediately declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -239,10 +215,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * getCacheResponse declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -253,10 +225,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * run declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -273,10 +241,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * onOpModePreInit declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -492,10 +456,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * onOpModePreStart declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -504,10 +464,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     /**
      * onOpModePostStop declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

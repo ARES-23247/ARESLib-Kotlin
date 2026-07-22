@@ -21,10 +21,6 @@ interface OpModeManager {
 interface OpModeManagerNotifier {
     /**
      * registerListener declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -32,10 +28,6 @@ interface OpModeManagerNotifier {
     fun registerListener(listener: Notifications)
     /**
      * unregisterListener declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -63,10 +55,6 @@ open class OpModeManagerImpl : OpModeManager, OpModeManagerNotifier {
     override val activeOpModeName: String = ""
     /**
      * registerListener declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -74,10 +62,6 @@ open class OpModeManagerImpl : OpModeManager, OpModeManagerNotifier {
     override fun registerListener(listener: OpModeManagerNotifier.Notifications) {}
     /**
      * unregisterListener declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

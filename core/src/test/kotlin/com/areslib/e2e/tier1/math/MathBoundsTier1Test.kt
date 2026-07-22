@@ -17,10 +17,6 @@ import org.junit.jupiter.api.Test
 
 /**
  * MathBoundsTier1Test declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -30,10 +26,6 @@ class MathBoundsTier1Test {
     @Test
     /**
      * testLqrVoltageBounds_shouldClamp declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -58,10 +50,6 @@ class MathBoundsTier1Test {
     @Test
     /**
      * testLqrSlewRateBounds_shouldLimitChange declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -84,10 +72,6 @@ class MathBoundsTier1Test {
     @Test
     /**
      * testEkfOutlierRejection_shouldRejectExceedingMahalanobis declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -122,10 +106,6 @@ class MathBoundsTier1Test {
     @Test
     /**
      * testEkfBeachingLimit_shouldFreezeOdometry declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -147,10 +127,6 @@ class MathBoundsTier1Test {
     @Test
     /**
      * testEkfRecovery_shouldUnfreezeOdometry declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

@@ -17,10 +17,6 @@ interface I2cDeviceSynch : I2cDeviceSynchSimple {
     var i2cAddress: I2cAddr
     /**
      * read8 declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -28,10 +24,6 @@ interface I2cDeviceSynch : I2cDeviceSynchSimple {
     override fun read8(register: Int): Byte
     /**
      * read declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -39,10 +31,6 @@ interface I2cDeviceSynch : I2cDeviceSynchSimple {
     fun read(register: Int, length: Int): ByteArray
     /**
      * write declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -59,10 +47,6 @@ interface I2cDeviceSynch : I2cDeviceSynchSimple {
     class ReadWindow(val ireg: Int, val creg: Int, val mode: ReadMode)
     /**
      * ReadMode declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -76,10 +60,6 @@ interface I2cDeviceSynch : I2cDeviceSynchSimple {
 abstract class I2cDeviceSynchDevice<T>(val deviceClient: T, val isOwned: Boolean) where T : I2cDeviceSynchSimple {
     /**
      * doInitialize declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -87,10 +67,6 @@ abstract class I2cDeviceSynchDevice<T>(val deviceClient: T, val isOwned: Boolean
     abstract fun doInitialize(): Boolean
     /**
      * initialize declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -98,10 +74,6 @@ abstract class I2cDeviceSynchDevice<T>(val deviceClient: T, val isOwned: Boolean
     fun initialize(): Boolean = doInitialize()
     /**
      * getManufacturer declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -109,10 +81,6 @@ abstract class I2cDeviceSynchDevice<T>(val deviceClient: T, val isOwned: Boolean
     abstract fun getManufacturer(): Manufacturer
     /**
      * getDeviceName declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -121,10 +89,6 @@ abstract class I2cDeviceSynchDevice<T>(val deviceClient: T, val isOwned: Boolean
 
     /**
      * Manufacturer declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

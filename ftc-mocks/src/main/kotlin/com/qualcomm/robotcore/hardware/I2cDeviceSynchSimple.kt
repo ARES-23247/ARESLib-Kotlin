@@ -9,10 +9,6 @@ package com.qualcomm.robotcore.hardware
 interface I2cDeviceSynchSimple : HardwareDevice {
     /**
      * read8 declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -20,10 +16,6 @@ interface I2cDeviceSynchSimple : HardwareDevice {
     fun read8(ireg: Int): Byte = 0
     /**
      * write8 declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

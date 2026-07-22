@@ -36,10 +36,6 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
 
     /**
      * joystickDrive declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -57,10 +53,6 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
 
     /**
      * setChassisSpeeds declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -76,10 +68,6 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
 
     /**
      * getEstimatedPose declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -90,10 +78,6 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
 
     /**
      * readSensors declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -101,10 +85,6 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
     override fun readSensors(store: Store, timestampMs: Long) {}
     /**
      * writeOutputs declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

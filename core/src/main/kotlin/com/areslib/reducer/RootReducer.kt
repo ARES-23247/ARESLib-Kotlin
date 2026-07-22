@@ -17,10 +17,6 @@ private val DEFAULT_STD_DEVS = Vector3(0.05, 0.05, 0.1)
 private val rootReducerScratchBefore = object : ThreadLocal<DoubleArray>() {
     /**
      * initialValue declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -31,10 +27,6 @@ private val rootReducerScratchBefore = object : ThreadLocal<DoubleArray>() {
 private val rootReducerScratchAfter = object : ThreadLocal<DoubleArray>() {
     /**
      * initialValue declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -44,10 +36,6 @@ private val rootReducerScratchAfter = object : ThreadLocal<DoubleArray>() {
 
 /**
  * rootReducer declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.

@@ -149,10 +149,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * updateHardwareInputs declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -171,10 +167,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * updateSubsystems declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -202,10 +194,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * publishRobotTelemetry declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -236,10 +224,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * safeHardware declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -251,10 +235,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * drive declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -263,10 +243,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * driveFieldCentric declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -277,10 +253,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * driveRobotCentric declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -291,10 +263,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * alignToTag declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -306,10 +274,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     @kotlin.jvm.JvmOverloads
     /**
      * driveToPose declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -321,10 +285,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     @kotlin.jvm.JvmOverloads
     /**
      * driveToWaypoint declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -335,10 +295,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * stopAll declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -347,10 +303,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     
     /**
      * stop declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -358,10 +310,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     fun stop() = stopAll()
     /**
      * update declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -369,10 +317,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     fun update() = updateHardwareInputs()
     /**
      * followTrajectory declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -381,10 +325,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * getFallbackPoseUpdate declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -404,10 +344,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * close declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

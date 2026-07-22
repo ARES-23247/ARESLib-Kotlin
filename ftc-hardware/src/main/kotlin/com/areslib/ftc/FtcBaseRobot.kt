@@ -104,10 +104,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * readSensors declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -169,10 +165,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * update declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -233,10 +225,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     protected abstract fun publishRobotTelemetry(timestamp: Long)
     /**
      * safeHardware declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -246,10 +234,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     @kotlin.jvm.JvmOverloads
     /**
      * resetPose declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -269,10 +253,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * resetPoseForAlliance declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -285,10 +265,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * close declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

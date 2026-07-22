@@ -13,10 +13,6 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO, AutoCloseab
 
     /**
      * updateInputs declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -41,10 +37,6 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO, AutoCloseab
 
     /**
      * setOrientation declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -67,10 +59,6 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO, AutoCloseab
 
     /**
      * close declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

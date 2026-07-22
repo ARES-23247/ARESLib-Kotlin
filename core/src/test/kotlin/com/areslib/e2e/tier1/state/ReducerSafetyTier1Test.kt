@@ -8,10 +8,6 @@ import org.junit.jupiter.api.Test
 
 /**
  * ReducerSafetyTier1Test declaration.
- * Provides high-performance, Zero-GC operations.
- * CCW-positive heading standard applied. 
- * Note: Physical units use standard SI metrics.
- * Uses LaTeX math representation for kinematics where applicable.
  *
  * @param args Standard arguments (if applicable).
  * @return Corresponding output value or Unit.
@@ -21,10 +17,6 @@ class ReducerSafetyTier1Test {
     @Test
     /**
      * testRootReducer_shouldReturnIdenticalStateOnUnrecognizedAction declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
@@ -48,10 +40,6 @@ class ReducerSafetyTier1Test {
     @Test
     /**
      * testSubReducers_shouldReturnPreviousStateOnUnrecognizedAction declaration.
-     * Provides high-performance, Zero-GC operations.
-     * CCW-positive heading standard applied. 
-     * Note: Physical units use standard SI metrics.
-     * Uses LaTeX math representation for kinematics where applicable.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
