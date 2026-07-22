@@ -49,6 +49,8 @@ object NT4WireProtocol {
 
     /**
      * Unpacks incoming binary MsgPack payload into a list of [NT4ValueMessage] objects.
+     * Supports both spec-compliant array-of-arrays `[[id, time, type, val], ...]`
+     * and single flat array `[id, time, type, val]` legacy messages.
      */
     fun unpackMessageFrames(bytes: ByteArray): List<NT4ValueMessage> {
         val messages = mutableListOf<NT4ValueMessage>()
@@ -57,17 +59,30 @@ object NT4WireProtocol {
         try {
             val unpacker = MessagePack.newDefaultUnpacker(bytes)
             while (unpacker.hasNext()) {
+                val nextFormat = unpacker.getNextFormat()
+                if (nextFormat.valueType != ValueType.ARRAY) {
+                    unpacker.skipValue()
+                    continue
+                }
+                
                 val arrayLen = unpacker.unpackArrayHeader()
-                if (arrayLen == 4) {
+                if (arrayLen == 0) continue
+                
+                val firstFormat = if (unpacker.hasNext()) unpacker.getNextFormat() else null
+                
+                if (arrayLen == 4 && firstFormat != null && firstFormat.valueType == ValueType.INTEGER) {
+                    // Legacy single flat array: [id, timestamp, type, value]
                     val topicId = unpacker.unpackLong()
                     val timestampUs = unpacker.unpackLong()
                     val typeId = unpacker.unpackInt()
                     val value = unpackValue(unpacker)
                     messages.add(NT4ValueMessage(topicId, timestampUs, typeId, value))
                 } else {
+                    // Standard NT4 spec: outer array containing inner message arrays [[id, time, type, val], ...]
                     for (i in 0 until arrayLen) {
                         if (!unpacker.hasNext()) break
-                        if (unpacker.getNextFormat().valueType == ValueType.ARRAY) {
+                        val format = unpacker.getNextFormat()
+                        if (format.valueType == ValueType.ARRAY) {
                             val innerLen = unpacker.unpackArrayHeader()
                             if (innerLen == 4) {
                                 val topicId = unpacker.unpackLong()
