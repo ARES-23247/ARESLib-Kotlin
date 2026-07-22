@@ -65,21 +65,21 @@ object TelemetryPublisher {
 
     fun getWebVx(): Double {
         val vWpi = webVxSub.get()
-        val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
+        val vJava = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
         com.areslib.telemetry.SimInputBridge.rawWebVx = v
         return v
     }
     fun getWebVy(): Double {
         val vWpi = webVySub.get()
-        val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
+        val vJava = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
         com.areslib.telemetry.SimInputBridge.rawWebVy = v
         return v
     }
     fun getWebOmega(): Double {
         val vWpi = webOmegaSub.get()
-        val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
+        val vJava = com.areslib.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
         com.areslib.telemetry.SimInputBridge.rawWebOmega = v
         return v

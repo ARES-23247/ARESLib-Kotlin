@@ -414,6 +414,7 @@ class NT4Server(
                 })
                 shutdownHookAdded = true
             }
+            server.isReuseAddr = true
             server.start()
             return server
         }

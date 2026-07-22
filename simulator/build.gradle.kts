@@ -66,8 +66,6 @@ dependencies {
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-linux")
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos")
     
-    // Reflections for finding OpModes
-    implementation("org.reflections:reflections:0.10.2")
 }
 
 kotlin {

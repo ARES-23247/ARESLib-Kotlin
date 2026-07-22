@@ -104,6 +104,14 @@ object DesktopSimLauncher {
 
         // 2. Telemetry & Web Server Initialization
         println("Initializing Telemetry (NT4 & DataLog)...")
+        try {
+            if (com.areslib.networktables.NT4Instance.defaultInstance.defaultServer == null) {
+                com.areslib.networktables.NT4Instance.defaultInstance.startServer("0.0.0.0", 5810)
+                println("[Simulator] NT4 Server started on port 5810 for ARES-Analytics")
+            }
+        } catch (e: Exception) {
+            println("[Simulator] Warning starting NT4 Server: ${e.message}")
+        }
         TelemetryPublisher.javaClass
         com.areslib.logging.LogManagerServer.startServer()
 
