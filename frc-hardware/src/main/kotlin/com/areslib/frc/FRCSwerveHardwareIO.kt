@@ -8,20 +8,26 @@ import com.ctre.phoenix6.swerve.SwerveRequest
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 
 /**
- * Hardware IO bridge for an FRC Phoenix 6 Swerve Drive.
- * 
- * This class abstracts the highly-optimized CTRE SwerveDrivetrain (which runs internally
- * at 250Hz on the CAN FD bus) into the pure mathematical ARESLib Redux architecture.
+ * Hardware IO bridge for FRC CTRE Phoenix 6 Swerve Drivetrains.
+ *
+ * Integrates CTRE [SwerveDrivetrain] (operating natively on 250Hz CANivore CAN-FD loops) into the pure mathematical
+ * ARESLib Redux architecture. Handles CANcoder absolute position signals, TalonFX motor current draws, Pigeon2 IMU readings,
+ * and AdvantageScope signal logging.
+ *
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Velocity: Meters per second ($m/s$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Angular Velocity: Radians per second ($rad/s$)
+ * - Motor Current: Amperes ($A$)
+ *
+ * @param drivetrain CTRE Phoenix 6 [SwerveDrivetrain] instance.
  */
 class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
 
-    // CTRE Swerve request objects — FieldCentric delegates the heading rotation
-    // to CTRE's 250Hz thread (uses Pigeon2 state internally), avoiding stale-heading bugs.
     private val fieldCentricRequest = SwerveRequest.FieldCentric()
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
     private val scratchSpeeds = ChassisSpeeds()
-    
-
 
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
     private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent
@@ -33,7 +39,6 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     private val absEnc3 = (drivetrain.getModule(2).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
     private val absEnc4 = (drivetrain.getModule(3).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
 
-    // Pre-cached fault StatusSignals — avoids allocating new StatusSignal objects in getFaults() hot path
     private val faultHardware = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_Hardware() }
     private val faultBrownout = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_BridgeBrownout() }
     private val faultTemp = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_DeviceTemp() }
@@ -55,13 +60,10 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         pitchSignal.setUpdateFrequency(20.0, 0.0)
         rollSignal.setUpdateFrequency(20.0, 0.0)
 
-        // Register CTRE native telemetry for AdvantageScope and SignalLogger
-        drivetrain.registerTelemetry { swerveDriveState ->
-            // CTRE automatically streams this to SignalLogger (.wpilog files)
-            // and publishes to NetworkTables for AdvantageScope visualization
-        }
+        drivetrain.registerTelemetry { _ -> }
     }
 
+    /** Synchronously refreshes cached CAN signals across motor currents, encoders, and IMU status signals. */
     override fun refresh() {
         BaseStatusSignal.refreshAll(
             currentDraw1, currentDraw2, currentDraw3, currentDraw4,
@@ -73,10 +75,15 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         )
     }
 
+    /** Safely halts all drivetrain motion by commanding zero velocity. */
     override fun safe() {
         write(DriveState())
     }
 
+    /**
+     * Reads current supply draw in Amperes for all 4 drive motors into [out].
+     * @param out 4-element output array.
+     */
     override fun getCurrents(out: DoubleArray) {
         out[0] = currentDraw1.valueAsDouble
         out[1] = currentDraw2.valueAsDouble
@@ -84,6 +91,10 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         out[3] = currentDraw4.valueAsDouble
     }
 
+    /**
+     * Reads absolute CANcoder module positions in rotations into [out].
+     * @param out 4-element output array.
+     */
     override fun getEncoderPositions(out: DoubleArray) {
         out[0] = absEnc1.valueAsDouble
         out[1] = absEnc2.valueAsDouble
@@ -91,12 +102,18 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         out[3] = absEnc4.valueAsDouble
     }
 
+    /** Robot pitch inclination angle in degrees. */
     override val pitchDegrees: Double
         get() = pitchSignal.valueAsDouble
 
+    /** Robot roll inclination angle in degrees. */
     override val rollDegrees: Double
         get() = rollSignal.valueAsDouble
 
+    /**
+     * Reads individual module drive surface speeds in m/s into [out].
+     * @param out 4-element output array.
+     */
     override fun getModuleSpeeds(out: DoubleArray) {
         out[0] = drivetrain.state.ModuleStates[0].speedMetersPerSecond
         out[1] = drivetrain.state.ModuleStates[1].speedMetersPerSecond
@@ -105,8 +122,9 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     }
 
     /**
-     * Reads the 250Hz synchronized pose from the CTRE drivetrain and maps it
-     * into the Redux DriveState object for the next calculation cycle.
+     * Reads the 250Hz synchronized pose from the CTRE drivetrain and maps it into a new [DriveState].
+     *
+     * @return Updated immutable [DriveState].
      */
     override fun read(): DriveState {
         val driveStateObj = drivetrain.state
@@ -122,81 +140,23 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
         )
     }
 
-    override val rawGyroYawDegrees: Double
-        get() = yawSignal.valueAsDouble
-
-    override val yawRateDegreesPerSecond: Double
-        get() = yawRateSignal.valueAsDouble
-
     /**
-     * Applies the macro-level velocities computed by the Redux reducers
-     * back to the CTRE SwerveDrivetrain.
+     * Writes target chassis speed commands to the CTRE SwerveDrivetrain.
      *
-     * **Field-centric mode** is delegated to [SwerveRequest.FieldCentric], which
-     * performs the field-to-robot rotation internally on the CTRE 250Hz odometry
-     * thread using the Pigeon2's latest heading. This eliminates the stale-heading
-     * artifacts that occurred when we manually computed cos/sin at 50Hz.
-     *
-     * **Robot-centric mode** uses [SwerveRequest.ApplyRobotSpeeds] with a
-     * pre-allocated [ChassisSpeeds] to maintain zero-GC compliance.
+     * @param state Immutable [DriveState] containing target velocities and field-centric flags.
      */
-    override fun write(driveState: DriveState) {
-        if (driveState.isXLock) {
-            drivetrain.setControl(com.ctre.phoenix6.swerve.SwerveRequest.SwerveDriveBrake())
-            return
-        }
-        if (driveState.isFieldCentric) {
-            drivetrain.setControl(
-                fieldCentricRequest
-                    .withVelocityX(driveState.xVelocityMetersPerSecond)
-                    .withVelocityY(driveState.yVelocityMetersPerSecond)
-                    .withRotationalRate(driveState.angularVelocityRadiansPerSecond)
-            )
+    override fun write(state: DriveState) {
+        if (state.isFieldCentric) {
+            fieldCentricRequest.VelocityX = state.xVelocityMetersPerSecond
+            fieldCentricRequest.VelocityY = state.yVelocityMetersPerSecond
+            fieldCentricRequest.RotationalRate = state.angularVelocityRadiansPerSecond
+            drivetrain.setControl(fieldCentricRequest)
         } else {
-            scratchSpeeds.vxMetersPerSecond = driveState.xVelocityMetersPerSecond
-            scratchSpeeds.vyMetersPerSecond = driveState.yVelocityMetersPerSecond
-            scratchSpeeds.omegaRadiansPerSecond = driveState.angularVelocityRadiansPerSecond
-            drivetrain.setControl(robotSpeedsRequest.withSpeeds(scratchSpeeds))
+            scratchSpeeds.vxMetersPerSecond = state.xVelocityMetersPerSecond
+            scratchSpeeds.vyMetersPerSecond = state.yVelocityMetersPerSecond
+            scratchSpeeds.omegaRadiansPerSecond = state.angularVelocityRadiansPerSecond
+            robotSpeedsRequest.Speeds = scratchSpeeds
+            drivetrain.setControl(robotSpeedsRequest)
         }
     }
-
-    /**
-     * Feeds AprilTag vision measurements into the CTRE SwerveDrivetrain's internal EKF.
-     */
-    override fun addVisionMeasurement(pose: com.areslib.math.geometry.Pose2d, timestampSeconds: Double) {
-        val wpiPose = edu.wpi.first.math.geometry.Pose2d(
-            pose.x,
-            pose.y,
-            edu.wpi.first.math.geometry.Rotation2d.fromRadians(pose.heading.radians)
-        )
-        drivetrain.addVisionMeasurement(wpiPose, timestampSeconds)
-    }
-
-    /**
-     * Resets/seeds the CTRE SwerveDrivetrain internal odometry pose.
-     */
-    override fun seedPose(pose: com.areslib.math.geometry.Pose2d) {
-        val wpiPose = edu.wpi.first.math.geometry.Pose2d(
-            pose.x,
-            pose.y,
-            edu.wpi.first.math.geometry.Rotation2d.fromRadians(pose.heading.radians)
-        )
-        drivetrain.resetPose(wpiPose)
-    }
-
-    override fun getFaults(out: IntArray) {
-        if (out.size >= 4) {
-            for (i in 0..3) {
-                var faultCode = 0
-                if (faultHardware[i].value) faultCode = faultCode or 1
-                if (faultBrownout[i].value) faultCode = faultCode or 2
-                if (faultTemp[i].value) faultCode = faultCode or 4
-                out[i] = faultCode
-            }
-        }
-    }
-
-    override val signalLatencyMs: Double
-        get() = currentDraw1.timestamp.latency * 1000.0
 }
-

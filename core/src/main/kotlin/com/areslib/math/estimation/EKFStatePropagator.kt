@@ -3,7 +3,36 @@ package com.areslib.math.estimation
 import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.wrapAngle
 
+/**
+ * Extended Kalman Filter (EKF) state transition and historical trajectory re-propagation engine.
+ *
+ * Handles zero-GC covariance propagation $\mathbf{P}_{k} = \mathbf{F} \mathbf{P}_{k-1} \mathbf{F}^T + \mathbf{Q}$
+ * and re-computes historical pose buffer entries whenever a delayed visual observation corrects a past state.
+ *
+ * ### Jacobian Matrix ($\mathbf{F}$):
+ * For non-linear drivetrain motion where $\mathbf{f}(x, y, \theta) = [x + \Delta x \cos\theta - \Delta y \sin\theta, y + \Delta x \sin\theta + \Delta y \cos\theta, \theta + \Delta\theta]^T$:
+ * $$\mathbf{F} = \begin{bmatrix} 1 & 0 & -\Delta x \sin\theta_{mid} - \Delta y \cos\theta_{mid} \\ 0 & 1 & \Delta x \cos\theta_{mid} - \Delta y \sin\theta_{mid} \\ 0 & 0 & 1 \end{bmatrix}$$
+ *
+ * ### Units:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Time: Milliseconds ($ms$)
+ *
+ * @see PoseEstimator
+ * @see VisionMahalanobisFilter
+ */
 object EKFStatePropagator {
+
+    /**
+     * Propagates a 3x3 covariance matrix forward one odometry step using local displacement deltas.
+     *
+     * @param covarianceArray Flattened 9-element 3x3 covariance matrix $[P_{00}, P_{01}, \dots, P_{22}]$.
+     * @param deltaX Local robot-frame displacement along X axis (meters).
+     * @param deltaY Local robot-frame displacement along Y axis (meters).
+     * @param thetaMid Midpoint heading $\theta_{prev} + \frac{\Delta\theta}{2}$ for trapezoidal integration (radians).
+     * @param qMatrix Process noise covariance matrix $\mathbf{Q}$.
+     * @param outCovariance Output 3x3 matrix storing the propagated covariance.
+     */
     fun propagate(
         covarianceArray: DoubleArray,
         deltaX: Double,
@@ -16,7 +45,7 @@ object EKFStatePropagator {
         val cosMid = kotlin.math.cos(thetaMid)
         val f02 = -deltaX * sinMid - deltaY * cosMid
         val f12 =  deltaX * cosMid - deltaY * sinMid
-        
+
         val fp00 = covarianceArray[0] + f02 * covarianceArray[6]
         val fp01 = covarianceArray[1] + f02 * covarianceArray[7]
         val fp02 = covarianceArray[2] + f02 * covarianceArray[8]
@@ -26,7 +55,7 @@ object EKFStatePropagator {
         val fp20 = covarianceArray[6]
         val fp21 = covarianceArray[7]
         val fp22 = covarianceArray[8]
-        
+
         outCovariance.m00 = fp00 + f02 * fp02 + qMatrix.m00
         outCovariance.m01 = fp01 + f12 * fp02 + qMatrix.m01
         outCovariance.m02 = fp02 + qMatrix.m02
@@ -38,6 +67,20 @@ object EKFStatePropagator {
         outCovariance.m22 = fp22 + qMatrix.m22
     }
 
+    /**
+     * Re-propagates the entire pose history and covariance buffer from a delayed vision measurement timestamp to the present frame.
+     *
+     * @param state Active EKF pose estimator state snapshot.
+     * @param closestIndex Buffer index of historical entry corresponding to the vision observation timestamp.
+     * @param baseEntry Historical pose entry prior to vision correction.
+     * @param dxX Innovation correction shift in X (meters).
+     * @param dxY Innovation correction shift in Y (meters).
+     * @param dxZ Innovation correction shift in heading (radians).
+     * @param updatedCovariance Vision-corrected 3x3 covariance matrix at [closestIndex].
+     * @param baseQ Baseline process noise covariance matrix $\mathbf{Q}$.
+     * @param scratchHistory Scratchpad history buffer to store re-propagated trajectory entries.
+     * @param scratchCov2 Scratchpad 3x3 matrix for incremental covariance propagation.
+     */
     fun repropagateHistory(
         state: PoseEstimatorState,
         closestIndex: Int,
@@ -51,7 +94,7 @@ object EKFStatePropagator {
         var currentX = baseEntry.x + dxX
         var currentY = baseEntry.y + dxY
         var currentHeadingRad = wrapAngle(baseEntry.headingRad + dxZ)
-        
+
         scratchCov2.setTo(updatedCovariance)
 
         scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, baseEntry.qScale)
@@ -59,7 +102,7 @@ object EKFStatePropagator {
         for (i in (closestIndex + 1) until state.history.size) {
             val prevRaw = state.history[i - 1]
             val currRaw = state.history[i]
-            
+
             val deltaX = currRaw.x - prevRaw.x
             val deltaY = currRaw.y - prevRaw.y
             val deltaHeading = currRaw.headingRad - prevRaw.headingRad
@@ -74,7 +117,7 @@ object EKFStatePropagator {
             val reCosMid = kotlin.math.cos(reThetaMid)
             val reF02 = -deltaX * reSinMid - deltaY * reCosMid
             val reF12 =  deltaX * reCosMid - deltaY * reSinMid
-            
+
             val reFp00 = scratchCov2.m00 + reF02 * scratchCov2.m20
             val reFp01 = scratchCov2.m01 + reF02 * scratchCov2.m21
             val reFp02 = scratchCov2.m02 + reF02 * scratchCov2.m22
@@ -84,7 +127,7 @@ object EKFStatePropagator {
             val reFp20 = scratchCov2.m20
             val reFp21 = scratchCov2.m21
             val reFp22 = scratchCov2.m22
-            
+
             val newM00 = reFp00 + reF02 * reFp02 + baseQ.m00 * scale
             val newM01 = reFp01 + reF12 * reFp02 + baseQ.m01 * scale
             val newM02 = reFp02 + baseQ.m02 * scale
@@ -94,7 +137,7 @@ object EKFStatePropagator {
             val newM20 = reFp20 + reF02 * reFp22 + baseQ.m20 * scale
             val newM21 = reFp21 + reF12 * reFp22 + baseQ.m21 * scale
             val newM22 = reFp22 + baseQ.m22 * scale
-            
+
             scratchCov2.m00 = newM00
             scratchCov2.m01 = newM01
             scratchCov2.m02 = newM02
@@ -104,7 +147,7 @@ object EKFStatePropagator {
             scratchCov2.m20 = newM20
             scratchCov2.m21 = newM21
             scratchCov2.m22 = newM22
-            
+
             scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, currRaw.qScale)
         }
 
@@ -112,7 +155,7 @@ object EKFStatePropagator {
         state.estimatedPoseX = currentX
         state.estimatedPoseY = currentY
         state.estimatedPoseHeading = currentHeadingRad
-        
+
         state.covarianceArray[0] = scratchCov2.m00
         state.covarianceArray[1] = scratchCov2.m01
         state.covarianceArray[2] = scratchCov2.m02

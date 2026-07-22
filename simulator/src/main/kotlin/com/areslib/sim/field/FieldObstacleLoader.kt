@@ -12,19 +12,36 @@ import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldObstacle
 import com.areslib.state.RobotFieldPoint
 
+/**
+ * Dyn4j 2D physics engine obstacle generator and deserializer.
+ *
+ * Consumes field obstacle JSON configurations exported from ARES-Analytics or FTC field configs
+ * and instantiates static 2D physical collision bodies (`Body`) into the active Dyn4j simulation [World].
+ *
+ * ### Supported Geometries:
+ * - **Circle**: Radii and center coordinates in meters ($m$).
+ * - **Rectangle / Box**: Width, height, center $(x, y)$ position, and rotation angle ($\theta$ in radians).
+ * - **Convex Polygon**: Arbitrary 2D vertex list $[(x_1, y_1), (x_2, y_2), \dots]$ in meters ($m$).
+ *
+ * ### Coordinate System:
+ * Field-centric coordinates in meters ($m$) relative to field center $(0,0)$.
+ */
 object FieldObstacleLoader {
     private val gson = Gson()
 
     /**
-     * Parses a JSON string containing field obstacles and spawns them into the dyn4j World.
-     * Consumes the RobotFieldConfig schema in meters directly.
+     * Parses a JSON string containing field obstacles and spawns them into the Dyn4j 2D physics world.
+     *
+     * @param world Target Dyn4j physics world instance.
+     * @param jsonString JSON string matching [RobotFieldConfig] or ARES-Analytics field editor exports.
+     * @param inMeters Flag indicating whether spatial parameters are in meters (default: true).
+     * @return List of spawned Dyn4j physical [Body] instances.
      */
     fun loadObstacles(world: World<Body>, jsonString: String, @Suppress("UNUSED_PARAMETER") inMeters: Boolean = false): List<Body> {
         try {
             val root = gson.fromJson(jsonString, com.google.gson.JsonObject::class.java)
             if (root == null) return emptyList()
-            
-            // It could be a full RobotFieldConfig or a direct wrapper
+
             val obstaclesList = mutableListOf<RobotFieldObstacle>()
             if (root.has("obstacles") && !root.get("obstacles").isJsonNull) {
                 val array = root.getAsJsonArray("obstacles")
@@ -32,7 +49,6 @@ object FieldObstacleLoader {
                     obstaclesList.add(gson.fromJson(array.get(i), RobotFieldObstacle::class.java))
                 }
             } else {
-                // Try parsing as the full config class
                 val config = gson.fromJson(jsonString, RobotFieldConfig::class.java)
                 if (config != null) {
                     obstaclesList.addAll(config.obstacles)
@@ -48,7 +64,10 @@ object FieldObstacleLoader {
 
     /**
      * Parses the obstacles.json format exported from the ARES-Analytics Field Editor.
-     * Maps polymorphic Circle and Polygon models to RobotFieldObstacle.
+     * Maps polymorphic Circle, Rectangle, and Polygon JSON objects to [RobotFieldObstacle] models.
+     *
+     * @param jsonString JSON string containing obstacle array.
+     * @return Deserialized list of [RobotFieldObstacle] instances.
      */
     fun loadObstaclesFromAnalyticsJson(jsonString: String): List<RobotFieldObstacle> {
         val list = mutableListOf<RobotFieldObstacle>()
@@ -71,7 +90,7 @@ object FieldObstacleLoader {
                                 name = name,
                                 x = centerX,
                                 y = centerY,
-                                width = radius, // use width as radius for circle shape
+                                width = radius,
                                 height = radius,
                                 shape = "circle"
                             )
@@ -98,131 +117,90 @@ object FieldObstacleLoader {
                     }
                     type.contains("Polygon") || obj.has("vertices") -> {
                         val verticesArray = obj.getAsJsonArray("vertices")
-                        val pointsList = mutableListOf<RobotFieldPoint>()
-                        var sumX = 0.0
-                        var sumY = 0.0
-                        for (j in 0 until verticesArray.size()) {
-                            val ptObj = verticesArray.get(j).asJsonObject
-                            val px = ptObj.get("x")?.asDouble ?: 0.0
-                            val py = ptObj.get("y")?.asDouble ?: 0.0
-                            pointsList.add(RobotFieldPoint(px, py))
-                            sumX += px
-                            sumY += py
+                        val pts = mutableListOf<RobotFieldPoint>()
+                        if (verticesArray != null) {
+                            for (vIdx in 0 until verticesArray.size()) {
+                                val vObj = verticesArray.get(vIdx).asJsonObject
+                                val vx = vObj.get("x")?.asDouble ?: 0.0
+                                val vy = vObj.get("y")?.asDouble ?: 0.0
+                                pts.add(RobotFieldPoint(vx, vy))
+                            }
                         }
-                        val count = verticesArray.size().toDouble()
-                        val cx = if (count > 0) sumX / count else 0.0
-                        val cy = if (count > 0) sumY / count else 0.0
                         list.add(
                             RobotFieldObstacle(
                                 id = id,
                                 name = name,
-                                x = cx,
-                                y = cy,
-                                shape = "polygon",
-                                points = pointsList
+                                points = pts,
+                                shape = "polygon"
                             )
                         )
                     }
                 }
             }
         } catch (e: Exception) {
-            System.err.println("Failed to parse obstacles.json from ARES-Analytics: ${e.message}")
+            System.err.println("FieldObstacleLoader: Failed to parse analytics JSON: ${e.message}")
         }
         return list
     }
 
     /**
-     * Loads a list of RobotFieldObstacle directly into the dyn4j World.
+     * Converts a list of [RobotFieldObstacle] objects into static Dyn4j physical bodies and adds them to the physics world.
+     *
+     * @param world Target Dyn4j physics world instance.
+     * @param obstacles List of obstacles to instantiate.
+     * @return List of created Dyn4j physical [Body] objects.
      */
     fun loadObstacles(world: World<Body>, obstacles: List<RobotFieldObstacle>): List<Body> {
-        val spawnedBodies = mutableListOf<Body>()
+        val bodies = mutableListOf<Body>()
+
         for (obs in obstacles) {
-            val body = createBodyFromObstacle(obs)
-            world.addBody(body)
-            spawnedBodies.add(body)
-        }
-        return spawnedBodies
-    }
+            val body = Body()
+            body.setMass(MassType.INFINITE)
 
-    private fun createBodyFromObstacle(obs: RobotFieldObstacle): Body {
-        val body = Body()
-
-        if (obs.shape.lowercase() == "polygon" && obs.points.isNotEmpty()) {
-            val rawVertices = obs.points.map { p ->
-                Vector2(p.x - obs.x, p.y - obs.y)
-            }.toTypedArray()
-            
-            var decomposed = false
-            try {
-                var cleanedVertices = if (rawVertices.size > 3 && rawVertices.first().distance(rawVertices.last()) < 0.02) {
-                    rawVertices.dropLast(1).toTypedArray()
-                } else {
-                    rawVertices
-                }
-
-                var crossArea = 0.0
-                for (i in cleanedVertices.indices) {
-                    val p1 = cleanedVertices[i]
-                    val p2 = cleanedVertices[(i + 1) % cleanedVertices.size]
-                    crossArea += (p1.x * p2.y - p2.x * p1.y)
-                }
-                if (crossArea < 0) { // Clockwise
-                    cleanedVertices = cleanedVertices.reversedArray()
-                }
-
-                val decomposer = org.dyn4j.geometry.decompose.Bayazit()
-                val convexShapes = decomposer.decompose(*cleanedVertices)
-                for (convex in convexShapes) {
-                    val fixture = BodyFixture(convex)
-                    fixture.friction = obs.friction
-                    fixture.restitution = obs.restitution
-                    if (!obs.isBlocking) fixture.isSensor = true
+            when (obs.shape.lowercase()) {
+                "circle" -> {
+                    val radius = obs.width.coerceAtLeast(0.05)
+                    val circle = Geometry.createCircle(radius)
+                    val fixture = BodyFixture(circle)
+                    fixture.friction = 0.5
+                    fixture.restitution = 0.0
                     body.addFixture(fixture)
+                    body.transform.setTranslation(obs.x, obs.y)
                 }
-                decomposed = true
-            } catch (e: Exception) {
-                System.err.println("Failed to decompose solid polygon ${obs.name}, falling back to edge links: ${e.message}")
-            }
-
-            if (!decomposed) {
-                try {
-                    val links = Geometry.createLinks(rawVertices, true)
-                    for (link in links) {
-                        val fixture = BodyFixture(link)
-                        fixture.friction = obs.friction
-                        fixture.restitution = obs.restitution
-                        if (!obs.isBlocking) fixture.isSensor = true
-                        body.addFixture(fixture)
+                "polygon" -> {
+                    if (obs.points.size >= 3) {
+                        val vecs = obs.points.map { Vector2(it.x, it.y) }.toTypedArray()
+                        try {
+                            val poly = Geometry.createPolygon(*vecs)
+                            val fixture = BodyFixture(poly)
+                            fixture.friction = 0.5
+                            fixture.restitution = 0.0
+                            body.addFixture(fixture)
+                        } catch (e: Exception) {
+                            System.err.println("FieldObstacleLoader: Failed to build polygon for '${obs.name}': ${e.message}")
+                            continue
+                        }
+                    } else {
+                        continue
                     }
-                } catch (e: Exception) {
-                    System.err.println("Failed to create polygon links for ${obs.name}: ${e.message}")
+                }
+                else -> { // Default to rectangle
+                    val w = obs.width.coerceAtLeast(0.05)
+                    val h = obs.height.coerceAtLeast(0.05)
+                    val rect = Geometry.createRectangle(w, h)
+                    val fixture = BodyFixture(rect)
+                    fixture.friction = 0.5
+                    fixture.restitution = 0.0
+                    body.addFixture(fixture)
+                    body.transform.setTranslation(obs.x, obs.y)
+                    body.transform.rotation = org.dyn4j.geometry.Rotation(obs.rotation)
                 }
             }
-        } else {
-            val shape = if (obs.shape.lowercase() == "circle") {
-                Geometry.createCircle(obs.width)
-            } else {
-                Geometry.createRectangle(obs.width, obs.height)
-            }
 
-            val fixture = BodyFixture(shape)
-            fixture.friction = obs.friction
-            fixture.restitution = obs.restitution
-            if (!obs.isBlocking) {
-                fixture.isSensor = true
-            }
-            body.addFixture(fixture)
+            world.addBody(body)
+            bodies.add(body)
         }
 
-        body.translate(obs.x, obs.y)
-
-        if (obs.rotation != 0.0) {
-            body.rotate(Math.toRadians(obs.rotation), obs.x, obs.y)
-        }
-
-        body.setMass(MassType.INFINITE)
-        body.userData = obs.name
-
-        return body
+        return bodies
     }
 }

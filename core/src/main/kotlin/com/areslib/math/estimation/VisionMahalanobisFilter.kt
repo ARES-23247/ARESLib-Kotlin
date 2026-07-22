@@ -6,10 +6,59 @@ import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.wrapAngle
 
+/**
+ * Extended Kalman Filter (EKF) vision measurement update and outlier rejection pipeline.
+ *
+ * Implements 3-DOF ($x, y, \theta$) EKF correction from camera-observed AprilTag poses
+ * with statistical Mahalanobis distance outlier filtering and historical re-propagation.
+ *
+ * ### Mathematical Formulation:
+ * 1. **Innovation Residual ($\mathbf{y}$)**:
+ *    $$\mathbf{y} = \begin{bmatrix} x_{vision} - x_{est} \\ y_{vision} - y_{est} \\ \text{wrapAngle}(\theta_{vision} - \theta_{est}) \end{bmatrix}$$
+ * 2. **Measurement Noise Covariance ($\mathbf{R}$)**:
+ *    Scales baseline standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ by distance, multi-tag count, incidence angle, and tag ambiguity:
+ *    $$\sigma_{scaled} = \sigma_{base} \cdot \frac{\sqrt{1 + d^2}}{\sqrt{N_{tags}}} \cdot \frac{1}{\cos^2(\phi)} \cdot (1 + 10 \cdot \text{ambiguity}^2)$$
+ * 3. **Innovation Covariance ($\mathbf{S}$)** & **Mahalanobis Distance ($d_M^2$)**:
+ *    $$\mathbf{S} = \mathbf{P}_{history} + \mathbf{R}$$
+ *    $$d_M^2 = \mathbf{y}^T \mathbf{S}^{-1} \mathbf{y}$$
+ * 4. **Kalman Gain ($\mathbf{K}$)** & **Covariance Update**:
+ *    $$\mathbf{K} = \mathbf{P}_{history} \mathbf{S}^{-1}$$
+ *    $$\mathbf{P}_{updated} = (\mathbf{I} - \mathbf{K}) \mathbf{P}_{history}$$
+ *
+ * ### Zero-GC Guarantee:
+ * Uses caller-supplied pre-allocated matrix scratchpads (`scratchR`, `scratchS`, `scratchSInv`, `scratchK`, `scratchCov`)
+ * and a 16-slot ring buffer (`kalmanGainPool`) to operate at 100Hz with zero dynamic heap allocations.
+ *
+ * @see PoseEstimator
+ * @see EKFStatePropagator
+ */
 object VisionMahalanobisFilter {
     private val kalmanGainPool = Array(16) { DoubleArray(9) }
     private var kalmanGainPoolIndex = 0
 
+    /**
+     * Processes a single AprilTag visual measurement, performs ambiguity, NaN, bounds, and Mahalanobis rejection,
+     * updates state covariance, and re-propagates the EKF trajectory from the historical observation timestamp.
+     *
+     * @param state Current EKF pose estimator state snapshot.
+     * @param measurement Observed AprilTag 3D pose measurement (units: meters, radians).
+     * @param visionStdDevs Baseline vision standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ (units: meters, radians).
+     * @param numTags Total number of detected AprilTags in the current vision frame.
+     * @param useMahalanobisRejection If true, rejects vision observations exceeding [mahalanobisThreshold].
+     * @param mahalanobisThreshold Chi-squared threshold for outlier rejection (typically 9.21 for 99% confidence at 3 DOF).
+     * @param maxAmbiguity Maximum acceptable AprilTag pose solver ambiguity ratio (0.0 to 1.0).
+     * @param activeTags Map of tag IDs to field-space 3D poses for incidence angle calculations.
+     * @param baseQ Process noise covariance matrix.
+     * @param scratchR Pre-allocated scratchpad matrix for measurement covariance $\mathbf{R}$.
+     * @param scratchS Pre-allocated scratchpad matrix for innovation covariance $\mathbf{S}$.
+     * @param scratchSInv Pre-allocated scratchpad matrix for inverted innovation covariance $\mathbf{S}^{-1}$.
+     * @param scratchK Pre-allocated scratchpad matrix for Kalman Gain $\mathbf{K}$.
+     * @param scratchCov Pre-allocated scratchpad matrix for updated state covariance $\mathbf{P}$.
+     * @param scratchHistory Pre-allocated scratchpad buffer for trajectory re-propagation.
+     * @param scratchCov2 Secondary pre-allocated scratchpad matrix for state propagation.
+     *
+     * @return Updated [PoseEstimatorState] with updated state history and diagnostic metrics (`lastMeasurementAccepted`, `lastRejectionReason`).
+     */
     fun processVisionMeasurement(
         state: PoseEstimatorState,
         measurement: VisionMeasurement,
@@ -33,7 +82,7 @@ object VisionMahalanobisFilter {
             state.lastRejectionReason = "empty_history"
             return state
         }
-        
+
         if (measurement.ambiguity.isNaN() || measurement.ambiguity > maxAmbiguity) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "high_ambiguity"
@@ -45,7 +94,7 @@ object VisionMahalanobisFilter {
             state.lastRejectionReason = "nan_measurement"
             return state
         }
-        
+
         if (numTags <= 0) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "no_tags"
@@ -133,11 +182,11 @@ object VisionMahalanobisFilter {
             scratchSInv.m00 =  (scratchS.m11 * scratchS.m22 - scratchS.m12 * scratchS.m21) * invDet
             scratchSInv.m01 = -(scratchS.m01 * scratchS.m22 - scratchS.m02 * scratchS.m21) * invDet
             scratchSInv.m02 =  (scratchS.m01 * scratchS.m12 - scratchS.m02 * scratchS.m11) * invDet
-            
+
             scratchSInv.m10 = -(scratchS.m10 * scratchS.m22 - scratchS.m12 * scratchS.m20) * invDet
             scratchSInv.m11 =  (scratchS.m00 * scratchS.m22 - scratchS.m02 * scratchS.m20) * invDet
             scratchSInv.m12 = -(scratchS.m00 * scratchS.m12 - scratchS.m02 * scratchS.m10) * invDet
-            
+
             scratchSInv.m20 =  (scratchS.m10 * scratchS.m21 - scratchS.m11 * scratchS.m20) * invDet
             scratchSInv.m21 = -(scratchS.m00 * scratchS.m21 - scratchS.m01 * scratchS.m20) * invDet
             scratchSInv.m22 =  (scratchS.m00 * scratchS.m11 - scratchS.m01 * scratchS.m10) * invDet
@@ -169,11 +218,11 @@ object VisionMahalanobisFilter {
         scratchK.m00 = baseEntry.covariance.m00 * scratchSInv.m00 + baseEntry.covariance.m01 * scratchSInv.m10 + baseEntry.covariance.m02 * scratchSInv.m20
         scratchK.m01 = baseEntry.covariance.m00 * scratchSInv.m01 + baseEntry.covariance.m01 * scratchSInv.m11 + baseEntry.covariance.m02 * scratchSInv.m21
         scratchK.m02 = baseEntry.covariance.m00 * scratchSInv.m02 + baseEntry.covariance.m01 * scratchSInv.m12 + baseEntry.covariance.m02 * scratchSInv.m22
-        
+
         scratchK.m10 = baseEntry.covariance.m10 * scratchSInv.m00 + baseEntry.covariance.m11 * scratchSInv.m10 + baseEntry.covariance.m12 * scratchSInv.m20
         scratchK.m11 = baseEntry.covariance.m10 * scratchSInv.m01 + baseEntry.covariance.m11 * scratchSInv.m11 + baseEntry.covariance.m12 * scratchSInv.m21
         scratchK.m12 = baseEntry.covariance.m10 * scratchSInv.m02 + baseEntry.covariance.m11 * scratchSInv.m12 + baseEntry.covariance.m12 * scratchSInv.m22
-        
+
         scratchK.m20 = baseEntry.covariance.m20 * scratchSInv.m00 + baseEntry.covariance.m21 * scratchSInv.m10 + baseEntry.covariance.m22 * scratchSInv.m20
         scratchK.m21 = baseEntry.covariance.m20 * scratchSInv.m01 + baseEntry.covariance.m21 * scratchSInv.m11 + baseEntry.covariance.m22 * scratchSInv.m21
         scratchK.m22 = baseEntry.covariance.m20 * scratchSInv.m02 + baseEntry.covariance.m21 * scratchSInv.m12 + baseEntry.covariance.m22 * scratchSInv.m22
@@ -185,11 +234,11 @@ object VisionMahalanobisFilter {
         scratchCov.m00 = scratchK.m00 * baseEntry.covariance.m00 + scratchK.m01 * baseEntry.covariance.m10 + scratchK.m02 * baseEntry.covariance.m20
         scratchCov.m01 = scratchK.m00 * baseEntry.covariance.m01 + scratchK.m01 * baseEntry.covariance.m11 + scratchK.m02 * baseEntry.covariance.m21
         scratchCov.m02 = scratchK.m00 * baseEntry.covariance.m02 + scratchK.m01 * baseEntry.covariance.m12 + scratchK.m02 * baseEntry.covariance.m22
-        
+
         scratchCov.m10 = scratchK.m10 * baseEntry.covariance.m00 + scratchK.m11 * baseEntry.covariance.m10 + scratchK.m12 * baseEntry.covariance.m20
         scratchCov.m11 = scratchK.m10 * baseEntry.covariance.m01 + scratchK.m11 * baseEntry.covariance.m11 + scratchK.m12 * baseEntry.covariance.m21
         scratchCov.m12 = scratchK.m10 * baseEntry.covariance.m02 + scratchK.m11 * baseEntry.covariance.m12 + scratchK.m12 * baseEntry.covariance.m22
-        
+
         scratchCov.m20 = scratchK.m20 * baseEntry.covariance.m00 + scratchK.m21 * baseEntry.covariance.m10 + scratchK.m22 * baseEntry.covariance.m20
         scratchCov.m21 = scratchK.m20 * baseEntry.covariance.m01 + scratchK.m21 * baseEntry.covariance.m11 + scratchK.m22 * baseEntry.covariance.m21
         scratchCov.m22 = scratchK.m20 * baseEntry.covariance.m02 + scratchK.m21 * baseEntry.covariance.m12 + scratchK.m22 * baseEntry.covariance.m22

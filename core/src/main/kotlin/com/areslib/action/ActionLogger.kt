@@ -1,7 +1,6 @@
 package com.areslib.action
 
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
@@ -14,8 +13,33 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * Thread-safe, asynchronous JSONL recorder for RobotAction streams.
- * Guarantees microsecond-accurate chronology logging with zero overhead on the main thread.
+ * Thread-safe, non-blocking asynchronous JSONL (JSON Lines) recorder for [RobotAction] streams.
+ *
+ * Captures Redux-style action dispatches in microsecond-accurate sequence and writes them to local disk storage
+ * on a dedicated single-threaded daemon executor (`ARES-ActionLogger-Thread`). This guarantees zero GC or I/O overhead on high-frequency robot control loops (50Hz–1000Hz).
+ *
+ * ### Output File Storage Path:
+ * - **Android FTC Control Hub**: `/sdcard/FIRST/telemetry_logs/action_log_<timestamp>_<mode>.jsonl`
+ * - **Desktop Simulation / FRC RoboRIO**: `./logs/action_log_<timestamp>_<mode>.jsonl`
+ *
+ * ### JSONL Output Schema:
+ * ```json
+ * {
+ *   "run_id": "UUID-or-empty",
+ *   "robot_id": "Robot-01",
+ *   "match_number": 12,
+ *   "alliance": "BLUE",
+ *   "op_mode": "Teleop",
+ *   "type": "JoystickDriveIntent",
+ *   "payload": { "x": 0.5, "y": 0.0, "rotation": 0.1, "isFieldCentric": true }
+ * }
+ * ```
+ *
+ * @param runId Unique telemetry run identifier string.
+ * @param robotId Target robot hardware identifier.
+ * @param matchNumber Competition match number (0 for practice/testing).
+ * @param alliance Active alliance color ("RED" or "BLUE").
+ * @param mode Current operational mode ("Auto", "Teleop", or "Init").
  */
 class ActionLogger(
     val runId: String = "",
@@ -28,7 +52,7 @@ class ActionLogger(
     private val queue = LinkedBlockingQueue<RobotAction>(1000)
     private var writer: BufferedWriter? = null
     private var isRunning = false
-    
+
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(),
@@ -39,7 +63,7 @@ class ActionLogger(
         try {
             val javaVendor = System.getProperty("java.vendor") ?: ""
             val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
-            
+
             val logDir = if (isAndroid) {
                 File("/sdcard/FIRST/telemetry_logs/")
             } else {
@@ -62,6 +86,12 @@ class ActionLogger(
         }
     }
 
+    /**
+     * Enqueues a [RobotAction] for background asynchronous serialization and disk writing.
+     * Non-blocking call returning immediately to maintain main loop performance.
+     *
+     * @param action The Redux action object dispatched to the store.
+     */
     fun logAction(action: RobotAction) {
         if (!isRunning) return
         queue.offer(action)
@@ -87,7 +117,7 @@ class ActionLogger(
     private fun writeAction(action: RobotAction) {
         val w = writer ?: return
         val typeName = action.javaClass.simpleName
-        
+
         try {
             w.write("{\"run_id\":\"")
             w.write(runId)
@@ -121,6 +151,9 @@ class ActionLogger(
         }
     }
 
+    /**
+     * Flushes remaining queued actions, closes disk file handles, and shuts down the background logging worker thread.
+     */
     fun stop() {
         isRunning = false
         executor.shutdown()

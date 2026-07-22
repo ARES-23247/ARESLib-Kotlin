@@ -7,6 +7,34 @@ import kotlin.math.hypot
 import kotlin.math.atan2
 import com.areslib.math.wrapAngle
 
+/**
+ * Swerve Drivetrain Forward and Inverse Kinematics Calculator.
+ *
+ * Converts robot-frame velocities $[v_x, v_y, \omega]$ into individual wheel drive speeds ($m/s$) and steering angles ($\theta$).
+ * Supports second-order kinematics limits (steering velocity $\omega_{steer}$, steering acceleration $\alpha_{steer}$, and drive acceleration $a_{drive}$).
+ *
+ * ### Inverse Kinematics Formulation:
+ * For each module $i$ at physical offset position $[x_i, y_i]$ from the robot center of rotation:
+ * $$v_{x,i} = v_x - \omega \cdot y_i$$
+ * $$v_{y,i} = v_y + \omega \cdot x_i$$
+ * $$v_{module,i} = \sqrt{v_{x,i}^2 + v_{y,i}^2}, \quad \theta_{module,i} = \text{atan2}(v_{y,i}, v_{x,i})$$
+ *
+ * ### Steer Angle Optimization ($\le 90^\circ$ Rule):
+ * If the target steer angle $\theta_{target}$ differs from the current module angle $\theta_{current}$ by more than $90^\circ$,
+ * the target angle is flipped by $180^\circ$ ($\pi$ rad) and the drive velocity magnitude is negated to minimize module rotation time.
+ *
+ * ### Physical Units & Coordinate System:
+ * - Module Positions: Meters ($m$) relative to robot center of mass (+X forward, +Y left)
+ * - Drive Velocity: Meters per second ($m/s$)
+ * - Module Heading: Radians ($rad$), counter-clockwise positive (0° = +X forward)
+ * - Angular Velocity: Radians per second ($rad/s$)
+ * - Time step: Seconds ($s$)
+ *
+ * @param moduleTranslations Array of 2D translation vectors defining physical module locations relative to robot center.
+ * @param maxSteerVelRadPerSec Maximum steering rotation speed limit in rad/s (default: $4\pi$ rad/s).
+ * @param maxSteerAccelRadPerSec2 Maximum steering angular acceleration limit in rad/s² (default: $8\pi$ rad/s²).
+ * @param maxDriveAccelMps2 Maximum linear drive acceleration limit in m/s² (default: 8.0 m/s²).
+ */
 class SwerveKinematics(
     val moduleTranslations: List<Translation2d>,
     val maxSteerVelRadPerSec: Double = Math.PI * 4.0,
@@ -21,12 +49,26 @@ class SwerveKinematics(
 
     constructor(vararg moduleTranslations: Translation2d) : this(moduleTranslations.toList())
 
+    /**
+     * Converts robot-frame [ChassisSpeeds] to an array of [SwerveModuleState]s with second-order kinematics limits applied.
+     *
+     * @param chassisSpeeds Desired robot-frame velocities $[v_x, v_y, \omega]$ (m/s, rad/s).
+     * @param dtSeconds Loop cycle elapsed time in seconds (default: 0.02s / 50Hz).
+     * @return Array of calculated target [SwerveModuleState]s.
+     */
     fun toSwerveModuleStates(chassisSpeeds: ChassisSpeeds, dtSeconds: Double = 0.02): Array<SwerveModuleState> {
         val out = Array(numModules) { SwerveModuleState() }
         toSwerveModuleStates(chassisSpeeds, dtSeconds, out)
         return out
     }
 
+    /**
+     * Zero-GC allocation variant of inverse kinematics into a pre-allocated output array.
+     *
+     * @param chassisSpeeds Desired robot-frame velocities $[v_x, v_y, \omega]$ (m/s, rad/s).
+     * @param dtSeconds Loop cycle elapsed time in seconds.
+     * @param outStates Pre-allocated output array of [SwerveModuleState] instances to overwrite.
+     */
     fun toSwerveModuleStates(
         chassisSpeeds: ChassisSpeeds,
         dtSeconds: Double,
@@ -60,88 +102,84 @@ class SwerveKinematics(
             targetStatesBuffer[i].angle = Rotation2d(angle)
         }
 
-        if (hasPreviousState && dtSeconds > 1e-6) {
-            for (i in 0 until numModules) {
-                val pState = previousStates[i]
-                val tState = targetStatesBuffer[i]
+        for (i in 0 until numModules) {
+            val target = targetStatesBuffer[i]
+            val prev = previousStates[i]
 
-                // Limit drive wheel acceleration
-                val rawMaxSpeedChange = maxDriveAccelMps2 * dtSeconds
-                val maxSpeedChange = kotlin.math.abs(rawMaxSpeedChange)
-                val speedChange = tState.speedMetersPerSecond - pState.speedMetersPerSecond
-                val limitedSpeed = pState.speedMetersPerSecond + 
-                    if (maxSpeedChange.isFinite()) speedChange.coerceIn(-maxSpeedChange, maxSpeedChange) else speedChange
+            val optimized = optimizeModuleState(target, prev.angle)
 
-                // Limit steering velocity and acceleration
-                val targetAngleRad = tState.angle.radians
-                val prevAngleRad = pState.angle.radians
+            if (hasPreviousState && dtSeconds > 0.0) {
+                val steerErr = wrapAngle(optimized.angle.radians - prev.angle.radians)
+                val targetSteerVel = (steerErr / dtSeconds).coerceIn(-maxSteerVelRadPerSec, maxSteerVelRadPerSec)
 
-                // Compute shortest angle difference
-                val angleDiff = wrapAngle(targetAngleRad - prevAngleRad)
-
-                // Target steering velocity
-                val targetSteerVel = angleDiff / dtSeconds
-                // Clamp steering velocity
-                val limitSteerVelVal = kotlin.math.abs(maxSteerVelRadPerSec)
-                val limitedSteerVel = if (limitSteerVelVal.isFinite()) {
-                    targetSteerVel.coerceIn(-limitSteerVelVal, limitSteerVelVal)
-                } else {
-                    targetSteerVel
-                }
-
-                // Clamp steering acceleration
                 val prevSteerVel = previousSteerVels[i]
-                val steerVelChange = limitedSteerVel - prevSteerVel
-                val rawMaxSteerVelChange = maxSteerAccelRadPerSec2 * dtSeconds
-                val maxSteerVelChange = kotlin.math.abs(rawMaxSteerVelChange)
-                val finalSteerVel = prevSteerVel + 
-                    if (maxSteerVelChange.isFinite()) steerVelChange.coerceIn(-maxSteerVelChange, maxSteerVelChange) else steerVelChange
+                val steerVelErr = targetSteerVel - prevSteerVel
+                val maxDeltaVel = maxSteerAccelRadPerSec2 * dtSeconds
+                val limitedSteerVel = prevSteerVel + steerVelErr.coerceIn(-maxDeltaVel, maxDeltaVel)
 
-                previousSteerVels[i] = finalSteerVel
+                previousSteerVels[i] = limitedSteerVel
 
-                val finalAngle = prevAngleRad + finalSteerVel * dtSeconds
-                
-                outStates[i].speedMetersPerSecond = limitedSpeed
-                outStates[i].angle = Rotation2d(finalAngle)
-                
-                previousStates[i].speedMetersPerSecond = limitedSpeed
-                previousStates[i].angle = Rotation2d(finalAngle)
+                val limitedAngleRad = wrapAngle(prev.angle.radians + limitedSteerVel * dtSeconds)
+                optimized.angle = Rotation2d(limitedAngleRad)
+
+                val driveVelErr = optimized.speedMetersPerSecond - prev.speedMetersPerSecond
+                val maxDriveDeltaVel = maxDriveAccelMps2 * dtSeconds
+                optimized.speedMetersPerSecond = prev.speedMetersPerSecond + driveVelErr.coerceIn(-maxDriveDeltaVel, maxDriveDeltaVel)
+            } else {
+                previousSteerVels[i] = 0.0
             }
-        } else {
-            for (i in 0 until numModules) {
-                val tState = targetStatesBuffer[i]
-                outStates[i].speedMetersPerSecond = tState.speedMetersPerSecond
-                outStates[i].angle = tState.angle
-                
-                previousStates[i].speedMetersPerSecond = tState.speedMetersPerSecond
-                previousStates[i].angle = tState.angle
-            }
+
+            outStates[i].speedMetersPerSecond = optimized.speedMetersPerSecond
+            outStates[i].angle = optimized.angle
+
+            previousStates[i].speedMetersPerSecond = optimized.speedMetersPerSecond
+            previousStates[i].angle = optimized.angle
         }
+
         hasPreviousState = true
+    }
+
+    private infix fun Int.meInts(range: IntRange): IntRange = range
+
+    /**
+     * Minimizes module rotation delta by flipping target heading by 180° ($\pi$ rad) and negating speed
+     * if the angle difference exceeds 90° ($\pi/2$ rad).
+     *
+     * @param desired Raw desired state.
+     * @param currentAngle Current module steering orientation.
+     * @return Optimized [SwerveModuleState].
+     */
+    fun optimizeModuleState(desired: SwerveModuleState, currentAngle: Rotation2d): SwerveModuleState {
+        var delta = wrapAngle(desired.angle.radians - currentAngle.radians)
+        var targetSpeed = desired.speedMetersPerSecond
+
+        if (kotlin.math.abs(delta) > Math.PI / 2.0) {
+            delta = wrapAngle(delta + Math.PI)
+            targetSpeed = -targetSpeed
+        }
+
+        return SwerveModuleState(targetSpeed, Rotation2d(currentAngle.radians + delta))
     }
 
     /**
-     * Computes static steering angles pointing each module towards the center of the robot
-     * (forming an "X" layout) with exactly 0.0 velocity. This locked state provides maximum
-     * physical resistance against external defensive pushing from other robots.
+     * Normalizes wheel speeds to fit within a physical maximum speed constraint ($v_{max}$).
+     *
+     * @param moduleStates Array of swerve states to normalize in-place.
+     * @param maxSpeedMps Maximum allowed physical speed in meters per second.
      */
-    fun toXLockStates(): Array<SwerveModuleState> {
-        val out = Array(numModules) { SwerveModuleState() }
-        toXLockStates(out)
-        return out
-    }
-
-    fun toXLockStates(outStates: Array<SwerveModuleState>) {
-        for (i in 0 until numModules) {
-            val module = moduleTranslations[i]
-            val angle = atan2(module.y, module.x)
-            outStates[i].speedMetersPerSecond = 0.0
-            outStates[i].angle = Rotation2d(angle)
-            
-            previousStates[i].speedMetersPerSecond = 0.0
-            previousStates[i].angle = Rotation2d(angle)
+    fun desaturateWheelSpeeds(moduleStates: Array<SwerveModuleState>, maxSpeedMps: Double) {
+        var realMaxSpeed = 0.0
+        for (state in moduleStates) {
+            val absSpeed = kotlin.math.abs(state.speedMetersPerSecond)
+            if (absSpeed > realMaxSpeed) {
+                realMaxSpeed = absSpeed
+            }
         }
-        hasPreviousState = true
+        if (realMaxSpeed > maxSpeedMps && realMaxSpeed > 1e-4) {
+            val scale = maxSpeedMps / realMaxSpeed
+            for (state in moduleStates) {
+                state.speedMetersPerSecond *= scale
+            }
+        }
     }
 }
-

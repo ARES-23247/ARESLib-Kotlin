@@ -5,7 +5,6 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.subsystem.AresRobot
 import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.hardware.vision.VisionIO
-import com.areslib.ftc.hardware.FtcHardwareMapInitializer
 import com.areslib.ftc.vision.FtcVisionTracker
 import com.areslib.ftc.telemetry.FtcTelemetryManager
 import com.areslib.ftc.telemetry.FtcLoopProfiler
@@ -19,6 +18,8 @@ import com.areslib.hardware.vision.VisionFilterConfig
 import com.areslib.math.geometry.Vector3
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
+import com.areslib.ftc.core.FtcHardwareInitializer
+import com.areslib.ftc.core.FtcOpModeLifecycleController
 
 /**
  * Abstract base class for all FTC robots.
@@ -58,12 +59,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     reducer = reducer
 ) {
 
+    private val lifecycleController = FtcOpModeLifecycleController()
+    private val hardwareInitializer = FtcHardwareInitializer(
+        hardwareMap, pinpointName, limelightName, imuName,
+        pinpointXOffsetMm, pinpointYOffsetMm, pinpointEncoderResolution,
+        pinpointXDirection, pinpointYDirection, pinpointIsCcwPositive
+    )
+
     init {
-        com.areslib.ftc.hardware.FtcPerformanceManager.initialize(hardwareMap)
-        com.areslib.telemetry.RobotWebServer.start()
-        com.areslib.logging.LogManagerServer.startServer()
-        com.areslib.telemetry.RobotStatusTracker.isEnabled = false
-        com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Init"
+        lifecycleController.init(hardwareMap)
         activeInstance = this
 
         com.areslib.math.estimation.PoseEstimator.qX = odomQx
@@ -86,44 +90,27 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val powerManager = FtcPowerManager(hardwareMap)
     val profiler = FtcLoopProfiler()
 
-    // 1. Core Sensors Initialization (Delegated to FtcHardwareMapInitializer)
-    val pinpointIO: PinpointIO? = FtcHardwareMapInitializer.initPinpoint(
-        hardwareMap = hardwareMap,
-        pinpointName = pinpointName,
-        xOffsetMm = pinpointXOffsetMm,
-        yOffsetMm = pinpointYOffsetMm,
-        encoderResolution = pinpointEncoderResolution,
-        xDirection = pinpointXDirection,
-        yDirection = pinpointYDirection,
-        isCcwPositive = pinpointIsCcwPositive
-    )
-
-    val imuIO: ImuIO? = FtcHardwareMapInitializer.initImu(hardwareMap, imuName)
-    val limelightIO: VisionIO? = FtcHardwareMapInitializer.initLimelight(hardwareMap, limelightName)
+    // Sensors
+    val pinpointIO: PinpointIO? get() = hardwareInitializer.pinpointIO
+    val imuIO: ImuIO? get() = hardwareInitializer.imuIO
+    val limelightIO: VisionIO? get() = hardwareInitializer.limelightIO
 
     // Vision Tracker
     val visionTracker = FtcVisionTracker(store, limelightIO, pinpointIO, visionStdDevs)
 
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
-
     private var hasReadSensorsThisFrame = false
 
-    /**
-     * Synchronously reads pinpoint and Limelight visual tracking sensors,
-     * updates the EKF state immediately, and clears REV expansion hub bulk caches.
-     */
     fun readSensors() {
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
 
         val s0 = System.nanoTime()
-
         com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()
         val s1 = System.nanoTime()
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-
         updateHardwareInputs()
         val s2 = System.nanoTime()
 
@@ -170,31 +157,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
-    /**
-     * Executes a single frame cycle of the robot's control loop.
-     */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
-        if (!isAndroid && lastUpdateTime != 0L) {
-            val now = com.areslib.util.RobotClock.currentTimeMillis()
-            val elapsed = now - lastUpdateTime
-            if (elapsed < 20) {
-                try {
-                    Thread.sleep(20 - elapsed)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                }
-            }
-        }
-
-        if (!com.areslib.telemetry.RobotStatusTracker.isEnabled && com.areslib.telemetry.RobotStatusTracker.activeOpMode != "Init") {
-            com.areslib.telemetry.RobotWebServer.start()
-        } else if (!com.areslib.telemetry.RobotStatusTracker.isEnabled) {
-            com.areslib.telemetry.RobotWebServer.stop()
-        }
-
-        if (com.areslib.telemetry.RobotStatusTracker.activeOpMode != "Init") {
-            com.areslib.telemetry.RobotStatusTracker.isEnabled = true
-        }
+        lifecycleController.sleepForTargetDt(lastUpdateTime, isAndroid)
+        lifecycleController.update()
 
         try {
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
@@ -202,7 +167,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             lastUpdateTime = timestamp
 
             val t0 = System.nanoTime()
-
             readSensors()
             hasReadSensorsThisFrame = false
             val t1 = System.nanoTime()
@@ -228,14 +192,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val t4 = System.nanoTime()
 
             profiler.recordAndPublishLoopDiagnostics(telemetryManager, t0, t1, t2, t3, t4)
-
-            if (!isAndroid) {
-                val elapsed = com.areslib.util.RobotClock.currentTimeMillis() - timestamp
-                val sleepTime = 20L - elapsed
-                if (sleepTime > 0) {
-                    Thread.sleep(sleepTime)
-                }
-            }
+            lifecycleController.sleepRemaining(timestamp, isAndroid)
 
         } catch (e: Throwable) {
             if (e is InterruptedException || e.cause is InterruptedException) {
@@ -279,17 +236,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     open fun close() {
         activeInstance = null
         safeHardware()
-        com.areslib.telemetry.RobotStatusTracker.isEnabled = false
-        com.areslib.telemetry.RobotWebServer.stop()
+        lifecycleController.close()
         telemetryManager.close()
-        pinpointIO?.close()
-        try {
-            (imuIO as? AutoCloseable)?.close()
-        } catch (_: Exception) {}
-        try {
-            (limelightIO as? AutoCloseable)?.close()
-        } catch (_: Exception) {}
-        com.areslib.hardware.HardwareRegistry.closeAll()
-        com.areslib.ftc.hardware.FtcMotor.unregisterAll()
+        hardwareInitializer.close()
     }
 }

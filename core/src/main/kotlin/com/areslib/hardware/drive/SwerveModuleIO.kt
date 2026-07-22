@@ -21,4 +21,9 @@ interface SwerveModuleIO {
      * Poll the latest hardware signals into the inputs structure.
      */
     fun updateInputs(inputs: SwerveModuleInputs)
+
+    /**
+     * Commands motor duty-cycle powers for drive and steer actuators.
+     */
+    fun setDesiredPower(drivePower: Double, steerPower: Double) {}
 }
