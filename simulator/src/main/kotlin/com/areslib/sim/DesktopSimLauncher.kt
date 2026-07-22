@@ -309,6 +309,7 @@ object DesktopSimLauncher {
             }
 
             TelemetryPublisher.publishTruePose(currentPhysPose)
+            TelemetryPublisher.publishEstimatedPose(currentPhysPose)
             TelemetryPublisher.getWebVx()
             TelemetryPublisher.getWebVy()
             TelemetryPublisher.getWebOmega()

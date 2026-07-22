@@ -82,14 +82,12 @@ public class NT4Server extends WebSocketServer {
         for (String s : subprotocol.split(", ")) {
             if (s.equals("v4.1.networktables.first.wpi.edu")) {
                 conn.setAttachment(s);
-                conn.send("Using protocol: " + s);
                 for (NetworkTablesEntry entry : m_entries.values()) {
                     announceEntry(entry);
                 }
             }
             if (s.equals("rtt.networktables.first.wpi.edu")) {
                 conn.setAttachment(s);
-                conn.send("Using protocol: " + s);
                 try {
                     heartbeat(conn, System.currentTimeMillis() * 1000L);
                 } catch (IOException e) {
