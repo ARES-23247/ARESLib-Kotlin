@@ -196,8 +196,16 @@ object DesktopSimLauncher {
 
         while (true) {
             // Check for Driver Station UI commands from ARES-Analytics dashboard
-            val dsCommand = (ntInst.get("/ARES/DriverStation/Command")?.value?.get() as? String) ?: ""
-            val selectedOpMode = (ntInst.get("/ARES/DriverStation/SelectedOpMode")?.value?.get() as? String) ?: ""
+            val rawCommand = (ntInst.get("/ARES/DriverStation/Command")?.value?.get() as? String)
+                ?: (ntInst.get("ARES/DriverStation/Command")?.value?.get() as? String)
+                ?: ""
+            val dsCommand = rawCommand.trim()
+
+            val rawOpMode = (ntInst.get("/ARES/DriverStation/SelectedOpMode")?.value?.get() as? String)
+                ?: (ntInst.get("ARES/DriverStation/SelectedOpMode")?.value?.get() as? String)
+                ?: ""
+            val selectedOpMode = rawOpMode.trim()
+
 
             if (selectedOpMode.isNotEmpty() && selectedOpMode != lastSelectedOpMode) {
                 lastSelectedOpMode = selectedOpMode

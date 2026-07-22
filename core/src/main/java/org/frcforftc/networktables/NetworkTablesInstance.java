@@ -165,8 +165,17 @@ public class NetworkTablesInstance {
      * @return the {@link NetworkTablesEntry} for the specified topic, or null if not found
      */
     public NetworkTablesEntry get(String topic) {
-        return m_server.getEntries().get(topic);
+        if (m_server == null) return null;
+        NetworkTablesEntry entry = m_server.getEntries().get(topic);
+        if (entry == null && topic.startsWith("/")) {
+            entry = m_server.getEntries().get(topic.substring(1));
+        }
+        if (entry == null && !topic.startsWith("/")) {
+            entry = m_server.getEntries().get("/" + topic);
+        }
+        return entry;
     }
+
 
     /**
      * Stops the NT4 server.
