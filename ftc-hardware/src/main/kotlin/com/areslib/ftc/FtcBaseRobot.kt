@@ -4,22 +4,25 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.subsystem.AresRobot
 import com.areslib.ftc.drivetrain.PinpointIO
-import com.areslib.ftc.vision.FtcLimelightIO
 import com.areslib.hardware.vision.VisionIO
-import com.areslib.hardware.vision.CompositeVisionIO
+import com.areslib.ftc.hardware.FtcHardwareMapInitializer
 import com.areslib.ftc.vision.FtcVisionTracker
 import com.areslib.ftc.telemetry.FtcTelemetryManager
+import com.areslib.ftc.telemetry.FtcLoopProfiler
 import com.areslib.ftc.power.FtcPowerManager
 import com.areslib.action.RobotAction
-import com.qualcomm.hardware.limelightvision.Limelight3A
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
-import com.areslib.logging.populate
 import com.areslib.hardware.sensor.ImuIO
 import com.areslib.reducer.rootReducer
+import com.areslib.state.RobotState
+import com.areslib.state.VisionState
+import com.areslib.hardware.vision.VisionFilterConfig
+import com.areslib.math.geometry.Vector3
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
 
 /**
  * Abstract base class for all FTC robots.
- * Manages the unified hardware registries, performance parameters,
+ * Manages unified hardware registries, performance parameters,
  * power managers, telemetry pipelines, and vision trackers.
  */
 abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
@@ -28,12 +31,12 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val limelightName: String? = "limelight",
     val imuName: String? = "imu",
     protected val localTelemetry: Telemetry? = null,
-    
+
     // EKF Process noise
     val odomQx: Double = 0.01,
     val odomQy: Double = 0.01,
     val odomQtheta: Double = 0.01,
-    
+
     // Pinpoint physical parameters
     val pinpointXOffsetMm: Double = 0.0,
     val pinpointYOffsetMm: Double = 0.0,
@@ -42,14 +45,13 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     val pinpointIsCcwPositive: Boolean = false,
 
-    
     // Vision Configuration
-    val visionStdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
-    val visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
-    val reducer: (com.areslib.state.RobotState, com.areslib.action.RobotAction) -> com.areslib.state.RobotState = ::rootReducer
+    val visionStdDevs: Vector3 = Vector3(0.05, 0.05, 0.1),
+    val visionFilterConfig: VisionFilterConfig = VisionFilterConfig.ftcDefaults(),
+    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) : AresRobot(
-    initialState = com.areslib.state.RobotState(
-        vision = com.areslib.state.VisionState(
+    initialState = RobotState(
+        vision = VisionState(
             filterConfig = visionFilterConfig
         )
     ),
@@ -81,101 +83,53 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     // Telemetry & recording pipelines
     val telemetryManager = FtcTelemetryManager(store)
-
-    // Electrical and brownout manager
     val powerManager = FtcPowerManager(hardwareMap)
+    val profiler = FtcLoopProfiler()
 
-    // 1. Core Sensors
-    val pinpointIO: PinpointIO? = try {
-        pinpointName?.let { name ->
-            val pinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, name)
-            PinpointIO(
-                driver = pinpointDriver,
-                xOffsetMm = pinpointXOffsetMm,
-                yOffsetMm = pinpointYOffsetMm,
-                encoderResolution = pinpointEncoderResolution,
-                xDirection = pinpointXDirection,
-                yDirection = pinpointYDirection,
-                isHeadingCcwPositive = pinpointIsCcwPositive
-            ).apply { recalibrateIMU() }
-        }
-    } catch (_: Throwable) {
-        null
-    }
+    // 1. Core Sensors Initialization (Delegated to FtcHardwareMapInitializer)
+    val pinpointIO: PinpointIO? = FtcHardwareMapInitializer.initPinpoint(
+        hardwareMap = hardwareMap,
+        pinpointName = pinpointName,
+        xOffsetMm = pinpointXOffsetMm,
+        yOffsetMm = pinpointYOffsetMm,
+        encoderResolution = pinpointEncoderResolution,
+        xDirection = pinpointXDirection,
+        yDirection = pinpointYDirection,
+        isCcwPositive = pinpointIsCcwPositive
+    )
 
-    val imuIO: ImuIO? = try {
-        imuName?.let { name ->
-            val imuDriver = hardwareMap.get(com.qualcomm.robotcore.hardware.IMU::class.java, name)
-            com.areslib.ftc.hardware.FtcImu(imuDriver)
-        }
-    } catch (_: Throwable) {
-        null
-    }
+    val imuIO: ImuIO? = FtcHardwareMapInitializer.initImu(hardwareMap, imuName)
+    val limelightIO: VisionIO? = FtcHardwareMapInitializer.initLimelight(hardwareMap, limelightName)
 
-    val limelightIO: VisionIO? = try {
-        limelightName?.let { namesStr ->
-            val names = namesStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            when {
-                names.size > 1 -> {
-                    val ios = names.map { name ->
-                        val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
-                        FtcLimelightIO(limelightDriver)
-                    }
-                    CompositeVisionIO(ios)
-                }
-                names.size == 1 -> {
-                    val limelightDriver = hardwareMap.get(Limelight3A::class.java, names[0])
-                    FtcLimelightIO(limelightDriver)
-                }
-                else -> null
-            }
-        }
-    } catch (_: Throwable) {
-        null
-    }
-
-    // Vision Tracker and Outlier Snapper
+    // Vision Tracker
     val visionTracker = FtcVisionTracker(store, limelightIO, pinpointIO, visionStdDevs)
 
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
 
     private var hasReadSensorsThisFrame = false
-    private var lastPoseUpdateTimestamp = 0L
-
-    // Profiling: sub-timings from readSensors() stored for driver station display
-    private var profBulkCacheMs = 0.0
-    private var profHardwareInputsMs = 0.0
-    private var profPinpointMs = 0.0
-    private var profVisionMs = 0.0
-    private var loopOverrunCount = 0
 
     /**
      * Synchronously reads pinpoint and Limelight visual tracking sensors,
      * updates the EKF state immediately, and clears REV expansion hub bulk caches.
-     * This can be called at the start of an OpMode loop to eliminate one-frame loop latency.
      */
     fun readSensors() {
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
 
-        // === PROFILING: sub-section timing inside readSensors ===
         val s0 = System.nanoTime()
 
-        // 0. Clear manual bulk caches at the beginning of the frame
         com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()
         val s1 = System.nanoTime()
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        
-        // 0b. Read inputs from robot-specific sensors (e.g. drive encoders)
+
         updateHardwareInputs()
         val s2 = System.nanoTime()
 
-        // 1. Read pinpoint sensors and update EKF pose estimation
         val poseUpdate = pinpointIO?.getPoseUpdate() ?: getFallbackPoseUpdate(timestamp)
         val s3 = System.nanoTime()
-        
+
         val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
         val age = timestamp - poseUpdate.timestampMs
         when {
@@ -186,22 +140,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         }
         store.dispatch(poseUpdate)
 
-        // 2. Process AprilTags visual updates
         visionTracker.update(timestamp)
         val s4 = System.nanoTime()
 
-        // Store readSensors sub-timings for driver station display
-        profBulkCacheMs = (s1 - s0) / 1_000_000.0
-        profHardwareInputsMs = (s2 - s1) / 1_000_000.0
-        profPinpointMs = (s3 - s2) / 1_000_000.0
-        profVisionMs = (s4 - s3) / 1_000_000.0
-
-        // Publish to NT4 telemetry
-        val dl = telemetryManager.dataLoggingTelemetry
-        dl.putNumber("Profiling/BulkCacheClear_ms", profBulkCacheMs)
-        dl.putNumber("Profiling/HardwareInputs_ms", profHardwareInputsMs)
-        dl.putNumber("Profiling/Pinpoint_ms", profPinpointMs)
-        dl.putNumber("Profiling/Vision_ms", profVisionMs)
+        profiler.recordSensorsProfiling(
+            bulkMs = (s1 - s0) / 1_000_000.0,
+            inputsMs = (s2 - s1) / 1_000_000.0,
+            pinpointMs = (s3 - s2) / 1_000_000.0,
+            visionMs = (s4 - s3) / 1_000_000.0
+        )
+        profiler.publishSensorsProfiling(telemetryManager)
     }
 
     protected open fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
@@ -224,8 +172,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * Executes a single frame cycle of the robot's control loop.
-     * Clears hardware caches, updates sensors, filters power, executes kinematics,
-     * and streams telemetry to NetworkTables and local storage.
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
         if (!isAndroid && lastUpdateTime != 0L) {
@@ -241,12 +187,11 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         }
 
         if (!com.areslib.telemetry.RobotStatusTracker.isEnabled && com.areslib.telemetry.RobotStatusTracker.activeOpMode != "Init") {
-            // Start WebServer if not already running when transitioning to enabled
             com.areslib.telemetry.RobotWebServer.start()
         } else if (!com.areslib.telemetry.RobotStatusTracker.isEnabled) {
             com.areslib.telemetry.RobotWebServer.stop()
         }
-        
+
         if (com.areslib.telemetry.RobotStatusTracker.activeOpMode != "Init") {
             com.areslib.telemetry.RobotStatusTracker.isEnabled = true
         }
@@ -256,31 +201,19 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val dtSeconds = if (lastUpdateTime == 0L) 0.01 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
-            // === PROFILING: per-section timing (nanoTime for wall-clock accuracy) ===
             val t0 = System.nanoTime()
 
-            // Ensure sensors are read
             readSensors()
-            hasReadSensorsThisFrame = false // Reset for the next frame
+            hasReadSensorsThisFrame = false
             val t1 = System.nanoTime()
 
-            // 3. Update voltage sag filter and brownout power scaling
             val effectiveScale = powerManager.update(dtSeconds, timestamp)
             val batteryVoltage = powerManager.batteryVoltage
             val t2 = System.nanoTime()
 
-            // 4. Compute kinematics and apply outputs to actuators
             updateSubsystems(dtSeconds, batteryVoltage, effectiveScale)
             val t3 = System.nanoTime()
 
-            // 4b. Display profiling on driver station telemetry
-            val sensorsMs = (t1 - t0) / 1_000_000.0
-            val powerMs = (t2 - t1) / 1_000_000.0
-            val subsystemsMs = (t3 - t2) / 1_000_000.0
-            // 4b. Profiling data is now exclusively sent to ARES-Analytics via telemetryManager.
-            // Do not use localTelemetry here to avoid blocking the main thread on the synchronized SDK lock.
-
-            // 5. Publish logging and diagnostics
             telemetryManager.publishFull(
                 state = store.state,
                 gamepad1 = gamepad1,
@@ -294,36 +227,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             )
             val t4 = System.nanoTime()
 
-            // Publish per-section timing (ms with 2 decimal precision)
-            val dl = telemetryManager.dataLoggingTelemetry
-            val totalTimeMs = (t4 - t0) / 1_000_000.0
-            if (totalTimeMs > 25.0) { // Threshold for overrun is 25ms
-                loopOverrunCount++
-            }
-            dl.putNumber("Diagnostics/LoopOverruns", loopOverrunCount.toDouble())
-            dl.putNumber("Profiling/ReadSensors_ms", (t1 - t0) / 1_000_000.0)
-            dl.putNumber("Profiling/PowerManager_ms", (t2 - t1) / 1_000_000.0)
-            dl.putNumber("Profiling/Subsystems_ms", (t3 - t2) / 1_000_000.0)
-            dl.putNumber("Profiling/Telemetry_ms", (t4 - t3) / 1_000_000.0)
-            dl.putNumber("Profiling/Total_ms", totalTimeMs)
+            profiler.recordAndPublishLoopDiagnostics(telemetryManager, t0, t1, t2, t3, t4)
 
-            // 6. Record frame inputs for deterministic replay (Disabled: ActionLogger handles Redux replay natively)
-            /*
-            val inputsFrame = com.areslib.logging.RobotInputsFramePool.rent().apply {
-                populate(
-                    telemetryManager.runId,
-                    telemetryManager.robotId,
-                    timestamp,
-                    poseUpdate,
-                    store.state.drive,
-                    limelightIO != null,
-                    visionTracker.visionInputs.measurements
-                )
-            }
-            telemetryManager.inputLogger.logFrame(inputsFrame)
-            */
-
-            // 7. Throttle the loop to ~50Hz (20ms) when running in desktop simulation
             if (!isAndroid) {
                 val elapsed = com.areslib.util.RobotClock.currentTimeMillis() - timestamp
                 val sleepTime = 20L - elapsed
@@ -346,35 +251,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         }
     }
 
-    /**
-     * Callback for polling subclass-specific inputs (e.g. drive encoder positions).
-     */
     protected abstract fun updateHardwareInputs()
-
-    /**
-     * Callback for calculating subclass-specific kinematics and applying voltage power to motors.
-     */
     protected abstract fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double)
-
-    /**
-     * Callback for publishing subclass-specific telemetry keys.
-     */
     protected abstract fun publishRobotTelemetry(timestamp: Long)
-
-    /**
-     * Safe fallback state: immediately sets all actuator powers to zero.
-     */
     abstract fun safeHardware()
 
-    /**
-     * Resets the robot's pose to the specified position on the field.
-     * Updates both the GoBilda Pinpoint hardware offsets and EKF pose estimator.
-     */
     @kotlin.jvm.JvmOverloads
-    fun resetPose(pose: com.areslib.math.geometry.Pose2d = com.areslib.math.geometry.Pose2d()) {
+    fun resetPose(pose: Pose2d = Pose2d()) {
         pinpointIO?.initialize(pose, resetHardware = false)
         store.dispatch(
-            com.areslib.action.RobotAction.PoseUpdate(
+            RobotAction.PoseUpdate(
                 xMeters = pose.x,
                 yMeters = pose.y,
                 headingRadians = pose.heading.radians,
@@ -384,19 +270,12 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
-    /**
-     * Resets the robot's pose to the alliance-specific starting orientation.
-     * This ensures field-centric controls are correctly aligned immediately on startup.
-     */
     fun resetPoseForAlliance() {
         val alliance = store.state.drive.alliance
         val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
-        resetPose(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(initialHeading)))
+        resetPose(Pose2d(0.0, 0.0, Rotation2d(initialHeading)))
     }
 
-    /**
-     * Gracefully stops logging threads, closes network connections,
-     */
     open fun close() {
         activeInstance = null
         safeHardware()
@@ -414,4 +293,3 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.ftc.hardware.FtcMotor.unregisterAll()
     }
 }
-

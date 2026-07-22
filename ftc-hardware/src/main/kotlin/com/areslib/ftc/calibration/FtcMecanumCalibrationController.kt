@@ -1,0 +1,299 @@
+package com.areslib.ftc.calibration
+
+import com.areslib.control.assist.SysIdManager
+import com.areslib.control.assist.SysIdMechanism
+import com.areslib.control.assist.SysIdRoutine
+import com.areslib.ftc.drivetrain.MecanumHardwareIO
+import com.areslib.ftc.drivetrain.PinpointIO
+import com.areslib.ftc.telemetry.FtcTelemetryManager
+import com.areslib.ftc.vision.FtcVisionTracker
+import com.areslib.hardware.sensor.ImuIO
+import com.areslib.hardware.sensor.ImuInputs
+import com.areslib.Store
+import com.areslib.util.RobotClock
+
+/**
+ * Manages SysId routines and physical calibration state machine execution and data logging
+ * for FTC mecanum drivetrains.
+ */
+class FtcMecanumCalibrationController {
+    val sysIdManager = SysIdManager()
+    var customSysIdVelocityProvider: (() -> Double)? = null
+
+    private var lastCommandProcessed = ""
+    var activeCalibration = "NONE"
+        private set
+    private var calibrationStartTimeMs = 0L
+    private val EMPTY_SYSID_DATA = DoubleArray(0)
+
+    /**
+     * Polls NT4 for SysId / Calibration commands and updates active state.
+     */
+    fun updateHardwareInputs(
+        store: Store,
+        telemetryManager: FtcTelemetryManager,
+        mecanumIO: MecanumHardwareIO,
+        pinpointIO: PinpointIO?,
+        onResetTuning: () -> Unit
+    ) {
+        val command = telemetryManager.nt4.getString("SysId/Command", "")
+        if (command != lastCommandProcessed) {
+            lastCommandProcessed = command
+            activeCalibration = "NONE"
+            sysIdManager.stop()
+
+            when {
+                command == "STOP" -> {
+                    mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                    onResetTuning()
+                }
+                command == "START_PINPOINT_SPIN" -> {
+                    activeCalibration = "PINPOINT_SPIN"
+                    calibrationStartTimeMs = RobotClock.currentTimeMillis()
+                    pinpointIO?.setOffsets(0.0, 0.0)
+                }
+                command == "START_TRACK_WIDTH_SPIN" -> {
+                    activeCalibration = "TRACK_WIDTH_SPIN"
+                    calibrationStartTimeMs = RobotClock.currentTimeMillis()
+                }
+                command == "START_VISION_CALIBRATION" -> {
+                    activeCalibration = "VISION_CALIBRATION"
+                    calibrationStartTimeMs = RobotClock.currentTimeMillis()
+                }
+                command == "START_LINEAR_DRIVE" -> {
+                    activeCalibration = "LINEAR_DRIVE"
+                    calibrationStartTimeMs = RobotClock.currentTimeMillis()
+                }
+                command.startsWith("START_") -> {
+                    val parts = command.removePrefix("START_").split("_")
+                    if (parts.size >= 2) {
+                        val mechStr = parts[0]
+                        val routineStr = command.removePrefix("START_${mechStr}_")
+
+                        val mechanism = try {
+                            SysIdMechanism.valueOf(mechStr)
+                        } catch (_: Exception) {
+                            SysIdMechanism.LINEAR
+                        }
+
+                        val routine = try {
+                            SysIdRoutine.valueOf(routineStr)
+                        } catch (_: Exception) {
+                            SysIdRoutine.NONE
+                        }
+
+                        val pose = store.state.drive.poseEstimator.estimatedPose
+                        sysIdManager.start(
+                            mechanism = mechanism,
+                            routine = routine,
+                            timestampMs = RobotClock.currentTimeMillis(),
+                            x = pose.x,
+                            y = pose.y,
+                            heading = pose.heading.radians
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Executes active SysId or physical calibration test routines.
+     * @return true if calibration/SysId actively overrode motor powers; false if standard driving should take place.
+     */
+    fun updateSubsystems(
+        store: Store,
+        batteryVoltage: Double,
+        mecanumIO: MecanumHardwareIO,
+        telemetryManager: FtcTelemetryManager,
+        onResetTuning: () -> Unit
+    ): Boolean {
+        val pose = store.state.drive.poseEstimator.estimatedPose
+        val timestamp = RobotClock.currentTimeMillis()
+
+        if (sysIdManager.isActive()) {
+            if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR || sysIdManager.activeMechanism == SysIdMechanism.ANGULAR) {
+                if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                    sysIdManager.stop()
+                    mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                } else {
+                    val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
+                        store.state.drive.xVelocityMetersPerSecond
+                    } else {
+                        store.state.drive.angularVelocityRadiansPerSecond
+                    }
+
+                    val voltage = sysIdManager.update(timestamp, velocity)
+                    val power = (voltage / batteryVoltage).coerceIn(-1.0, 1.0)
+
+                    if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
+                        mecanumIO.setMotorPowers(power, power, power, power)
+                    } else {
+                        mecanumIO.setMotorPowers(-power, power, -power, power)
+                    }
+                }
+            } else {
+                if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                    sysIdManager.stop()
+                }
+            }
+            return true
+        } else if (activeCalibration != "NONE") {
+            val elapsedSec = (timestamp - calibrationStartTimeMs) / 1000.0
+            val timeoutSec = if (activeCalibration == "LINEAR_DRIVE") 3.0 else 5.0
+
+            if (elapsedSec > timeoutSec) {
+                activeCalibration = "NONE"
+                telemetryManager.nt4.putString("SysId/Command", "STOP")
+                mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                onResetTuning()
+            } else {
+                when (activeCalibration) {
+                    "PINPOINT_SPIN", "TRACK_WIDTH_SPIN" -> {
+                        mecanumIO.setMotorPowers(-0.25, 0.25, -0.25, 0.25)
+                    }
+                    "VISION_CALIBRATION" -> {
+                        mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                    }
+                    "LINEAR_DRIVE" -> {
+                        mecanumIO.setMotorPowers(0.25, 0.25, 0.25, 0.25)
+                    }
+                }
+            }
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Streams SysId and Calibration telemetry metrics to NetworkTables / data logs.
+     */
+    fun publishRobotTelemetry(
+        timestamp: Long,
+        store: Store,
+        telemetryManager: FtcTelemetryManager,
+        mecanumIO: MecanumHardwareIO,
+        imuIO: ImuIO?,
+        visionTracker: FtcVisionTracker,
+        ticksPerMeterSetting: Double,
+        defaultTicksPerMeter: Double
+    ) {
+        val dataLogging = telemetryManager.dataLoggingTelemetry
+        if (sysIdManager.isActive()) {
+            dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
+            val pose = store.state.drive.poseEstimator.estimatedPose
+            val position = when (sysIdManager.activeMechanism) {
+                SysIdMechanism.LINEAR -> {
+                    val dx = pose.x - sysIdManager.startX
+                    val dy = pose.y - sysIdManager.startY
+                    kotlin.math.sqrt(dx * dx + dy * dy)
+                }
+                SysIdMechanism.ANGULAR -> sysIdManager.accumulatedHeadingChange
+                SysIdMechanism.FLYWHEEL -> sysIdManager.accumulatedPosition
+            }
+
+            val velocity = when (sysIdManager.activeMechanism) {
+                SysIdMechanism.LINEAR -> store.state.drive.xVelocityMetersPerSecond
+                SysIdMechanism.ANGULAR -> store.state.drive.angularVelocityRadiansPerSecond
+                SysIdMechanism.FLYWHEEL -> customSysIdVelocityProvider?.invoke() ?: 0.0
+            }
+
+            dataLogging.putDoubleArray(
+                "SysId/Data",
+                doubleArrayOf(
+                    timestamp.toDouble(),
+                    sysIdManager.currentVoltage,
+                    position,
+                    velocity,
+                    sysIdManager.calculatedAcceleration
+                )
+            )
+        } else if (activeCalibration != "NONE") {
+            dataLogging.putString("SysId/Status", activeCalibration)
+            val pose = store.state.drive.poseEstimator.estimatedPose
+            when (activeCalibration) {
+                "PINPOINT_SPIN" -> {
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            pose.x,
+                            pose.y,
+                            pose.heading.radians,
+                            0.0
+                        )
+                    )
+                }
+                "TRACK_WIDTH_SPIN" -> {
+                    val currentTicks = store.state.tuning.ticksPerMeter
+                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
+
+                    val flPosMeters = mecanumIO.flIO.position / ticks
+                    val frPosMeters = mecanumIO.frIO.position / ticks
+                    val rlPosMeters = mecanumIO.rlIO.position / ticks
+                    val rrPosMeters = mecanumIO.rrIO.position / ticks
+                    val imuHeading = imuIO?.let {
+                        val inputs = ImuInputs()
+                        it.updateInputs(inputs)
+                        inputs.headingRadians
+                    } ?: 0.0
+
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            flPosMeters,
+                            frPosMeters,
+                            rlPosMeters,
+                            rrPosMeters,
+                            imuHeading
+                        )
+                    )
+                }
+                "VISION_CALIBRATION" -> {
+                    val lastLL = visionTracker.lastLimelightPose
+                    val tagX = lastLL?.x ?: 0.0
+                    val tagY = lastLL?.y ?: 0.0
+                    val tagHeading = lastLL?.heading?.radians ?: 0.0
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            tagX,
+                            tagY,
+                            tagHeading,
+                            0.0
+                        )
+                    )
+                }
+                "LINEAR_DRIVE" -> {
+                    val currentTicks = store.state.tuning.ticksPerMeter
+                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
+
+                    val flPosMeters = mecanumIO.flIO.position / ticks
+                    val frPosMeters = mecanumIO.frIO.position / ticks
+                    val rlPosMeters = mecanumIO.rlIO.position / ticks
+                    val rrPosMeters = mecanumIO.rrIO.position / ticks
+                    val avgDisplacement = (flPosMeters + frPosMeters + rlPosMeters + rrPosMeters) / 4.0
+
+                    dataLogging.putDoubleArray(
+                        "SysId/Data",
+                        doubleArrayOf(
+                            timestamp.toDouble(),
+                            avgDisplacement,
+                            0.0,
+                            0.0,
+                            0.0
+                        )
+                    )
+                }
+                else -> {
+                    dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
+                }
+            }
+        } else {
+            dataLogging.putString("SysId/Status", "NONE")
+            dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
+        }
+    }
+}
