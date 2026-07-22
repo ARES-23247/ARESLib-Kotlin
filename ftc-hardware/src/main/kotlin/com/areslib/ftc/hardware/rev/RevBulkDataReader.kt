@@ -12,6 +12,16 @@ object RevBulkDataReader {
     @Volatile private var pollingRunning = false
     private var pollingThread: Thread? = null
 
+    /**
+     * registerMotor declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerMotor(motor: RevMotorController) {
         synchronized(this) {
             motorsList.add(motor)
@@ -19,6 +29,16 @@ object RevBulkDataReader {
         }
     }
 
+    /**
+     * unregisterMotor declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun unregisterMotor(motor: RevMotorController) {
         synchronized(this) {
             motorsList.remove(motor)
@@ -47,6 +67,16 @@ object RevBulkDataReader {
         }
     }
 
+    /**
+     * unregisterAll declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun unregisterAll() {
         synchronized(this) {
             pollingRunning = false

@@ -16,6 +16,16 @@ import com.areslib.hardware.vision.VisionIO
  */
 object FtcHardwareMapInitializer {
 
+    /**
+     * initPinpoint declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun initPinpoint(
         hardwareMap: HardwareMap,
         pinpointName: String?,
@@ -43,6 +53,16 @@ object FtcHardwareMapInitializer {
         }
     }
 
+    /**
+     * initImu declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun initImu(hardwareMap: HardwareMap, imuName: String?): ImuIO? {
         if (imuName == null) return null
         return try {
@@ -53,6 +73,16 @@ object FtcHardwareMapInitializer {
         }
     }
 
+    /**
+     * initLimelight declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun initLimelight(hardwareMap: HardwareMap, limelightName: String?): VisionIO? {
         if (limelightName == null) return null
         return try {

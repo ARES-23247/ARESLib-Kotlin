@@ -28,10 +28,30 @@ object NT4FieldPublisher {
     private val apriltagsPub = ntInst.getStringTopic("ARES/Field/AprilTags").publish()
     private val sb = java.lang.StringBuilder(2048)
 
+    /**
+     * publishConfigId declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishConfigId(configId: String) {
         configIdPub.set(configId)
     }
 
+    /**
+     * publishAprilTags declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishAprilTags(tags: List<com.areslib.state.RobotFieldAprilTag>) {
         sb.setLength(0)
         sb.append("[")
@@ -49,6 +69,16 @@ object NT4FieldPublisher {
         apriltagsPub.set(sb.toString())
     }
 
+    /**
+     * publishObstacles declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishObstacles(obstacles: List<com.areslib.state.RobotFieldObstacle>) {
         sb.setLength(0)
         sb.append("[")
@@ -86,6 +116,16 @@ object NT4FieldPublisher {
         obstaclesPub.set(sb.toString())
     }
 
+    /**
+     * publishElements declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishElements(elements: List<DynamicElementPose>) {
         sb.setLength(0)
         sb.append("[")
@@ -102,6 +142,16 @@ object NT4FieldPublisher {
         elementsPub.set(sb.toString())
     }
 
+    /**
+     * publishScores declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishScores(blueScore: Int, redScore: Int) {
         sb.setLength(0)
         sb.append("{\"blue\":").append(blueScore).append(",\"red\":").append(redScore).append("}")

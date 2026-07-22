@@ -41,6 +41,16 @@ class SimPhysicsWorld {
         createWalls()
     }
 
+    /**
+     * setupSpawnPose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setupSpawnPose(isRedAlliance: Boolean): Pose2d {
         val startPose = if (isRedAlliance) {
             Pose2d(0.0, -1.2, Rotation2d(Math.PI / 2.0))
@@ -52,6 +62,16 @@ class SimPhysicsWorld {
         return startPose
     }
 
+    /**
+     * loadFieldElements declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun loadFieldElements(activeConfig: RobotFieldConfig?) {
         if (activeConfig != null) {
             val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)

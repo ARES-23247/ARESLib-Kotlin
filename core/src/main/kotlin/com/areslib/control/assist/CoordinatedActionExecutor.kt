@@ -4,9 +4,49 @@ package com.areslib.control.assist
  * Interface representing a modular robot action.
  */
 interface Action {
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun start() {}
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun update(dtSeconds: Double)
+    /**
+     * isFinished declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun isFinished(): Boolean
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun end(interrupted: Boolean) {}
 }
 
@@ -81,6 +121,16 @@ class CoordinatedActionExecutor(
 class SequentialAction(private vararg val actions: Action) : Action {
     private var currentIndex = 0
 
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun start() {
         currentIndex = 0
         if (actions.isNotEmpty()) {
@@ -88,6 +138,16 @@ class SequentialAction(private vararg val actions: Action) : Action {
         }
     }
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun update(dtSeconds: Double) {
         if (currentIndex >= actions.size) return
 
@@ -106,10 +166,30 @@ class SequentialAction(private vararg val actions: Action) : Action {
         }
     }
 
+    /**
+     * isFinished declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isFinished(): Boolean {
         return currentIndex >= actions.size
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(interrupted: Boolean) {
         if (interrupted && currentIndex < actions.size) {
             actions[currentIndex].end(true)
@@ -124,6 +204,16 @@ class SequentialAction(private vararg val actions: Action) : Action {
 class ParallelAction(private vararg val actions: Action) : Action {
     private val activeActions = mutableListOf<Action>()
 
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun start() {
         activeActions.clear()
         activeActions.addAll(actions)
@@ -132,6 +222,16 @@ class ParallelAction(private vararg val actions: Action) : Action {
         }
     }
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun update(dtSeconds: Double) {
         var i = 0
         while (i < activeActions.size) {
@@ -146,10 +246,30 @@ class ParallelAction(private vararg val actions: Action) : Action {
         }
     }
 
+    /**
+     * isFinished declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isFinished(): Boolean {
         return activeActions.isEmpty()
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(interrupted: Boolean) {
         if (interrupted) {
             for (action in activeActions) {
@@ -165,14 +285,44 @@ class ParallelAction(private vararg val actions: Action) : Action {
 class WaitAction(private val durationSeconds: Double) : Action {
     private var elapsedSeconds = 0.0
 
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun start() {
         elapsedSeconds = 0.0
     }
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun update(dtSeconds: Double) {
         elapsedSeconds += dtSeconds
     }
 
+    /**
+     * isFinished declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isFinished(): Boolean {
         return elapsedSeconds >= durationSeconds
     }
@@ -182,8 +332,38 @@ class WaitAction(private val durationSeconds: Double) : Action {
  * Action that executes a lambda instantly.
  */
 class InstantAction(private val runnable: () -> Unit) : Action {
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun update(dtSeconds: Double) {}
+    /**
+     * isFinished declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isFinished(): Boolean = true
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun start() {
         runnable()
     }

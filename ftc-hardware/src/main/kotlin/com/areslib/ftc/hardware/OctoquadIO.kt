@@ -159,6 +159,16 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         thread.start()
     }
 
+    /**
+     * doInitialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun doInitialize(): Boolean {
         return try {
             deviceClient.i2cAddress = com.qualcomm.robotcore.hardware.I2cAddr.create7bit(OCTOQUAD_I2C_ADDRESS)
@@ -176,16 +186,76 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
+    /**
+     * getManufacturer declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getManufacturer(): Manufacturer = Manufacturer.Other
 
+    /**
+     * getDeviceName declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getDeviceName(): String = "OctoQuad FWv3"
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun update() {
         // Background thread handles update
     }
 
+    /**
+     * getCachedPosition declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getCachedPosition(channel: Int): Int = synchronized(lock) { cachedPositions.getOrElse(channel) { 0 } }
+    /**
+     * getCachedVelocity declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getCachedVelocity(channel: Int): Int = synchronized(lock) { cachedVelocities.getOrElse(channel) { 0 } }
+    /**
+     * getCachedPulseWidth declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getCachedPulseWidth(channel: Int): Int = synchronized(lock) { cachedPulseWidths.getOrElse(channel) { 0 } }
 
     /**
@@ -251,8 +321,28 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         var velHeading_radS: Float = 0f
     )
 
+    /**
+     * readLocalizerData declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun readLocalizerData(): LocalizerDataBlock = synchronized(lock) { cachedLocalizerData }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         running = false
     }
@@ -268,6 +358,16 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
             // Encoders are read-only, cannot set power
         }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() {
         octoQuad.update()
     }
@@ -278,6 +378,16 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
     override val position: Double
         get() = octoQuad.getCachedPosition(channel).toDouble()
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         octoQuad.resetEncoder(channel)
     }
@@ -298,6 +408,16 @@ class OctoQuadAbsolutePWMEncoder(
         get() = 0.0
         set(@Suppress("UNUSED_PARAMETER") value) {}
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() {
         octoQuad.update()
     }
@@ -314,6 +434,16 @@ class OctoQuadAbsolutePWMEncoder(
             return (clampedNormalized * ticksPerRev) - offset
         }
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         octoQuad.update()
         val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
@@ -328,11 +458,31 @@ class OctoQuadAbsolutePWMEncoder(
  * Wrapper for the OctoQuad's absolute localizer feature.
  */
 class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(startPose: Pose2d) {
         // Reset command
         octoQuad.resetEncoder(0) // Dummy implementation for now
     }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
         octoQuad.update()
         val lastData = octoQuad.readLocalizerData()

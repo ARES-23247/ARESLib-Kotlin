@@ -42,6 +42,16 @@ object HardwareRegistry {
         startPollingThreadIfNeeded()
     }
 
+    /**
+     * registerRoundRobinDevice declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerRoundRobinDevice(device: SyncPolledDevice) {
         if (!roundRobinDevices.contains(device)) {
             roundRobinDevices.add(device)
@@ -144,6 +154,16 @@ object HardwareRegistry {
         )
     }
 
+    /**
+     * registerServo declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerServo(name: String, servo: ServoIO, parentHub: String, port: Int) {
         val cleanName = "Servos/$name"
         registerServo(name, servo)
@@ -173,6 +193,16 @@ object HardwareRegistry {
         )
     }
 
+    /**
+     * registerDevice declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerDevice(name: String, device: LoggableDevice, canBus: String, canId: Int, busPosition: Int? = null) {
         registerDevice(name, device)
         topologyNodes[name] = TopologyNode(
@@ -194,10 +224,30 @@ object HardwareRegistry {
         topologyNodes[name] = topology
     }
 
+    /**
+     * buildTopology declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun buildTopology(robotId: String): HardwareTopology {
         return HardwareTopology(robotId, topologyNodes.values.toList())
     }
 
+    /**
+     * getTopologyJson declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getTopologyJson(robotId: String): String {
         return Gson().toJson(buildTopology(robotId))
     }

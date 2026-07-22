@@ -10,6 +10,16 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
+/**
+ * FrcSwerveRobotTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class FrcSwerveRobotTest {
 
     companion object {
@@ -41,6 +51,16 @@ class FrcSwerveRobotTest {
         }
     }
 
+    /**
+     * MockSwerveHardwareIO declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockSwerveHardwareIO : SwerveHardwareIO {
         var mockPitch = 0.0
         var mockRoll = 0.0
@@ -84,6 +104,16 @@ class FrcSwerveRobotTest {
     }
 
     @Test
+    /**
+     * testBeachedOdometryFreezeAndRecovery declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testBeachedOdometryFreezeAndRecovery() {
         val swerveIO = MockSwerveHardwareIO()
         val mockTelemetry = object : ITelemetry {

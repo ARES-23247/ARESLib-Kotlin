@@ -10,6 +10,16 @@ import com.areslib.math.geometry.Translation2d
 object PathPlannerJsonParser {
     private val gson = Gson()
 
+    /**
+     * ParsedPathData declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     data class ParsedPathData(
         val waypoints: List<WaypointData>,
         val defaultMaxVel: Double,
@@ -95,6 +105,16 @@ object PathPlannerJsonParser {
         val commandName: String
     )
 
+    /**
+     * parse declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun parse(jsonString: String, fallbackMaxVel: Double, fallbackMaxAccel: Double): ParsedPathData {
         val root = gson.fromJson(jsonString, JsonObject::class.java)
 

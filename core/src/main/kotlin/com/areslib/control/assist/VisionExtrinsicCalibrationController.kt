@@ -30,6 +30,16 @@ class VisionExtrinsicCalibrationController(
     private var accumulatedRotation: Double = 0.0
     private var currentTargetHeading: Double = 0.0
 
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun start(cameraIndex: Int, currentHeading: Double) {
         isActive = true
         this.cameraIndex = cameraIndex
@@ -39,6 +49,16 @@ class VisionExtrinsicCalibrationController(
         publishState(true, currentHeading, -1, cameraIndex, doubleArrayOf(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0))
     }
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun update(
         currentPose: Pose2d,
         measurements: List<VisionMeasurement>,

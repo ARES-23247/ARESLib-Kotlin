@@ -21,10 +21,30 @@ interface Interpolatable<T> {
 class InterpolatingTable<K : Comparable<K>, V : Interpolatable<V>> {
     private val map = TreeMap<K, V>()
 
+    /**
+     * put declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun put(key: K, value: V) {
         map[key] = value
     }
 
+    /**
+     * get declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun get(key: K): V? {
         val exact = map[key]
         if (exact != null) return exact

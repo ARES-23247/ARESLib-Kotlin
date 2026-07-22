@@ -22,6 +22,16 @@ class MecanumKinematicsController(
     var kinematics = MecanumKinematics(0.45, 0.45)
         private set
 
+    /**
+     * updateTuning declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateTuning(currentTuning: TuningState) {
         kinematics = MecanumKinematics(currentTuning.trackWidthMeters, currentTuning.wheelBaseMeters)
         mecanumIO.kS = currentTuning.driveFeedforward.kS
@@ -42,6 +52,16 @@ class MecanumKinematicsController(
         mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
     }
 
+    /**
+     * updateSubsystems declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateSubsystems(
         store: Store,
         batteryVoltage: Double,

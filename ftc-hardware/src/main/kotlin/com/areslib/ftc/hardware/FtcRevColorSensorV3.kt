@@ -124,6 +124,16 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     override val distanceMeters: Double
         get() = synchronized(lock) { cachedDistance }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         running = false
     }

@@ -13,6 +13,16 @@ class PortForwarder(private val localPort: Int, private val remotePort: Int, pri
         isDaemon = true
     }
 
+    /**
+     * run declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun run() {
         try {
             serverSocket = java.net.ServerSocket(localPort)
@@ -43,6 +53,16 @@ class PortForwarder(private val localPort: Int, private val remotePort: Int, pri
         } catch (_: Exception) {}
     }
 
+    /**
+     * stopForwarder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun stopForwarder() {
         running = false
         try { serverSocket?.close() } catch (_: Exception) {}

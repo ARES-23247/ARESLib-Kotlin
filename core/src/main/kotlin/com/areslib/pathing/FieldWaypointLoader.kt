@@ -25,6 +25,16 @@ data class FieldWaypoint(
     val headingDegrees: Double,
     val locked: Boolean = false
 ) {
+    /**
+     * toPose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun toPose(): Pose2d {
         return Pose2d(x, y, Rotation2d(Math.toRadians(headingDegrees)))
     }
@@ -53,6 +63,16 @@ object FieldWaypointLoader {
     private val waypointListType = object : TypeToken<List<FieldWaypoint>>() {}.type
     private var cachedWaypoints: Map<String, FieldWaypoint>? = null
 
+    /**
+     * loadAllWaypoints declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun loadAllWaypoints(): Map<String, FieldWaypoint> {
         if (cachedWaypoints != null) return cachedWaypoints!!
 
@@ -111,10 +131,30 @@ object FieldWaypointLoader {
         }
     }
 
+    /**
+     * getWaypoint declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getWaypoint(name: String): FieldWaypoint? {
         return loadAllWaypoints()[name]
     }
 
+    /**
+     * clearCache declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun clearCache() {
         cachedWaypoints = null
     }

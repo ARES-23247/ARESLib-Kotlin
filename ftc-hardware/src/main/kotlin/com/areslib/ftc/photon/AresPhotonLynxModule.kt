@@ -22,16 +22,46 @@ class AresPhotonLynxModule(
 
     private val skippedAcquire = ArrayList<LynxMessage>()
 
+    /**
+     * getUnfinishedCommandsMap declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getUnfinishedCommandsMap(): ConcurrentHashMap<Int, LynxRespondable<LynxMessage>> {
         @Suppress("UNCHECKED_CAST")
         return this.unfinishedCommands as ConcurrentHashMap<Int, LynxRespondable<LynxMessage>>
     }
 
+    /**
+     * getNewMessageNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getNewMessageNumber(): Byte {
         return super.getNewMessageNumber()
     }
 
     @Throws(InterruptedException::class, LynxUnsupportedCommandException::class)
+    /**
+     * sendCommand declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun sendCommand(command: LynxMessage) {
         if (!AresPhotonCore.isEnabled.get()) {
             super.sendCommand(command)
@@ -55,6 +85,16 @@ class AresPhotonLynxModule(
     }
 
     @Throws(InterruptedException::class)
+    /**
+     * acquireNetworkTransmissionLock declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun acquireNetworkTransmissionLock(message: LynxMessage) {
         if (!AresPhotonCore.isEnabled.get()) {
             super.acquireNetworkTransmissionLock(message)
@@ -74,6 +114,16 @@ class AresPhotonLynxModule(
     }
 
     @Throws(InterruptedException::class)
+    /**
+     * releaseNetworkTransmissionLock declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun releaseNetworkTransmissionLock(message: LynxMessage) {
         if (!AresPhotonCore.isEnabled.get()) {
             super.releaseNetworkTransmissionLock(message)

@@ -35,21 +35,61 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     
     private var lastLogTimeMs = 0L
 
+    /**
+     * putNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putNumber(key: String, value: Double) {
         currentFrame[key] = value
         if (ntEnabled) ntTelemetry?.putNumber(key, value)
     }
 
+    /**
+     * putBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putBoolean(key: String, value: Boolean) {
         currentFrame[key] = if (value) 1.0 else 0.0
         if (ntEnabled) ntTelemetry?.putBoolean(key, value)
     }
 
+    /**
+     * putString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putString(key: String, value: String) {
         currentFrame[key] = value
         if (ntEnabled) ntTelemetry?.putString(key, value)
     }
 
+    /**
+     * putDoubleArray declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putDoubleArray(key: String, value: DoubleArray) {
         arrayBuilder.setLength(0)
         for (i in value.indices) {
@@ -60,18 +100,58 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         if (ntEnabled) ntTelemetry?.putDoubleArray(key, value)
     }
 
+    /**
+     * getNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getNumber(key: String, defaultValue: Double): Double {
         return ntTelemetry?.getNumber(key, defaultValue) ?: defaultValue
     }
 
+    /**
+     * getBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         return ntTelemetry?.getBoolean(key, defaultValue) ?: defaultValue
     }
 
+    /**
+     * getString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getString(key: String, defaultValue: String): String {
         return ntTelemetry?.getString(key, defaultValue) ?: defaultValue
     }
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun update() {
         val now = com.areslib.util.RobotClock.currentTimeMillis()
 

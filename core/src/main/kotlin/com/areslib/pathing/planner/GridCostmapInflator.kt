@@ -11,6 +11,16 @@ import com.areslib.pathing.Costmap
  * Field-centric coordinates in meters ($m$) relative to field origin.
  */
 object GridCostmapInflator {
+    /**
+     * inflate declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun inflate(
         grid: BooleanArray,
         inflatedGrid: BooleanArray,
@@ -42,6 +52,16 @@ object GridCostmapInflator {
         }
     }
     
+    /**
+     * insertDynamicObstacle declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun insertDynamicObstacle(
         inflatedGrid: BooleanArray,
         widthCells: Int,

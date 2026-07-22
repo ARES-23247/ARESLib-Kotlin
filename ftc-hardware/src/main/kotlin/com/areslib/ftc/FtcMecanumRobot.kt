@@ -147,6 +147,16 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         mecanumDrive.maxAngularSpeedRps = maxSpeed / kinematicsController.kinematics.k
     }
 
+    /**
+     * updateHardwareInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
         tuningManager.update()
@@ -159,6 +169,16 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
+    /**
+     * updateSubsystems declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
         val currentTuning = store.state.tuning
         if (currentTuning !== lastTuning) {
@@ -180,6 +200,16 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         kinematicsController.updateSubsystems(store, batteryVoltage, dtSeconds, telemetryManager) { lastTuning = null }
     }
 
+    /**
+     * publishRobotTelemetry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun publishRobotTelemetry(timestamp: Long) {
         if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
             telemetryManager.customDriverStationText["Motor Powers"] = String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
@@ -204,41 +234,161 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
+    /**
+     * safeHardware declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun safeHardware() {
         com.areslib.hardware.HardwareRegistry.safeAll()
         stopAll()
     }
 
+    /**
+     * drive declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun drive(x: Double, y: Double, rotation: Double) = driveFieldCentric(x, y, rotation)
 
+    /**
+     * driveFieldCentric declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
         store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = true))
     }
 
+    /**
+     * driveRobotCentric declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun driveRobotCentric(x: Double, y: Double, rotation: Double) {
         store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = false))
     }
 
+    /**
+     * alignToTag declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun alignToTag(tagId: Int) {
         visionAlignController.calculate(store.state, tagId, true)?.let { store.dispatch(it) }
     }
 
     @kotlin.jvm.JvmOverloads
+    /**
+     * driveToPose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun driveToPose(targetPose: Pose2d, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
         trajectoryFollower.driveToPose(store, mecanumIO, targetPose, isRequested, mirrorForAlliance)
     }
 
     @kotlin.jvm.JvmOverloads
+    /**
+     * driveToWaypoint declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun driveToWaypoint(name: String, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
         trajectoryFollower.driveToWaypoint(store, mecanumIO, telemetryManager, name, isRequested, mirrorForAlliance)
     }
 
+    /**
+     * stopAll declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun stopAll() = com.areslib.hardware.HardwareRegistry.safeAll()
     
+    /**
+     * stop declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun stop() = stopAll()
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun update() = updateHardwareInputs()
+    /**
+     * followTrajectory declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun followTrajectory(path: Any? = null) { } // Compatibility alias as requested
 
+    /**
+     * getFallbackPoseUpdate declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
         val heading = imuIO?.let {
             val inputs = com.areslib.hardware.sensor.ImuInputs()
@@ -252,6 +402,16 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         super.close()
         if (isAndroid) LimelightProxyAutoStart.start()

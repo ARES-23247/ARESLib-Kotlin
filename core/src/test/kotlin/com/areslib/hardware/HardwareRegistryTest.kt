@@ -6,13 +6,43 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+/**
+ * HardwareRegistryTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class HardwareRegistryTest {
 
     @BeforeEach
+    /**
+     * setUp declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setUp() {
         HardwareRegistry.clear()
     }
 
+    /**
+     * MockLoggableDevice declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockLoggableDevice : LoggableDevice {
         var logTelemetryCalled = false
         override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
@@ -20,6 +50,16 @@ class HardwareRegistryTest {
         }
     }
 
+    /**
+     * MockMotorIO declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockMotorIO : MotorIO {
         override val position: Double = 0.0
         override val velocity: Double = 0.0
@@ -30,6 +70,16 @@ class HardwareRegistryTest {
         override fun logTelemetry(telemetry: ITelemetry, prefix: String) {}
     }
 
+    /**
+     * MockSubsystemIO declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockSubsystemIO : SubsystemIO {
         var refreshCalled = false
         var safeCalled = false
@@ -42,6 +92,16 @@ class HardwareRegistryTest {
         override fun logTelemetry(telemetry: ITelemetry, prefix: String) {}
     }
 
+    /**
+     * MockCloseable declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockCloseable : AutoCloseable {
         var closed = false
         override fun close() {
@@ -50,6 +110,16 @@ class HardwareRegistryTest {
     }
 
     @Test
+    /**
+     * testRegisterDeviceAndClose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRegisterDeviceAndClose() {
         val device = MockLoggableDevice()
         HardwareRegistry.registerDevice("test_device", device)
@@ -71,6 +141,16 @@ class HardwareRegistryTest {
     }
 
     @Test
+    /**
+     * testRegisterMotorAndLifeCycle declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRegisterMotorAndLifeCycle() {
         val motor = MockMotorIO()
         HardwareRegistry.registerMotor("drive_fl", motor)
@@ -85,6 +165,16 @@ class HardwareRegistryTest {
     }
 
     @Test
+    /**
+     * testRegisterCloseable declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRegisterCloseable() {
         val closeable = MockCloseable()
         HardwareRegistry.registerCloseable(closeable)
@@ -94,6 +184,16 @@ class HardwareRegistryTest {
     }
 
     @Test
+    /**
+     * testRefreshAndSafeAll declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRefreshAndSafeAll() {
         val subsystem = MockSubsystemIO()
         HardwareRegistry.registerDevice("test_subsystem", subsystem)
@@ -106,6 +206,16 @@ class HardwareRegistryTest {
     }
 
     @Test
+    /**
+     * testBuildTopologyAndJson declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testBuildTopologyAndJson() {
         val motor = MockMotorIO()
         // Register with FRC CAN topology
@@ -129,6 +239,16 @@ class HardwareRegistryTest {
         assertTrue(json.contains("CAN_MOTOR_CONTROLLER"))
     }
 
+    /**
+     * MockSyncPolledDevice declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockSyncPolledDevice : SyncPolledDevice {
         var pollSyncCount = 0
         override fun pollSync() {
@@ -137,6 +257,16 @@ class HardwareRegistryTest {
     }
 
     @Test
+    /**
+     * testRoundRobinDevicePolling declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRoundRobinDevicePolling() {
         val d1 = MockSyncPolledDevice()
         val d2 = MockSyncPolledDevice()

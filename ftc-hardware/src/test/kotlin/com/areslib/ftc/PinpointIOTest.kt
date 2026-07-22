@@ -10,9 +10,29 @@ import org.junit.jupiter.api.Test
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 
+/**
+ * PinpointIOTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class PinpointIOTest {
 
     @Test
+    /**
+     * testInitializeAndOffsetHandling declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testInitializeAndOffsetHandling() {
         val rawDriver = GoBildaPinpointDriver()
         val pinpointIO = PinpointIO(rawDriver)
@@ -65,6 +85,16 @@ class PinpointIOTest {
     }
  
     @Test
+    /**
+     * testSoftwareOnlyInitializeWithExistingRawOffsets declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSoftwareOnlyInitializeWithExistingRawOffsets() {
         val rawDriver = GoBildaPinpointDriver()
         val pinpointIO = PinpointIO(rawDriver)

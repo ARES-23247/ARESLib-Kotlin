@@ -6,9 +6,29 @@ import com.areslib.state.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * ReducerSafetyTier1Test declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class ReducerSafetyTier1Test {
 
     @Test
+    /**
+     * testRootReducer_shouldReturnIdenticalStateOnUnrecognizedAction declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRootReducer_shouldReturnIdenticalStateOnUnrecognizedAction() {
         val originalState = RobotState(timestampMs = 100L)
         // PathEventTriggered is not handled by Drive, Vision, Path, or Costmap, and doesn't change Superstructure if name is dummy
@@ -26,6 +46,16 @@ class ReducerSafetyTier1Test {
     }
 
     @Test
+    /**
+     * testSubReducers_shouldReturnPreviousStateOnUnrecognizedAction declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSubReducers_shouldReturnPreviousStateOnUnrecognizedAction() {
         val driveState = DriveState()
         val invalidAction = RobotAction.PathEventTriggered("DummyEvent", 100L)

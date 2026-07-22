@@ -8,6 +8,16 @@ import java.lang.reflect.Field
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 object AresPhotonReflectionUtils {
+    /**
+     * getField declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getField(clazz: Class<*>, fieldName: String): Field? {
         try {
             val f = clazz.getDeclaredField(fieldName)
@@ -22,6 +32,16 @@ object AresPhotonReflectionUtils {
         return null
     }
 
+    /**
+     * getField declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getField(clazz: Class<*>, target: Class<*>): Field? {
         for (f in clazz.declaredFields) {
             if (f.type == target) {
@@ -36,6 +56,16 @@ object AresPhotonReflectionUtils {
         return null
     }
 
+    /**
+     * deepCopy declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun deepCopy(org: Any, target: Any) {
         val fields = org.javaClass.declaredFields
         for (f in fields) {

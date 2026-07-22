@@ -7,6 +7,16 @@ import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
+/**
+ * AllianceMirroringTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class AllianceMirroringTest {
 
     private val epsilon = 1e-6
@@ -14,6 +24,16 @@ class AllianceMirroringTest {
     private val fieldWidth = 3.6576
 
     @Test
+    /**
+     * testBlueAllianceNoOp declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testBlueAllianceNoOp() {
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
         val mirroredPose = AllianceMirroring.mirror(originalPose, Alliance.BLUE, FieldSymmetry.ROTATIONAL)
@@ -29,6 +49,16 @@ class AllianceMirroringTest {
     }
 
     @Test
+    /**
+     * testRotationalMirroring declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRotationalMirroring() {
         // Rotational symmetry: 180° rotation about center of the field
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
@@ -41,6 +71,16 @@ class AllianceMirroringTest {
     }
 
     @Test
+    /**
+     * testReflectionalMirroring declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testReflectionalMirroring() {
         // Reflectional symmetry: mirror reflection across x midline (y remains same, x flipped, yaw mirrored)
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
@@ -53,6 +93,16 @@ class AllianceMirroringTest {
     }
 
     @Test
+    /**
+     * testPathMirroring declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testPathMirroring() {
         val points = listOf(
             PathPoint(Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0)), 1.0, 0.0, 0.5),

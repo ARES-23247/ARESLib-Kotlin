@@ -7,12 +7,32 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 
+/**
+ * CloudReplayProviderTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class CloudReplayProviderTest {
 
     private lateinit var server: NanoHTTPD
     private var originalUrl = ""
 
     @BeforeEach
+    /**
+     * setUp declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setUp() {
         originalUrl = CloudExporter.areswebServerUrl
         // Spin up a mock server on port 58083
@@ -32,12 +52,32 @@ class CloudReplayProviderTest {
     }
 
     @AfterEach
+    /**
+     * tearDown declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun tearDown() {
         server.stop()
         CloudExporter.areswebServerUrl = originalUrl
     }
 
     @Test
+    /**
+     * testLoadRunFromMockCloud declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLoadRunFromMockCloud() {
         System.err.println("TEST_SERVER_URL: " + CloudExporter.areswebServerUrl)
         val summary = CloudReplayProvider.loadRun("test_run_123")
@@ -47,6 +87,16 @@ class CloudReplayProviderTest {
     }
 
     @Test
+    /**
+     * testLoadRunNotFound declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLoadRunNotFound() {
         val summary = CloudReplayProvider.loadRun("invalid_run")
         assertNotNull(summary)

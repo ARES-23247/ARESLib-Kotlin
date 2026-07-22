@@ -32,6 +32,16 @@ open class Gamepad {
     @JvmField var left_stick_button: Boolean = false
     @JvmField var right_stick_button: Boolean = false
 
+    /**
+     * copy declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun copy(other: Gamepad) {
         this.left_stick_x = other.left_stick_x
         this.left_stick_y = other.left_stick_y

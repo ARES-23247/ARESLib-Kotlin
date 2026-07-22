@@ -12,19 +12,59 @@ object TaskTimeoutManager {
     private val timeouts = ConcurrentHashMap<Task, Long>()
     private val startTimes = ConcurrentHashMap<Task, Long>()
 
+    /**
+     * setTimeout declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setTimeout(task: Task, ms: Long) {
         timeouts[task] = ms
     }
 
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun start(task: Task) {
         startTimes[task] = RobotClock.currentTimeMillis()
     }
     
+    /**
+     * reset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun reset(task: Task) {
         timeouts.remove(task)
         startTimes.remove(task)
     }
 
+    /**
+     * isTimedOut declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun isTimedOut(task: Task, elapsedMs: Long): Boolean {
         val timeoutMs = timeouts[task] ?: return false
         return elapsedMs > timeoutMs

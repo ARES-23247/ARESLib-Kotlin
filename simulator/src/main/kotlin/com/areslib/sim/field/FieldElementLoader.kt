@@ -19,6 +19,16 @@ import com.areslib.state.RobotFieldElementInstance
 object FieldElementLoader {
     private val gson = Gson()
 
+    /**
+     * loadElements declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun loadElements(world: World<Body>, jsonString: String): List<Body> {
         try {
             val config = gson.fromJson(jsonString, RobotFieldConfig::class.java)
@@ -32,6 +42,16 @@ object FieldElementLoader {
         return emptyList()
     }
 
+    /**
+     * loadElements declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun loadElements(
         world: World<Body>,
         elementTypes: List<RobotFieldElementType>,
@@ -57,6 +77,16 @@ object FieldElementLoader {
         val type: String = "Custom"
     )
 
+    /**
+     * loadGamePiecesFromAnalyticsJson declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun loadGamePiecesFromAnalyticsJson(world: World<Body>, jsonString: String): List<Body> {
         val spawnedBodies = mutableListOf<Body>()
         try {

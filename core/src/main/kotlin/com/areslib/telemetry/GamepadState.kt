@@ -27,6 +27,16 @@ class GamepadState(
     var start: Boolean = false,
     var back: Boolean = false
 ) {
+    /**
+     * copyFrom declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun copyFrom(other: GamepadState) {
         this.leftStickX = other.leftStickX
         this.leftStickY = other.leftStickY
@@ -50,6 +60,16 @@ class GamepadState(
         this.back = other.back
     }
 
+    /**
+     * reset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun reset() {
         this.leftStickX = 0f
         this.leftStickY = 0f

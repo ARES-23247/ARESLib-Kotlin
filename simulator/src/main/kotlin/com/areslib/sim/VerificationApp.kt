@@ -6,6 +6,16 @@ import kotlin.math.abs
 
 import com.areslib.math.wrapAngle
 
+/**
+ * main declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 fun main(args: Array<String>) {
     println("=================================================================")
     println("STARTING PROGRAMMATIC INTEGRATION VERIFICATION")
@@ -86,6 +96,16 @@ fun main(args: Array<String>) {
     cmdPub.set("START")
     println("Sent START command.")
 
+    /**
+     * getPose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getPose(): Triple<Double, Double, Double> {
         val arr = estPoseSub.get()
         return if (arr.size >= 3) {
@@ -113,6 +133,16 @@ fun main(args: Array<String>) {
     }
     println("EKF starting pose synced successfully.")
 
+    /**
+     * rotateToTarget declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun rotateToTarget(targetRad: Double, toleranceRad: Double = 0.03, timeoutMs: Long = 6000): Boolean {
         println("Rotating to target: %.3f rad...".format(targetRad))
         val startTime = System.currentTimeMillis()

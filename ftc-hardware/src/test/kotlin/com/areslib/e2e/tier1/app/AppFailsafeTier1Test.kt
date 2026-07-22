@@ -9,9 +9,29 @@ import com.qualcomm.robotcore.hardware.VoltageSensor
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * AppFailsafeTier1Test declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class AppFailsafeTier1Test {
 
     @Test
+    /**
+     * testLoopOverrunWatchdog declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLoopOverrunWatchdog() {
         val fl = MockDcMotorEx()
         val fr = MockDcMotorEx()
@@ -75,6 +95,16 @@ class AppFailsafeTier1Test {
     }
 
     @Test
+    /**
+     * testPerIterationFailsafeRecovery declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testPerIterationFailsafeRecovery() {
         val fl = MockDcMotorEx()
         val fr = MockDcMotorEx()

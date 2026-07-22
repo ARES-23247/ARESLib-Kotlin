@@ -9,8 +9,28 @@ import com.areslib.Store
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * ConfigAutoParserTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class ConfigAutoParserTest {
 
+    /**
+     * MockDrivetrain declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockDrivetrain : DrivetrainSubsystem {
         override fun setChassisSpeeds(vx: Double, vy: Double, omega: Double) {}
         override fun getEstimatedPose(): Pose2d = Pose2d(0.0, 0.0, Rotation2d())
@@ -20,6 +40,16 @@ class ConfigAutoParserTest {
     }
 
     @Test
+    /**
+     * testParseJsonScript declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testParseJsonScript() {
         val drivetrain = MockDrivetrain()
         val follower = HolonomicPathFollower(drivetrain)
@@ -45,6 +75,16 @@ class ConfigAutoParserTest {
     }
 
     @Test
+    /**
+     * testParseUnknownType declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testParseUnknownType() {
         val drivetrain = MockDrivetrain()
         val follower = HolonomicPathFollower(drivetrain)

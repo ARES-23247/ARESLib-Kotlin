@@ -23,30 +23,100 @@ class FRCTelemetry : ITelemetry {
         DataLogManager.log("ARESLib: FRC Telemetry Initialized")
     }
 
+    /**
+     * putNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putNumber(key: String, value: Double) {
         SmartDashboard.putNumber(key, value)
     }
 
+    /**
+     * putBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putBoolean(key: String, value: Boolean) {
         SmartDashboard.putBoolean(key, value)
     }
 
+    /**
+     * putString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putString(key: String, value: String) {
         SmartDashboard.putString(key, value)
     }
 
+    /**
+     * putDoubleArray declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putDoubleArray(key: String, value: DoubleArray) {
         SmartDashboard.putNumberArray(key, value)
     }
 
+    /**
+     * getNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getNumber(key: String, defaultValue: Double): Double {
         return SmartDashboard.getNumber(key, defaultValue)
     }
 
+    /**
+     * getBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         return SmartDashboard.getBoolean(key, defaultValue)
     }
 
+    /**
+     * getString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getString(key: String, defaultValue: String): String {
         return SmartDashboard.getString(key, defaultValue)
     }

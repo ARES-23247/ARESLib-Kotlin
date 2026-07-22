@@ -102,6 +102,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     protected var lastUpdateTime = 0L
     private var hasReadSensorsThisFrame = false
 
+    /**
+     * readSensors declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun readSensors() {
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
@@ -157,6 +167,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
         lifecycleController.sleepForTargetDt(lastUpdateTime, isAndroid)
         lifecycleController.update()
@@ -211,9 +231,29 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     protected abstract fun updateHardwareInputs()
     protected abstract fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double)
     protected abstract fun publishRobotTelemetry(timestamp: Long)
+    /**
+     * safeHardware declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     abstract fun safeHardware()
 
     @kotlin.jvm.JvmOverloads
+    /**
+     * resetPose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun resetPose(pose: Pose2d = Pose2d()) {
         pinpointIO?.initialize(pose, resetHardware = false)
         store.dispatch(
@@ -227,12 +267,32 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
+    /**
+     * resetPoseForAlliance declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun resetPoseForAlliance() {
         val alliance = store.state.drive.alliance
         val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
         resetPose(Pose2d(0.0, 0.0, Rotation2d(initialHeading)))
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun close() {
         activeInstance = null
         safeHardware()

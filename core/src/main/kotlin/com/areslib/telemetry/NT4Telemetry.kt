@@ -52,6 +52,16 @@ class NT4Telemetry : ITelemetry {
         }
     }
 
+    /**
+     * putNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putNumber(key: String, value: Double) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
@@ -62,6 +72,16 @@ class NT4Telemetry : ITelemetry {
         try { inst.putNumber(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
+    /**
+     * putBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putBoolean(key: String, value: Boolean) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
@@ -72,6 +92,16 @@ class NT4Telemetry : ITelemetry {
         try { inst.putBoolean(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
+    /**
+     * putString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putString(key: String, value: String) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
@@ -82,6 +112,16 @@ class NT4Telemetry : ITelemetry {
         try { inst.putString(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
+    /**
+     * putDoubleArray declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun putDoubleArray(key: String, value: DoubleArray) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
@@ -92,6 +132,16 @@ class NT4Telemetry : ITelemetry {
         try { inst.putNumberArray(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
+    /**
+     * getNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getNumber(key: String, defaultValue: Double): Double {
         val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
@@ -104,6 +154,16 @@ class NT4Telemetry : ITelemetry {
         } catch (e: Exception) { defaultValue }
     }
 
+    /**
+     * getBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
@@ -116,6 +176,16 @@ class NT4Telemetry : ITelemetry {
         } catch (e: Exception) { defaultValue }
     }
 
+    /**
+     * getString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getString(key: String, defaultValue: String): String {
         val ntKey = if (key.startsWith("/")) key else "/$key"
         reflectHelper?.let { helper ->
@@ -136,11 +206,31 @@ class NT4Telemetry : ITelemetry {
         putDoubleArray(key, doubleArrayOf(xMeters, yMeters, rotationRadians))
     }
 
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun update() {
         if (!isInitialized) return
         try { inst.flushServer() } catch (e: Exception) { /* swallow */ }
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         if (!isInitialized) return
         // Do NOT close the server. It should remain alive across OpModes

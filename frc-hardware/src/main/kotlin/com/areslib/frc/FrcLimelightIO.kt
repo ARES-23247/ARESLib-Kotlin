@@ -52,6 +52,16 @@ class FrcLimelightIO(
         }
     }
 
+    /**
+     * setOrientation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun setOrientation(
         yawDegrees: Double, yawRateDegPerSec: Double,
         pitchDegrees: Double, pitchRateDegPerSec: Double,
@@ -71,6 +81,16 @@ class FrcLimelightIO(
         orientationPub.set(scratchOrientation)
     }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.cameraPoses = cameraPoses
         

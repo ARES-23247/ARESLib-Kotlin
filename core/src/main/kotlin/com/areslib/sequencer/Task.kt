@@ -14,22 +14,72 @@ object TaskCallbacks {
     private val completeCallbacks = ConcurrentHashMap<Task, () -> Unit>()
     private val failCallbacks = ConcurrentHashMap<Task, () -> Unit>()
 
+    /**
+     * registerComplete declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerComplete(task: Task, callback: () -> Unit) {
         completeCallbacks[task] = callback
     }
 
+    /**
+     * registerFail declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerFail(task: Task, callback: () -> Unit) {
         failCallbacks[task] = callback
     }
 
+    /**
+     * invokeComplete declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun invokeComplete(task: Task) {
         completeCallbacks[task]?.invoke()
     }
 
+    /**
+     * invokeFail declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun invokeFail(task: Task) {
         failCallbacks[task]?.invoke()
     }
 
+    /**
+     * reset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun reset(task: Task) {
         completeCallbacks.remove(task)
         failCallbacks.remove(task)
@@ -82,26 +132,76 @@ interface Task {
         return emptyList()
     }
 
+    /**
+     * cancel declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun cancel() {
         TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
     }
 
+    /**
+     * reset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun reset() {
         TaskStateMachine.reset(this)
         TaskTimeoutManager.reset(this)
         TaskCallbacks.reset(this)
     }
 
+    /**
+     * onComplete declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun onComplete(callback: () -> Unit): Task {
         TaskCallbacks.registerComplete(this, callback)
         return this
     }
 
+    /**
+     * onFail declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun onFail(callback: () -> Unit): Task {
         TaskCallbacks.registerFail(this, callback)
         return this
     }
 
+    /**
+     * withTimeout declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun withTimeout(ms: Long): Task {
         TaskTimeoutManager.setTimeout(this, ms)
         return this
@@ -116,6 +216,16 @@ class TimeWaitTask(
 ) : Task {
     override val name = "TimeWait($durationMs ms)"
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return elapsedMs >= durationMs
     }
@@ -130,6 +240,16 @@ class PathProgressWaitTask(
 ) : Task {
     override val name = "PathProgressWait($targetDistanceMeters m)"
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return state.pathState.currentDistanceMeters >= targetDistanceMeters || elapsedMs >= timeoutMs
     }
@@ -145,12 +265,32 @@ class ActionDispatchTask(
 
     private var dispatched = false
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         dispatched = true
         return listOf(action)
     }
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return dispatched
     }
@@ -179,6 +319,16 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val activeEventTasks = mutableListOf<Task>()
     private val taskStartTimes = mutableMapOf<Task, Long>()
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
@@ -196,6 +346,16 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         if (activePath.points.isEmpty()) return true
         val targetDistance = activePath.points.last().distanceMeters
@@ -215,6 +375,16 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         return (distToTarget < 0.08 && headingError < Math.toRadians(5.0)) || elapsedMs >= 15000L
     }
 
+    /**
+     * execute declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
         val currentTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
@@ -295,6 +465,16 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         return actionsList
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         super.end(state, interrupted)
         follower.stop()

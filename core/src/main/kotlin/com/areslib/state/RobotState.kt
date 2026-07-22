@@ -23,6 +23,16 @@ data class RobotState(
     val timestampMs: Long = 0L
 )
 
+/**
+ * DriveMode declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class DriveMode {
     TELEOP,
     HEADING_HOLD,
@@ -65,6 +75,16 @@ data class DriveState(
     val rawOdometryY: Double = 0.0,
     val rawOdometryHeading: Double = 0.0
 ) {
+    /**
+     * updateDiagnostics declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
         // DELIBERATE OPTIMIZATION (Zero-GC): To avoid allocating a new DoubleArray(9) at 50Hz,
         // we mutate the existing covariance array in-place. This technically breaks pure Redux
@@ -104,6 +124,16 @@ data class DriveState(
  */
 interface SubsystemState
 
+/**
+ * SuperstructureState declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 data class SuperstructureState(
     /** Maps indicator light hardware names to their target servo positions (0.0 to 1.0). */
     val indicatorLights: Map<String, Double> = emptyMap(),
@@ -191,6 +221,16 @@ data class VisionState(
     val rejectionCount: Int = 0
 )
 
+/**
+ * Alliance declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class Alliance {
     RED, BLUE
 }

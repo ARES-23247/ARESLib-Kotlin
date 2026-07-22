@@ -8,9 +8,29 @@ import com.areslib.math.geometry.Matrix3x3
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * GcAvoidanceTier1Test declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class GcAvoidanceTier1Test {
 
     @Test
+    /**
+     * testLqrCalculate_returnsSameArrayInstance declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLqrCalculate_returnsSameArrayInstance() {
         val lqr = LQRController(1, 1, 1)
         lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
@@ -24,6 +44,16 @@ class GcAvoidanceTier1Test {
     }
 
     @Test
+    /**
+     * testPidCalculate_returnsPrimitiveDouble declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testPidCalculate_returnsPrimitiveDouble() {
         val pid = PIDController(1.0, 0.0, 0.0)
         
@@ -35,6 +65,16 @@ class GcAvoidanceTier1Test {
     }
 
     @Test
+    /**
+     * testPoseEstimatorHistoryBuffer_reusesEntriesWhenCapacityReached declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testPoseEstimatorHistoryBuffer_reusesEntriesWhenCapacityReached() {
         val capacity = 3
         val buffer = HistoryBuffer(capacity)
@@ -56,6 +96,16 @@ class GcAvoidanceTier1Test {
     }
 
     @Test
+    /**
+     * testPoseEstimatorHistoryBuffer_updateEntryDoesNotAllocate declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testPoseEstimatorHistoryBuffer_updateEntryDoesNotAllocate() {
         val buffer = HistoryBuffer(5)
         buffer.addEntry(100L, Pose2d(), Matrix3x3.IDENTITY, 1.0)
@@ -69,6 +119,16 @@ class GcAvoidanceTier1Test {
     }
 
     @Test
+    /**
+     * testMatrixMultiplication_primitiveBackedAndInPlace declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testMatrixMultiplication_primitiveBackedAndInPlace() {
         val m1 = LQRController.Matrix(2, 2, doubleArrayOf(1.0, 2.0, 3.0, 4.0))
         val m2 = LQRController.Matrix(2, 2, doubleArrayOf(2.0, 0.0, 1.0, 2.0))

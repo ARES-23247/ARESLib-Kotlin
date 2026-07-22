@@ -15,6 +15,16 @@ class FtcLoopProfiler {
 
     private var loopOverrunCount = 0
 
+    /**
+     * recordSensorsProfiling declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun recordSensorsProfiling(bulkMs: Double, inputsMs: Double, pinpointMs: Double, visionMs: Double) {
         profBulkCacheMs = bulkMs
         profHardwareInputsMs = inputsMs
@@ -22,6 +32,16 @@ class FtcLoopProfiler {
         profVisionMs = visionMs
     }
 
+    /**
+     * publishSensorsProfiling declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishSensorsProfiling(telemetryManager: FtcTelemetryManager) {
         val dl = telemetryManager.dataLoggingTelemetry
         dl.putNumber("Profiling/BulkCacheClear_ms", profBulkCacheMs)
@@ -30,6 +50,16 @@ class FtcLoopProfiler {
         dl.putNumber("Profiling/Vision_ms", profVisionMs)
     }
 
+    /**
+     * recordAndPublishLoopDiagnostics declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun recordAndPublishLoopDiagnostics(
         telemetryManager: FtcTelemetryManager,
         t0: Long,

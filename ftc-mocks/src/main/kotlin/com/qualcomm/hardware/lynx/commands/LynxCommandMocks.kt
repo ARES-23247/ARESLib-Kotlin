@@ -21,7 +21,27 @@ open class LynxMessage {
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 open class LynxRespondable<T : LynxMessage> : LynxMessage() {
+    /**
+     * onResponseReceived declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun onResponseReceived(response: LynxMessage) {}
+    /**
+     * onAckReceived declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun onAckReceived(ack: com.qualcomm.hardware.lynx.commands.standard.LynxAck) {}
 }
 /**
@@ -38,5 +58,15 @@ open class LynxCommand<T : LynxMessage> : LynxRespondable<T>()
 open class LynxDatagram {
     constructor() {}
     constructor(message: LynxMessage) {}
+    /**
+     * toByteArray declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun toByteArray(): ByteArray = ByteArray(0)
 }

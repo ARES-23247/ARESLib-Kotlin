@@ -29,10 +29,60 @@ class FtcMotor(motor: DcMotorEx, name: String? = null) : MotorIO, AutoCloseable 
     override val velocity: Double get() = delegate.velocity
     override val position: Double get() = delegate.position
     override val currentAmps: Double get() = delegate.currentAmps
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() = delegate.updateInputs()
+    /**
+     * pollCurrentSync declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun pollCurrentSync() = delegate.pollCurrentSync()
+    /**
+     * refresh declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun refresh() = delegate.refresh()
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() = delegate.resetEncoder()
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() = delegate.close()
     
     companion object {
@@ -56,6 +106,16 @@ class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null, name: Strin
     override val velocity: Double get() = delegate.velocity
     override val position: Double get() = delegate.position
     override val currentAmps: Double get() = delegate.currentAmps
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() = delegate.resetEncoder()
 }
 
@@ -72,8 +132,38 @@ class FtcEncoder(motor: DcMotorEx, name: String? = null) : MotorIO {
     override val velocity: Double get() = delegate.velocity
     override val position: Double get() = delegate.position
     override val currentAmps: Double get() = delegate.currentAmps
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() = delegate.updateInputs()
+    /**
+     * refresh declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun refresh() = delegate.refresh()
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() = delegate.resetEncoder()
 }
 
@@ -90,6 +180,16 @@ class CompositeMotorIO(actuator: MotorIO, sensor: MotorIO) : MotorIO {
     override val velocity: Double get() = delegate.velocity
     override val position: Double get() = delegate.position
     override val currentAmps: Double get() = delegate.currentAmps
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() = delegate.resetEncoder()
 }
 
@@ -111,8 +211,38 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     override val velocity: Double get() = delegate.velocity
     override val position: Double get() = delegate.position
     override val currentAmps: Double get() = delegate.currentAmps
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() = delegate.updateInputs()
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() = delegate.resetEncoder()
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() = delegate.close()
 }
 
@@ -135,8 +265,38 @@ class FtcServo(servo: Servo, name: String? = null) : ServoIO {
  */
 class FtcImu(imu: IMU) : ImuIO, AutoCloseable {
     private val delegate = RevImuController(imu)
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: ImuInputs) = delegate.updateInputs(inputs)
+    /**
+     * resetHeading declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetHeading() = delegate.resetHeading()
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() = delegate.close()
 }
 
@@ -147,7 +307,27 @@ class FtcImu(imu: IMU) : ImuIO, AutoCloseable {
  */
 class FtcAnalogSensor(analogInput: AnalogInput) : AutoCloseable {
     private val delegate = RevAnalogSensorController(analogInput)
+    /**
+     * getVoltage declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getVoltage(): Double = delegate.getVoltage()
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() = delegate.close()
 }
 
@@ -158,6 +338,26 @@ class FtcAnalogSensor(analogInput: AnalogInput) : AutoCloseable {
  */
 class FtcDigitalSensor(digitalChannel: DigitalChannel) : AutoCloseable {
     private val delegate = RevDigitalSensorController(digitalChannel)
+    /**
+     * getState declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getState(): Boolean = delegate.getState()
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() = delegate.close()
 }

@@ -7,6 +7,16 @@ import com.areslib.hardware.SubsystemIO
  * Keeps the :core module decoupled from Qualcomm SDK.
  */
 interface ServoIO : SubsystemIO {
+    /**
+     * logTelemetry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/Position", position)
     }

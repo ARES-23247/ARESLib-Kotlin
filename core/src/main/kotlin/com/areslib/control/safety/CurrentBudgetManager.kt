@@ -225,6 +225,16 @@ class CurrentBudgetManager(
         }
     }
 
+    /**
+     * isRegistered declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun isRegistered(motor: MotorIO): Boolean {
         for (i in 0 until slots.size) {
             if (slots[i].motor === motor) return true
@@ -232,6 +242,16 @@ class CurrentBudgetManager(
         return false
     }
 
+    /**
+     * clear declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun clear() {
         slots.clear()
         reset()

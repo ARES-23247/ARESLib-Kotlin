@@ -31,6 +31,16 @@ import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import kotlin.concurrent.thread
 
+/**
+ * main declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
@@ -50,6 +60,16 @@ fun main() = application {
 }
 
 @Composable
+/**
+ * ReplayDashboardContent declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 fun ReplayDashboardContent() {
     var logLines by remember { mutableStateOf(generateSyntheticLog()) }
     var fileName by remember { mutableStateOf("Synthetic Preloaded EKF Log") }

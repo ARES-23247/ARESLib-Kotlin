@@ -12,6 +12,16 @@ class LongHeap(capacity: Int) {
     var data = LongArray(capacity)
     var size = 0
 
+    /**
+     * add declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun add(value: Long) {
         if (size == data.size) {
             data = data.copyOf(data.size * 2)
@@ -27,6 +37,16 @@ class LongHeap(capacity: Int) {
         data[i] = value
     }
 
+    /**
+     * poll declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun poll(): Long {
         val result = data[0]
         size--
@@ -47,8 +67,28 @@ class LongHeap(capacity: Int) {
         return result
     }
 
+    /**
+     * clear declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun clear() { size = 0 }
     
+    /**
+     * isNotEmpty declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun isNotEmpty(): Boolean = size > 0
 }
 
@@ -68,6 +108,16 @@ class PlannerState(capacity: Int) {
     var openQueue = LongHeap(capacity)
     var pathPool = DoubleArray(capacity * 2)
 
+    /**
+     * ensureCapacity declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun ensureCapacity(capacity: Int) {
         if (gCosts.size < capacity) {
             gCosts = DoubleArray(capacity)

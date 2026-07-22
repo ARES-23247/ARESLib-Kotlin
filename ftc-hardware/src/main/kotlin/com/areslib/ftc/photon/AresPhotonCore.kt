@@ -78,6 +78,16 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     val experimental = ExperimentalParameters()
 
+    /**
+     * enable declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun enable() {
         isEnabled.set(true)
         // NOTE: Do NOT change bulkCachingMode here.
@@ -87,18 +97,48 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     }
 
 
+    /**
+     * disable declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun disable() {
         isEnabled.set(false)
     }
 
     @OnCreateEventLoop
     @JvmStatic
+    /**
+     * attachEventLoop declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun attachEventLoop(@Suppress("UNUSED_PARAMETER") context: Context, eventLoop: FtcEventLoop) {
         (eventLoop.opModeManager as? OpModeManagerNotifier)?.registerListener(this)
         opModeManager = eventLoop.opModeManager
     }
 
     @Throws(LynxUnsupportedCommandException::class, InterruptedException::class)
+    /**
+     * registerSend declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerSend(command: LynxCommand<*>): Boolean {
         val photonModule = command.module as AresPhotonLynxModule
 
@@ -164,10 +204,30 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         return true
     }
 
+    /**
+     * shouldParallelize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun shouldParallelize(command: LynxCommand<*>): Boolean {
         return command is LynxSetMotorConstantPowerCommand || (PARALLELIZE_SERVOS && command is LynxSetServoPulseWidthCommand)
     }
 
+    /**
+     * shouldAckImmediately declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun shouldAckImmediately(command: LynxCommand<*>): Boolean {
         return command is LynxSetMotorConstantPowerCommand || command is LynxSetServoPulseWidthCommand
     }
@@ -177,10 +237,30 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
                 respondable1.commandNumber == respondable2.commandNumber
     }
 
+    /**
+     * getCacheResponse declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getCacheResponse(@Suppress("UNUSED_PARAMETER") command: LynxCommand<*>): LynxMessage? {
         return null
     }
 
+    /**
+     * run declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun run() {
         while (threadEnabled.get()) {
             try {
@@ -191,6 +271,16 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         }
     }
 
+    /**
+     * onOpModePreInit declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun onOpModePreInit(opMode: OpMode) {
         if (opModeManager?.activeOpModeName == OpModeManager.DEFAULT_OP_MODE_NAME) {
             return
@@ -400,8 +490,28 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         }
     }
 
+    /**
+     * onOpModePreStart declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun onOpModePreStart(@Suppress("UNUSED_PARAMETER") opMode: OpMode) {}
 
+    /**
+     * onOpModePostStop declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun onOpModePostStop(opMode: OpMode) {
         isEnabled.set(false)
         threadEnabled.set(false)

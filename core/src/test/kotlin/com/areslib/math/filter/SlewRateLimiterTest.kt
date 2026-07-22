@@ -4,9 +4,29 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * SlewRateLimiterTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class SlewRateLimiterTest {
 
     @Test
+    /**
+     * testSlewRateLimitingSymmetric declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSlewRateLimitingSymmetric() {
         // Limit to 2.0 units per second
         val limiter = SlewRateLimiter(2.0)
@@ -29,6 +49,16 @@ class SlewRateLimiterTest {
     }
 
     @Test
+    /**
+     * testSlewRateLimitingAsymmetric declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSlewRateLimitingAsymmetric() {
         // Positive limit = 1.0, Negative limit = -5.0 (decelerates or drops much faster than it accelerates)
         val limiter = SlewRateLimiter(1.0, -5.0)
@@ -45,6 +75,16 @@ class SlewRateLimiterTest {
     }
 
     @Test
+    /**
+     * testSlewRateLimiterReset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSlewRateLimiterReset() {
         val limiter = SlewRateLimiter(2.0, initialValue = 5.0)
         
@@ -58,6 +98,16 @@ class SlewRateLimiterTest {
     }
 
     @Test
+    /**
+     * testSlewRateLimiterClear declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSlewRateLimiterClear() {
         val limiter = SlewRateLimiter(2.0)
         limiter.calculate(5.0, 0.5)

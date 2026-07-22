@@ -5,6 +5,16 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 
+/**
+ * MockMotor declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class MockMotor(
     override var power: Double = 0.0,
     override var powerScale: Double = 1.0,
@@ -12,11 +22,31 @@ class MockMotor(
     override var position: Double = 0.0,
     override var currentAmps: Double = 0.0
 ) : MotorIO {
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         position = 0.0
     }
 }
 
+/**
+ * CurrentBudgetManagerTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class CurrentBudgetManagerTest {
 
     private lateinit var manager: CurrentBudgetManager
@@ -24,6 +54,16 @@ class CurrentBudgetManagerTest {
     private lateinit var motor2: MockMotor
 
     @BeforeEach
+    /**
+     * setUp declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setUp() {
         manager = CurrentBudgetManager.ftcDefaults()
         motor1 = MockMotor()

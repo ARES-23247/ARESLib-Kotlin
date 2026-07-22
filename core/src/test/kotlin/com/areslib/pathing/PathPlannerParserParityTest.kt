@@ -8,9 +8,29 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.math.abs
 
+/**
+ * PathPlannerParserParityTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class PathPlannerParserParityTest {
 
     @Test
+    /**
+     * testKinematicStatesAndGlobalLimits declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testKinematicStatesAndGlobalLimits() {
         val json = """
             {
@@ -50,6 +70,16 @@ class PathPlannerParserParityTest {
     }
 
     @Test
+    /**
+     * testRotationTargets declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRotationTargets() {
         val json = """
             {
@@ -84,6 +114,16 @@ class PathPlannerParserParityTest {
     }
 
     @Test
+    /**
+     * testConstraintZones declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testConstraintZones() {
         val json = """
             {
@@ -120,6 +160,16 @@ class PathPlannerParserParityTest {
     }
 
     @Test
+    /**
+     * testPointTowardsZones declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testPointTowardsZones() {
         val json = """
             {

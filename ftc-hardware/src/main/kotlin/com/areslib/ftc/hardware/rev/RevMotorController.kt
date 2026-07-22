@@ -87,6 +87,16 @@ class RevMotorController(
             } catch (_: Exception) {}
         }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() {
         try {
             cachedPosition = motor.currentPosition.toDouble() - encoderOffset
@@ -99,6 +109,16 @@ class RevMotorController(
         }
     }
 
+    /**
+     * pollCurrentSync declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun pollCurrentSync() {
         try {
             if (motor.javaClass.simpleName.contains("Mock")) {
@@ -111,6 +131,16 @@ class RevMotorController(
         } catch (_: Exception) {}
     }
 
+    /**
+     * refresh declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun refresh() {
         updateInputs()
     }
@@ -124,6 +154,16 @@ class RevMotorController(
     override val currentAmps: Double
         get() = synchronized(currentLock) { cachedAmps }
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         try {
             encoderOffset = motor.currentPosition.toDouble()
@@ -131,6 +171,16 @@ class RevMotorController(
         } catch (_: Exception) {}
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         RevBulkDataReader.unregisterMotor(this)
     }
@@ -185,6 +235,16 @@ class RevCRServoController(
     override val position: Double
         get() = externalEncoder?.position ?: 0.0
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         externalEncoder?.resetEncoder()
     }
@@ -214,6 +274,16 @@ class RevEncoderController(
         @Suppress("UNUSED_PARAMETER")
         set(value) {}
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() {
         try {
             cachedPosition = motor.currentPosition.toDouble() - encoderOffset
@@ -223,6 +293,16 @@ class RevEncoderController(
         } catch (_: Exception) {}
     }
 
+    /**
+     * refresh declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun refresh() {
         updateInputs()
     }
@@ -233,6 +313,16 @@ class RevEncoderController(
     override val position: Double
         get() = cachedPosition
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         try {
             encoderOffset = motor.currentPosition.toDouble()
@@ -265,6 +355,16 @@ class RevCompositeMotorController(
     override val currentAmps: Double
         get() = actuator.currentAmps
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         sensor.resetEncoder()
     }

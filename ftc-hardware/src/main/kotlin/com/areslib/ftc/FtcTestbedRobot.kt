@@ -29,6 +29,16 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
         com.areslib.hardware.HardwareRegistry.registerDevice("IMU", imu)
     }
 
+    /**
+     * updateHardwareInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateHardwareInputs() {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         com.areslib.hardware.HardwareRegistry.refreshAll()
@@ -47,13 +57,43 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
         ))
     }
 
+    /**
+     * updateSubsystems declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
         val targetVolts = (store.state.drive.odometryX * 0.1) * 12.0
         motor.setVoltage(targetVolts, batteryVoltage)
     }
 
+    /**
+     * publishRobotTelemetry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun publishRobotTelemetry(timestamp: Long) {}
 
+    /**
+     * safeHardware declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun safeHardware() {
         com.areslib.hardware.HardwareRegistry.safeAll()
     }

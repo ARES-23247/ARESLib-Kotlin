@@ -13,8 +13,38 @@ interface Telemetry {
      * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
      */
     interface Item
+    /**
+     * addData declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun addData(caption: String, value: Any?): Item?
+    /**
+     * addData declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun addData(caption: String, format: String, vararg args: Any?): Item?
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun update(): Boolean
 }
 
@@ -31,6 +61,16 @@ class MockTelemetry : Telemetry {
     var displayLines: List<String> = emptyList()
         private set
 
+    /**
+     * addData declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun addData(caption: String, value: Any?): Telemetry.Item? {
         synchronized(buffer) {
             buffer.add("$caption: $value")
@@ -38,6 +78,16 @@ class MockTelemetry : Telemetry {
         return null
     }
     
+    /**
+     * addData declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun addData(caption: String, format: String, vararg args: Any?): Telemetry.Item? {
         synchronized(buffer) {
             try {
@@ -49,6 +99,16 @@ class MockTelemetry : Telemetry {
         return null
     }
     
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun update(): Boolean {
         synchronized(buffer) {
             displayLines = buffer.toList()

@@ -8,6 +8,16 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.math.*
 
+/**
+ * ShotSetupTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class ShotSetupTest {
 
     /**
@@ -35,6 +45,16 @@ class ShotSetupTest {
     private val shotSetup = ShotSetup(testConfig)
 
     @Test
+    /**
+     * testStaticShot declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testStaticShot() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         val speeds = ChassisSpeeds(0.0, 0.0, 0.0)
@@ -71,6 +91,16 @@ class ShotSetupTest {
     }
 
     @Test
+    /**
+     * testTranslatingShotCompensation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testTranslatingShotCompensation() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         // Robot translating at 2.0 m/s in +Y (field-centric)
@@ -94,6 +124,16 @@ class ShotSetupTest {
     }
 
     @Test
+    /**
+     * testRotatingShotCompensation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRotatingShotCompensation() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         // Robot rotating at 1.0 rad/s

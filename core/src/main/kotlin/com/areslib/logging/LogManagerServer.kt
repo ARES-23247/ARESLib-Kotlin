@@ -24,6 +24,16 @@ object LogManagerServer : NanoHTTPD(5002) {
         if (!syncedDir.exists()) syncedDir.mkdirs()
     }
     
+    /**
+     * startServer declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun startServer() {
         if (!this.isAlive) {
             try {
@@ -34,6 +44,16 @@ object LogManagerServer : NanoHTTPD(5002) {
         }
     }
 
+    /**
+     * serve declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun serve(session: IHTTPSession): Response {
         val uri = session.uri
         val method = session.method

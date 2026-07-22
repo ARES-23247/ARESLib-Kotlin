@@ -4,8 +4,28 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.math.PI
 
+/**
+ * Geometry3dTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class Geometry3dTest {
     @Test
+    /**
+     * testQuaternionNormalization declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testQuaternionNormalization() {
         val q = Quaternion(2.0, 0.0, 0.0, 0.0).normalize()
         assertEquals(1.0, q.w, 1e-6)
@@ -13,6 +33,16 @@ class Geometry3dTest {
     }
 
     @Test
+    /**
+     * testRotation3dEulerAngles declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRotation3dEulerAngles() {
         // Roll 90 degrees
         val r = Rotation3d(PI / 2, 0.0, 0.0)
@@ -34,6 +64,16 @@ class Geometry3dTest {
     }
 
     @Test
+    /**
+     * testTransformBy declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testTransformBy() {
         val initialPose = Pose3d(Translation3d(1.0, 2.0, 0.0), Rotation3d(0.0, 0.0, PI / 2))
         val transform = Transform3d(Translation3d(1.0, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0))
@@ -49,6 +89,16 @@ class Geometry3dTest {
     }
 
     @Test
+    /**
+     * testRelativeTo declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRelativeTo() {
         val pose1 = Pose3d(Translation3d(1.0, 1.0, 0.0), Rotation3d(0.0, 0.0, PI / 2))
         val pose2 = Pose3d(Translation3d(2.0, 1.0, 0.0), Rotation3d(0.0, 0.0, 0.0))

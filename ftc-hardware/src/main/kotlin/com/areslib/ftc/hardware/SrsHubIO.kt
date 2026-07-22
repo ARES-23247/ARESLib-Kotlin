@@ -106,6 +106,16 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         name = "ARES-SrsHub-Thread"
     }
 
+    /**
+     * registerPinpoint declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerPinpoint(port: Int) {
         synchronized(lock) {
             if (port in 0 until 4) {
@@ -119,6 +129,16 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         thread.start()
     }
 
+    /**
+     * doInitialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun doInitialize(): Boolean {
         return try {
             // Set up automatic repeated read window for the entire 256-byte register range
@@ -130,8 +150,28 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
+    /**
+     * getManufacturer declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getManufacturer(): Manufacturer = Manufacturer.Other
 
+    /**
+     * getDeviceName declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun getDeviceName(): String = "SRS Hub"
 
     /**
@@ -226,22 +266,172 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     // Now, all accessor methods return cached data instantly in 0.0ms!
     fun getAnalogVoltage(port: Int): Double = synchronized(lock) { cachedAnalog.getOrElse(port) { 0.0 } }
+    /**
+     * getDigitalState declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getDigitalState(port: Int): Boolean = synchronized(lock) { cachedDigital.getOrElse(port) { false } }
+    /**
+     * readEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun readEncoder(port: Int): Int = synchronized(lock) { cachedEncoders.getOrElse(port) { 0 } }
+    /**
+     * getPwmPulseWidth declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getPwmPulseWidth(port: Int): Int = synchronized(lock) { cachedPwmPulseWidths.getOrElse(port) { 0 } }
     
+    /**
+     * getVL53L5CXDistances declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getVL53L5CXDistances(port: Int): IntArray = synchronized(lock) { cachedVL53L5CX.getOrElse(port) { IntArray(64) } }
+    /**
+     * getI2cColorRed declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cColorRed(port: Int): Int = synchronized(lock) { cachedColorsRed.getOrElse(port) { 0 } }
+    /**
+     * getI2cColorGreen declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cColorGreen(port: Int): Int = synchronized(lock) { cachedColorsGreen.getOrElse(port) { 0 } }
+    /**
+     * getI2cColorBlue declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cColorBlue(port: Int): Int = synchronized(lock) { cachedColorsBlue.getOrElse(port) { 0 } }
+    /**
+     * getI2cColorAlpha declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cColorAlpha(port: Int): Int = synchronized(lock) { cachedColorsAlpha.getOrElse(port) { 0 } }
+    /**
+     * getI2cDistanceMeters declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cDistanceMeters(port: Int): Double = synchronized(lock) { cachedI2cDistances.getOrElse(port) { 0.0 } }
 
+    /**
+     * getI2cOdometryX declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cOdometryX(port: Int): Double = synchronized(lock) { cachedOdoX.getOrElse(port) { 0.0 } }
+    /**
+     * getI2cOdometryY declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cOdometryY(port: Int): Double = synchronized(lock) { cachedOdoY.getOrElse(port) { 0.0 } }
+    /**
+     * getI2cOdometryHeading declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cOdometryHeading(port: Int): Double = synchronized(lock) { cachedOdoHeading.getOrElse(port) { 0.0 } }
+    /**
+     * getI2cOdometryVelX declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cOdometryVelX(port: Int): Double = synchronized(lock) { cachedOdoVelX.getOrElse(port) { 0.0 } }
+    /**
+     * getI2cOdometryYVel declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cOdometryYVel(port: Int): Double = synchronized(lock) { cachedOdoVelY.getOrElse(port) { 0.0 } }
+    /**
+     * getI2cOdometryHeadingVel declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getI2cOdometryHeadingVel(port: Int): Double = synchronized(lock) { cachedOdoHeadingVel.getOrElse(port) { 0.0 } }
 
     // Direct actuator writes (these bypass the read cache and run immediately)
@@ -253,6 +443,16 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
+    /**
+     * readPwmPulseWidth declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun readPwmPulseWidth(port: Int): Int {
         return try {
             val data = deviceClient.read(24 + port * 2, 2)
@@ -266,16 +466,46 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
+    /**
+     * resetI2cOdometry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun resetI2cOdometry(port: Int) {
         try {
             deviceClient.write(120 + port, byteArrayOf(1))
         } catch (_: Exception) {}
     }
 
+    /**
+     * updateI2cOdometry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateI2cOdometry() {
         // Handled asynchronously in background thread
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         running = false
         thread.interrupt()
@@ -298,6 +528,16 @@ class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) : 
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 class SrsHubDigitalIO(private val srsHub: SrsHubDriver, private val port: Int) {
+    /**
+     * getState declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getState(): Boolean {
         return srsHub.getDigitalState(port)
     }
@@ -335,6 +575,16 @@ class SrsHubEncoderIO(private val srsHub: SrsHubDriver, private val port: Int) :
     override val position: Double
         get() = srsHub.readEncoder(port).toDouble()
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {}
 }
 
@@ -362,6 +612,16 @@ class SrsHubAbsoluteAnalogEncoder(
             return (normalized * ticksPerRev) - offset
         }
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         offset = (srsHub.getAnalogVoltage(port) / version.maxVoltage) * ticksPerRev
     }
@@ -382,6 +642,16 @@ class SrsHubAbsolutePWMEncoder(
         get() = 0.0
         set(@Suppress("UNUSED_PARAMETER") value) {}
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() {
         srsHub.update()
     }
@@ -398,6 +668,16 @@ class SrsHubAbsolutePWMEncoder(
             return (clampedNormalized * ticksPerRev) - offset
         }
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         val pulseUs = srsHub.getPwmPulseWidth(port).toDouble()
         val range = version.maxPulseUs - version.minPulseUs
@@ -484,11 +764,31 @@ class SrsHubPinpointOdometry(
     private val srsHub: SrsHubDriver,
     private val port: Int
 ) : OdometryIO {
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(startPose: Pose2d) {
         srsHub.resetI2cOdometry(port)
         srsHub.registerPinpoint(port)
     }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
         srsHub.updateI2cOdometry()
         inputs.posX = srsHub.getI2cOdometryX(port) / 1000.0

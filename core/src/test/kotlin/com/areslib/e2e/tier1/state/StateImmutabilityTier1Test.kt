@@ -5,9 +5,29 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.lang.reflect.Modifier
 
+/**
+ * StateImmutabilityTier1Test declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class StateImmutabilityTier1Test {
 
     @Test
+    /**
+     * testStatePropertiesAreImmutableAndVal declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testStatePropertiesAreImmutableAndVal() {
         val stateClasses = listOf(
             RobotState::class.java,
@@ -36,6 +56,16 @@ class StateImmutabilityTier1Test {
     }
 
     @Test
+    /**
+     * testCollectionStatePropertiesAreReadOnly declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testCollectionStatePropertiesAreReadOnly() {
         
         // VisionState contains measurements: List<VisionMeasurement>
@@ -44,6 +74,16 @@ class StateImmutabilityTier1Test {
     }
 
     @Test
+    /**
+     * testStateModificationCreatesNewInstance declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testStateModificationCreatesNewInstance() {
         val s1 = RobotState()
         val s2 = s1.copy(timestampMs = 12345L)

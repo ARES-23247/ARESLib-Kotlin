@@ -39,8 +39,38 @@ open class LLResult {
     val tx: Double = 0.0
     val ty: Double = 0.0
     
+    /**
+     * isValid declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun isValid(): Boolean = false
+    /**
+     * getBotpose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun getBotpose(): Pose3D? = null
+    /**
+     * getFiducialResults declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun getFiducialResults(): List<LLResultTypes.FiducialResult> = emptyList()
 }
 
@@ -50,7 +80,27 @@ open class LLResult {
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 open class Limelight3A {
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun start() {}
+    /**
+     * getLatestResult declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     open fun getLatestResult(): LLResult? = null
 }
 

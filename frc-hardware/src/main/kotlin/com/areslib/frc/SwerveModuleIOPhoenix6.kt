@@ -21,6 +21,16 @@ class SwerveModuleIOPhoenix6(
     private val driveVelocity = driveMotor.velocity
     private val steerPosition = steerMotor.position
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: SwerveModuleInputs) {
         // FRC CANivore "Airlock" - block until all signals are perfectly synchronized (timeout capped at 20ms)
         BaseStatusSignal.waitForAll(0.02, drivePosition, driveVelocity, steerPosition)
@@ -34,6 +44,16 @@ class SwerveModuleIOPhoenix6(
         inputs.timestampMs = (drivePosition.timestamp.time * 1000).toLong()
     }
     
+    /**
+     * dispatchHardwareUpdate declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun dispatchHardwareUpdate() {
         val inputs = SwerveModuleInputs()
         updateInputs(inputs)

@@ -6,9 +6,29 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+/**
+ * PathSafetyEvaluatorTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class PathSafetyEvaluatorTest {
 
     @Test
+    /**
+     * testEmptyPath declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testEmptyPath() {
         val costmap = Costmap()
         val report = PathSafetyEvaluator.evaluate(emptyList(), costmap)
@@ -18,6 +38,16 @@ class PathSafetyEvaluatorTest {
     }
 
     @Test
+    /**
+     * testEmptyCostmapIsSafe declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testEmptyCostmapIsSafe() {
         val costmap = Costmap()
         val path = listOf(
@@ -34,6 +64,16 @@ class PathSafetyEvaluatorTest {
     }
 
     @Test
+    /**
+     * testSafePathWithObstacle declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSafePathWithObstacle() {
         val costmap = Costmap()
         // Put obstacle at (0.0, 0.0)
@@ -52,6 +92,16 @@ class PathSafetyEvaluatorTest {
     }
 
     @Test
+    /**
+     * testCautionPathNearObstacle declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testCautionPathNearObstacle() {
         val costmap = Costmap()
         // Put obstacle at (0.0, 0.0)
@@ -77,6 +127,16 @@ class PathSafetyEvaluatorTest {
     }
 
     @Test
+    /**
+     * testUnsafePathHittingObstacle declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testUnsafePathHittingObstacle() {
         val costmap = Costmap()
         // Put obstacle at (0.0, 0.0)

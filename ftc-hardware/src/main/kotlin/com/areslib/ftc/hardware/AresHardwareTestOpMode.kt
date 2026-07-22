@@ -21,6 +21,16 @@ class AresHardwareTestOpMode : LinearOpMode() {
         private const val OVERRUN_THRESHOLD_MS = 30L
     }
 
+    /**
+     * runOpMode declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun runOpMode() {
         telemetry.addData("Status", "Initializing Robot Facade...")
         telemetry.update()

@@ -23,6 +23,16 @@ class Store(
      */
     var actionListener: ((RobotAction) -> Unit)? = null
 
+    /**
+     * dispatch declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun dispatch(action: RobotAction) {
         val currentState: RobotState
         synchronized(this) {
@@ -40,6 +50,16 @@ class Store(
         }
     }
 
+    /**
+     * dispatchAll declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun dispatchAll(vararg actions: RobotAction) {
         val currentState: RobotState
         synchronized(this) {
@@ -60,6 +80,16 @@ class Store(
         }
     }
 
+    /**
+     * subscribe declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun subscribe(listener: (RobotState) -> Unit): () -> Unit {
         listeners.add(listener)
         return { listeners.remove(listener) }

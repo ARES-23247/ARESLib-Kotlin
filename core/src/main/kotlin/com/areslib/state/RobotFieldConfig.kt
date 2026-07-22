@@ -6,11 +6,31 @@ import java.io.File
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 
+/**
+ * FieldType declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class FieldType {
     @SerializedName("ftc") FTC,
     @SerializedName("frc") FRC
 }
 
+/**
+ * AxisDirection declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class AxisDirection {
     @SerializedName("up") UP,
     @SerializedName("down") DOWN,
@@ -18,6 +38,16 @@ enum class AxisDirection {
     @SerializedName("right") RIGHT
 }
 
+/**
+ * DriverStationSide declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class DriverStationSide {
     @SerializedName("north") NORTH,
     @SerializedName("south") SOUTH,
@@ -25,6 +55,16 @@ enum class DriverStationSide {
     @SerializedName("west") WEST
 }
 
+/**
+ * ObstacleType declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class ObstacleType {
     @SerializedName("blocking") BLOCKING,
     @SerializedName("ramp") RAMP

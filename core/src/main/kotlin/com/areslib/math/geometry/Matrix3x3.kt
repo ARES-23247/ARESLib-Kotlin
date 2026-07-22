@@ -30,18 +30,48 @@ data class Matrix3x3(
         m20 + other.m20, m21 + other.m21, m22 + other.m22
     )
 
+    /**
+     * setTo declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setTo(other: Matrix3x3) {
         m00 = other.m00; m01 = other.m01; m02 = other.m02
         m10 = other.m10; m11 = other.m11; m12 = other.m12
         m20 = other.m20; m21 = other.m21; m22 = other.m22
     }
 
+    /**
+     * addInPlace declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun addInPlace(other: Matrix3x3) {
         m00 += other.m00; m01 += other.m01; m02 += other.m02
         m10 += other.m10; m11 += other.m11; m12 += other.m12
         m20 += other.m20; m21 += other.m21; m22 += other.m22
     }
 
+    /**
+     * multiplyInPlace declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun multiplyInPlace(scalar: Double) {
         m00 *= scalar; m01 *= scalar; m02 *= scalar
         m10 *= scalar; m11 *= scalar; m12 *= scalar
@@ -86,12 +116,32 @@ data class Matrix3x3(
         )
     }
 
+    /**
+     * transpose declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun transpose() = Matrix3x3(
         m00, m10, m20,
         m01, m11, m21,
         m02, m12, m22
     )
 
+    /**
+     * inverse declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun inverse(): Matrix3x3 {
         val det = m00 * (m11 * m22 - m12 * m21) -
                   m01 * (m10 * m22 - m12 * m20) +

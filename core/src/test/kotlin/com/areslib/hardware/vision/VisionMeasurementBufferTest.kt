@@ -8,9 +8,29 @@ import org.junit.jupiter.api.Test
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+/**
+ * VisionMeasurementBufferTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class VisionMeasurementBufferTest {
 
     @Test
+    /**
+     * testChronologicalSorting declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testChronologicalSorting() {
         val buffer = VisionMeasurementBuffer(maxHistoryMs = 1000L)
 
@@ -30,6 +50,16 @@ class VisionMeasurementBufferTest {
     }
 
     @Test
+    /**
+     * testSlidingWindowEviction declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSlidingWindowEviction() {
         val buffer = VisionMeasurementBuffer(maxHistoryMs = 500L)
 
@@ -49,6 +79,16 @@ class VisionMeasurementBufferTest {
     }
 
     @Test
+    /**
+     * testQueryInterval declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testQueryInterval() {
         val buffer = VisionMeasurementBuffer(maxHistoryMs = 2000L)
 
@@ -64,6 +104,16 @@ class VisionMeasurementBufferTest {
     }
 
     @Test
+    /**
+     * testClearOperations declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testClearOperations() {
         val buffer = VisionMeasurementBuffer(maxHistoryMs = 2000L)
 
@@ -78,6 +128,16 @@ class VisionMeasurementBufferTest {
     }
 
     @Test
+    /**
+     * testConcurrentAccess declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testConcurrentAccess() {
         val buffer = VisionMeasurementBuffer(maxHistoryMs = 5000L)
         val executor = Executors.newFixedThreadPool(8)

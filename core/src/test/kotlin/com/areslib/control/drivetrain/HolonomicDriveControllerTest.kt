@@ -7,6 +7,16 @@ import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
+/**
+ * HolonomicDriveControllerTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class HolonomicDriveControllerTest {
 
     @Test

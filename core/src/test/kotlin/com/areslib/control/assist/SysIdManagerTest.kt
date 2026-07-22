@@ -3,9 +3,29 @@ package com.areslib.control.assist
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * SysIdManagerTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class SysIdManagerTest {
 
     @Test
+    /**
+     * testQuasistaticRampAndClamp declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testQuasistaticRampAndClamp() {
         val manager = SysIdManager()
         
@@ -24,6 +44,16 @@ class SysIdManagerTest {
     }
 
     @Test
+    /**
+     * testDynamicStep declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testDynamicStep() {
         val manager = SysIdManager()
         
@@ -38,6 +68,16 @@ class SysIdManagerTest {
     }
 
     @Test
+    /**
+     * testSafetyLinearLimit declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSafetyLinearLimit() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
@@ -50,6 +90,16 @@ class SysIdManagerTest {
     }
 
     @Test
+    /**
+     * testSafetyAngularLimit declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSafetyAngularLimit() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.ANGULAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
@@ -67,6 +117,16 @@ class SysIdManagerTest {
     }
 
     @Test
+    /**
+     * testSafetyTimeLimit declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSafetyTimeLimit() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
@@ -79,6 +139,16 @@ class SysIdManagerTest {
     }
 
     @Test
+    /**
+     * testStopAndInactiveState declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testStopAndInactiveState() {
         val manager = SysIdManager()
         // Inactive safety should be true

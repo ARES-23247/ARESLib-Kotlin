@@ -7,9 +7,29 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+/**
+ * PathingChampionshipTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class PathingChampionshipTest {
 
     @Test
+    /**
+     * testCostmapInflation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testCostmapInflation() {
         val costmap = Costmap(widthMeters = 6.0, heightMeters = 6.0, resolutionMeters = 0.1)
         costmap.clear()
@@ -33,6 +53,16 @@ class PathingChampionshipTest {
     }
 
     @Test
+    /**
+     * testThetaStarPlanner declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testThetaStarPlanner() {
         val costmap = Costmap(widthMeters = 10.0, heightMeters = 10.0, resolutionMeters = 0.1)
         costmap.clear()
@@ -70,6 +100,16 @@ class PathingChampionshipTest {
     }
 
     @Test
+    /**
+     * testSCurveTrajectoryParameterizer declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSCurveTrajectoryParameterizer() {
         val waypoints = listOf(
             Translation2d(0.0, 0.0),

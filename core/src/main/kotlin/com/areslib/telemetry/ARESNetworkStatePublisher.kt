@@ -16,6 +16,16 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     private var lastPublishedPath: com.areslib.pathing.Path? = null
     private var cachedPathPoints: DoubleArray = EMPTY_DOUBLE_ARRAY
 
+    /**
+     * publish declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publish(
         state: RobotState,
         gamepad1: GamepadState? = null,
@@ -141,11 +151,31 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.update()
     }
 
+    /**
+     * publishTopology declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishTopology(topologyJson: String) {
         telemetry.putString("Topology/HardwareMap", topologyJson)
         telemetry.update()
     }
 
+    /**
+     * publishCalibration declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun publishCalibration(
         isActive: Boolean,
         gyroHeading: Double,

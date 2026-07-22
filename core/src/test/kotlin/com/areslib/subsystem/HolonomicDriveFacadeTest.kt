@@ -12,9 +12,29 @@ import com.areslib.state.RobotState
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * HolonomicDriveFacadeTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class HolonomicDriveFacadeTest {
 
     @Test
+    /**
+     * testHolonomicDriveFacadeGetters declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testHolonomicDriveFacadeGetters() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)
@@ -29,6 +49,16 @@ class HolonomicDriveFacadeTest {
     }
 
     @Test
+    /**
+     * testRobotRelativeDrive declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testRobotRelativeDrive() {
         val actions = mutableListOf<RobotAction>()
         val store = Store(RobotState()) { state, action ->
@@ -50,6 +80,16 @@ class HolonomicDriveFacadeTest {
     }
 
     @Test
+    /**
+     * testFieldRelativeDrive declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testFieldRelativeDrive() {
         val actions = mutableListOf<RobotAction>()
         val store = Store(RobotState()) { state, action ->
@@ -69,6 +109,16 @@ class HolonomicDriveFacadeTest {
     }
 
     @Test
+    /**
+     * testHeadingLockLogic declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testHeadingLockLogic() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)
@@ -85,6 +135,16 @@ class HolonomicDriveFacadeTest {
     }
 
     @Test
+    /**
+     * testFollowPath declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testFollowPath() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)

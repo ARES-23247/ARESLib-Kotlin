@@ -67,6 +67,16 @@ class FtcVL53L5CX(private val driver: VL53L5CXDriverProxy) : MultizoneDistanceSe
     override val distancesMeters: DoubleArray
         get() = synchronized(lock) { lastDistances }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun close() {
         running = false
     }

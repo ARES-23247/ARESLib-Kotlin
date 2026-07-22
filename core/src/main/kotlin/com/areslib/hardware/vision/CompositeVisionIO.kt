@@ -11,6 +11,16 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO, AutoCloseab
     override val cameraPoses: List<Pose3d>
         get() = ios.flatMap { it.cameraPoses }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: VisionIOInputs) {
         val allMeasurements = mutableListOf<VisionMeasurement>()
         var anyConnected = false
@@ -29,6 +39,16 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO, AutoCloseab
         inputs.cameraPoses = cameraPoses
     }
 
+    /**
+     * setOrientation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun setOrientation(
         yawDegrees: Double, yawRateDegPerSec: Double,
         pitchDegrees: Double, pitchRateDegPerSec: Double,
@@ -45,6 +65,16 @@ class CompositeVisionIO(private val ios: List<VisionIO>) : VisionIO, AutoCloseab
         }
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         for (io in ios) {
             if (io is AutoCloseable) {

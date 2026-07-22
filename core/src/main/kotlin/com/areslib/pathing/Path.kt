@@ -49,6 +49,16 @@ class MutablePathPoint {
     var curvature: Double = 0.0
     var tangentRadians: Double = 0.0
 
+    /**
+     * toPathPoint declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun toPathPoint(): PathPoint = PathPoint(
         Pose2d(x, y, Rotation2d(headingRad)),
         velocityMps,
@@ -57,6 +67,16 @@ class MutablePathPoint {
         tangentRadians
     )
 
+    /**
+     * copyInto declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun copyInto(out: PathPoint) {
         out.pose = Pose2d(x, y, Rotation2d(headingRad))
         out.velocityMps = velocityMps

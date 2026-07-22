@@ -56,6 +56,16 @@ class ReflectionWpilibTelemetry {
         }
     }
 
+    /**
+     * putNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun putNumber(key: String, value: Double) {
         val entry = getEntry(key) ?: return
         try {
@@ -65,6 +75,16 @@ class ReflectionWpilibTelemetry {
         }
     }
 
+    /**
+     * putBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun putBoolean(key: String, value: Boolean) {
         val entry = getEntry(key) ?: return
         try {
@@ -74,6 +94,16 @@ class ReflectionWpilibTelemetry {
         }
     }
 
+    /**
+     * putString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun putString(key: String, value: String) {
         val entry = getEntry(key) ?: return
         try {
@@ -83,6 +113,16 @@ class ReflectionWpilibTelemetry {
         }
     }
 
+    /**
+     * putDoubleArray declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun putDoubleArray(key: String, value: DoubleArray) {
         val entry = getEntry(key) ?: return
         try {
@@ -92,6 +132,16 @@ class ReflectionWpilibTelemetry {
         }
     }
 
+    /**
+     * getNumber declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getNumber(key: String, defaultValue: Double): Double {
         val entry = getEntry(key) ?: return defaultValue
         return try {
@@ -101,6 +151,16 @@ class ReflectionWpilibTelemetry {
         }
     }
 
+    /**
+     * getBoolean declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         val entry = getEntry(key) ?: return defaultValue
         return try {
@@ -110,6 +170,16 @@ class ReflectionWpilibTelemetry {
         }
     }
 
+    /**
+     * getString declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getString(key: String, defaultValue: String): String {
         val entry = getEntry(key) ?: return defaultValue
         return try {

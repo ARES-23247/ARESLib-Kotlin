@@ -13,8 +13,28 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+/**
+ * FtcLimelightIOTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class FtcLimelightIOTest {
 
+    /**
+     * MockLLResult declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockLLResult(
         private val valid: Boolean,
         private val botpose: Pose3D?
@@ -23,6 +43,16 @@ class FtcLimelightIOTest {
         override fun getBotpose(): Pose3D? = botpose
     }
 
+    /**
+     * MockLimelight3A declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockLimelight3A(
         private val result: LLResult?
     ) : Limelight3A() {
@@ -30,6 +60,16 @@ class FtcLimelightIOTest {
     }
 
     @Test
+    /**
+     * testCoordinateTransformation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testCoordinateTransformation() {
         // Mock FTC coordinates:
         // Position: X = 1.0 (right), Y = 2.0 (forward), Z = 0.5
@@ -70,6 +110,16 @@ class FtcLimelightIOTest {
     }
 
     @Test
+    /**
+     * testFiducialParsing declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testFiducialParsing() {
         val ftcPose = Pose3D(
             Position(DistanceUnit.METER, 1.0, 2.0, 0.5, 0),

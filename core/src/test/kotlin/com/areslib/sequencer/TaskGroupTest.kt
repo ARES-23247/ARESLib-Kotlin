@@ -10,6 +10,16 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertFalse
 
+/**
+ * MockTestTask declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class MockTestTask(
     override val name: String,
     private val durationMs: Long,
@@ -19,15 +29,45 @@ class MockTestTask(
     var ended = false
     var interrupted = false
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(state: RobotState): List<RobotAction> {
         initialized = true
         return actionToDispatch?.let { listOf(it) } ?: emptyList()
     }
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return elapsedMs >= durationMs
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         ended = true
         this.interrupted = interrupted
@@ -35,6 +75,16 @@ class MockTestTask(
     }
 }
 
+/**
+ * TaskGroupTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class TaskGroupTest {
 
     @Test

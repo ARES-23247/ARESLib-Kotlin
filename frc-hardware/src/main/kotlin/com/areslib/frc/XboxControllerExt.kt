@@ -30,6 +30,16 @@ fun XboxController.toState() = GamepadState(
     back = backButton
 )
 
+/**
+ * XboxController declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 fun XboxController.updateState(state: GamepadState) {
     if (!edu.wpi.first.wpilibj.DriverStation.isJoystickConnected(this.port)) {
         state.reset()

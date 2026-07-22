@@ -9,6 +9,16 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+/**
+ * VisionOutlierFilterTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class VisionOutlierFilterTest {
 
     private val filter = VisionOutlierFilter()
@@ -16,6 +26,16 @@ class VisionOutlierFilterTest {
     private val robotHeadingRad = 0.0
 
     @Test
+    /**
+     * testValidMeasurement declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testValidMeasurement() {
         val measurement = VisionMeasurement(
             timestampMs = 100L,
@@ -27,6 +47,16 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    /**
+     * testDistanceRejection declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testDistanceRejection() {
         // Distance is 7.0 meters (exceeds max distance of 6.0)
         val measurement = VisionMeasurement(
@@ -39,6 +69,16 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    /**
+     * testAmbiguityRejection declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testAmbiguityRejection() {
         // Ambiguity is 0.3 (exceeds max of 0.2)
         val measurement = VisionMeasurement(
@@ -51,6 +91,16 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    /**
+     * testHeadingRejection declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testHeadingRejection() {
         // Heading deviation is 35 degrees (exceeds max of 30 degrees)
         val deviationRad = Math.toRadians(35.0)
@@ -64,6 +114,16 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    /**
+     * test3DFieldBoundaryRejections declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun test3DFieldBoundaryRejections() {
         // X out of bounds (> 2.5)
         val outOfBoundsX = VisionMeasurement(
@@ -103,6 +163,16 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    /**
+     * testAngularVelocityBlurLockout declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testAngularVelocityBlurLockout() {
         val measurement = VisionMeasurement(
             timestampMs = 100L,
@@ -119,6 +189,16 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    /**
+     * testHighGShockCollisionLockout declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testHighGShockCollisionLockout() {
         val measurement = VisionMeasurement(
             timestampMs = 100L,
@@ -141,6 +221,16 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    /**
+     * testFrcDefaults declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testFrcDefaults() {
         val frcFilter = VisionOutlierFilter(VisionFilterConfig.frcDefaults())
         

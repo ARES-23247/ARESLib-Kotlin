@@ -3,9 +3,29 @@ package com.areslib.control.feedback
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * LinearADRCTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class LinearADRCTest {
 
     @Test
+    /**
+     * testADRCBasicCalculationAndReset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testADRCBasicCalculationAndReset() {
         val adrc = LinearADRC(b0 = 1.0, omegaC = 10.0, omegaO = 30.0)
 
@@ -23,6 +43,16 @@ class LinearADRCTest {
     }
 
     @Test
+    /**
+     * testADRCOutputClamping declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testADRCOutputClamping() {
         val adrc = LinearADRC(b0 = 1.0, omegaC = 10.0, omegaO = 30.0)
         adrc.setOutputLimits(-2.0, 2.0)
@@ -36,6 +66,16 @@ class LinearADRCTest {
     }
 
     @Test
+    /**
+     * testADRCContinuousInput declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testADRCContinuousInput() {
         val adrc = LinearADRC(b0 = 1.0, omegaC = 10.0, omegaO = 30.0)
         adrc.enableContinuousInput(-Math.PI, Math.PI)

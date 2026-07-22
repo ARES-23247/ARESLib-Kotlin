@@ -3,12 +3,32 @@ package com.areslib.control.assist
 import com.areslib.math.wrapAngle
 import kotlin.math.sqrt
 
+/**
+ * SysIdMechanism declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class SysIdMechanism {
     LINEAR,
     ANGULAR,
     FLYWHEEL
 }
 
+/**
+ * SysIdRoutine declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 enum class SysIdRoutine {
     NONE,
     QUASISTATIC,
@@ -48,6 +68,16 @@ class SysIdManager {
     var calculatedAcceleration = 0.0
         private set
 
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun start(mechanism: SysIdMechanism, routine: SysIdRoutine, timestampMs: Long, x: Double, y: Double, heading: Double) {
         activeMechanism = mechanism
         activeRoutine = routine
@@ -64,11 +94,31 @@ class SysIdManager {
         calculatedAcceleration = 0.0
     }
 
+    /**
+     * stop declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun stop() {
         activeRoutine = SysIdRoutine.NONE
         currentVoltage = 0.0
     }
 
+    /**
+     * isActive declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun isActive(): Boolean = activeRoutine != SysIdRoutine.NONE
 
     /**

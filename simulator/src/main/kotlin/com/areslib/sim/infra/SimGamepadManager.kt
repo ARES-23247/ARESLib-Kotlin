@@ -253,6 +253,16 @@ class SimGamepadManager {
         }
     }
 
+    /**
+     * handleKeyPressed declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun handleKeyPressed(keyCode: Int, onRepaint: () -> Unit) {
         pressedKeys.add(keyCode)
         when (keyCode) {
@@ -270,6 +280,16 @@ class SimGamepadManager {
         onRepaint()
     }
 
+    /**
+     * handleKeyReleased declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun handleKeyReleased(keyCode: Int, onRepaint: () -> Unit) {
         pressedKeys.remove(keyCode)
         when (keyCode) {
@@ -282,6 +302,16 @@ class SimGamepadManager {
         onRepaint()
     }
 
+    /**
+     * getChassisSpeeds declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getChassisSpeeds(): ChassisSpeeds {
         var vx = 0.0
         var vy = 0.0

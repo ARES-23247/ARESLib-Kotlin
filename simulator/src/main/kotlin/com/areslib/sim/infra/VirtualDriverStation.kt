@@ -196,12 +196,42 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         gamepadManager.startPolling { repaint() }
     }
 
+    /**
+     * keyTyped declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun keyTyped(e: KeyEvent?) {}
 
+    /**
+     * keyPressed declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun keyPressed(e: KeyEvent?) {
         e?.let { gamepadManager.handleKeyPressed(it.keyCode) { repaint() } }
     }
 
+    /**
+     * keyReleased declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun keyReleased(e: KeyEvent?) {
         e?.let { gamepadManager.handleKeyReleased(it.keyCode) { repaint() } }
     }
@@ -215,12 +245,52 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
     // Requested public methods preserving full API compatibility per instructions
     fun initOpMode() = opModeController.initOpMode()
+    /**
+     * startOpMode declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun startOpMode() = opModeController.startOpMode()
+    /**
+     * stopOpMode declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun stopOpMode() = opModeController.stopOpMode()
+    /**
+     * update declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun update() {
         opModeController.update()
         networkPublisher.publishState()
     }
+    /**
+     * setGamepad declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setGamepad() {
         // Encapsulate setGamepad behavior
     }

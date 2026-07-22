@@ -8,15 +8,45 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * MockAnalogInput declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class MockAnalogInput : AnalogInput() {
     var mockVoltage: Double = 0.0
     override val voltage: Double
         get() = mockVoltage
 }
 
+/**
+ * HardwareBoundsTier2Test declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class HardwareBoundsTier2Test {
 
     @Test
+    /**
+     * testBrownoutGuardBatteryVoltageCompensationLimits declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testBrownoutGuardBatteryVoltageCompensationLimits() {
         val brownout = BrownoutGuard.ftcDefaults()
 
@@ -40,6 +70,16 @@ class HardwareBoundsTier2Test {
     }
 
     @Test
+    /**
+     * testFloodgateThermalLoadCalculationsAtExactCurrentBorders declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testFloodgateThermalLoadCalculationsAtExactCurrentBorders() {
         val analog = MockAnalogInput()
         // 3.3V full scale corresponds to 80A. 

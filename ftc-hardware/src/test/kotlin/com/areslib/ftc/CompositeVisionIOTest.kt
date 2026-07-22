@@ -10,8 +10,28 @@ import com.areslib.math.geometry.Rotation3d
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * CompositeVisionIOTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class CompositeVisionIOTest {
 
+    /**
+     * MockVisionIO declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     class MockVisionIO(
         private val connected: Boolean,
         private val measurementsList: List<VisionMeasurement>,
@@ -25,6 +45,16 @@ class CompositeVisionIOTest {
     }
 
     @Test
+    /**
+     * testAggregateMeasurements declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testAggregateMeasurements() {
         val measurement1 = VisionMeasurement(timestampMs = 100L, tagId = 1)
         val measurement2 = VisionMeasurement(timestampMs = 200L, tagId = 2)
@@ -50,6 +80,16 @@ class CompositeVisionIOTest {
     }
 
     @Test
+    /**
+     * testNoneConnected declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testNoneConnected() {
         val io1 = MockVisionIO(connected = false, measurementsList = emptyList())
         val io2 = MockVisionIO(connected = false, measurementsList = emptyList())

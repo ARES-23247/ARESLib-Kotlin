@@ -53,6 +53,16 @@ class AntiDriftController(
     var correctionVy: Double = 0.0
         private set
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(startPose: Pose2d) {
         baseOdometry.initialize(startPose)
         xPid.reset()
@@ -61,6 +71,16 @@ class AntiDriftController(
         correctionVy = 0.0
     }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: OdometryInputs) {
         baseOdometry.updateInputs(inputs)
 

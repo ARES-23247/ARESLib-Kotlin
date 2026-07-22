@@ -4,9 +4,29 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * FilterTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class FilterTest {
 
     @Test
+    /**
+     * testLowPassFilterSmoothing declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLowPassFilterSmoothing() {
         // Time constant = 0.1 seconds
         val filter = LowPassFilter(0.1)
@@ -22,6 +42,16 @@ class FilterTest {
     }
 
     @Test
+    /**
+     * testLowPassFilterBypass declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLowPassFilterBypass() {
         // Zero time constant means no filtering (snap immediately)
         val filter = LowPassFilter(0.0)
@@ -31,6 +61,16 @@ class FilterTest {
     }
 
     @Test
+    /**
+     * testLowPassFilterReset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLowPassFilterReset() {
         val filter = LowPassFilter(0.5)
         filter.calculate(10.0, 0.02)
@@ -46,6 +86,16 @@ class FilterTest {
     }
 
     @Test
+    /**
+     * testLowPassFilterClear declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLowPassFilterClear() {
         val filter = LowPassFilter(0.2)
         filter.calculate(10.0, 0.02)

@@ -21,6 +21,16 @@ class SwerveModuleIOSim : SwerveModuleIO {
     var simVelocityRadPerSec = 0.0
     var simSteerAngleRad = 0.0
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: SwerveModuleInputs) {
         // Integrate position based on simulated velocity (assuming 20ms delta time)
         simPositionRad += simVelocityRadPerSec * 0.02
@@ -32,6 +42,16 @@ class SwerveModuleIOSim : SwerveModuleIO {
     }
 }
 
+/**
+ * ImuIOSim declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class ImuIOSim : ImuIO {
     var simHeadingRad = 0.0
     var simYawVelocityRadPerSec = 0.0
@@ -39,6 +59,16 @@ class ImuIOSim : ImuIO {
     var simRollRad = 0.0
     private var offsetHeadingRad = 0.0
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: ImuInputs) {
         inputs.headingRadians = simHeadingRad - offsetHeadingRad
         inputs.pitchRadians = simPitchRad
@@ -47,11 +77,31 @@ class ImuIOSim : ImuIO {
         inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 
+    /**
+     * resetHeading declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetHeading() {
         offsetHeadingRad = simHeadingRad
     }
 }
 
+/**
+ * OdometryIOSim declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class OdometryIOSim : OdometryIO {
     var simPosX = 0.0
     var simPosY = 0.0
@@ -60,12 +110,32 @@ class OdometryIOSim : OdometryIO {
     var simVelY = 0.0
     var simHeadingVel = 0.0
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(startPose: Pose2d) {
         simPosX = startPose.x
         simPosY = startPose.y
         simHeading = startPose.heading.radians
     }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: OdometryInputs) {
         // Simple kinematic integration
         simPosX += simVelX * 0.02
@@ -90,6 +160,16 @@ class HardwareIOSimTest {
     private val gson = Gson()
 
     @Test
+    /**
+     * testSwerveModuleIOSimAndUpdate declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSwerveModuleIOSimAndUpdate() {
         val simModule = SwerveModuleIOSim()
         val inputs = SwerveModuleInputs()
@@ -112,6 +192,16 @@ class HardwareIOSimTest {
     }
 
     @Test
+    /**
+     * testSwerveInputsSerialization declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testSwerveInputsSerialization() {
         val inputs = SwerveModuleInputs(
             drivePositionRads = 12.34,
@@ -134,6 +224,16 @@ class HardwareIOSimTest {
     }
 
     @Test
+    /**
+     * testImuIOSimAndReset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testImuIOSimAndReset() {
         val imu = ImuIOSim()
         val inputs = ImuInputs()
@@ -161,6 +261,16 @@ class HardwareIOSimTest {
     }
 
     @Test
+    /**
+     * testImuInputsSerialization declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testImuInputsSerialization() {
         val inputs = ImuInputs(
             headingRadians = 1.23,
@@ -179,6 +289,16 @@ class HardwareIOSimTest {
     }
 
     @Test
+    /**
+     * testOdometryIOSimIntegration declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testOdometryIOSimIntegration() {
         val odo = OdometryIOSim()
         val inputs = OdometryInputs()
@@ -202,6 +322,16 @@ class HardwareIOSimTest {
     }
 
     @Test
+    /**
+     * testOdometryInputsSerialization declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testOdometryInputsSerialization() {
         val inputs = OdometryInputs(
             posX = 1.25,

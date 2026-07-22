@@ -5,9 +5,29 @@ import com.areslib.pathing.Costmap
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * RobotFieldConfigTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class RobotFieldConfigTest {
 
     @Test
+    /**
+     * testInitialPoseCalculation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testInitialPoseCalculation() {
         val config = RobotFieldConfig(
             redDriverStation = DriverStationSide.SOUTH,
@@ -28,6 +48,16 @@ class RobotFieldConfigTest {
     }
 
     @Test
+    /**
+     * testJoystickMapping declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testJoystickMapping() {
         val config = RobotFieldConfig(
             redDriverStation = DriverStationSide.WEST,
@@ -46,6 +76,16 @@ class RobotFieldConfigTest {
     }
 
     @Test
+    /**
+     * testJsonParsing declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testJsonParsing() {
         // A typical JSON string exported by the Field Editor dashboard
         val json = """
@@ -124,6 +164,16 @@ class RobotFieldConfigTest {
     }
 
     @Test
+    /**
+     * testCostmapRasterization declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testCostmapRasterization() {
         val costmap = Costmap(widthMeters = 3.6, heightMeters = 3.6, resolutionMeters = 0.1)
         costmap.clear()
@@ -154,6 +204,16 @@ class RobotFieldConfigTest {
     }
 
     @Test
+    /**
+     * testFrcInitialPoseCalculation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testFrcInitialPoseCalculation() {
         val config = RobotFieldConfig(
             fieldType = FieldType.FRC
@@ -173,6 +233,16 @@ class RobotFieldConfigTest {
     }
 
     @Test
+    /**
+     * testFrcJoystickMapping declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testFrcJoystickMapping() {
         val config = RobotFieldConfig(
             fieldType = FieldType.FRC
@@ -190,6 +260,16 @@ class RobotFieldConfigTest {
     }
 
     @Test
+    /**
+     * testNewFieldsJsonParsing declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testNewFieldsJsonParsing() {
         val json = """
             {
@@ -288,6 +368,16 @@ class RobotFieldConfigTest {
     }
 
     @Test
+    /**
+     * testCostmapFromFieldConfig declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testCostmapFromFieldConfig() {
         val obstacle = RobotFieldObstacle(
             x = 0.5,

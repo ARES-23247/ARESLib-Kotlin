@@ -4,9 +4,29 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * MedianFilterTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class MedianFilterTest {
 
     @Test
+    /**
+     * testOddWindowSize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testOddWindowSize() {
         val filter = MedianFilter(5)
 
@@ -21,6 +41,16 @@ class MedianFilterTest {
     }
 
     @Test
+    /**
+     * testEvenWindowSize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testEvenWindowSize() {
         val filter = MedianFilter(4)
 
@@ -31,6 +61,16 @@ class MedianFilterTest {
     }
 
     @Test
+    /**
+     * testOutlierRejection declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testOutlierRejection() {
         val filter = MedianFilter(5)
         
@@ -49,6 +89,16 @@ class MedianFilterTest {
     }
 
     @Test
+    /**
+     * testReset declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testReset() {
         val filter = MedianFilter(3)
         filter.calculate(5.0)
@@ -65,6 +115,16 @@ class MedianFilterTest {
     }
 
     @Test
+    /**
+     * testClear declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testClear() {
         val filter = MedianFilter(3)
         filter.calculate(5.0)

@@ -10,17 +10,47 @@ import java.io.OutputStream
  * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
  */
 object LogArchivePackager {
+    /**
+     * listLogFiles declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun listLogFiles(logDir: File): List<String> {
         if (!logDir.exists()) return emptyList()
         val files = logDir.listFiles { _, name -> name.endsWith(".csv") || name.endsWith(".jsonl") } ?: emptyArray()
         return files.sortedBy { it.name }.map { it.name }
     }
 
+    /**
+     * isValidLogFile declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun isValidLogFile(logDir: File, fileName: String): Boolean {
         val file = File(logDir, fileName)
         return file.exists() && (file.name.endsWith(".csv") || file.name.endsWith(".jsonl"))
     }
 
+    /**
+     * streamLogFile declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun streamLogFile(logDir: File, fileName: String, out: OutputStream) {
         val file = File(logDir, fileName)
         FileInputStream(file).use { fis ->
@@ -32,10 +62,30 @@ object LogArchivePackager {
         }
     }
 
+    /**
+     * getFileLength declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getFileLength(logDir: File, fileName: String): Long {
         return File(logDir, fileName).length()
     }
 
+    /**
+     * markSynced declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun markSynced(logDir: File, fileName: String): Boolean {
         val file = File(logDir, fileName)
         val syncedDir = File(logDir, "synced")

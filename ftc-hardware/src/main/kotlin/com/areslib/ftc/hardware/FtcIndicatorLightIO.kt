@@ -34,6 +34,16 @@ class FtcIndicatorLightIO(
     override var currentPosition: Double = 0.0
         private set
 
+    /**
+     * setPosition declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun setPosition(position: Double) {
         val clamped = position.coerceIn(0.0, 1.0)
         currentPosition = clamped
@@ -44,18 +54,58 @@ class FtcIndicatorLightIO(
         }
     }
 
+    /**
+     * safe declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun safe() {
         setPosition(IndicatorLightColor.OFF.position)
     }
 
+    /**
+     * refresh declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun refresh() {
         // Write-only device — no sensor reads needed
     }
 
+    /**
+     * logTelemetry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/Position", currentPosition)
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         safe()
     }

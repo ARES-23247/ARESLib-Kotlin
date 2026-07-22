@@ -49,12 +49,32 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
 
     override val size: Int get() = count
 
+    /**
+     * get declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun get(index: Int): PoseHistoryEntry {
         if (index < 0 || index >= count) throw IndexOutOfBoundsException("Index: $index, Size: $count")
         val physicalIndex = if (count == capacity) (head + index) % capacity else index
         return entries[physicalIndex]
     }
 
+    /**
+     * addEntry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun addEntry(timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
         val entry = entries[head]
         entry.timestampMs = timestampMs
@@ -65,6 +85,16 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         if (count < capacity) count++
     }
 
+    /**
+     * deepCopy declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun deepCopy(): HistoryBuffer {
         val newBuf = HistoryBuffer(capacity)
         for (i in 0 until capacity) {
@@ -82,6 +112,16 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         return newBuf
     }
 
+    /**
+     * copyInto declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun copyInto(destination: HistoryBuffer) {
         destination.head = this.head
         destination.count = this.count
@@ -106,6 +146,16 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         entry.qScale = qScale
     }
 
+    /**
+     * updateEntryDirect declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateEntryDirect(index: Int, timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3, qScale: Double) {
         val entry = get(index)
         entry.timestampMs = timestampMs
@@ -217,6 +267,16 @@ object PoseEstimator {
     @JvmField
     var activeTags: Map<Int, Pose3d> = FieldLayouts.SQUARE_STANDARD_TAGS
 
+    /**
+     * addOdometryObservation declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun addOdometryObservation(
         state: PoseEstimatorState,
         timestampMs: Long,
@@ -236,6 +296,16 @@ object PoseEstimator {
         )
     }
 
+    /**
+     * addVisionMeasurement declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun addVisionMeasurement(
         state: PoseEstimatorState,
         measurement: VisionMeasurement,

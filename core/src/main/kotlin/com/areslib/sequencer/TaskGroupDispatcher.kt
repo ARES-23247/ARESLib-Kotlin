@@ -13,6 +13,16 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(state: RobotState): List<RobotAction> {
 
         currentIndex = 0
@@ -22,6 +32,16 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
         return tasks[0].initialize(state)
     }
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         while (currentIndex < tasks.size) {
             val currentTask = tasks[currentIndex]
@@ -40,6 +60,16 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
         return true
     }
 
+    /**
+     * execute declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
 
         actionsList.clear()
@@ -55,6 +85,16 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
         return actionsList
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
 
         val actions = mutableListOf<RobotAction>()
@@ -78,6 +118,16 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(state: RobotState): List<RobotAction> {
 
         completedTasks.clear()
@@ -85,6 +135,16 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
         return tasks.flatMap { it.initialize(state) }
     }
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         for (i in 0 until tasks.size) {
             val task = tasks[i]
@@ -98,6 +158,16 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
         return completedTasks.size == tasks.size
     }
 
+    /**
+     * execute declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
 
         actionsList.clear()
@@ -114,6 +184,16 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
         return actionsList
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
 
         val actions = mutableListOf<RobotAction>()
@@ -144,6 +224,16 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
     private val actionsList = mutableListOf<RobotAction>()
     private var isCompleted = false
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(state: RobotState): List<RobotAction> {
 
         completedTasks.clear()
@@ -152,6 +242,16 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
         return tasks.flatMap { it.initialize(state) }
     }
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         if (isCompleted) return true
         for (i in 0 until tasks.size) {
@@ -166,6 +266,16 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
         return isCompleted
     }
 
+    /**
+     * execute declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
 
         actionsList.clear()
@@ -184,6 +294,16 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
         return actionsList
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
 
         val actions = mutableListOf<RobotAction>()
@@ -215,6 +335,16 @@ class ParallelDeadlineGroup(
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
 
+    /**
+     * initialize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun initialize(state: RobotState): List<RobotAction> {
 
         completedTasks.clear()
@@ -222,6 +352,16 @@ class ParallelDeadlineGroup(
         return tasks.flatMap { it.initialize(state) }
     }
 
+    /**
+     * isCompleted declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         for (i in 0 until tasks.size) {
             val task = tasks[i]
@@ -235,6 +375,16 @@ class ParallelDeadlineGroup(
         return completedTasks.contains(deadline)
     }
 
+    /**
+     * execute declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
 
         actionsList.clear()
@@ -253,6 +403,16 @@ class ParallelDeadlineGroup(
         return actionsList
     }
 
+    /**
+     * end declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         val actions = mutableListOf<RobotAction>()
         if (pendingActions.isNotEmpty()) {

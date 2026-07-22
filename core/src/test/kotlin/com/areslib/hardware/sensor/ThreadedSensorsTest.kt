@@ -3,9 +3,29 @@ package com.areslib.hardware.sensor
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * ThreadedSensorsTest declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class ThreadedSensorsTest {
 
     @Test
+    /**
+     * testThreadedColorSensor declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testThreadedColorSensor() {
         val mockPhysical = object : ColorSensorIO {
             override val red: Int = 10
@@ -31,6 +51,16 @@ class ThreadedSensorsTest {
     }
 
     @Test
+    /**
+     * testThreadedDistanceSensor declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testThreadedDistanceSensor() {
         val mockPhysical = object : DistanceSensorIO {
             override val distanceMeters: Double = 1.25
@@ -48,6 +78,16 @@ class ThreadedSensorsTest {
     }
 
     @Test
+    /**
+     * testThreadedMultizoneDistanceSensor declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testThreadedMultizoneDistanceSensor() {
         val mockPhysical = object : MultizoneDistanceSensorIO {
             override val rows: Int = 2

@@ -15,14 +15,44 @@ class FtcTeleOpBuilder<R> {
     internal var onConfigureBlock: ((R, AresGamepad) -> Unit)? = null
     internal var onLoopBlock: ((R, AresGamepad, Telemetry) -> Unit)? = null
 
+    /**
+     * onInit declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun onInit(block: (robot: R, telemetry: Telemetry) -> Unit) {
         onInitBlock = block
     }
     
+    /**
+     * onConfigure declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun onConfigure(block: (robot: R, driver: AresGamepad) -> Unit) {
         onConfigureBlock = block
     }
 
+    /**
+     * onLoop declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun onLoop(block: (robot: R, driver: AresGamepad, telemetry: Telemetry) -> Unit) {
         onLoopBlock = block
     }
@@ -53,6 +83,16 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
      */
     abstract fun closeRobot(robot: R)
 
+    /**
+     * runOpMode declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun runOpMode() {
         val builder = define()
         

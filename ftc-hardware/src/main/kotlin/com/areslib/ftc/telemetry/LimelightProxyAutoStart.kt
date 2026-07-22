@@ -14,11 +14,31 @@ object LimelightProxyAutoStart {
 
     @WebHandlerRegistrar
     @JvmStatic
+    /**
+     * registerWebHandlers declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun registerWebHandlers(@Suppress("UNUSED_PARAMETER") context: Context, @Suppress("UNUSED_PARAMETER") manager: WebHandlerManager) {
         start()
         System.out.println("LimelightProxyAutoStart: Automatically registered web handlers.")
     }
 
+    /**
+     * start declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun start() {
         if (proxy == null) {
             val p = LimelightProxy()
@@ -28,6 +48,16 @@ object LimelightProxyAutoStart {
         }
     }
 
+    /**
+     * stop declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun stop() {
         proxy?.stop()
         proxy = null

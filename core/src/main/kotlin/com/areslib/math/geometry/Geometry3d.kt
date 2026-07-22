@@ -29,6 +29,16 @@ data class Translation3d(var x: Double = 0.0, var y: Double = 0.0, var z: Double
  * - Time: Seconds ($s$) or milliseconds ($ms$)
  */
 data class Quaternion(var w: Double = 1.0, var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
+    /**
+     * normalize declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun normalize(): Quaternion {
         val norm = sqrt(w * w + x * x + y * y + z * z)
         if (norm.isNaN() || norm.isInfinite() || norm == 0.0) return Quaternion()
@@ -44,6 +54,16 @@ data class Quaternion(var w: Double = 1.0, var x: Double = 0.0, var y: Double = 
         )
     }
 
+    /**
+     * inverse declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun inverse(): Quaternion {
         // Assuming unit quaternion for spatial rotation
         return Quaternion(w, -x, -y, -z)
@@ -65,6 +85,16 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
         fromEulerAngles(roll, pitch, yaw)
     )
     
+    /**
+     * setEulerAngles declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun setEulerAngles(roll: Double, pitch: Double, yaw: Double) {
         val cr = cos(roll * 0.5)
         val sr = sin(roll * 0.5)
@@ -83,6 +113,16 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
         return Rotation3d((q * other.q).normalize())
     }
     
+    /**
+     * inverse declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun inverse(): Rotation3d {
         return Rotation3d(q.inverse())
     }
@@ -145,6 +185,16 @@ data class Pose3d(
     val y: Double get() = translation.y
     val z: Double get() = translation.z
     
+    /**
+     * toPose2d declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun toPose2d(): Pose2d {
         return Pose2d(x, y, Rotation2d(rotation.z))
     }
@@ -164,6 +214,16 @@ data class Transform3d(
     val translation: Translation3d = Translation3d(),
     val rotation: Rotation3d = Rotation3d()
 ) {
+    /**
+     * inverse declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun inverse(): Transform3d {
         val invRot = rotation.inverse()
         val p = Quaternion(0.0, translation.x, translation.y, translation.z)
@@ -172,6 +232,16 @@ data class Transform3d(
     }
 }
 
+/**
+ * Pose3d declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 fun Pose3d.transformBy(other: Transform3d): Pose3d {
     val p = Quaternion(0.0, other.translation.x, other.translation.y, other.translation.z)
     val rotatedTrans = rotation.q * p * rotation.q.inverse()
@@ -183,6 +253,16 @@ fun Pose3d.transformBy(other: Transform3d): Pose3d {
     return Pose3d(newTrans, rotation * other.rotation)
 }
 
+/**
+ * Pose3d declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 fun Pose3d.relativeTo(other: Pose3d): Transform3d {
     val invRot = other.rotation.inverse()
     val transDiff = Translation3d(

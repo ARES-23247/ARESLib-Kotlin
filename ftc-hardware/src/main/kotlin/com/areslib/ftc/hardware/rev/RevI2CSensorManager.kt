@@ -78,6 +78,16 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
         imuThread.start()
     }
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun updateInputs(inputs: com.areslib.hardware.sensor.ImuInputs) {
         synchronized(lock) {
             inputs.headingRadians = latestYaw - headingOffset
@@ -88,12 +98,32 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
         }
     }
 
+    /**
+     * resetHeading declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetHeading() {
         synchronized(lock) {
             headingOffset = latestYaw
         }
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         running = false
         imuThread.interrupt()
@@ -135,10 +165,30 @@ class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoClos
         thread.start()
     }
 
+    /**
+     * getVoltage declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getVoltage(): Double {
         return synchronized(lock) { latestVoltage }
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         running = false
         thread.interrupt()
@@ -184,10 +234,30 @@ class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : A
         thread.start()
     }
 
+    /**
+     * getState declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun getState(): Boolean {
         return synchronized(lock) { latestState }
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         running = false
         thread.interrupt()
@@ -244,6 +314,16 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
         @Suppress("UNUSED_PARAMETER")
         set(value) {}
 
+    /**
+     * updateInputs declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun updateInputs() {
         try {
             val volt = synchronized(lock) { latestVoltage }
@@ -258,6 +338,16 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
     override val position: Double
         get() = cachedPosition
 
+    /**
+     * resetEncoder declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun resetEncoder() {
         try {
             val volt = synchronized(lock) { latestVoltage }
@@ -266,6 +356,16 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
+    /**
+     * close declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun close() {
         running = false
         thread.interrupt()

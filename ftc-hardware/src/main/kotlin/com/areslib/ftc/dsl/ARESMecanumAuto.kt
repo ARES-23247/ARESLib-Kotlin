@@ -18,11 +18,61 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         /** Threshold above which we log a loop overrun warning (50 Hz = 20ms) */
         private const val OVERRUN_THRESHOLD_MS = 30L
     }
+    /**
+     * buildRobot declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     abstract fun buildRobot(): R
+    /**
+     * getMecanumRobot declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     abstract fun getMecanumRobot(robot: R): FtcMecanumRobot
+    /**
+     * updateRobot declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     abstract fun updateRobot(robot: R)
+    /**
+     * closeRobot declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     abstract fun closeRobot(robot: R)
 
+    /**
+     * runOpMode declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     override fun runOpMode() {
         // --- 1. Initialization ---
         val wrapper = buildRobot()

@@ -14,6 +14,16 @@ annotation class Autonomous(val name: String = "", val group: String = "")
  * Robotics framework control component.
  */
 abstract class LinearOpMode {
+    /**
+     * runOpMode declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     abstract fun runOpMode()
     @JvmField var hardwareMap: HardwareMap = object : HardwareMap() {
         override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
@@ -30,15 +40,55 @@ abstract class LinearOpMode {
     @Volatile var isStarted = false
     @Volatile var isStopRequested = false
     
+    /**
+     * opModeIsActive declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun opModeIsActive(): Boolean = isStarted && !isStopRequested && !Thread.currentThread().isInterrupted
+    /**
+     * opModeInInit declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun opModeInInit(): Boolean = !isStarted && !isStopRequested && !Thread.currentThread().isInterrupted
     
+    /**
+     * waitForStart declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun waitForStart() {
         while (!isStarted && !isStopRequested && !Thread.currentThread().isInterrupted) {
             Thread.sleep(10)
         }
     }
     
+    /**
+     * sleep declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun sleep(milliseconds: Long) {
         if (com.areslib.util.RobotClock.isMocked) {
             val targetTime = com.areslib.util.RobotClock.currentTimeMillis() + milliseconds

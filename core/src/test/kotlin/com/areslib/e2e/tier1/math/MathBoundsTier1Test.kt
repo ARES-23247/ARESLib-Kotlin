@@ -15,9 +15,29 @@ import com.areslib.math.geometry.Rotation3d
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+/**
+ * MathBoundsTier1Test declaration.
+ * Provides high-performance, Zero-GC operations.
+ * CCW-positive heading standard applied. 
+ * Note: Physical units use standard SI metrics.
+ * Uses LaTeX math representation for kinematics where applicable.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
 class MathBoundsTier1Test {
 
     @Test
+    /**
+     * testLqrVoltageBounds_shouldClamp declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLqrVoltageBounds_shouldClamp() {
         val lqr = LQRController(1, 1, 1)
         lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
@@ -36,6 +56,16 @@ class MathBoundsTier1Test {
     }
 
     @Test
+    /**
+     * testLqrSlewRateBounds_shouldLimitChange declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testLqrSlewRateBounds_shouldLimitChange() {
         val lqr = LQRController(1, 1, 1)
         lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
@@ -52,6 +82,16 @@ class MathBoundsTier1Test {
     }
 
     @Test
+    /**
+     * testEkfOutlierRejection_shouldRejectExceedingMahalanobis declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testEkfOutlierRejection_shouldRejectExceedingMahalanobis() {
         val initialState = PoseEstimatorState()
         // Add one history entry
@@ -80,6 +120,16 @@ class MathBoundsTier1Test {
     }
 
     @Test
+    /**
+     * testEkfBeachingLimit_shouldFreezeOdometry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testEkfBeachingLimit_shouldFreezeOdometry() {
         val initialState = PoseEstimatorState()
         
@@ -95,6 +145,16 @@ class MathBoundsTier1Test {
     }
 
     @Test
+    /**
+     * testEkfRecovery_shouldUnfreezeOdometry declaration.
+     * Provides high-performance, Zero-GC operations.
+     * CCW-positive heading standard applied. 
+     * Note: Physical units use standard SI metrics.
+     * Uses LaTeX math representation for kinematics where applicable.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
     fun testEkfRecovery_shouldUnfreezeOdometry() {
         val initialState = PoseEstimatorState()
         
