@@ -260,31 +260,28 @@ object DesktopSimLauncher {
             val rlP = robotDouble.rl.power
             val rrP = robotDouble.rr.power
 
-            val rawVx = (flP + frP + rlP + rrP) / 4.0 * 2.6
-            val rawVy = (-flP + frP + rlP - rrP) / 4.0 * 2.6
-            val rawOmega = (-flP + frP - rlP + rrP) / 4.0 * 3.5
+            val isNoInput = kotlin.math.abs(flP) < 1e-3 && kotlin.math.abs(frP) < 1e-3 && 
+                            kotlin.math.abs(rlP) < 1e-3 && kotlin.math.abs(rrP) < 1e-3
 
-            val heading = currentPhysPose.heading.radians
-            val cosH = kotlin.math.cos(heading)
-            val sinH = kotlin.math.sin(heading)
+            if (isNoInput) {
+                physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(0.0, 0.0)
+                physicsWorld.robotBody.angularVelocity = 0.0
+            } else {
+                val rawVx = (flP + frP + rlP + rrP) / 4.0 * 2.6
+                val rawVy = (-flP + frP + rlP - rrP) / 4.0 * 2.6
+                val rawOmega = (-flP + frP - rlP + rrP) / 4.0 * 3.5
 
-            val targetFieldVx = rawVx * cosH - rawVy * sinH
-            val targetFieldVy = rawVx * sinH + rawVy * cosH
+                val heading = currentPhysPose.heading.radians
+                val cosH = kotlin.math.cos(heading)
+                val sinH = kotlin.math.sin(heading)
 
-            val curVx = physicsWorld.robotBody.linearVelocity.x
-            val curVy = physicsWorld.robotBody.linearVelocity.y
-            val curOmega = physicsWorld.robotBody.angularVelocity
+                val fieldVx = rawVx * cosH - rawVy * sinH
+                val fieldVy = rawVx * sinH + rawVy * cosH
 
-            val maxLinearStep = 8.0 * TIMESTEP_SEC
-            val maxAngularStep = 15.0 * TIMESTEP_SEC
-
-            val newVx = curVx + (targetFieldVx - curVx).coerceIn(-maxLinearStep, maxLinearStep)
-            val newVy = curVy + (targetFieldVy - curVy).coerceIn(-maxLinearStep, maxLinearStep)
-            val newOmega = curOmega + (rawOmega - curOmega).coerceIn(-maxAngularStep, maxAngularStep)
-
-            physicsWorld.robotBody.setAtRest(false)
-            physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(newVx, newVy)
-            physicsWorld.robotBody.angularVelocity = newOmega
+                physicsWorld.robotBody.setAtRest(false)
+                physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(fieldVx, fieldVy)
+                physicsWorld.robotBody.angularVelocity = rawOmega
+            }
 
             physicsWorld.world.step(1)
 

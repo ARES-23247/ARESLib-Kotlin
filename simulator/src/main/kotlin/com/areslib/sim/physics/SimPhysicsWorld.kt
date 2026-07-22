@@ -76,12 +76,11 @@ class SimPhysicsWorld {
         } else {
             var obstaclesFile: File? = null
             val obsPaths = listOf(
+                "c:/Users/david/dev/robotics/ftc/ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json",
+                "../ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json",
                 "src/main/assets/paths/obstacles.json",
                 "TeamCode/src/main/assets/paths/obstacles.json",
-                "../src/main/assets/paths/obstacles.json",
-                "src/main/deploy/paths/obstacles.json",
-                "frc-app/src/main/deploy/paths/obstacles.json",
-                "../src/main/deploy/paths/obstacles.json"
+                "../src/main/assets/paths/obstacles.json"
             )
             for (p in obsPaths) {
                 val f = File(p)
@@ -108,12 +107,11 @@ class SimPhysicsWorld {
 
             var gamePiecesFile: File? = null
             val gpPaths = listOf(
+                "c:/Users/david/dev/robotics/ftc/ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json",
+                "../ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json",
                 "src/main/assets/paths/game_pieces.json",
                 "TeamCode/src/main/assets/paths/game_pieces.json",
-                "../src/main/assets/paths/game_pieces.json",
-                "src/main/deploy/paths/game_pieces.json",
-                "frc-app/src/main/deploy/paths/game_pieces.json",
-                "../src/main/deploy/paths/game_pieces.json"
+                "../src/main/assets/paths/game_pieces.json"
             )
             for (p in gpPaths) {
                 val f = File(p)
