@@ -105,8 +105,36 @@ class SimPhysicsWorld {
                     println("Failed to load initial field obstacles: ${e.message}")
                 }
             }
+
+            var gamePiecesFile: File? = null
+            val gpPaths = listOf(
+                "src/main/assets/paths/game_pieces.json",
+                "TeamCode/src/main/assets/paths/game_pieces.json",
+                "../src/main/assets/paths/game_pieces.json",
+                "src/main/deploy/paths/game_pieces.json",
+                "frc-app/src/main/deploy/paths/game_pieces.json",
+                "../src/main/deploy/paths/game_pieces.json"
+            )
+            for (p in gpPaths) {
+                val f = File(p)
+                if (f.exists()) {
+                    gamePiecesFile = f
+                    break
+                }
+            }
+            if (gamePiecesFile != null) {
+                try {
+                    println("[Simulator] Loading game pieces from: ${gamePiecesFile.absolutePath}")
+                    val content = gamePiecesFile.readText()
+                    val loadedGp = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
+                    gamePieces.addAll(loadedGp)
+                } catch (e: Exception) {
+                    println("Failed to load initial game pieces: ${e.message}")
+                }
+            }
         }
     }
+
 
     private fun createWalls() {
         val halfW = FIELD_WIDTH / 2.0

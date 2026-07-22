@@ -22,7 +22,7 @@ import java.io.File
  * Robotics framework control component.
  */
 object DesktopSimLauncher {
-    private const val TIMESTEP_SEC = 0.02
+    private const val TIMESTEP_SEC = 0.01
 
 
     @Volatile private var sumSqErrorX = 0.0
@@ -318,13 +318,14 @@ object DesktopSimLauncher {
             }
 
             if (RobotClock.isMocked) {
-                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
+                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 10)
             }
             try {
-                Thread.sleep(20)
+                Thread.sleep(10)
             } catch (_: InterruptedException) {
                 break
             }
+
         }
     }
 }
