@@ -19,6 +19,9 @@ object TelemetryPublisher {
     private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").publish(
         edu.wpi.first.networktables.PubSubOption.periodic(0.01)
     )
+    private val truePosePublisher = ntInst.getDoubleArrayTopic("ARES/TruePose").publish(
+        edu.wpi.first.networktables.PubSubOption.periodic(0.01)
+    )
     private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("ARES/GamePieces").publish()
     private val timestampPub = ntInst.getIntegerTopic("TimestampMs").publish()
 
@@ -124,6 +127,18 @@ object TelemetryPublisher {
         val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
         estimatedPosePublisher.set(arr)
         org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose", arr)
+        ntInst.flush()
+    }
+
+    /**
+     * Publishes the true ground truth physics pose from Dyn4j.
+     *
+     * @param pose The true field-relative physics pose.
+     */
+    fun publishTruePose(pose: com.areslib.math.geometry.Pose2d) {
+        val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
+        truePosePublisher.set(arr)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose", arr)
         ntInst.flush()
     }
 

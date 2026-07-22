@@ -283,28 +283,18 @@ object DesktopSimLauncher {
             val omega = physicsWorld.robotBody.angularVelocity
             robotDouble.updateSensors(TIMESTEP_SEC, vx, vy, omega, currentPhysPose.x, currentPhysPose.y, currentPhysPose.heading.radians, ccwPos)
 
-            TelemetryPublisher.publishEstimatedPose(currentPhysPose)
+            TelemetryPublisher.publishTruePose(currentPhysPose)
             TelemetryPublisher.getWebVx()
             TelemetryPublisher.getWebVy()
             TelemetryPublisher.getWebOmega()
 
             val activeInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
             if (activeInstance != null) {
-                activeInstance.update()
                 val state = activeInstance.store.state
                 TelemetryPublisher.publish(state)
                 
                 val ekfPose = state.drive.poseEstimator.estimatedPose
                 TelemetryPublisher.publishTargetPose(ekfPose)
-
-                // Dual-publish EKF, Odometry, and Motor hardware metrics directly to pure Java NT4Server
-                ntInst.putNumber("Drive/Pose_X", ekfPose.x)
-                ntInst.putNumber("Drive/Pose_Y", ekfPose.y)
-                ntInst.putNumber("Drive/Drive_Heading", ekfPose.heading.radians)
-
-                ntInst.putNumber("Drive/Odom_X", state.drive.odometryX)
-                ntInst.putNumber("Drive/Odom_Y", state.drive.odometryY)
-                ntInst.putNumber("Drive/Odom_Heading", state.drive.odometryHeading)
 
                 ntInst.putNumber("Hardware/Motors/fl/Power", robotDouble.fl.power)
                 ntInst.putNumber("Hardware/Motors/fr/Power", robotDouble.fr.power)
