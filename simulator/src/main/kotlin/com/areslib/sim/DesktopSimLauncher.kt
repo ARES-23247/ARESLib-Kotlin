@@ -22,7 +22,8 @@ import java.io.File
  * Robotics framework control component.
  */
 object DesktopSimLauncher {
-    private const val TIMESTEP_SEC = 0.01
+    private const val TIMESTEP_SEC = 0.02
+
 
     @Volatile private var sumSqErrorX = 0.0
     @Volatile private var sumSqErrorY = 0.0
