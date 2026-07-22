@@ -153,37 +153,39 @@ object DesktopSimLauncher {
             Unit
         }
 
-        val activeOpMode = SimOpModeRunner.createOpModeInstance(opModeArg, cliArgs.opModeClassName)
-        if (activeOpMode != null) {
-            activeOpMode.hardwareMap = robotDouble.hardwareMap
+        val activeOpMode = SimOpModeRunner.createOpModeInstance(
+            opModeArg,
+            cliArgs.opModeClassName
+        ) ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
 
-            Thread {
-                try {
-                    activeOpMode.runOpMode()
-                } catch (_: InterruptedException) {
-                } catch (e: Exception) {
-                    System.err.println("OpMode Thread terminated: ${e.message}")
-                    e.printStackTrace()
-                }
-            }.apply {
-                isDaemon = true
-                start()
+        activeOpMode.hardwareMap = robotDouble.hardwareMap
+
+        Thread {
+            try {
+                activeOpMode.runOpMode()
+            } catch (_: InterruptedException) {
+            } catch (e: Exception) {
+                System.err.println("OpMode Thread terminated: ${e.message}")
+                e.printStackTrace()
             }
-
-            val initStartTime = RobotClock.currentTimeMillis()
-            while (RobotClock.currentTimeMillis() - initStartTime < 1500) {
-                val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
-                robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians, ccwPos)
-                if (RobotClock.isMocked) {
-                    RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
-                }
-                Thread.sleep(20)
-            }
-
-            println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
-            syncRobotPoseToPhysics()
-            activeOpMode.isStarted = true
+        }.apply {
+            isDaemon = true
+            start()
         }
+
+        val initStartTime = RobotClock.currentTimeMillis()
+        while (RobotClock.currentTimeMillis() - initStartTime < 1500) {
+            val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
+            robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians, ccwPos)
+            if (RobotClock.isMocked) {
+                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
+            }
+            Thread.sleep(20)
+        }
+
+        println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
+        syncRobotPoseToPhysics()
+        activeOpMode.isStarted = true
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
@@ -200,10 +202,6 @@ object DesktopSimLauncher {
             val frP = robotDouble.fr.power
             val rlP = robotDouble.rl.power
             val rrP = robotDouble.rr.power
-
-            if (flP != 0.0 || frP != 0.0 || rlP != 0.0 || rrP != 0.0) {
-                println("[SimStep] Powers: FL=%.2f, FR=%.2f, RL=%.2f, RR=%.2f".format(flP, frP, rlP, rrP))
-            }
 
             val robotVx = (flP + frP + rlP + rrP) / 4.0 * 2.5
             val robotVy = (-flP + frP + rlP - rrP) / 4.0 * 2.5
@@ -234,8 +232,31 @@ object DesktopSimLauncher {
 
             val activeInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
             if (activeInstance != null) {
-                val ekfPose = activeInstance.store.state.drive.poseEstimator.estimatedPose
+                val state = activeInstance.store.state
+                TelemetryPublisher.publish(state)
+                
+                val ekfPose = state.drive.poseEstimator.estimatedPose
                 TelemetryPublisher.publishTargetPose(ekfPose)
+
+                // Dual-publish EKF, Odometry, and Motor hardware metrics directly to pure Java NT4Server
+                val ntInst = org.frcforftc.networktables.NetworkTablesInstance.getDefaultInstance()
+                ntInst.putNumber("Drive/Pose_X", ekfPose.x)
+                ntInst.putNumber("Drive/Pose_Y", ekfPose.y)
+                ntInst.putNumber("Drive/Drive_Heading", ekfPose.heading.radians)
+
+                ntInst.putNumber("Drive/Odom_X", state.drive.odometryX)
+                ntInst.putNumber("Drive/Odom_Y", state.drive.odometryY)
+                ntInst.putNumber("Drive/Odom_Heading", state.drive.odometryHeading)
+
+                ntInst.putNumber("Hardware/Motors/fl/Power", robotDouble.fl.power)
+                ntInst.putNumber("Hardware/Motors/fr/Power", robotDouble.fr.power)
+                ntInst.putNumber("Hardware/Motors/rl/Power", robotDouble.rl.power)
+                ntInst.putNumber("Hardware/Motors/rr/Power", robotDouble.rr.power)
+
+                ntInst.putNumber("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
+                ntInst.putNumber("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
+                ntInst.putNumber("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
+                ntInst.putNumber("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
             }
 
             if (RobotClock.isMocked) {
@@ -249,3 +270,5 @@ object DesktopSimLauncher {
         }
     }
 }
+
+
