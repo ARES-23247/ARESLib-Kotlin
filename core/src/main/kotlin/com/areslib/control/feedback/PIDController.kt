@@ -78,12 +78,15 @@ class PIDController(
         maxIntegral = max
     }
 
+    private var isFirstStep: Boolean = true
+
     /**
      * Resets the accumulated integral error and previous error state to zero.
      */
     fun reset() {
         prevError = 0.0
         totalError = 0.0
+        isFirstStep = true
     }
 
     /**
@@ -142,7 +145,8 @@ class PIDController(
         if (!minIntegral.isNaN()) { totalError = kotlin.math.max(totalError, minIntegral) }
         if (!maxIntegral.isNaN()) { totalError = kotlin.math.min(totalError, maxIntegral) }
         
-        val velocityError = (error - prevError) / dtSeconds
+        val velocityError = if (isFirstStep) 0.0 else (error - prevError) / dtSeconds
+        isFirstStep = false
         prevError = error
 
         var output = p * error + i * totalError + d * velocityError

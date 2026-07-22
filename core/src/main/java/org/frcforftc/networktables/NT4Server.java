@@ -234,7 +234,17 @@ public class NT4Server extends WebSocketServer {
     }
 
     public NetworkTablesMessage decodeNT4Message(ByteBuffer message) throws IOException {
-        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(message.array());
+        byte[] bytes;
+        if (message.hasArray()) {
+            int offset = message.arrayOffset() + message.position();
+            int length = message.remaining();
+            bytes = java.util.Arrays.copyOfRange(message.array(), offset, offset + length);
+        } else {
+            bytes = new byte[message.remaining()];
+            ByteBuffer copy = message.duplicate();
+            copy.get(bytes);
+        }
+        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(bytes);
         unpacker.unpackArrayHeader();
         long id = unpacker.unpackLong();
         long timestamp = unpacker.unpackLong();
@@ -503,5 +513,31 @@ public class NT4Server extends WebSocketServer {
 
     public Map<String, NetworkTablesEntry> getEntries() {
         return m_entries;
+    }
+
+    public static double getDouble(String topic, double defaultValue) {
+        if (m_server == null) return defaultValue;
+        NetworkTablesEntry entry = m_entries.get(topic);
+        if (entry == null) {
+            entry = m_entries.get("/" + topic);
+        }
+        if (entry == null && topic.startsWith("/")) {
+            entry = m_entries.get(topic.substring(1));
+        }
+        if (entry != null && entry.getValue() != null && entry.getValue().get() != null) {
+            Object v = entry.getValue().get();
+            if (v instanceof Number) {
+                return ((Number) v).doubleValue();
+            }
+        }
+        return defaultValue;
+    }
+
+    public static void publishTopic(String topic, Object value) {
+        if (m_server != null) {
+            String cleanTopic = topic.startsWith("/") ? topic.substring(1) : topic;
+            m_server.putTopic(cleanTopic, value);
+            m_server.flush();
+        }
     }
 }

@@ -141,6 +141,17 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
                 g1State.update(gamepad1)
                 g2State.update(gamepad2)
                 
+                try {
+                    val webVx = com.areslib.telemetry.SimInputBridge.webVx
+                    val webVy = com.areslib.telemetry.SimInputBridge.webVy
+                    val webOmega = com.areslib.telemetry.SimInputBridge.webOmega
+                    if (webVx != 0.0 || webVy != 0.0 || webOmega != 0.0) {
+                        g1State.leftStickY = (-webVy).toFloat()
+                        g1State.leftStickX = webVx.toFloat()
+                        g1State.rightStickX = (-webOmega).toFloat()
+                    }
+                } catch (_: Throwable) {}
+                
                 driver.update(g1State)
                 
                 // Allow the user DSL loop to dispatch inputs

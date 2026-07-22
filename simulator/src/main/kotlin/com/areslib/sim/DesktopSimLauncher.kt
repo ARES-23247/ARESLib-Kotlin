@@ -186,5 +186,66 @@ object DesktopSimLauncher {
         }
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
+
+        while (true) {
+            val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
+            val currentPhysPose = Pose2d(
+                physicsWorld.robotBody.transform.translationX,
+                physicsWorld.robotBody.transform.translationY,
+                Rotation2d(physicsWorld.robotBody.transform.rotationAngle)
+            )
+
+            // Drive Dyn4j physics body from simulated motor powers
+            val flP = robotDouble.fl.power
+            val frP = robotDouble.fr.power
+            val rlP = robotDouble.rl.power
+            val rrP = robotDouble.rr.power
+
+            if (flP != 0.0 || frP != 0.0 || rlP != 0.0 || rrP != 0.0) {
+                println("[SimStep] Powers: FL=%.2f, FR=%.2f, RL=%.2f, RR=%.2f".format(flP, frP, rlP, rrP))
+            }
+
+            val robotVx = (flP + frP + rlP + rrP) / 4.0 * 2.5
+            val robotVy = (-flP + frP + rlP - rrP) / 4.0 * 2.5
+            val robotOmega = (-flP + frP - rlP + rrP) / (4.0 * 0.45) * 2.5
+
+            val heading = currentPhysPose.heading.radians
+            val cosH = kotlin.math.cos(heading)
+            val sinH = kotlin.math.sin(heading)
+
+            val fieldVx = robotVx * cosH - robotVy * sinH
+            val fieldVy = robotVx * sinH + robotVy * cosH
+
+            physicsWorld.robotBody.setAtRest(false)
+            physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(fieldVx, fieldVy)
+            physicsWorld.robotBody.angularVelocity = robotOmega
+
+            physicsWorld.world.step(1)
+
+            val vx = physicsWorld.robotBody.linearVelocity.x
+            val vy = physicsWorld.robotBody.linearVelocity.y
+            val omega = physicsWorld.robotBody.angularVelocity
+            robotDouble.updateSensors(TIMESTEP_SEC, vx, vy, omega, currentPhysPose.x, currentPhysPose.y, currentPhysPose.heading.radians, ccwPos)
+
+            TelemetryPublisher.publishEstimatedPose(currentPhysPose)
+            TelemetryPublisher.getWebVx()
+            TelemetryPublisher.getWebVy()
+            TelemetryPublisher.getWebOmega()
+
+            val activeInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
+            if (activeInstance != null) {
+                val ekfPose = activeInstance.store.state.drive.poseEstimator.estimatedPose
+                TelemetryPublisher.publishTargetPose(ekfPose)
+            }
+
+            if (RobotClock.isMocked) {
+                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
+            }
+            try {
+                Thread.sleep(20)
+            } catch (_: InterruptedException) {
+                break
+            }
+        }
     }
 }

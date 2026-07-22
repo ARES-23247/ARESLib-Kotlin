@@ -23,9 +23,9 @@ publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
-            groupId = "com.areslib"
+            groupId = "com.github.ARES-23247.ARESLib-Kotlin"
             artifactId = "ftc-mocks"
-            version = "1.0-SNAPSHOT"
+            version = "master-SNAPSHOT"
         }
     }
 }

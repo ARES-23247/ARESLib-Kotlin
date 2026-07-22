@@ -59,6 +59,22 @@ object TelemetryPublisher {
      */
     val obstaclesSub = ntInst.getStringTopic("ARES/Input/obstacles").subscribe("")
 
+    fun getWebVx(): Double {
+        val v = webVxSub.get()
+        com.areslib.telemetry.SimInputBridge.rawWebVx = v
+        return v
+    }
+    fun getWebVy(): Double {
+        val v = webVySub.get()
+        com.areslib.telemetry.SimInputBridge.rawWebVy = v
+        return v
+    }
+    fun getWebOmega(): Double {
+        val v = webOmegaSub.get()
+        com.areslib.telemetry.SimInputBridge.rawWebOmega = v
+        return v
+    }
+
     private var lastWebHeartbeatTimestamp = 0L
     private var lastWebInputReceiveTime = 0L
 
@@ -94,7 +110,10 @@ object TelemetryPublisher {
      * @param pose The field-relative target pose.
      */
     fun publishTargetPose(pose: com.areslib.math.geometry.Pose2d) {
-        targetPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
+        val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
+        targetPosePublisher.set(arr)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TargetPose", arr)
+        ntInst.flush()
     }
 
     /**
@@ -103,7 +122,10 @@ object TelemetryPublisher {
      * @param pose The field-relative estimated pose.
      */
     fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
-        estimatedPosePublisher.set(doubleArrayOf(pose.x, pose.y, pose.heading.radians))
+        val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
+        estimatedPosePublisher.set(arr)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose", arr)
+        ntInst.flush()
     }
 
     /**
@@ -165,47 +187,28 @@ object TelemetryPublisher {
      * @param driverStation Target VirtualDriverStation instance to synchronize inputs with.
      */
     fun pollWebInputs(driverStation: VirtualDriverStation) {
-        val heartbeatEntry = webHeartbeatSub.getAtomic()
-        val now = com.areslib.util.RobotClock.currentTimeMillis()
+        val vx = webVxSub.get()
+        val vy = webVySub.get()
+        val omega = webOmegaSub.get()
 
-        when {
-            heartbeatEntry.timestamp != lastWebHeartbeatTimestamp -> {
-                println("[TelemetryPublisher] Heartbeat updated: val=${heartbeatEntry.value}, ts=${heartbeatEntry.timestamp}, lastTs=$lastWebHeartbeatTimestamp")
-                lastWebHeartbeatTimestamp = heartbeatEntry.timestamp
-                lastWebInputReceiveTime = now
-            }
-            now % 2000 < 50 -> {
-                println("[TelemetryPublisher] NT4 Server Heartbeat unchanged: val=${heartbeatEntry.value}, ts=${heartbeatEntry.timestamp}, now=$now, lastRecvTime=$lastWebInputReceiveTime")
-            }
-        }
+        driverStation.webVx = vx
+        driverStation.webVy = vy
+        driverStation.webOmega = omega
 
-        val timeDiff = now - lastWebInputReceiveTime
-        if (timeDiff < 1000) {
-            val vx = webVxSub.get()
-            val vy = webVySub.get()
-            val omega = webOmegaSub.get()
-            if (vx != 0.0 || vy != 0.0 || omega != 0.0) {
-                println("[TelemetryPublisher] Applying web inputs: vx=$vx, vy=$vy, omega=$omega (timeDiff=$timeDiff ms)")
-            }
-            driverStation.webVx = vx
-            driverStation.webVy = vy
-            driverStation.webOmega = omega
+        com.areslib.telemetry.SimInputBridge.rawWebVx = vx
+        com.areslib.telemetry.SimInputBridge.rawWebVy = vy
+        com.areslib.telemetry.SimInputBridge.rawWebOmega = omega
 
-            driverStation.isIntaking = webIntakeSub.get()
-            driverStation.isFlywheelOn = webFlywheelSub.get()
-            driverStation.isTransferring = webTransferSub.get()
-            driverStation.isTeleopMode = webTeleopSub.get()
-            driverStation.isFieldCentric = webFieldCentricSub.get()
-            driverStation.isRedAlliance = webRedAllianceSub.get()
-            driverStation.isButtonAPressed = webButtonASub.get()
-            driverStation.isButtonBPressed = webButtonBSub.get()
-            driverStation.isButtonXPressed = webButtonXSub.get()
-            driverStation.isPoseReset = webPoseResetSub.get()
-        } else {
-            driverStation.webVx = 0.0
-            driverStation.webVy = 0.0
-            driverStation.webOmega = 0.0
-        }
+        driverStation.isIntaking = webIntakeSub.get()
+        driverStation.isFlywheelOn = webFlywheelSub.get()
+        driverStation.isTransferring = webTransferSub.get()
+        driverStation.isTeleopMode = webTeleopSub.get()
+        driverStation.isFieldCentric = webFieldCentricSub.get()
+        driverStation.isRedAlliance = webRedAllianceSub.get()
+        driverStation.isButtonAPressed = webButtonASub.get()
+        driverStation.isButtonBPressed = webButtonBSub.get()
+        driverStation.isButtonXPressed = webButtonXSub.get()
+        driverStation.isPoseReset = webPoseResetSub.get()
     }
 
     /**

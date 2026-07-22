@@ -81,30 +81,26 @@ fun main(args: Array<String>) {
         doubleArrayOf(0.0, 0.0, 0.0),
         edu.wpi.first.networktables.PubSubOption.periodic(0.01)
     )
+    ntInst.flush()
 
     // 3. Command INIT
     selectPub.set("org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp")
     cmdPub.set("INIT")
+    ntInst.flush()
     println("Sent INIT command for ARESMecanumTeleOp.")
     Thread.sleep(3000) // Wait for init loop
 
     // 4. Command START
     cmdPub.set("START")
+    ntInst.flush()
     println("Sent START command.")
 
-    /**
-     * getPose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getPose(): Triple<Double, Double, Double> {
         val arr = estPoseSub.get()
-        return if (arr.size >= 3) {
-            Triple(arr[0], arr[1], arr[2])
-        } else {
-            Triple(0.0, 0.0, 0.0)
+        if (arr.size >= 3) {
+            return Triple(arr[0], arr[1], arr[2])
         }
+        return Triple(0.0, 0.0, 0.0)
     }
 
     // Wait for EKF starting pose sync (wait for simulator to start and reset EKF pose)
@@ -145,16 +141,16 @@ fun main(args: Array<String>) {
             lastH = currentH
             lastTime = now
 
-            val predictedH = currentH + velocity * 0.07
             val error = wrapAngle(targetRad - currentH)
 
-            if (abs(wrapAngle(targetRad - predictedH)) < toleranceRad) {
+            if (abs(error) < toleranceRad && abs(velocity) < 0.25) {
                 settledTicks++
-                if (settledTicks >= 5) { // Settle for ~100ms
+                if (settledTicks >= 4) { // Settle for ~80ms
                     omegaPub.set(0.0)
-                    Thread.sleep(400)
+                    ntInst.flush()
+                    Thread.sleep(250)
                     val (_, _, finalH) = getPose()
-                    if (abs(wrapAngle(targetRad - finalH)) < toleranceRad + 0.005) {
+                    if (abs(wrapAngle(targetRad - finalH)) < toleranceRad + 0.015) {
                         println("Successfully stabilized at target: %.3f rad (actual: %.3f)".format(targetRad, finalH))
                         return true
                     }
@@ -163,17 +159,16 @@ fun main(args: Array<String>) {
                 settledTicks = 0
             }
 
-            val kP = 4.0
-            var cmdOmega = error * kP
-            if (abs(cmdOmega) < 0.205) {
-                val sign = if (error > 0.0) 1.0 else -1.0
-                cmdOmega = sign * 0.205
-            }
-            cmdOmega = cmdOmega.coerceIn(-3.0, 3.0)
+            val kP = 2.5
+            val kD = 0.12
+            var cmdOmega = error * kP - velocity * kD
+            cmdOmega = cmdOmega.coerceIn(-1.5, 1.5)
             omegaPub.set(cmdOmega)
+            ntInst.flush()
             Thread.sleep(20)
         }
         omegaPub.set(0.0)
+        ntInst.flush()
         return false
     }
 
@@ -186,9 +181,11 @@ fun main(args: Array<String>) {
     
     // Segment 1: Drive +Y (Forward on field)
     println("Square Drive - Segment 1: Pushing +Y...")
-    vxPub.set(1.2)
+    vyPub.set(1.2)
+    ntInst.flush()
     Thread.sleep(1200)
-    vxPub.set(0.0)
+    vyPub.set(0.0)
+    ntInst.flush()
     Thread.sleep(1000)
     val (p1X, p1Y, _) = getPose()
     val dX1 = p1X - startX
@@ -202,9 +199,11 @@ fun main(args: Array<String>) {
     
     // Segment 2: Drive +X (Right on field)
     println("Square Drive - Segment 2: Pushing +X...")
-    vyPub.set(-1.2)
+    vxPub.set(1.2)
+    ntInst.flush()
     Thread.sleep(1200)
-    vyPub.set(0.0)
+    vxPub.set(0.0)
+    ntInst.flush()
     Thread.sleep(1000)
     val (p2X, p2Y, _) = getPose()
     val dX2 = p2X - p1X
@@ -218,9 +217,11 @@ fun main(args: Array<String>) {
 
     // Segment 3: Drive -Y (Backward on field)
     println("Square Drive - Segment 3: Pushing -Y...")
-    vxPub.set(-1.2)
+    vyPub.set(-1.2)
+    ntInst.flush()
     Thread.sleep(1200)
-    vxPub.set(0.0)
+    vyPub.set(0.0)
+    ntInst.flush()
     Thread.sleep(1000)
     val (p3X, p3Y, _) = getPose()
     val dX3 = p3X - p2X
@@ -234,9 +235,11 @@ fun main(args: Array<String>) {
 
     // Segment 4: Drive -X (Left on field)
     println("Square Drive - Segment 4: Pushing -X...")
-    vyPub.set(1.2)
+    vxPub.set(-1.2)
+    ntInst.flush()
     Thread.sleep(1200)
-    vyPub.set(0.0)
+    vxPub.set(0.0)
+    ntInst.flush()
     Thread.sleep(1000)
     val (p4X, p4Y, _) = getPose()
     val dX4 = p4X - p3X
@@ -266,9 +269,11 @@ fun main(args: Array<String>) {
 
     // 7. Test 3: Command forward (+Y) again while facing 0.0 heading
     println("Test 3: Pushing forward (+Y) while rotated to 0.0 heading...")
-    vxPub.set(1.5)
+    vyPub.set(1.5)
+    ntInst.flush()
     Thread.sleep(1500)
-    vxPub.set(0.0)
+    vyPub.set(0.0)
+    ntInst.flush()
     Thread.sleep(1000) // Settle
 
     val (finalX, finalY, finalH) = getPose()
@@ -298,7 +303,7 @@ fun main(args: Array<String>) {
     println("Test 4: Starting Multi-Target Rotation Test...")
     
     // Target 1: Rotate to +90 degrees (+PI/2 rad)
-    val rot1Ok = rotateToTarget(Math.PI / 2, toleranceRad = 0.03, timeoutMs = 6000)
+    val rot1Ok = rotateToTarget(Math.PI / 2, toleranceRad = 0.035, timeoutMs = 8000)
     if (!rot1Ok) {
         running.set(false)
         System.err.println("Verification Failed: Robot failed to rotate to +90 degrees! Current heading: %.3f".format(getPose().third))

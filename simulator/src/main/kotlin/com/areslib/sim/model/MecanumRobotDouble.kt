@@ -25,7 +25,13 @@ import kotlin.math.abs
 class SimDcMotorEx : DcMotorEx {
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
     @Volatile override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
-    @Volatile override var power: Double = 0.0
+    @Volatile private var _power: Double = 0.0
+
+    override var power: Double
+        get() = if (direction == DcMotorSimple.Direction.REVERSE) -_power else _power
+        set(value) {
+            _power = if (direction == DcMotorSimple.Direction.REVERSE) -value else value
+        }
     
     @Volatile override var currentPosition: Int = 0
     @Volatile override var velocity: Double = 0.0
