@@ -174,8 +174,20 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     ) {
         val maxSpeed = maxWheelSpeedMetersPerSecond
         val omega = driveState.angularVelocityRadiansPerSecond * (maxSpeed / kinematics.k)
-        val forward = driveState.xVelocityMetersPerSecond * maxSpeed
-        val left = driveState.yVelocityMetersPerSecond * maxSpeed
+        val rawForward = driveState.xVelocityMetersPerSecond * maxSpeed
+        val rawLeft = driveState.yVelocityMetersPerSecond * maxSpeed
+
+        val (forward, left) = if (driveState.isFieldCentric) {
+            val heading = driveState.poseEstimator.estimatedPoseHeading
+            val cosH = kotlin.math.cos(heading)
+            val sinH = kotlin.math.sin(heading)
+            Pair(
+                rawForward * cosH + rawLeft * sinH,
+                -rawForward * sinH + rawLeft * cosH
+            )
+        } else {
+            Pair(rawForward, rawLeft)
+        }
 
         kinematics.toWheelSpeeds(forward, left, omega, speedBuffer)
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
@@ -186,6 +198,8 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             dtSeconds = dtSeconds,
             powerScale = flIO.powerScale
         )
+
+
 
         applyPowerScale(flIO.powerScale)
     }
@@ -214,6 +228,8 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             rrVel = rrIO.velocity,
             outputPowers = powerBuffer
         )
+
+
 
         motorCluster.setMotorPowers(powerBuffer[0], powerBuffer[1], powerBuffer[2], powerBuffer[3])
     }

@@ -45,6 +45,9 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             state.drive.poseEstimator.estimatedPose.y,
             state.drive.poseEstimator.estimatedPose.heading.radians
         ))
+        telemetry.putNumber("ARES/EstimatedPose/0", state.drive.poseEstimator.estimatedPose.x)
+        telemetry.putNumber("ARES/EstimatedPose/1", state.drive.poseEstimator.estimatedPose.y)
+        telemetry.putNumber("ARES/EstimatedPose/2", state.drive.poseEstimator.estimatedPose.heading.radians)
 
         telemetry.putNumber("Drive/Velocity_X", state.drive.xVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Y", state.drive.yVelocityMetersPerSecond)

@@ -66,22 +66,28 @@ object TelemetryPublisher {
         val vWpi = webVxSub.get()
         val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
-        com.areslib.telemetry.SimInputBridge.rawWebVx = v
-        return v
+        if (v != 0.0) {
+            com.areslib.telemetry.SimInputBridge.rawWebVx = v
+        }
+        return if (v != 0.0) v else com.areslib.telemetry.SimInputBridge.rawWebVx
     }
     fun getWebVy(): Double {
         val vWpi = webVySub.get()
         val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
-        com.areslib.telemetry.SimInputBridge.rawWebVy = v
-        return v
+        if (v != 0.0) {
+            com.areslib.telemetry.SimInputBridge.rawWebVy = v
+        }
+        return if (v != 0.0) v else com.areslib.telemetry.SimInputBridge.rawWebVy
     }
     fun getWebOmega(): Double {
         val vWpi = webOmegaSub.get()
         val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
         val v = if (vWpi != 0.0) vWpi else vJava
-        com.areslib.telemetry.SimInputBridge.rawWebOmega = v
-        return v
+        if (v != 0.0) {
+            com.areslib.telemetry.SimInputBridge.rawWebOmega = v
+        }
+        return if (v != 0.0) v else com.areslib.telemetry.SimInputBridge.rawWebOmega
     }
 
     private var lastWebHeartbeatTimestamp = 0L
@@ -216,9 +222,9 @@ object TelemetryPublisher {
      * @param driverStation Target VirtualDriverStation instance to synchronize inputs with.
      */
     fun pollWebInputs(driverStation: VirtualDriverStation) {
-        val vx = webVxSub.get()
-        val vy = webVySub.get()
-        val omega = webOmegaSub.get()
+        val vx = getWebVx()
+        val vy = getWebVy()
+        val omega = getWebOmega()
 
         driverStation.webVx = vx
         driverStation.webVy = vy

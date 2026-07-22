@@ -67,6 +67,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     )
 
     init {
+        com.areslib.hardware.HardwareRegistry.clear()
         lifecycleController.init(hardwareMap)
         activeInstance = this
 
@@ -169,13 +170,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
      */
+    private var lastWallTime: Long = 0L
+
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
-        lifecycleController.sleepForTargetDt(lastUpdateTime, isAndroid)
+        lifecycleController.sleepForTargetDt(lastWallTime, isAndroid)
+        lastWallTime = System.currentTimeMillis()
         lifecycleController.update()
 
         try {
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-            val dtSeconds = if (lastUpdateTime == 0L) 0.01 else (timestamp - lastUpdateTime) / 1000.0
+            val dtSeconds = if (lastUpdateTime == 0L || timestamp == lastUpdateTime) 0.02 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
             val t0 = com.areslib.util.RobotClock.nanoTime()

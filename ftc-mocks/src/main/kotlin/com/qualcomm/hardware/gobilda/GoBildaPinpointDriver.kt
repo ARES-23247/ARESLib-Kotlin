@@ -29,43 +29,29 @@ open class GoBildaPinpointDriver {
     @Volatile private var trueOffsetHeading: Double = 0.0
     
     @Synchronized
-    /**
-     * getPosX declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getPosX(unit: DistanceUnit): Double {
         val cosH = kotlin.math.cos(trueHeading)
         val sinH = kotlin.math.sin(trueHeading)
         val centerOfRotationX = posX - (xOffsetMeters * cosH - yOffsetMeters * sinH)
         val centerOfRotationY = posY - (xOffsetMeters * sinH + yOffsetMeters * cosH)
-        val dx = centerOfRotationX - rawOffsetX
-        val dy = centerOfRotationY - rawOffsetY
-        
+        val fieldDx = centerOfRotationX - rawOffsetX
+        val fieldDy = centerOfRotationY - rawOffsetY
         val cosOffset = kotlin.math.cos(trueOffsetHeading)
         val sinOffset = kotlin.math.sin(trueOffsetHeading)
-        return dx * cosOffset + dy * sinOffset
+        return fieldDx * cosOffset + fieldDy * sinOffset
     }
 
     @Synchronized
-    /**
-     * getPosY declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getPosY(unit: DistanceUnit): Double {
         val cosH = kotlin.math.cos(trueHeading)
         val sinH = kotlin.math.sin(trueHeading)
         val centerOfRotationX = posX - (xOffsetMeters * cosH - yOffsetMeters * sinH)
         val centerOfRotationY = posY - (xOffsetMeters * sinH + yOffsetMeters * cosH)
-        val dx = centerOfRotationX - rawOffsetX
-        val dy = centerOfRotationY - rawOffsetY
-        
+        val fieldDx = centerOfRotationX - rawOffsetX
+        val fieldDy = centerOfRotationY - rawOffsetY
         val cosOffset = kotlin.math.cos(trueOffsetHeading)
         val sinOffset = kotlin.math.sin(trueOffsetHeading)
-        return -dx * sinOffset + dy * cosOffset
+        return -fieldDx * sinOffset + fieldDy * cosOffset
     }
 
     @Synchronized

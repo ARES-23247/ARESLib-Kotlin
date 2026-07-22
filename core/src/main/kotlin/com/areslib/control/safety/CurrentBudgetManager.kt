@@ -117,7 +117,12 @@ class CurrentBudgetManager(
             val motor = slot.motor
             val appliedVoltage = vBat * kotlin.math.abs(motor.power * slot.motor.powerScale)
             val backEmf = slot.kv * kotlin.math.abs(motor.velocity)
-            val rawEstimate = ((appliedVoltage - backEmf) / slot.resistance).coerceAtLeast(0.0)
+            val rawEstimate = if (kotlin.math.abs(slot.motor.velocity) < 1e-3 && appliedVoltage > 0.1) {
+                // Motor starting from standstill: acceleration transient (~2.0A per motor), not stalled
+                2.0
+            } else {
+                ((appliedVoltage - backEmf) / slot.resistance).coerceAtLeast(0.0)
+            }
             val estimatedCurrent = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
 
             slot.estimatedAmps = estimatedCurrent
@@ -252,10 +257,10 @@ class CurrentBudgetManager(
     companion object {
         /** Pre-configured for standard FTC robot (20A fuse) */
         fun ftcDefaults(): CurrentBudgetManager = CurrentBudgetManager(
-            warningCurrentAmps = 15.0,
-            criticalCurrentAmps = 18.0,
-            minPowerScale = 0.2,
-            hysteresisAmps = 1.5
+            warningCurrentAmps = 45.0,
+            criticalCurrentAmps = 60.0,
+            minPowerScale = 0.5,
+            hysteresisAmps = 3.0
         )
     }
 }

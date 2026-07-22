@@ -98,6 +98,9 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         }
 
         powerScale = scale
+        println("[PowerManager] bGuardScale=%.2f, cbmScale=%.2f, finalScale=%.2f".format(
+            brownoutGuard.powerScale, currentBudgetManager?.powerScale ?: 1.0, scale
+        ))
         
         // Dynamically distribute final powerScale to all registered motors
         for (m in motors) {

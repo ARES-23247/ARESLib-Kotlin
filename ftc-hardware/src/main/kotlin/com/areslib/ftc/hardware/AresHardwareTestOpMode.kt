@@ -32,7 +32,7 @@ class AresHardwareTestOpMode : LinearOpMode() {
         telemetry.update()
 
         // Centrally initialize the robot container and all subsystem facades
-        val robot = FtcTestbedRobot(hardwareMap)
+        val robot = com.areslib.ftc.FtcMecanumRobot(hardwareMap, pinpointName = "pinpoint")
         
         // Define declarative bindings
         val driver = AresGamepad()
@@ -62,9 +62,9 @@ class AresHardwareTestOpMode : LinearOpMode() {
                 val webY = com.areslib.telemetry.SimInputBridge.webVy
                 val webRot = com.areslib.telemetry.SimInputBridge.webOmega
 
-                val driveX = if (kotlin.math.abs(driver.leftStick.x) > 0.05f) driver.leftStick.x.toDouble() else webX
-                val driveY = if (kotlin.math.abs(driver.leftStick.y) > 0.05f) driver.leftStick.y.toDouble() else webY
-                val driveRot = if (kotlin.math.abs(driver.rightStickX.value) > 0.05f) driver.rightStickX.value.toDouble() else webRot
+                val driveX = if (kotlin.math.abs(g1State.leftStickY) > 0.05f) -g1State.leftStickY.toDouble() else webX
+                val driveY = if (kotlin.math.abs(g1State.leftStickX) > 0.05f) -g1State.leftStickX.toDouble() else webY
+                val driveRot = if (kotlin.math.abs(g1State.rightStickX) > 0.05f) g1State.rightStickX.toDouble() else webRot
 
                 robot.drive.joystickDrive(driveX, driveY, driveRot)
 

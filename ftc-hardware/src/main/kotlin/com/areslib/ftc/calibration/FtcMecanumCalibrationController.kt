@@ -112,6 +112,7 @@ class FtcMecanumCalibrationController {
         val timestamp = RobotClock.currentTimeMillis()
 
         if (sysIdManager.isActive()) {
+            println("[CalibrationController] ACTIVE SYSID! activeMechanism=${sysIdManager.activeMechanism}")
             if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR || sysIdManager.activeMechanism == SysIdMechanism.ANGULAR) {
                 if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
                     sysIdManager.stop()
@@ -139,6 +140,7 @@ class FtcMecanumCalibrationController {
             }
             return true
         } else if (activeCalibration != "NONE") {
+            println("[CalibrationController] ACTIVE CALIBRATION: $activeCalibration")
             val elapsedSec = (timestamp - calibrationStartTimeMs) / 1000.0
             val timeoutSec = if (activeCalibration == "LINEAR_DRIVE") 3.0 else 5.0
 

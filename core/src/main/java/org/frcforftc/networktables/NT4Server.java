@@ -536,6 +536,42 @@ public class NT4Server extends WebSocketServer {
         return defaultValue;
     }
 
+    public static double[] getDoubleArray(String topic, double[] defaultValue) {
+        if (m_server == null) return defaultValue;
+        NetworkTablesEntry entry = m_entries.get(topic);
+        if (entry == null) {
+            entry = m_entries.get("/" + topic);
+        }
+        if (entry == null && topic.startsWith("/")) {
+            entry = m_entries.get(topic.substring(1));
+        }
+        if (entry != null && entry.getValue() != null && entry.getValue().get() != null) {
+            Object v = entry.getValue().get();
+            if (v instanceof double[]) {
+                return (double[]) v;
+            }
+        }
+        return defaultValue;
+    }
+
+    public static String getString(String topic, String defaultValue) {
+        if (m_server == null) return defaultValue;
+        NetworkTablesEntry entry = m_entries.get(topic);
+        if (entry == null) {
+            entry = m_entries.get("/" + topic);
+        }
+        if (entry == null && topic.startsWith("/")) {
+            entry = m_entries.get(topic.substring(1));
+        }
+        if (entry != null && entry.getValue() != null && entry.getValue().get() != null) {
+            Object v = entry.getValue().get();
+            if (v instanceof String) {
+                return (String) v;
+            }
+        }
+        return defaultValue;
+    }
+
     public static void publishTopic(String topic, Object value) {
         if (m_server != null) {
             String cleanTopic = topic.startsWith("/") ? topic.substring(1) : topic;

@@ -164,6 +164,7 @@ object DesktopSimLauncher {
                 } catch (_: InterruptedException) {
                 } catch (e: Exception) {
                     System.err.println("OpMode Thread terminated: ${e.message}")
+                    e.printStackTrace()
                 }
             }.apply {
                 isDaemon = true
@@ -196,16 +197,9 @@ object DesktopSimLauncher {
         var lastSelectedOpMode = ""
 
         while (true) {
-            // Check for Driver Station UI commands from ARES-Analytics dashboard
-            val rawCommand = (ntInst.get("/ARES/DriverStation/Command")?.value?.get() as? String)
-                ?: (ntInst.get("ARES/DriverStation/Command")?.value?.get() as? String)
-                ?: ""
-            val dsCommand = rawCommand.trim()
-
-            val rawOpMode = (ntInst.get("/ARES/DriverStation/SelectedOpMode")?.value?.get() as? String)
-                ?: (ntInst.get("ARES/DriverStation/SelectedOpMode")?.value?.get() as? String)
-                ?: ""
-            val selectedOpMode = rawOpMode.trim()
+            // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
+            val dsCommand = org.frcforftc.networktables.NT4Server.getString("ARES/DriverStation/Command", "").trim()
+            val selectedOpMode = org.frcforftc.networktables.NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
 
 
             if (selectedOpMode.isNotEmpty() && selectedOpMode != lastSelectedOpMode) {
@@ -262,6 +256,9 @@ object DesktopSimLauncher {
             val rlP = robotDouble.rl.power
             val rrP = robotDouble.rr.power
 
+
+
+
             val isNoInput = kotlin.math.abs(flP) < 1e-3 && kotlin.math.abs(frP) < 1e-3 && 
                             kotlin.math.abs(rlP) < 1e-3 && kotlin.math.abs(rrP) < 1e-3
 
@@ -272,6 +269,10 @@ object DesktopSimLauncher {
                 val rawVx = (flP + frP + rlP + rrP) / 4.0 * 2.6
                 val rawVy = (-flP + frP + rlP - rrP) / 4.0 * 2.6
                 val rawOmega = (-flP + frP - rlP + rrP) / 4.0 * 3.5
+
+                if (sampleCount % 25L == 0L) {
+                    println("[SimPhysics] flP=%.2f, frP=%.2f, rawVx=%.2f, rawVy=%.2f, physY=%.3f".format(flP, frP, rawVx, rawVy, currentPhysPose.y))
+                }
 
                 val heading = currentPhysPose.heading.radians
                 val cosH = kotlin.math.cos(heading)
@@ -290,7 +291,12 @@ object DesktopSimLauncher {
             val vx = physicsWorld.robotBody.linearVelocity.x
             val vy = physicsWorld.robotBody.linearVelocity.y
             val omega = physicsWorld.robotBody.angularVelocity
-            robotDouble.updateSensors(TIMESTEP_SEC, vx, vy, omega, currentPhysPose.x, currentPhysPose.y, currentPhysPose.heading.radians, ccwPos)
+            val postStepPose = Pose2d(
+                physicsWorld.robotBody.transform.translationX,
+                physicsWorld.robotBody.transform.translationY,
+                Rotation2d(physicsWorld.robotBody.transform.rotationAngle)
+            )
+            robotDouble.updateSensors(TIMESTEP_SEC, vx, vy, omega, postStepPose.x, postStepPose.y, postStepPose.heading.radians, ccwPos)
 
             // Stream dynamic game piece positions to NT4 for live visual rendering
             val pieces = physicsWorld.gamePieces
@@ -311,7 +317,6 @@ object DesktopSimLauncher {
             }
 
             TelemetryPublisher.publishTruePose(currentPhysPose)
-            TelemetryPublisher.publishEstimatedPose(currentPhysPose)
             TelemetryPublisher.getWebVx()
             TelemetryPublisher.getWebVy()
             TelemetryPublisher.getWebOmega()
@@ -322,6 +327,10 @@ object DesktopSimLauncher {
                 TelemetryPublisher.publish(state)
                 
                 val ekfPose = state.drive.poseEstimator.estimatedPose
+                if (sampleCount % 25L == 0L) {
+                    println("[SimTelemetry] ekfY=%.3f, physY=%.3f".format(ekfPose.y, postStepPose.y))
+                }
+                TelemetryPublisher.publishEstimatedPose(ekfPose)
                 TelemetryPublisher.publishTargetPose(ekfPose)
 
                 ntInst.putNumber("Hardware/Motors/fl/Power", robotDouble.fl.power)
@@ -337,10 +346,10 @@ object DesktopSimLauncher {
             }
 
             if (RobotClock.isMocked) {
-                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 10)
+                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
             }
             try {
-                Thread.sleep(10)
+                Thread.sleep(20)
             } catch (_: InterruptedException) {
                 break
             }

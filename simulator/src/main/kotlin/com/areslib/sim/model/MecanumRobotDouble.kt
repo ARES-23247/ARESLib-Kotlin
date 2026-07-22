@@ -157,10 +157,10 @@ class MecanumRobotDouble {
         @Suppress("UNCHECKED_CAST")
         override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
             return when (deviceName) {
-                "fl" -> fl as T
-                "fr" -> fr as T
-                "rl", "bl" -> rl as T
-                "rr", "br" -> rr as T
+                "fl", "front_left", "leftFront", "frontLeft" -> fl as T
+                "fr", "front_right", "rightFront", "frontRight" -> fr as T
+                "rl", "bl", "rear_left", "back_left", "leftRear", "leftBack", "rearLeft", "backLeft" -> rl as T
+                "rr", "br", "rear_right", "back_right", "rightRear", "rightBack", "rearRight", "backRight" -> rr as T
                 "pinpoint" -> pinpoint as T
                 "limelight" -> limelight as T
                 "imu" -> mockImu as T
@@ -227,7 +227,7 @@ class MecanumRobotDouble {
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
      */
-    fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = true) {
+    fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = false) {
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2
         // RL = vx + vy - omega * (trackWidth + wheelBase)/2

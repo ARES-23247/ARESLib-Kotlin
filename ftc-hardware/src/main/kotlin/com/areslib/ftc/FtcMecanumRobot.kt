@@ -308,13 +308,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @return Corresponding output value or Unit.
      */
     fun stop() = stopAll()
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    fun update() = updateHardwareInputs()
+
     /**
      * followTrajectory declaration.
      *
