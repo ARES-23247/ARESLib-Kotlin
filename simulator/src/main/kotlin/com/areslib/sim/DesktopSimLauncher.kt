@@ -331,6 +331,7 @@ object DesktopSimLauncher {
                 ntInst.putNumber("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
                 ntInst.putNumber("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
                 ntInst.putNumber("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
+                ntInst.flushServer()
             }
 
             if (RobotClock.isMocked) {

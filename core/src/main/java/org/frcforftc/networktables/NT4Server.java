@@ -125,7 +125,7 @@ public class NT4Server extends WebSocketServer {
     public void onMessage(WebSocket conn, ByteBuffer message) {
         try {
             NetworkTablesMessage decodedMessage = decodeNT4Message(message);
-            if (decodedMessage.id == -1 && conn.getAttachment().equals("rtt.networktables.first.wpi.edu")) {
+            if (decodedMessage.id == -1) {
                 heartbeat(conn, (Long) decodedMessage.dataValue);
             } else {
                 if (m_publisherUIDSMap.containsKey(decodedMessage.id)) {

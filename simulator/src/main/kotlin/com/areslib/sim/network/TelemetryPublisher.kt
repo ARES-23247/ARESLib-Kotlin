@@ -63,17 +63,23 @@ object TelemetryPublisher {
     val obstaclesSub = ntInst.getStringTopic("ARES/Input/obstacles").subscribe("")
 
     fun getWebVx(): Double {
-        val v = webVxSub.get()
+        val vWpi = webVxSub.get()
+        val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
+        val v = if (vWpi != 0.0) vWpi else vJava
         com.areslib.telemetry.SimInputBridge.rawWebVx = v
         return v
     }
     fun getWebVy(): Double {
-        val v = webVySub.get()
+        val vWpi = webVySub.get()
+        val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
+        val v = if (vWpi != 0.0) vWpi else vJava
         com.areslib.telemetry.SimInputBridge.rawWebVy = v
         return v
     }
     fun getWebOmega(): Double {
-        val v = webOmegaSub.get()
+        val vWpi = webOmegaSub.get()
+        val vJava = org.frcforftc.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
+        val v = if (vWpi != 0.0) vWpi else vJava
         com.areslib.telemetry.SimInputBridge.rawWebOmega = v
         return v
     }
@@ -100,7 +106,7 @@ object TelemetryPublisher {
      */
     fun publish(state: RobotState) {
         statePublisher.set(state)
-        // networkStatePublisher.publish(state) // Disabled to prevent double-publishing collision with student OpMode thread
+        networkStatePublisher.publish(state)
         com.areslib.hardware.HardwareRegistry.publishAll(nt4Telemetry)
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
