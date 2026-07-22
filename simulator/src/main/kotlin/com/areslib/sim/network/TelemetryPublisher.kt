@@ -85,11 +85,10 @@ object TelemetryPublisher {
     private val networkStatePublisher = com.areslib.telemetry.ARESNetworkStatePublisher(nt4Telemetry)
 
     init {
-        ntInst.startServer()
-        
         // Register the custom struct so NT4 knows how to serialize it
         statePublisher = ntInst.getStructTopic("ARES/RobotState", RobotStateStruct()).publish()
     }
+
 
     /**
      * Publishes the current state to NT4 and DataLog.

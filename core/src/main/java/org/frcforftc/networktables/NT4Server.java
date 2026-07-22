@@ -35,11 +35,19 @@ public class NT4Server extends WebSocketServer {
     private final Set<NetworkTablesEntry> m_dirtyEntries = new CopyOnWriteArraySet<>();
     private final ObjectMapper m_objectMapper = new ObjectMapper();
 
-    private final org.msgpack.core.MessageBufferPacker m_packer = org.msgpack.core.MessagePack.newDefaultBufferPacker();
+    private org.msgpack.core.MessageBufferPacker m_packer;
 
     public NT4Server(InetSocketAddress address, Draft_6455 draft_protocols) {
         super(address, Collections.singletonList(draft_protocols));
+        org.msgpack.core.MessageBufferPacker tempPacker;
+        try {
+            tempPacker = org.msgpack.core.MessagePack.newDefaultBufferPacker();
+        } catch (Throwable t) {
+            tempPacker = new org.msgpack.core.MessagePack.PackerConfig().newBufferPacker();
+        }
+        this.m_packer = tempPacker;
     }
+
 
     public static NT4Server createInstance(String address, int port) {
         ArrayList<IProtocol> protocols = new ArrayList<IProtocol>();
