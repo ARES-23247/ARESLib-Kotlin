@@ -28,11 +28,6 @@ import com.areslib.math.geometry.ChassisSpeeds
  * @param trackWidthMeters Distance between left and right wheel centers in meters.
  * @param wheelBaseMeters Distance between front and rear wheel centers in meters.
  */
-/**
- * Class implementation for Mecanum Kinematics.
- *
- * Robotics framework control component.
- */
 class MecanumKinematics(
     private val trackWidthMeters: Double,
     private val wheelBaseMeters: Double
@@ -57,6 +52,16 @@ class MecanumKinematics(
         val br = vx - vy + omega * k
 
         return MecanumWheelSpeeds(fl, fr, bl, br)
+    }
+
+    /**
+     * Converts individual wheel surface speeds into robot-frame [ChassisSpeeds].
+     */
+    fun toChassisSpeeds(fl: Double, fr: Double, bl: Double, br: Double): ChassisSpeeds {
+        val vx = (fl + fr + bl + br) / 4.0
+        val vy = (-fl + fr + bl - br) / 4.0
+        val omega = (-fl + fr - bl + br) / (4.0 * k)
+        return ChassisSpeeds(vx, vy, omega)
     }
 
     /**
