@@ -260,21 +260,31 @@ object DesktopSimLauncher {
             val rlP = robotDouble.rl.power
             val rrP = robotDouble.rr.power
 
-            val robotVx = (flP + frP + rlP + rrP) / 4.0 * 3.5
-            val robotVy = (-flP + frP + rlP - rrP) / 4.0 * 3.5
-            val robotOmega = (-flP + frP - rlP + rrP) / (4.0 * 0.45) * 4.0
-
+            val rawVx = (flP + frP + rlP + rrP) / 4.0 * 2.6
+            val rawVy = (-flP + frP + rlP - rrP) / 4.0 * 2.6
+            val rawOmega = (-flP + frP - rlP + rrP) / 4.0 * 3.5
 
             val heading = currentPhysPose.heading.radians
             val cosH = kotlin.math.cos(heading)
             val sinH = kotlin.math.sin(heading)
 
-            val fieldVx = robotVx * cosH - robotVy * sinH
-            val fieldVy = robotVx * sinH + robotVy * cosH
+            val targetFieldVx = rawVx * cosH - rawVy * sinH
+            val targetFieldVy = rawVx * sinH + rawVy * cosH
+
+            val curVx = physicsWorld.robotBody.linearVelocity.x
+            val curVy = physicsWorld.robotBody.linearVelocity.y
+            val curOmega = physicsWorld.robotBody.angularVelocity
+
+            val maxLinearStep = 8.0 * TIMESTEP_SEC
+            val maxAngularStep = 15.0 * TIMESTEP_SEC
+
+            val newVx = curVx + (targetFieldVx - curVx).coerceIn(-maxLinearStep, maxLinearStep)
+            val newVy = curVy + (targetFieldVy - curVy).coerceIn(-maxLinearStep, maxLinearStep)
+            val newOmega = curOmega + (rawOmega - curOmega).coerceIn(-maxAngularStep, maxAngularStep)
 
             physicsWorld.robotBody.setAtRest(false)
-            physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(fieldVx, fieldVy)
-            physicsWorld.robotBody.angularVelocity = robotOmega
+            physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(newVx, newVy)
+            physicsWorld.robotBody.angularVelocity = newOmega
 
             physicsWorld.world.step(1)
 
@@ -282,6 +292,24 @@ object DesktopSimLauncher {
             val vy = physicsWorld.robotBody.linearVelocity.y
             val omega = physicsWorld.robotBody.angularVelocity
             robotDouble.updateSensors(TIMESTEP_SEC, vx, vy, omega, currentPhysPose.x, currentPhysPose.y, currentPhysPose.heading.radians, ccwPos)
+
+            // Stream dynamic game piece positions to NT4 for live visual rendering
+            val pieces = physicsWorld.gamePieces
+            if (pieces.isNotEmpty()) {
+                val arr = DoubleArray(pieces.size * 7)
+                for (i in pieces.indices) {
+                    val p = pieces[i]
+                    val base = i * 7
+                    arr[base + 0] = p.transform.translationX
+                    arr[base + 1] = p.transform.translationY
+                    arr[base + 2] = p.transform.rotationAngle
+                    arr[base + 3] = 0.15
+                    arr[base + 4] = 0.15
+                    arr[base + 5] = 0.0
+                    arr[base + 6] = 0.0
+                }
+                TelemetryPublisher.publishGamePieces(arr)
+            }
 
             TelemetryPublisher.publishTruePose(currentPhysPose)
             TelemetryPublisher.getWebVx()
