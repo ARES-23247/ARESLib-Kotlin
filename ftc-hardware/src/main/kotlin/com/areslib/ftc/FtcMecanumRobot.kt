@@ -6,11 +6,11 @@ import com.areslib.control.drivetrain.VisionAlignController
 import com.areslib.control.tuning.PIDFCoefficients
 import com.areslib.control.tuning.SimpleFeedforwardCoeffs
 import com.areslib.ftc.calibration.FtcMecanumCalibrationController
-import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.ftc.drivetrain.MecanumFallbackOdometry
-import com.areslib.ftc.pathing.FtcMecanumPathingController
+import com.areslib.ftc.drivetrain.MecanumHardwareIO
+import com.areslib.ftc.drivetrain.MecanumKinematicsController
+import com.areslib.ftc.drivetrain.MecanumTrajectoryFollower
 import com.areslib.ftc.telemetry.LimelightProxyAutoStart
-import com.areslib.kinematics.MecanumKinematics
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Vector3
 import com.areslib.pathing.AutoBuilder
@@ -99,12 +99,10 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     reducer = reducer
 ) {
 
-    // Subsystem Facades
     val drive = DriveSubsystem(store)
     val mecanumDrive = MecanumDriveFacade(store, headingGains, headingDeadzoneDeg)
 
     private val visionAlignController = VisionAlignController()
-
     private val tuningManager = TuningManager(
         store = store,
         telemetry = telemetryManager.dataLoggingTelemetry,
@@ -112,64 +110,46 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     )
 
     init {
-        if (isAndroid) {
-            LimelightProxyAutoStart.start()
-        }
+        if (isAndroid) LimelightProxyAutoStart.start()
     }
 
-    // Physical Hardware IO & Kinematics Controllers
     val mecanumIO = MecanumHardwareIO(
         hardwareMap = hardwareMap,
-        flName = flName,
-        frName = frName,
-        rlName = rlName,
-        rrName = rrName,
-        flDirection = flDirection,
-        frDirection = frDirection,
-        rlDirection = rlDirection,
-        rrDirection = rrDirection,
+        flName = flName, frName = frName, rlName = rlName, rrName = rrName,
+        flDirection = flDirection, frDirection = frDirection, rlDirection = rlDirection, rrDirection = rrDirection,
         initialKs = driveFeedforward.kS,
         useClosedLoopVelocity = useClosedLoopVelocity,
         ticksPerMeter = ticksPerMeter,
         initialSlewRateLimit = driveSlewRateLimit,
-        motorKp = motorGains?.kP,
-        motorKi = motorGains?.kI,
-        motorKd = motorGains?.kD,
-        motorKf = motorGains?.kF
+        motorKp = motorGains?.kP, motorKi = motorGains?.kI, motorKd = motorGains?.kD, motorKf = motorGains?.kF
     )
 
-    private var kinematics = MecanumKinematics(trackWidthMeters = trackWidthMeters, wheelBaseMeters = wheelBaseMeters)
     private var lastTuning: TuningState? = null
-
-    init {
-        val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
-        val maxAngularSpeed = maxSpeed / kinematics.k
-
-        drive.maxSpeedMps = maxSpeed
-        mecanumDrive.maxSpeedMps = maxSpeed
-        mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
-    }
-
-    // Delegated Specialized Controllers
     private val calibrationController = FtcMecanumCalibrationController()
     private val fallbackOdometry = MecanumFallbackOdometry()
-    private val pathingController by lazy { FtcMecanumPathingController(drive) }
 
-    // Backward-compatible delegates for calibration & SysId
+    // Delegated Controllers
+    private val kinematicsController = MecanumKinematicsController(mecanumIO, drive, mecanumDrive, calibrationController)
+    private val trajectoryFollower = MecanumTrajectoryFollower(drive)
+
     val sysIdManager: SysIdManager get() = calibrationController.sysIdManager
     var customSysIdVelocityProvider: (() -> Double)?
         get() = calibrationController.customSysIdVelocityProvider
         set(value) { calibrationController.customSysIdVelocityProvider = value }
 
-    // Backward-compatible delegates for Pathfinding & Waypoints
-    val autoBuilder: AutoBuilder get() = pathingController.autoBuilder
-
+    val autoBuilder: AutoBuilder get() = trajectoryFollower.autoBuilder
     private var lastLocalTelemetryUpdateMs = 0L
+
+    init {
+        val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
+        drive.maxSpeedMps = maxSpeed
+        mecanumDrive.maxSpeedMps = maxSpeed
+        mecanumDrive.maxAngularSpeedRps = maxSpeed / kinematicsController.kinematics.k
+    }
 
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
         tuningManager.update()
-
         calibrationController.updateHardwareInputs(
             store = store,
             telemetryManager = telemetryManager,
@@ -182,90 +162,45 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
         val currentTuning = store.state.tuning
         if (currentTuning !== lastTuning) {
-            kinematics = MecanumKinematics(currentTuning.trackWidthMeters, currentTuning.wheelBaseMeters)
-            mecanumIO.kS = currentTuning.driveFeedforward.kS
-            mecanumIO.slewRateLimit = currentTuning.driveSlewRateLimit
-            mecanumIO.ticksPerMeter = currentTuning.ticksPerMeter
-            if (currentTuning.driveFeedforward.kV > 1e-4) {
-                mecanumIO.maxWheelSpeedMetersPerSecond = 1.0 / currentTuning.driveFeedforward.kV
-            }
-            val gains = currentTuning.motorGains
-            if (gains != null) {
-                mecanumIO.updateMotorGains(gains.kP, gains.kI, gains.kD)
-            }
+            kinematicsController.updateTuning(currentTuning)
+            trajectoryFollower.updateTuning(currentTuning)
 
-            val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
-            val maxAngularSpeed = maxSpeed / kinematics.k
-            drive.maxSpeedMps = maxSpeed
-            mecanumDrive.maxSpeedMps = maxSpeed
-            mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
-
-            pathingController.updateTuning(currentTuning)
-
-            visionTracker.stdDevs = Vector3(
-                currentTuning.visionStdDevsX,
-                currentTuning.visionStdDevsY,
-                currentTuning.visionStdDevsHeading
-            )
-
+            visionTracker.stdDevs = Vector3(currentTuning.visionStdDevsX, currentTuning.visionStdDevsY, currentTuning.visionStdDevsHeading)
             com.areslib.math.estimation.PoseEstimator.qX = currentTuning.odomQx
             com.areslib.math.estimation.PoseEstimator.qY = currentTuning.odomQy
             com.areslib.math.estimation.PoseEstimator.qTheta = currentTuning.odomQtheta
 
-            pinpointIO?.let { p ->
-                p.setOffsets(currentTuning.pinpointXOffsetMm, currentTuning.pinpointYOffsetMm)
-                p.setEncoderResolution(currentTuning.pinpointEncoderResolution)
+            pinpointIO?.let {
+                it.setOffsets(currentTuning.pinpointXOffsetMm, currentTuning.pinpointYOffsetMm)
+                it.setEncoderResolution(currentTuning.pinpointEncoderResolution)
             }
-
             lastTuning = currentTuning
         }
 
-        val isCalibrationHandlingDrive = calibrationController.updateSubsystems(
-            store = store,
-            batteryVoltage = batteryVoltage,
-            mecanumIO = mecanumIO,
-            telemetryManager = telemetryManager,
-            onResetTuning = { lastTuning = null }
-        )
-
-        if (!isCalibrationHandlingDrive) {
-            mecanumIO.drive(store.state.drive, kinematics, batteryVoltage, dtSeconds)
-        }
+        kinematicsController.updateSubsystems(store, batteryVoltage, dtSeconds, telemetryManager) { lastTuning = null }
     }
 
     override fun publishRobotTelemetry(timestamp: Long) {
         if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
             telemetryManager.customDriverStationText["Motor Powers"] = String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
-                mecanumIO.flIO.power * mecanumIO.flIO.powerScale,
-                mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
-                mecanumIO.rlIO.power * mecanumIO.rlIO.powerScale,
-                mecanumIO.rrIO.power * mecanumIO.rrIO.powerScale
+                mecanumIO.flIO.power * mecanumIO.flIO.powerScale, mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
+                mecanumIO.rlIO.power * mecanumIO.rlIO.powerScale, mecanumIO.rrIO.power * mecanumIO.rrIO.powerScale
             )
-
-            val currentStr = if (powerManager.floodgate != null) {
+            telemetryManager.customDriverStationText["Current Draw"] = if (powerManager.floodgate != null) {
                 String.format("%.1f A (Physical)", powerManager.floodgate.current)
             } else {
                 String.format("%.1f A (Estimated)", powerManager.currentAmps)
             }
-            telemetryManager.customDriverStationText["Current Draw"] = currentStr
             lastLocalTelemetryUpdateMs = timestamp
         }
 
-        // Hardware analytics logging
         telemetryManager.dataLoggingTelemetry.logDriveMotor("fl", mecanumIO.flIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("fr", mecanumIO.frIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("rl", mecanumIO.rlIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("rr", mecanumIO.rrIO)
 
         calibrationController.publishRobotTelemetry(
-            timestamp = timestamp,
-            store = store,
-            telemetryManager = telemetryManager,
-            mecanumIO = mecanumIO,
-            imuIO = imuIO,
-            visionTracker = visionTracker,
-            ticksPerMeterSetting = ticksPerMeter,
-            defaultTicksPerMeter = 2000.0
+            timestamp, store, telemetryManager, mecanumIO, imuIO, visionTracker, ticksPerMeter, 2000.0
         )
     }
 
@@ -274,51 +209,35 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         stopAll()
     }
 
-    /** Beginner API: Standard drive method (defaults to field-centric) */
-    fun drive(x: Double, y: Double, rotation: Double) {
-        driveFieldCentric(x, y, rotation)
-    }
+    fun drive(x: Double, y: Double, rotation: Double) = driveFieldCentric(x, y, rotation)
 
-    /** Beginner API: Drive the robot field-centric */
     fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
         store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = true))
     }
 
-    /** Beginner API: Drive the robot from the robot's local frame of reference */
     fun driveRobotCentric(x: Double, y: Double, rotation: Double) {
         store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = false))
     }
 
-    /** Beginner API: Auto-align the robot to a specific AprilTag ID */
     fun alignToTag(tagId: Int) {
-        val intent = visionAlignController.calculate(store.state, tagId, true)
-        if (intent != null) {
-            store.dispatch(intent)
-        }
+        visionAlignController.calculate(store.state, tagId, true)?.let { store.dispatch(it) }
     }
 
-    /**
-     * Drives the robot to a target pose on the field, automatically generating
-     * and following a path around static obstacles.
-     */
     @kotlin.jvm.JvmOverloads
     fun driveToPose(targetPose: Pose2d, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
-        pathingController.driveToPose(store, mecanumIO, targetPose, isRequested, mirrorForAlliance)
+        trajectoryFollower.driveToPose(store, mecanumIO, targetPose, isRequested, mirrorForAlliance)
     }
 
-    /**
-     * Drives the robot to a named field waypoint loaded from field_waypoints.json,
-     * automatically pathfinding around static obstacles.
-     */
     @kotlin.jvm.JvmOverloads
     fun driveToWaypoint(name: String, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
-        pathingController.driveToWaypoint(store, mecanumIO, telemetryManager, name, isRequested, mirrorForAlliance)
+        trajectoryFollower.driveToWaypoint(store, mecanumIO, telemetryManager, name, isRequested, mirrorForAlliance)
     }
 
-    /** Beginner API: Stop all mechanisms */
-    fun stopAll() {
-        com.areslib.hardware.HardwareRegistry.safeAll()
-    }
+    fun stopAll() = com.areslib.hardware.HardwareRegistry.safeAll()
+    
+    fun stop() = stopAll()
+    fun update() = updateHardwareInputs()
+    fun followTrajectory(path: Any? = null) { } // Compatibility alias as requested
 
     override fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
         val heading = imuIO?.let {
@@ -328,21 +247,13 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         } ?: 0.0
 
         return fallbackOdometry.getFallbackPoseUpdate(
-            timestampMs = timestampMs,
-            flPosTicks = mecanumIO.flIO.position,
-            frPosTicks = mecanumIO.frIO.position,
-            rlPosTicks = mecanumIO.rlIO.position,
-            rrPosTicks = mecanumIO.rrIO.position,
-            ticksPerMeterSetting = store.state.tuning.ticksPerMeter,
-            defaultTicksPerMeter = ticksPerMeter,
-            headingRadians = heading
+            timestampMs, mecanumIO.flIO.position, mecanumIO.frIO.position, mecanumIO.rlIO.position, mecanumIO.rrIO.position,
+            store.state.tuning.ticksPerMeter, ticksPerMeter, heading
         )
     }
 
     override fun close() {
         super.close()
-        if (isAndroid) {
-            LimelightProxyAutoStart.start()
-        }
+        if (isAndroid) LimelightProxyAutoStart.start()
     }
 }

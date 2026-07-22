@@ -1,13 +1,20 @@
 package com.areslib.math.filter
 
 /**
- * A highly robust, allocation-minimized sliding window Median Filter.
+ * Sliding window Median Filter for non-linear outlier spike rejection.
  *
- * Extremely effective for filtering out arbitrary outlier spikes and extreme sensor noise
- * (e.g., analog distance sensors, ultrasonic rangefinders, LiDAR) without introducing the
- * mathematical phase lag/sluggishness typical of low-pass linear filters.
+ * Tracks a sliding ring-buffer of $N$ recent sensor samples, sorts them in $O(N \log N)$ time using a pre-allocated
+ * scratch array, and outputs the sample median. Completely rejects impulse noise spikes (e.g. ultrasonic sensor dropouts,
+ * optical sensor reflection glints) without phase lag or attenuation.
  *
- * @param windowSize The number of historical samples to track. Must be positive.
+ * ### Mathematical Definition:
+ * For sorted sample window $(x_{(1)} \le x_{(2)} \le \dots \le x_{(N)})$:
+ * $$\text{Median} = \begin{cases} x_{\left(\frac{N+1}{2}\right)} & \text{if } N \text{ is odd} \\ \frac{x_{\left(\frac{N}{2}\right)} + x_{\left(\frac{N}{2}+1\right)}}{2} & \text{if } N \text{ is even} \end{cases}$$
+ *
+ * ### Zero-GC Guarantee:
+ * Uses pre-allocated primitive array buffers (`buffer`, `tempBuffer`) to maintain zero dynamic heap allocations during updates.
+ *
+ * @param windowSize Total number of historical samples to track ($N \ge 1$).
  */
 class MedianFilter(
     private val windowSize: Int
@@ -22,9 +29,10 @@ class MedianFilter(
     private var writeIndex = 0
 
     /**
-     * Updates the filter window with a new measurement and returns the current median.
-     * @param measurement The raw sensor reading.
-     * @return The filtered median estimate.
+     * Pushes a new raw measurement into the sliding window and returns the current median.
+     *
+     * @param measurement Raw sensor reading.
+     * @return Calculated median value across active window samples.
      */
     fun calculate(measurement: Double): Double {
         if (!measurement.isFinite()) return value
@@ -37,36 +45,19 @@ class MedianFilter(
             writeIndex = (writeIndex + 1) % windowSize
         }
 
-        // Copy active elements to sorting buffer
         System.arraycopy(buffer, 0, tempBuffer, 0, size)
         tempBuffer.sort(0, size)
 
         return if (size % 2 == 1) {
             tempBuffer[size / 2]
         } else {
-            (tempBuffer[size / 2 - 1] + tempBuffer[size / 2]) / 2.0
+            val mid = size / 2
+            (tempBuffer[mid - 1] + tempBuffer[mid]) / 2.0
         }
     }
 
     /**
-     * Pre-fills the entire history buffer with a specific value.
-     */
-    fun reset(value: Double = 0.0) {
-        buffer.fill(value)
-        size = windowSize
-        writeIndex = 0
-    }
-
-    /**
-     * Clears the filter history, forcing it to rebuild window state on subsequent inputs.
-     */
-    fun clear() {
-        size = 0
-        writeIndex = 0
-    }
-
-    /**
-     * Returns the last computed median value, or 0.0 if empty.
+     * Gets the current median value without pushing a new sample.
      */
     val value: Double
         get() {
@@ -76,7 +67,27 @@ class MedianFilter(
             return if (size % 2 == 1) {
                 tempBuffer[size / 2]
             } else {
-                (tempBuffer[size / 2 - 1] + tempBuffer[size / 2]) / 2.0
+                val mid = size / 2
+                (tempBuffer[mid - 1] + tempBuffer[mid]) / 2.0
             }
         }
+
+    /**
+     * Resets the buffer to a baseline pre-filled initial value.
+     *
+     * @param initialValue Baseline initial value to pre-fill the entire window buffer.
+     */
+    fun reset(initialValue: Double = 0.0) {
+        buffer.fill(initialValue)
+        size = windowSize
+        writeIndex = 0
+    }
+
+    /**
+     * Clears all samples in the sliding window buffer.
+     */
+    fun clear() {
+        size = 0
+        writeIndex = 0
+    }
 }

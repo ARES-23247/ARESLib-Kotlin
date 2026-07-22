@@ -1,11 +1,24 @@
 package com.areslib.math.filter
 
 /**
- * A highly robust, general-purpose Slew Rate Limiter utility.
+ * Signal rate-of-change limiter (Slew Rate Limiter).
  *
- * Limits the rate of change of an input signal. Extremely useful for limiting drivetrain
- * acceleration (reducing wheel slip, drivetrain mechanical shock, and current spikes)
- * or smoothing raw joystick commands from drivers.
+ * Prevents rapid changes in control signals by bounding the derivative $\frac{du}{dt}$ between asymmetric positive ($r_{pos}$)
+ * and negative ($r_{neg}$) rate limits. Essential for smoothing driver joystick inputs, limiting drivetrain acceleration
+ * to prevent wheel slip, and mitigating high-current battery brownout spikes.
+ *
+ * ### Mathematical Formulation:
+ * $$\Delta u = \text{coerceIn}(u_{input} - u_{last}, -|r_{neg}| \cdot \Delta t, |r_{pos}| \cdot \Delta t)$$
+ * $$u_{output} = u_{last} + \Delta u$$
+ *
+ * ### Physical Units:
+ * - Signal $u$: Arbitrary units (e.g. Volts $V$, Duty cycle percent $-1.0 \dots +1.0$, or Velocity $m/s$)
+ * - Rate Limit $r$: Signal units per second (e.g. $V/s$, $1/s$, or $m/s^2$)
+ * - Time Step $\Delta t$: Seconds ($s$)
+ *
+ * @param positiveRateLimit Maximum allowed rate of increase per second ($r_{pos} > 0$).
+ * @param negativeRateLimit Maximum allowed rate of decrease per second ($r_{neg} < 0$). Defaults to $-positiveRateLimit$.
+ * @param initialValue Starting output signal value before first update (default: 0.0).
  */
 class SlewRateLimiter(
     private var positiveRateLimit: Double,
@@ -15,11 +28,15 @@ class SlewRateLimiter(
     private var lastValue = initialValue
     private var hasBeenCalled = false
 
+    /** Current output value of the rate limiter. */
+    val value: Double get() = lastValue
+
     /**
-     * Filters the input value to enforce the rate-of-change limits.
-     * @param input The target input signal.
-     * @param dtSeconds The time step since the last update in seconds.
-     * @return The rate-limited signal.
+     * Filters the target input signal to enforce maximum rate-of-change constraints.
+     *
+     * @param input Desired target input signal value.
+     * @param dtSeconds Time elapsed since last update cycle in seconds ($\Delta t$).
+     * @return Rate-limited output signal value.
      */
     fun calculate(input: Double, dtSeconds: Double): Double {
         if (!hasBeenCalled) {
@@ -37,27 +54,16 @@ class SlewRateLimiter(
         val change = input - lastValue
         val posLimit = kotlin.math.abs(positiveRateLimit)
         val negLimit = -kotlin.math.abs(negativeRateLimit)
-        
-        val maxPositiveChange = posLimit * dt
-        val maxNegativeChange = negLimit * dt
 
-        val minChange = maxNegativeChange
-        val maxChange = maxPositiveChange
-
-        lastValue += change.coerceIn(minChange, maxChange)
+        val clampedChange = change.coerceIn(negLimit * dt, posLimit * dt)
+        lastValue += clampedChange
         return lastValue
     }
 
     /**
-     * Updates the rate limits dynamically.
-     */
-    fun setRateLimits(positiveRateLimit: Double, negativeRateLimit: Double = -positiveRateLimit) {
-        this.positiveRateLimit = positiveRateLimit
-        this.negativeRateLimit = negativeRateLimit
-    }
-
-    /**
-     * Resets the limiter's state to a specific value.
+     * Resets the internal state to a new baseline value and marks it as initialized.
+     *
+     * @param value New baseline output signal value.
      */
     fun reset(value: Double = 0.0) {
         lastValue = value
@@ -65,7 +71,7 @@ class SlewRateLimiter(
     }
 
     /**
-     * Clears internal state, causing the next calculation to snap directly to the input value.
+     * Clears internal state so the next input sample snaps directly without rate limiting.
      */
     fun clear() {
         hasBeenCalled = false
@@ -73,8 +79,13 @@ class SlewRateLimiter(
     }
 
     /**
-     * Returns the last computed output value.
+     * Dynamically updates positive and negative rate limits.
+     *
+     * @param positive Maximum rate of increase per second.
+     * @param negative Maximum rate of decrease per second.
      */
-    val value: Double
-        get() = lastValue
+    fun setRateLimits(positive: Double, negative: Double = -positive) {
+        positiveRateLimit = positive
+        negativeRateLimit = negative
+    }
 }

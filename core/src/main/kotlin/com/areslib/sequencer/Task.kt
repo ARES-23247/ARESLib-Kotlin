@@ -3,9 +3,37 @@ package com.areslib.sequencer
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
 import com.areslib.math.geometry.Pose2d
+import java.util.concurrent.ConcurrentHashMap
+
+object TaskCallbacks {
+    private val completeCallbacks = ConcurrentHashMap<Task, () -> Unit>()
+    private val failCallbacks = ConcurrentHashMap<Task, () -> Unit>()
+
+    fun registerComplete(task: Task, callback: () -> Unit) {
+        completeCallbacks[task] = callback
+    }
+
+    fun registerFail(task: Task, callback: () -> Unit) {
+        failCallbacks[task] = callback
+    }
+
+    fun invokeComplete(task: Task) {
+        completeCallbacks[task]?.invoke()
+    }
+
+    fun invokeFail(task: Task) {
+        failCallbacks[task]?.invoke()
+    }
+
+    fun reset(task: Task) {
+        completeCallbacks.remove(task)
+        failCallbacks.remove(task)
+    }
+}
 
 /**
  * Interface representing a discrete superstructure or autonomous execution task.
+ * Acts as a Facade delegating to internal single-responsibility controllers.
  */
 interface Task {
     val name: String
@@ -13,9 +41,12 @@ interface Task {
 
     /**
      * Called once when the task becomes active.
-     * Returns any initial actions that should be dispatched to the Redux store.
      */
-    fun initialize(state: RobotState): List<RobotAction> = emptyList()
+    fun initialize(state: RobotState): List<RobotAction> {
+        TaskStateMachine.transitionTo(this, TaskStatus.RUNNING)
+        TaskTimeoutManager.start(this)
+        return emptyList()
+    }
 
     /**
      * Checked periodically. Returns true when the wait conditions/guards are satisfied.
@@ -24,17 +55,53 @@ interface Task {
 
     /**
      * Called periodically while the task is running.
-     * Returns actions to dispatch during execution (e.g. feedback adjustments).
      */
-    fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> = emptyList()
+    fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
+        if (TaskTimeoutManager.isTimedOut(this, elapsedMs)) {
+            TaskStateMachine.transitionTo(this, TaskStatus.FAILED)
+            TaskCallbacks.invokeFail(this)
+        }
+        return emptyList()
+    }
 
     /**
      * Called once when isCompleted returns true.
-     * Returns any terminal cleanup actions to dispatch.
      */
-    fun end(state: RobotState, interrupted: Boolean): List<RobotAction> = emptyList()
-}
+    fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+        if (interrupted) {
+            TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+        } else {
+            TaskStateMachine.transitionTo(this, TaskStatus.COMPLETED)
+            TaskCallbacks.invokeComplete(this)
+        }
+        return emptyList()
+    }
 
+    fun cancel() {
+        TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+    }
+
+    fun reset() {
+        TaskStateMachine.reset(this)
+        TaskTimeoutManager.reset(this)
+        TaskCallbacks.reset(this)
+    }
+
+    fun onComplete(callback: () -> Unit): Task {
+        TaskCallbacks.registerComplete(this, callback)
+        return this
+    }
+
+    fun onFail(callback: () -> Unit): Task {
+        TaskCallbacks.registerFail(this, callback)
+        return this
+    }
+
+    fun withTimeout(ms: Long): Task {
+        TaskTimeoutManager.setTimeout(this, ms)
+        return this
+    }
+}
 
 /**
  * Task to wait for a specific duration of time.
@@ -74,136 +141,13 @@ class ActionDispatchTask(
     private var dispatched = false
 
     override fun initialize(state: RobotState): List<RobotAction> {
+        super.initialize(state)
         dispatched = true
         return listOf(action)
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return dispatched
-    }
-}
-
-/**
- * Task group that runs a list of tasks sequentially, one after another.
- */
-class SequentialTaskGroup(private val tasks: List<Task>) : Task {
-    override val name = "Sequential(${tasks.joinToString { it.name }})"
-    private var currentIndex = 0
-    private var currentTaskStartTimeMs = 0L
-    private val pendingActions = mutableListOf<RobotAction>()
-    private val actionsList = mutableListOf<RobotAction>()
-
-    override fun initialize(state: RobotState): List<RobotAction> {
-        currentIndex = 0
-        currentTaskStartTimeMs = 0L
-        pendingActions.clear()
-        if (tasks.isEmpty()) return emptyList()
-        return tasks[0].initialize(state)
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        while (currentIndex < tasks.size) {
-            val currentTask = tasks[currentIndex]
-            val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
-            if (currentTask.isCompleted(state, currentTaskElapsed)) {
-                pendingActions.addAll(currentTask.end(state, interrupted = false))
-                currentIndex++
-                currentTaskStartTimeMs = elapsedMs
-                if (currentIndex < tasks.size) {
-                    pendingActions.addAll(tasks[currentIndex].initialize(state))
-                }
-            } else {
-                return false
-            }
-        }
-        return true
-    }
-
-    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        actionsList.clear()
-        if (pendingActions.isNotEmpty()) {
-            actionsList.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        if (currentIndex < tasks.size) {
-            val currentTask = tasks[currentIndex]
-            val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
-            actionsList.addAll(currentTask.execute(state, currentTaskElapsed))
-        }
-        return actionsList
-    }
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val actions = mutableListOf<RobotAction>()
-        if (pendingActions.isNotEmpty()) {
-            actions.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        if (interrupted && currentIndex < tasks.size) {
-            actions.addAll(tasks[currentIndex].end(state, interrupted = true))
-        }
-        return actions
-    }
-}
-
-/**
- * Task group that runs multiple tasks simultaneously in parallel.
- */
-class ParallelTaskGroup(private val tasks: List<Task>) : Task {
-    override val name = "Parallel(${tasks.joinToString { it.name }})"
-    private val completedTasks = mutableSetOf<Task>()
-    private val pendingActions = mutableListOf<RobotAction>()
-    private val actionsList = mutableListOf<RobotAction>()
-
-    override fun initialize(state: RobotState): List<RobotAction> {
-        completedTasks.clear()
-        pendingActions.clear()
-        return tasks.flatMap { it.initialize(state) }
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (!completedTasks.contains(task)) {
-                if (task.isCompleted(state, elapsedMs)) {
-                    completedTasks.add(task)
-                    pendingActions.addAll(task.end(state, interrupted = false))
-                }
-            }
-        }
-        return completedTasks.size == tasks.size
-    }
-
-    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        actionsList.clear()
-        if (pendingActions.isNotEmpty()) {
-            actionsList.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (!completedTasks.contains(task)) {
-                actionsList.addAll(task.execute(state, elapsedMs))
-            }
-        }
-        return actionsList
-    }
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val actions = mutableListOf<RobotAction>()
-        if (pendingActions.isNotEmpty()) {
-            actions.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        if (interrupted) {
-            for (i in 0 until tasks.size) {
-                val task = tasks[i]
-                if (!completedTasks.contains(task)) {
-                    actions.addAll(task.end(state, interrupted = true))
-                }
-            }
-        }
-        return actions
     }
 }
 
@@ -231,6 +175,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val taskStartTimes = mutableMapOf<Task, Long>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
+        super.initialize(state)
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
         activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
@@ -238,8 +183,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         activeEventTasks.clear()
         taskStartTimes.clear()
 
-        // Closest-point projection: start tracking from the nearest point on the path
-        // to the robot's actual position, rather than always from distance 0.
         val currentPose = state.drive.poseEstimator.estimatedPose
         val startDistance = activePath.findClosestDistance(currentPose.x, currentPose.y)
 
@@ -268,6 +211,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
+        super.execute(state, elapsedMs)
         val currentTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
         if (lastTimeMs != 0L && currentTimestamp <= lastTimeMs) {
             actionsList.clear()
@@ -283,7 +227,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
         val progressSpeed = kotlin.math.max(scratchPathPoint.velocityMps, 0.1)
         
-        // Find closest physical point within a local window to prevent snapping backwards on overlapping paths
         val currentPose = state.drive.poseEstimator.estimatedPose
         val closestDist = activePath.findClosestDistance(
             x = currentPose.x, 
@@ -292,7 +235,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             maxDistance = currentDistance + 1.5
         )
         
-        // Capped leash of 0.4 meters. If the robot gets stuck, the target point waits.
         val maxLead = 0.4
         var nextDistance = currentDistance + progressSpeed * dt
         if (nextDistance > closestDist + maxLead) {
@@ -316,14 +258,12 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             timestampMs = currentTimestamp
         ))
 
-        // Check path events using index-based loop to prevent iterator allocation
         for (i in 0 until activePath.events.size) {
             val event = activePath.events[i]
             if (event.eventName !in triggeredEvents && event.triggerDistanceMeters <= nextDistance) {
                 triggeredEvents.add(event.eventName)
                 actionsList.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
                 
-                // Spawn the named command as a background task
                 val cmdTask = com.areslib.pathing.NamedCommands.getCommand(event.eventName, currentTimestamp)
                 if (cmdTask != null) {
                     actionsList.addAll(cmdTask.initialize(state))
@@ -333,7 +273,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             }
         }
         
-        // Execute active event tasks
         val it = activeEventTasks.iterator()
         while (it.hasNext()) {
             val cmdTask = it.next()
@@ -352,6 +291,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+        super.end(state, interrupted)
         follower.stop()
         val actions = mutableListOf<RobotAction>()
         for (cmdTask in activeEventTasks) {
@@ -359,137 +299,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         }
         activeEventTasks.clear()
         taskStartTimes.clear()
-        return actions
-    }
-}
-
-/**
- * Task group that runs multiple tasks simultaneously in parallel.
- * Finishes as soon as ANY of the tasks completes, interrupting the rest.
- */
-class ParallelRaceGroup(private val tasks: List<Task>) : Task {
-    override val name = "ParallelRace(${tasks.joinToString { it.name }})"
-    private val completedTasks = mutableSetOf<Task>()
-    private val pendingActions = mutableListOf<RobotAction>()
-    private val actionsList = mutableListOf<RobotAction>()
-    private var isCompleted = false
-
-    override fun initialize(state: RobotState): List<RobotAction> {
-        completedTasks.clear()
-        pendingActions.clear()
-        isCompleted = false
-        return tasks.flatMap { it.initialize(state) }
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        if (isCompleted) return true
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (task.isCompleted(state, elapsedMs)) {
-                completedTasks.add(task)
-                pendingActions.addAll(task.end(state, interrupted = false))
-                isCompleted = true
-                break
-            }
-        }
-        return isCompleted
-    }
-
-    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        actionsList.clear()
-        if (pendingActions.isNotEmpty()) {
-            actionsList.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        if (isCompleted) return actionsList
-
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (!completedTasks.contains(task)) {
-                actionsList.addAll(task.execute(state, elapsedMs))
-            }
-        }
-        return actionsList
-    }
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val actions = mutableListOf<RobotAction>()
-        if (pendingActions.isNotEmpty()) {
-            actions.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (!completedTasks.contains(task)) {
-                actions.addAll(task.end(state, interrupted = true))
-            }
-        }
-        return actions
-    }
-}
-
-/**
- * Task group that runs multiple tasks simultaneously in parallel.
- * Finishes as soon as a specific "deadline" task completes, interrupting the rest.
- */
-class ParallelDeadlineGroup(
-    private val deadline: Task,
-    private val otherTasks: List<Task>
-) : Task {
-    private val tasks = listOf(deadline) + otherTasks
-    override val name = "ParallelDeadline(deadline=${deadline.name}, others=${otherTasks.joinToString { it.name }})"
-    private val completedTasks = mutableSetOf<Task>()
-    private val pendingActions = mutableListOf<RobotAction>()
-    private val actionsList = mutableListOf<RobotAction>()
-
-    override fun initialize(state: RobotState): List<RobotAction> {
-        completedTasks.clear()
-        pendingActions.clear()
-        return tasks.flatMap { it.initialize(state) }
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (!completedTasks.contains(task)) {
-                if (task.isCompleted(state, elapsedMs)) {
-                    completedTasks.add(task)
-                    pendingActions.addAll(task.end(state, interrupted = false))
-                }
-            }
-        }
-        return completedTasks.contains(deadline)
-    }
-
-    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        actionsList.clear()
-        if (pendingActions.isNotEmpty()) {
-            actionsList.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        if (completedTasks.contains(deadline)) return actionsList
-
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (!completedTasks.contains(task)) {
-                actionsList.addAll(task.execute(state, elapsedMs))
-            }
-        }
-        return actionsList
-    }
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val actions = mutableListOf<RobotAction>()
-        if (pendingActions.isNotEmpty()) {
-            actions.addAll(pendingActions)
-            pendingActions.clear()
-        }
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            if (!completedTasks.contains(task)) {
-                actions.addAll(task.end(state, interrupted = true))
-            }
-        }
         return actions
     }
 }
