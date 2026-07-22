@@ -146,7 +146,7 @@ object LogManagerServer : NanoHTTPD(5002) {
 
     private fun createLogFileInfo(file: File, synced: Boolean): LogFileInfo {
         val lastMod = file.lastModified()
-        val isActive = (System.currentTimeMillis() - lastMod) < 5000L
+        val isActive = (com.areslib.util.RobotClock.currentTimeMillis() - lastMod) < 5000L
         val fmt = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(lastMod))
         return LogFileInfo(
             name = file.name,

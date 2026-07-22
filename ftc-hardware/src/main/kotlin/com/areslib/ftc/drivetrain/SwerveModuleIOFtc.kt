@@ -114,7 +114,7 @@ class SwerveModuleIOFtc(
     }
 
     private fun logWarning(msg: String) {
-        val now = System.currentTimeMillis()
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
         if (now - lastWarningTime > 2000) {
             System.err.println("SwerveModuleIOFtc Warning: $msg")
             lastWarningTime = now

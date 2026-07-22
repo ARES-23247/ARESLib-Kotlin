@@ -111,7 +111,8 @@ class SwerveKinematics(
             val target = targetStatesBuffer[i]
             val prev = previousStates[i]
 
-            val optimized = optimizeModuleState(target, prev.angle)
+            optimizeModuleState(target, prev.angle, target) // modify target directly
+            val optimized = target
 
             if (hasPreviousState && dtSeconds > 0.0) {
                 val steerErr = wrapAngle(optimized.angle.radians - prev.angle.radians)
@@ -155,6 +156,15 @@ class SwerveKinematics(
      * @return Optimized [SwerveModuleState].
      */
     fun optimizeModuleState(desired: SwerveModuleState, currentAngle: Rotation2d): SwerveModuleState {
+        val out = SwerveModuleState()
+        optimizeModuleState(desired, currentAngle, out)
+        return out
+    }
+
+    /**
+     * Zero-GC variant of optimizeModuleState.
+     */
+    fun optimizeModuleState(desired: SwerveModuleState, currentAngle: Rotation2d, out: SwerveModuleState) {
         var delta = wrapAngle(desired.angle.radians - currentAngle.radians)
         var targetSpeed = desired.speedMetersPerSecond
 
@@ -163,7 +173,8 @@ class SwerveKinematics(
             targetSpeed = -targetSpeed
         }
 
-        return SwerveModuleState(targetSpeed, Rotation2d(currentAngle.radians + delta))
+        out.speedMetersPerSecond = targetSpeed
+        out.angle = Rotation2d(currentAngle.radians + delta)
     }
 
     /**

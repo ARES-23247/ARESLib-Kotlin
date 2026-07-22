@@ -22,10 +22,10 @@ open class ElapsedTime {
                 try {
                     currentTimeMillisMethod.invoke(null) as Long
                 } catch (_: Exception) {
-                    System.currentTimeMillis()
+                    com.areslib.util.RobotClock.currentTimeMillis()
                 }
             } else {
-                System.currentTimeMillis()
+                com.areslib.util.RobotClock.currentTimeMillis()
             }
         }
     }

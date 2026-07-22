@@ -112,16 +112,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
 
-        val s0 = System.nanoTime()
+        val s0 = com.areslib.util.RobotClock.nanoTime()
         com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()
-        val s1 = System.nanoTime()
+        val s1 = com.areslib.util.RobotClock.nanoTime()
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         updateHardwareInputs()
-        val s2 = System.nanoTime()
+        val s2 = com.areslib.util.RobotClock.nanoTime()
 
         val poseUpdate = pinpointIO?.getPoseUpdate() ?: getFallbackPoseUpdate(timestamp)
-        val s3 = System.nanoTime()
+        val s3 = com.areslib.util.RobotClock.nanoTime()
 
         val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
         val age = timestamp - poseUpdate.timestampMs
@@ -134,7 +134,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         store.dispatch(poseUpdate)
 
         visionTracker.update(timestamp)
-        val s4 = System.nanoTime()
+        val s4 = com.areslib.util.RobotClock.nanoTime()
 
         profiler.recordSensorsProfiling(
             bulkMs = (s1 - s0) / 1_000_000.0,
@@ -178,17 +178,17 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val dtSeconds = if (lastUpdateTime == 0L) 0.01 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
-            val t0 = System.nanoTime()
+            val t0 = com.areslib.util.RobotClock.nanoTime()
             readSensors()
             hasReadSensorsThisFrame = false
-            val t1 = System.nanoTime()
+            val t1 = com.areslib.util.RobotClock.nanoTime()
 
             val effectiveScale = powerManager.update(dtSeconds, timestamp)
             val batteryVoltage = powerManager.batteryVoltage
-            val t2 = System.nanoTime()
+            val t2 = com.areslib.util.RobotClock.nanoTime()
 
             updateSubsystems(dtSeconds, batteryVoltage, effectiveScale)
-            val t3 = System.nanoTime()
+            val t3 = com.areslib.util.RobotClock.nanoTime()
 
             telemetryManager.publishFull(
                 state = store.state,
@@ -201,7 +201,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 localTelemetry = localTelemetry,
                 onSubclassPublish = { publishRobotTelemetry(timestamp) }
             )
-            val t4 = System.nanoTime()
+            val t4 = com.areslib.util.RobotClock.nanoTime()
 
             profiler.recordAndPublishLoopDiagnostics(telemetryManager, t0, t1, t2, t3, t4)
             lifecycleController.sleepRemaining(timestamp, isAndroid)

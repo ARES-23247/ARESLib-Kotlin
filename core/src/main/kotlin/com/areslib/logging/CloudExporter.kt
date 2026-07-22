@@ -38,7 +38,7 @@ object CloudExporter {
         if (!file.exists()) return "File not found"
 
         // If file is older than 4 hours, auto-archive instead of uploading to save cloud costs
-        if (System.currentTimeMillis() - file.lastModified() > 4 * 60 * 60 * 1000) {
+        if (com.areslib.util.RobotClock.currentTimeMillis() - file.lastModified() > 4 * 60 * 60 * 1000) {
             println("CloudExporter: File ${file.name} is too old. Auto-archiving without upload.")
             archiveFile(file)
             return null // Considered success

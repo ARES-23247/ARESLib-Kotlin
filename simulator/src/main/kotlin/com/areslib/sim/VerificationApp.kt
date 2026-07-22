@@ -36,8 +36,8 @@ fun main(args: Array<String>) {
 
     // Wait for connection
     var connected = false
-    val startConnectTime = System.currentTimeMillis()
-    while (System.currentTimeMillis() - startConnectTime < 10000) {
+    val startConnectTime = com.areslib.util.RobotClock.currentTimeMillis()
+    while (com.areslib.util.RobotClock.currentTimeMillis() - startConnectTime < 10000) {
         if (ntInst.isConnected) {
             connected = true
             break
@@ -109,9 +109,9 @@ fun main(args: Array<String>) {
 
     // Wait for EKF starting pose sync (wait for simulator to start and reset EKF pose)
     println("Waiting for EKF starting pose sync from simulator...")
-    val startSyncTime = System.currentTimeMillis()
+    val startSyncTime = com.areslib.util.RobotClock.currentTimeMillis()
     var synced = false
-    while (System.currentTimeMillis() - startSyncTime < 25000) {
+    while (com.areslib.util.RobotClock.currentTimeMillis() - startSyncTime < 25000) {
         val (_, y, _) = getPose()
         if (abs(y) > 0.5) {
             synced = true
@@ -133,13 +133,13 @@ fun main(args: Array<String>) {
      */
     fun rotateToTarget(targetRad: Double, toleranceRad: Double = 0.03, timeoutMs: Long = 6000): Boolean {
         println("Rotating to target: %.3f rad...".format(targetRad))
-        val startTime = System.currentTimeMillis()
+        val startTime = com.areslib.util.RobotClock.currentTimeMillis()
         var settledTicks = 0
         var lastH = getPose().third
-        var lastTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
+        var lastTime = com.areslib.util.RobotClock.currentTimeMillis()
+        while (com.areslib.util.RobotClock.currentTimeMillis() - startTime < timeoutMs) {
             val (_, _, currentH) = getPose()
-            val now = System.currentTimeMillis()
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
             val dt = (now - lastTime) / 1000.0
             val velocity = if (dt > 0.001) wrapAngle(currentH - lastH) / dt else 0.0
             lastH = currentH
