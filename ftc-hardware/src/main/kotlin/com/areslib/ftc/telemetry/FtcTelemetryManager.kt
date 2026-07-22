@@ -169,25 +169,31 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         // Human-readable local driver station console printouts
         // Non-blocking architecture: string updates are pushed to a background thread queue. 
         // This completely eliminates the 15-30ms synchronous WiFi socket stalls from `Telemetry.update()`.
-        localTelemetry?.let { t ->
-            if (timestamp - lastLocalTelemetryUpdateMs >= 250L) { // 4Hz real-time updates!
-                val snapshot = mutableListOf(
-                    "EKF Pose (X, Y, Deg)" to estPose.toFormattedString(),
-                    "Raw Pinpoint (X, Y, Deg)" to com.areslib.math.geometry.Pose2d(
-                        state.drive.odometryX,
-                        state.drive.odometryY,
-                        com.areslib.math.geometry.Rotation2d(state.drive.odometryHeading)
-                    ).toFormattedString(),
-                    "Limelight Pose (X, Y, Deg)" to (visionTracker.lastLimelightPose?.let { pose ->
-                        val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
-                        "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
-                    } ?: "NO TARGET"),
-                    "Vision Status" to visionTracker.lastVisionStatus
-                )
-                customDriverStationText.forEach { (k, v) -> snapshot.add(k to v) }
+        if (timestamp - lastLocalTelemetryUpdateMs >= 250L) { // 4Hz real-time updates!
+            val snapshot = mutableListOf(
+                "EKF Pose (X, Y, Deg)" to estPose.toFormattedString(),
+                "Raw Pinpoint (X, Y, Deg)" to com.areslib.math.geometry.Pose2d(
+                    state.drive.odometryX,
+                    state.drive.odometryY,
+                    com.areslib.math.geometry.Rotation2d(state.drive.odometryHeading)
+                ).toFormattedString(),
+                "Limelight Pose (X, Y, Deg)" to (visionTracker.lastLimelightPose?.let { pose ->
+                    val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
+                    "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
+                } ?: "NO TARGET"),
+                "Vision Status" to visionTracker.lastVisionStatus
+            )
+            customDriverStationText.forEach { (k, v) -> snapshot.add(k to v) }
+            if (localTelemetry != null) {
                 telemetryQueue.offer(snapshot)
-                lastLocalTelemetryUpdateMs = timestamp
             }
+            
+            // Publish text console lines to NT4 for ARES-Analytics Driver Station widget
+            for (i in snapshot.indices) {
+                val (k, v) = snapshot[i]
+                dataLoggingTelemetry.putString("ARES/DriverStation/Telemetry/$i", "$k: $v")
+            }
+            lastLocalTelemetryUpdateMs = timestamp
         }
 
         // Finalize frame: disk log always, NT4 flush only on NT frames
