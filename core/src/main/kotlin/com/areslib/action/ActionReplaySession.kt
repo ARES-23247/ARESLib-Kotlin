@@ -59,7 +59,9 @@ class ActionReplaySession private constructor(
      * to avoid full-history replay on every seek. Key = action index, Value = state
      * after applying all actions up to that index.
      */
-    private val checkpoints = HashMap<Int, RobotState>()
+    private val checkpoints = java.util.TreeMap<Int, RobotState>()
+    private var lastComputedIndex: Int = -1
+    private var lastComputedState: RobotState? = null
 
     init {
         checkpoints[0] = initialState
@@ -148,25 +150,31 @@ class ActionReplaySession private constructor(
      * actions from that checkpoint, and caches new checkpoints along the way.
      */
     private fun stateAtIndex(index: Int): RobotState {
-        // Direct cache hit
-        checkpoints[index]?.let { return it }
-
-        // Find the nearest checkpoint at or before the requested index
-        val nearestCheckpoint = (index / CHECKPOINT_INTERVAL) * CHECKPOINT_INTERVAL
-        var state = checkpoints.getOrPut(nearestCheckpoint) {
-            recomputeFromStart(nearestCheckpoint)
+        if (index == lastComputedIndex && lastComputedState != null) {
+            return lastComputedState!!
         }
 
-        // Replay from checkpoint to target index
-        for (i in nearestCheckpoint until index) {
+        val exactHit = checkpoints[index]
+        if (exactHit != null) {
+            lastComputedIndex = index
+            lastComputedState = exactHit
+            return exactHit
+        }
+
+        // Use floorEntry to find nearest cached checkpoint <= index
+        val floorEntry = checkpoints.floorEntry(index)
+        val startIdx = floorEntry?.key ?: 0
+        var state = floorEntry?.value ?: initialState
+
+        for (i in startIdx until index) {
             state = reducer(state, actions[i])
+            if ((i + 1) % CHECKPOINT_INTERVAL == 0) {
+                checkpoints[i + 1] = state
+            }
         }
 
-        // Cache on checkpoint boundaries for future seeks
-        if (index % CHECKPOINT_INTERVAL == 0) {
-            checkpoints[index] = state
-        }
-
+        lastComputedIndex = index
+        lastComputedState = state
         return state
     }
 

@@ -60,59 +60,25 @@ class NT4Telemetry : ITelemetry {
      */
     override fun putNumber(key: String, value: Double) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.let { helper ->
-            helper.putNumber(ntKey, value)
-            return
-        }
-        if (!isInitialized) return
+        reflectHelper?.putNumber(ntKey, value)
         try { inst.putNumber(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
-    /**
-     * putBoolean declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun putBoolean(key: String, value: Boolean) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.let { helper ->
-            helper.putBoolean(ntKey, value)
-            return
-        }
-        if (!isInitialized) return
+        reflectHelper?.putBoolean(ntKey, value)
         try { inst.putBoolean(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
-    /**
-     * putString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun putString(key: String, value: String) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.let { helper ->
-            helper.putString(ntKey, value)
-            return
-        }
-        if (!isInitialized) return
+        reflectHelper?.putString(ntKey, value)
         try { inst.putString(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
-    /**
-     * putDoubleArray declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun putDoubleArray(key: String, value: DoubleArray) {
         val ntKey = if (key.startsWith("/")) key else "/$key"
-        reflectHelper?.let { helper ->
-            helper.putDoubleArray(ntKey, value)
-            return
-        }
-        if (!isInitialized) return
+        reflectHelper?.putDoubleArray(ntKey, value)
         try { inst.putNumberArray(ntKey, value) } catch (e: Exception) { /* swallow */ }
     }
 
