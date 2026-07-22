@@ -153,43 +153,91 @@ object DesktopSimLauncher {
             Unit
         }
 
-        val activeOpMode = SimOpModeRunner.createOpModeInstance(
-            opModeArg,
-            cliArgs.opModeClassName
-        ) ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
+        var activeOpMode = SimOpModeRunner.createOpModeInstance(opModeArg, cliArgs.opModeClassName)
 
-        activeOpMode.hardwareMap = robotDouble.hardwareMap
-
-        Thread {
-            try {
-                activeOpMode.runOpMode()
-            } catch (_: InterruptedException) {
-            } catch (e: Exception) {
-                System.err.println("OpMode Thread terminated: ${e.message}")
-                e.printStackTrace()
+        val startOpMode = { opModeToRun: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode ->
+            opModeToRun.hardwareMap = robotDouble.hardwareMap
+            Thread {
+                try {
+                    opModeToRun.runOpMode()
+                } catch (_: InterruptedException) {
+                } catch (e: Exception) {
+                    System.err.println("OpMode Thread terminated: ${e.message}")
+                }
+            }.apply {
+                isDaemon = true
+                start()
             }
-        }.apply {
-            isDaemon = true
-            start()
         }
 
-        val initStartTime = RobotClock.currentTimeMillis()
-        while (RobotClock.currentTimeMillis() - initStartTime < 1500) {
-            val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
-            robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians, ccwPos)
-            if (RobotClock.isMocked) {
-                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
-            }
-            Thread.sleep(20)
-        }
+        if (activeOpMode != null) {
+            startOpMode(activeOpMode)
 
-        println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
-        syncRobotPoseToPhysics()
-        activeOpMode.isStarted = true
+            val initStartTime = RobotClock.currentTimeMillis()
+            while (RobotClock.currentTimeMillis() - initStartTime < 1500) {
+                val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
+                robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians, ccwPos)
+                if (RobotClock.isMocked) {
+                    RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
+                }
+                Thread.sleep(20)
+            }
+
+            println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
+            syncRobotPoseToPhysics()
+            activeOpMode.isStarted = true
+        }
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
 
+        val ntInst = org.frcforftc.networktables.NetworkTablesInstance.getDefaultInstance()
+        var lastDsCommand = ""
+        var lastSelectedOpMode = ""
+
         while (true) {
+            // Check for Driver Station UI commands from ARES-Analytics dashboard
+            val dsCommand = (ntInst.get("/ARES/DriverStation/Command")?.value?.get() as? String) ?: ""
+            val selectedOpMode = (ntInst.get("/ARES/DriverStation/SelectedOpMode")?.value?.get() as? String) ?: ""
+
+            if (selectedOpMode.isNotEmpty() && selectedOpMode != lastSelectedOpMode) {
+                lastSelectedOpMode = selectedOpMode
+                println("[Simulator] Driver Station selected OpMode: $selectedOpMode")
+            }
+
+            if (dsCommand.isNotEmpty() && dsCommand != lastDsCommand) {
+                lastDsCommand = dsCommand
+                println("[Simulator] Driver Station command received: $dsCommand")
+                when (dsCommand) {
+                    "INIT" -> {
+                        try {
+                            activeOpMode?.isStopRequested = true
+                            val newOpMode = SimOpModeRunner.createOpModeInstance(null, lastSelectedOpMode)
+                                ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
+                            activeOpMode = newOpMode
+                            startOpMode(newOpMode)
+                            println("[Simulator] Successfully INITED OpMode: ${newOpMode.javaClass.simpleName}")
+                        } catch (e: Exception) {
+                            System.err.println("[Simulator] Failed to INIT OpMode: ${e.message}")
+                        }
+                    }
+                    "START" -> {
+                        activeOpMode?.let { mode ->
+                            syncRobotPoseToPhysics()
+                            mode.isStarted = true
+                            println("[Simulator] OpMode STARTED.")
+                        }
+                    }
+                    "STOP" -> {
+                        activeOpMode?.isStopRequested = true
+                        robotDouble.fl.power = 0.0
+                        robotDouble.fr.power = 0.0
+                        robotDouble.rl.power = 0.0
+                        robotDouble.rr.power = 0.0
+                        println("[Simulator] OpMode STOPPED.")
+                    }
+                }
+            }
+
             val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
             val currentPhysPose = Pose2d(
                 physicsWorld.robotBody.transform.translationX,
@@ -239,7 +287,6 @@ object DesktopSimLauncher {
                 TelemetryPublisher.publishTargetPose(ekfPose)
 
                 // Dual-publish EKF, Odometry, and Motor hardware metrics directly to pure Java NT4Server
-                val ntInst = org.frcforftc.networktables.NetworkTablesInstance.getDefaultInstance()
                 ntInst.putNumber("Drive/Pose_X", ekfPose.x)
                 ntInst.putNumber("Drive/Pose_Y", ekfPose.y)
                 ntInst.putNumber("Drive/Drive_Heading", ekfPose.heading.radians)
@@ -270,5 +317,3 @@ object DesktopSimLauncher {
         }
     }
 }
-
-

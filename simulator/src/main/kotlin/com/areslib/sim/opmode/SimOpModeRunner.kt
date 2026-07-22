@@ -1,7 +1,6 @@
 package com.areslib.sim.opmode
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
-import edu.wpi.first.networktables.NetworkTableInstance
 import org.reflections.Reflections
 import org.reflections.scanners.Scanners
 import org.reflections.util.ClasspathHelper
@@ -14,10 +13,7 @@ import org.reflections.util.ConfigurationBuilder
 object SimOpModeRunner {
 
     /**
-     * scanAndPublishOpModes declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Scans classpath for OpModes and publishes JSON lists to NT4 for the Driver Station UI.
      */
     fun scanAndPublishOpModes() {
         try {
@@ -48,32 +44,45 @@ object SimOpModeRunner {
                 Class.forName("com.qualcomm.robotcore.eventloop.opmode.Autonomous") as Class<out Annotation>
             } catch (_: Exception) { null }
 
-            val teleops = teleOpClass?.let {
+            var teleops = teleOpClass?.let {
                 reflections.getTypesAnnotatedWith(it)
                     .filter { opMode -> !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") }
                     .filter { opMode -> disabledClass == null || (!opMode.isAnnotationPresent(disabledClass) && opMode.name !in disabledOpModes) }
                     .map { opMode -> opMode.name }
             } ?: emptyList()
 
-            val autos = autonomousClass?.let {
+            var autos = autonomousClass?.let {
                 reflections.getTypesAnnotatedWith(it)
                     .filter { opMode -> !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") }
                     .filter { opMode -> disabledClass == null || (!opMode.isAnnotationPresent(disabledClass) && opMode.name !in disabledOpModes) }
                     .map { opMode -> opMode.name }
             } ?: emptyList()
+
+            // Include default ARESLib integration test opmode if list is empty
+            if (teleops.isEmpty()) {
+                teleops = listOf("com.areslib.ftc.hardware.AresHardwareTestOpMode")
+            }
 
             val gson = com.google.gson.Gson()
-            val ntInst = NetworkTableInstance.getDefault()
+            val teleOpJson = gson.toJson(teleops)
+            val autoJson = gson.toJson(autos)
 
-            val teleOpTopic = ntInst.getStringTopic("ARES/DriverStation/TeleOpList")
-            val teleOpListPub = teleOpTopic.publish()
-            teleOpListPub.set(gson.toJson(teleops))
-            teleOpTopic.setRetained(true)
+            // Publish to pure Java NT4Server for ARES-Analytics dashboard
+            val javaNtInst = org.frcforftc.networktables.NetworkTablesInstance.getDefaultInstance()
+            javaNtInst.putString("ARES/DriverStation/TeleOpList", teleOpJson)
+            javaNtInst.putString("ARES/DriverStation/AutonomousList", autoJson)
 
-            val autoTopic = ntInst.getStringTopic("ARES/DriverStation/AutonomousList")
-            val autoListPub = autoTopic.publish()
-            autoListPub.set(gson.toJson(autos))
-            autoTopic.setRetained(true)
+            // Publish to WPILib NT4 instance for AdvantageScope compatibility if active
+            try {
+                val ntInst = edu.wpi.first.networktables.NetworkTableInstance.getDefault()
+                val teleOpTopic = ntInst.getStringTopic("ARES/DriverStation/TeleOpList")
+                teleOpTopic.publish().set(teleOpJson)
+                teleOpTopic.setRetained(true)
+
+                val autoTopic = ntInst.getStringTopic("ARES/DriverStation/AutonomousList")
+                autoTopic.publish().set(autoJson)
+                autoTopic.setRetained(true)
+            } catch (_: Throwable) {}
 
             println("[Simulator] Published ${teleops.size} TeleOps and ${autos.size} Autos to NT4")
         } catch (e: Exception) {
@@ -82,17 +91,14 @@ object SimOpModeRunner {
     }
 
     /**
-     * createOpModeInstance declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Dynamically instantiates an OpMode class by name.
      */
     fun createOpModeInstance(
         opModeArg: LinearOpMode?,
         opModeClassName: String?
     ): LinearOpMode? {
         if (opModeArg != null) return opModeArg
-        if (opModeClassName == null) return null
+        if (opModeClassName.isNull_or_blank()) return null
         return try {
             val clazz = Class.forName(opModeClassName)
             clazz.getDeclaredConstructor().newInstance() as LinearOpMode
@@ -101,4 +107,6 @@ object SimOpModeRunner {
             null
         }
     }
+
+    private fun String?.isNull_or_blank(): Boolean = this == null || this.trim().isEmpty()
 }
