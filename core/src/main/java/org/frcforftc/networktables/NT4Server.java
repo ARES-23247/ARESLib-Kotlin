@@ -407,32 +407,8 @@ public class NT4Server extends WebSocketServer {
         if (m_entries.containsKey(topic)) {
             entry = m_entries.get(topic);
             id = entry.getId();
-            
-            // Check if value changed
-            boolean changed = false;
-            Object newVal = value.get();
-            Object oldVal = entry.getValue().get();
-            
-            if (newVal instanceof double[] && oldVal instanceof double[]) {
-                changed = !java.util.Arrays.equals((double[]) newVal, (double[]) oldVal);
-            } else if (newVal instanceof float[] && oldVal instanceof float[]) {
-                changed = !java.util.Arrays.equals((float[]) newVal, (float[]) oldVal);
-            } else if (newVal instanceof int[] && oldVal instanceof int[]) {
-                changed = !java.util.Arrays.equals((int[]) newVal, (int[]) oldVal);
-            } else if (newVal instanceof boolean[] && oldVal instanceof boolean[]) {
-                changed = !java.util.Arrays.equals((boolean[]) newVal, (boolean[]) oldVal);
-            } else if (newVal instanceof String[] && oldVal instanceof String[]) {
-                changed = !java.util.Arrays.equals((String[]) newVal, (String[]) oldVal);
-            } else {
-                changed = !java.util.Objects.equals(newVal, oldVal);
-            }
-
-            if (changed) {
-                if (NetworkTablesValueType.determineType(newVal) != NetworkTablesValueType.Unknown) {
-                    entry.update(value);
-                    m_dirtyEntries.add(entry);
-                }
-            }
+            entry.update(value);
+            m_dirtyEntries.add(entry);
         } else {
             isNew = true;
             id = m_entries.size() + 1;
@@ -440,6 +416,7 @@ public class NT4Server extends WebSocketServer {
             entry.setId(id);
             m_entries.put(topic, entry);
             m_publisherUIDSMap.put((long) id, entry);
+            m_dirtyEntries.add(entry);
         }
 
         if (isNew) {
