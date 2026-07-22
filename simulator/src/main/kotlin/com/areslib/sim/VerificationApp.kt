@@ -81,6 +81,9 @@ fun main(args: Array<String>) {
         doubleArrayOf(0.0, 0.0, 0.0),
         edu.wpi.first.networktables.PubSubOption.periodic(0.01)
     )
+    val poseXSub = ntInst.getDoubleTopic("Drive/Pose_X").subscribe(0.0)
+    val poseYSub = ntInst.getDoubleTopic("Drive/Pose_Y").subscribe(0.0)
+    val poseHSub = ntInst.getDoubleTopic("Drive/Drive_Heading").subscribe(0.0)
     ntInst.flush()
 
     // 3. Command INIT
@@ -96,6 +99,12 @@ fun main(args: Array<String>) {
     println("Sent START command.")
 
     fun getPose(): Triple<Double, Double, Double> {
+        val px = poseXSub.get()
+        val py = poseYSub.get()
+        val ph = poseHSub.get()
+        if (abs(px) > 1e-4 || abs(py) > 1e-4 || abs(ph) > 1e-4) {
+            return Triple(px, py, ph)
+        }
         val arr = estPoseSub.get()
         if (arr.size >= 3) {
             return Triple(arr[0], arr[1], arr[2])
@@ -108,7 +117,10 @@ fun main(args: Array<String>) {
     val startSyncTime = com.areslib.util.RobotClock.currentTimeMillis()
     var synced = false
     while (com.areslib.util.RobotClock.currentTimeMillis() - startSyncTime < 25000) {
-        val (_, y, _) = getPose()
+        val (x, y, h) = getPose()
+        if (com.areslib.util.RobotClock.currentTimeMillis() % 1000 < 150) {
+            println("[VerificationApp] Polling pose: X=%.3f, Y=%.3f, H=%.3f".format(x, y, h))
+        }
         if (abs(y) > 0.5) {
             synced = true
             break

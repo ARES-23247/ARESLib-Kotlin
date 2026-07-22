@@ -224,6 +224,8 @@ object DesktopSimLauncher {
                                 ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
                             activeOpMode = newOpMode
                             startOpMode(newOpMode)
+                            Thread.sleep(100)
+                            syncRobotPoseToPhysics()
                             println("[Simulator] Successfully INITED OpMode: ${newOpMode.javaClass.simpleName}")
                         } catch (e: Exception) {
                             System.err.println("[Simulator] Failed to INIT OpMode: ${e.message}")

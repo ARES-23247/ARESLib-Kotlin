@@ -156,9 +156,6 @@ public class NT4Server extends WebSocketServer {
     public synchronized byte[] encodeNT4Messages(long timestamp, java.util.List<NetworkTablesEntry> entries) throws IOException {
         m_packer.clear();
 
-        // NT4 spec: WebSocket binary frame payload is a MessagePack array of arrays.
-        m_packer.packArrayHeader(entries.size());
-
         for (NetworkTablesEntry entry : entries) {
             int dataType = NetworkTablesValueType.getFromString(entry.getValue().getType()).id;
             Object dataValue = entry.getValue().getAs();

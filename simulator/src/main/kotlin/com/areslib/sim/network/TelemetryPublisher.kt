@@ -133,6 +133,12 @@ object TelemetryPublisher {
         val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
         estimatedPosePublisher.set(arr)
         org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose", arr)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose/0", pose.x)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose/1", pose.y)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/EstimatedPose/2", pose.heading.radians)
+        org.frcforftc.networktables.NT4Server.publishTopic("Drive/Pose_X", pose.x)
+        org.frcforftc.networktables.NT4Server.publishTopic("Drive/Pose_Y", pose.y)
+        org.frcforftc.networktables.NT4Server.publishTopic("Drive/Drive_Heading", pose.heading.radians)
         ntInst.flush()
     }
 
@@ -145,6 +151,9 @@ object TelemetryPublisher {
         val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
         truePosePublisher.set(arr)
         org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose", arr)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose/0", pose.x)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose/1", pose.y)
+        org.frcforftc.networktables.NT4Server.publishTopic("ARES/TruePose/2", pose.heading.radians)
         ntInst.flush()
     }
 

@@ -136,6 +136,23 @@ class MecanumRobotDouble {
         override val voltage: Double = 12.8
     }
 
+    val mockImu = object : com.qualcomm.robotcore.hardware.IMU {
+        override fun initialize(parameters: com.qualcomm.robotcore.hardware.IMU.Parameters): Boolean = true
+        override fun resetYaw() {}
+        override fun getRobotYawPitchRollAngles(): org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles {
+            return org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles(
+                org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS,
+                0.0, 0.0, 0.0, 0L
+            )
+        }
+        override fun getRobotAngularVelocity(unit: org.firstinspires.ftc.robotcore.external.navigation.AngleUnit): org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity {
+            return org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity(
+                unit, 0.0f, 0.0f, 0.0f, 0L
+            )
+        }
+        override fun close() {}
+    }
+
     val hardwareMap = object : HardwareMap() {
         @Suppress("UNCHECKED_CAST")
         override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
@@ -146,13 +163,47 @@ class MecanumRobotDouble {
                 "rr", "br" -> rr as T
                 "pinpoint" -> pinpoint as T
                 "limelight" -> limelight as T
+                "imu" -> mockImu as T
                 else -> {
-                    if (com.qualcomm.robotcore.hardware.Servo::class.java.isAssignableFrom(classOrType)) {
-                        println("[SimHardwareMap] Unknown device '$deviceName' requested. Returning default SimServo.")
-                        SimServo() as T
-                    } else {
-                        println("[SimHardwareMap] Unknown device '$deviceName' requested. Returning default SimDcMotorEx.")
-                        SimDcMotorEx() as T
+                    when {
+                        com.qualcomm.robotcore.hardware.IMU::class.java.isAssignableFrom(classOrType) -> {
+                            println("[SimHardwareMap] Device '$deviceName' requested as IMU. Returning default mock IMU.")
+                            mockImu as T
+                        }
+                        com.qualcomm.robotcore.hardware.Servo::class.java.isAssignableFrom(classOrType) -> {
+                            println("[SimHardwareMap] Device '$deviceName' requested as Servo. Returning default SimServo.")
+                            SimServo() as T
+                        }
+                        com.qualcomm.robotcore.hardware.DcMotor::class.java.isAssignableFrom(classOrType) -> {
+                            println("[SimHardwareMap] Device '$deviceName' requested as DcMotor. Returning default SimDcMotorEx.")
+                            SimDcMotorEx() as T
+                        }
+                        VoltageSensor::class.java.isAssignableFrom(classOrType) -> {
+                            voltageSensor as T
+                        }
+                        else -> {
+                            if (classOrType.isInterface) {
+                                println("[SimHardwareMap] Unknown device '$deviceName' (${classOrType.simpleName}) requested. Returning dynamic proxy.")
+                                java.lang.reflect.Proxy.newProxyInstance(
+                                    classOrType.classLoader,
+                                    arrayOf(classOrType),
+                                    { _, method, _ ->
+                                        when (method.returnType) {
+                                            Boolean::class.javaPrimitiveType -> false
+                                            Double::class.javaPrimitiveType -> 0.0
+                                            Float::class.javaPrimitiveType -> 0.0f
+                                            Int::class.javaPrimitiveType -> 0
+                                            Long::class.javaPrimitiveType -> 0L
+                                            String::class.java -> ""
+                                            else -> null
+                                        }
+                                    }
+                                ) as T
+                            } else {
+                                println("[SimHardwareMap] Unknown device '$deviceName' (${classOrType.simpleName}) requested. Returning default SimDcMotorEx.")
+                                SimDcMotorEx() as T
+                            }
+                        }
                     }
                 }
             }
