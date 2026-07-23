@@ -46,9 +46,12 @@ object SimOpModeRunner {
                     .map { opMode -> opMode.name }
             } ?: emptyList()
 
-            // Include default ARESLib integration test opmode if list is empty
+            // Include default ARESLib integration test opmode if lists are empty
             if (teleops.isEmpty()) {
                 teleops = listOf("com.areslib.ftc.hardware.AresHardwareTestOpMode")
+            }
+            if (autos.isEmpty()) {
+                autos = listOf("com.areslib.ftc.hardware.AresHardwareTestOpMode")
             }
 
             val gson = com.google.gson.Gson()
