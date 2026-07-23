@@ -385,7 +385,9 @@ object DesktopSimLauncher {
                 NT4Server.publishTopic("Hardware/Motors/fl/Power", robotDouble.fl.power)
                 NT4Server.publishTopic("Hardware/Motors/fr/Power", robotDouble.fr.power)
                 NT4Server.publishTopic("Hardware/Motors/rl/Power", robotDouble.rl.power)
+                NT4Server.publishTopic("Hardware/Motors/rr/Power", robotDouble.rr.power)
                 NT4Server.publishTopic("Hardware/Motors/bl/Power", robotDouble.rl.power)
+                NT4Server.publishTopic("Hardware/Motors/br/Power", robotDouble.rr.power)
                 NT4Server.publishTopic("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
                 NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
                 NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
@@ -393,10 +395,10 @@ object DesktopSimLauncher {
                 NT4Server.publishTopic("Hardware/Motors/bl/Velocity", robotDouble.rl.velocity)
                 NT4Server.publishTopic("Hardware/Motors/br/Velocity", robotDouble.rr.velocity)
 
-                val flCurrent = kotlin.math.abs(robotDouble.fl.power) * 2.5
-                val frCurrent = kotlin.math.abs(robotDouble.fr.power) * 2.5
-                val rlCurrent = kotlin.math.abs(robotDouble.rl.power) * 2.5
-                val rrCurrent = kotlin.math.abs(robotDouble.rr.power) * 2.5
+                val flCurrent = robotDouble.fl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+                val frCurrent = robotDouble.fr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+                val rlCurrent = robotDouble.rl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+                val rrCurrent = robotDouble.rr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
                 NT4Server.publishTopic("Hardware/Motors/fl/CurrentAmps", flCurrent)
                 NT4Server.publishTopic("Hardware/Motors/fr/CurrentAmps", frCurrent)
                 NT4Server.publishTopic("Hardware/Motors/rl/CurrentAmps", rlCurrent)
