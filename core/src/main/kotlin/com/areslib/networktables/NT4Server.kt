@@ -200,6 +200,12 @@ class NT4Server(
         for (entry in entries.values) {
             val matches = prefixes.any { prefix -> prefix.isEmpty() || entry.topic.startsWith(prefix) }
             if (matches) {
+                try {
+                    val announceText = NT4Json.buildAnnounceSingle(entry)
+                    conn.send(announceText)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 sendBinaryUpdate(conn, entry)
             }
         }
