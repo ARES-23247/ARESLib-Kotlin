@@ -167,6 +167,7 @@ object TelemetryPublisher {
      */
     fun publishGamePieces(gamePieces: DoubleArray) {
         gamePiecesPublisher.set(gamePieces)
+        com.areslib.networktables.NT4Server.publishTopic("ARES/GamePieces", gamePieces)
     }
 
     /**

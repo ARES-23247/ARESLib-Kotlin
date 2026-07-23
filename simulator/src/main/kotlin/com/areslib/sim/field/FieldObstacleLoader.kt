@@ -174,16 +174,41 @@ object FieldObstacleLoader {
                 }
                 "polygon" -> {
                     if (obs.points.size >= 3) {
-                        val vecs = obs.points.map { Vector2(it.x, it.y) }.toTypedArray()
+                        val pts = obs.points
+                        var polySuccess = false
                         try {
+                            val vecs = pts.map { Vector2(it.x, it.y) }.toTypedArray()
                             val poly = Geometry.createPolygon(*vecs)
                             val fixture = BodyFixture(poly)
                             fixture.friction = 0.5
                             fixture.restitution = 0.0
                             body.addFixture(fixture)
-                        } catch (e: Exception) {
-                            System.err.println("FieldObstacleLoader: Failed to build polygon for '${obs.name}': ${e.message}")
-                            continue
+                            polySuccess = true
+                        } catch (_: Exception) {}
+
+                        if (!polySuccess) {
+                            val wallThickness = 0.04
+                            for (i in pts.indices) {
+                                val p1 = pts[i]
+                                val p2 = pts[(i + 1) % pts.size]
+                                val dx = p2.x - p1.x
+                                val dy = p2.y - p1.y
+                                val length = kotlin.math.hypot(dx, dy)
+                                if (length < 1e-4) continue
+
+                                val angle = kotlin.math.atan2(dy, dx)
+                                val midX = (p1.x + p2.x) / 2.0
+                                val midY = (p1.y + p2.y) / 2.0
+
+                                val wallRect = Geometry.createRectangle(length, wallThickness)
+                                wallRect.rotate(angle)
+                                wallRect.translate(midX, midY)
+
+                                val fixture = BodyFixture(wallRect)
+                                fixture.friction = 0.5
+                                fixture.restitution = 0.0
+                                body.addFixture(fixture)
+                            }
                         }
                     } else {
                         continue

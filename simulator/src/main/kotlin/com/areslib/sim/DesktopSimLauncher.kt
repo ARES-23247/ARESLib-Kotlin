@@ -407,6 +407,8 @@ object DesktopSimLauncher {
                 }
             }
 
+            sampleCount++
+
             // Always flush NT4 updates to clients on every loop frame (50Hz)
             ntInst.defaultServer?.flush()
 

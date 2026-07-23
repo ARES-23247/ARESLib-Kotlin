@@ -100,8 +100,9 @@ object NT4FieldPublisher {
               .append("}")
             if (i < obstacles.size - 1) sb.append(",")
         }
-        sb.append("]")
-        obstaclesPub.set(sb.toString())
+        val jsonStr = sb.toString()
+        obstaclesPub.set(jsonStr)
+        com.areslib.networktables.NT4Server.publishTopic("ARES/Field/Obstacles", jsonStr)
     }
 
     /**
