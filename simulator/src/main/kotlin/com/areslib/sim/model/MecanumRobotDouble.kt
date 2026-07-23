@@ -260,5 +260,17 @@ class MecanumRobotDouble {
         pinpoint.headingVelocity = if (isPinpointCcwPositive) actualOmega else -actualOmega
         pinpoint.velX = actualVx
         pinpoint.velY = actualVy
+
+        // Feed simulated Limelight vision coordinates
+        val limelight = try {
+            hardwareMap.get(Limelight3A::class.java, "limelight")
+        } catch (_: Exception) {
+            null
+        }
+        limelight?.setSimulatedPose(trueX, trueY, Math.toDegrees(trueHeadingRad), 11)
+
+        com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_X", trueX)
+        com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Y", trueY)
+        com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Heading", trueHeadingRad)
     }
 }

@@ -263,8 +263,12 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      */
     fun resetPoseForAlliance() {
         val alliance = store.state.drive.alliance
-        val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
-        resetPose(Pose2d(0.0, 0.0, Rotation2d(initialHeading)))
+        val startPose = if (alliance == com.areslib.state.Alliance.RED) {
+            Pose2d(0.0, -1.2, Rotation2d(Math.PI / 2.0))
+        } else {
+            Pose2d(0.0, 1.2, Rotation2d(-Math.PI / 2.0))
+        }
+        resetPose(startPose)
     }
 
     /**

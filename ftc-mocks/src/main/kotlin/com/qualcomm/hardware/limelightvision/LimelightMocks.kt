@@ -2,6 +2,10 @@
 package com.qualcomm.hardware.limelightvision
 
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D
+import org.firstinspires.ftc.robotcore.external.navigation.Position
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 
 /**
  * Class implementation for L L Result Types.
@@ -39,26 +43,8 @@ open class LLResult {
     val tx: Double = 0.0
     val ty: Double = 0.0
     
-    /**
-     * isValid declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun isValid(): Boolean = false
-    /**
-     * getBotpose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun getBotpose(): Pose3D? = null
-    /**
-     * getFiducialResults declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun getFiducialResults(): List<LLResultTypes.FiducialResult> = emptyList()
 }
 
@@ -68,19 +54,22 @@ open class LLResult {
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 open class Limelight3A {
-    /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    open fun start() {}
-    /**
-     * getLatestResult declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    open fun getLatestResult(): LLResult? = null
-}
+    @Volatile var simulatedResult: LLResult? = null
 
+    open fun start() {}
+
+    open fun getLatestResult(): LLResult? = simulatedResult
+
+    fun setSimulatedPose(xMeters: Double, yMeters: Double, yawDegrees: Double, tagId: Int = 11) {
+        simulatedResult = object : LLResult() {
+            override fun isValid(): Boolean = true
+            override fun getBotpose(): Pose3D = Pose3D(
+                Position(DistanceUnit.METER, xMeters, yMeters, 0.0, 0L),
+                YawPitchRollAngles(AngleUnit.DEGREES, yawDegrees, 0.0, 0.0, 0L)
+            )
+            override fun getFiducialResults(): List<LLResultTypes.FiducialResult> = listOf(
+                LLResultTypes.FiducialResult(tagId, 0.0, 0.0, getBotpose()!!)
+            )
+        }
+    }
+}
