@@ -174,9 +174,11 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
                 telemetry.update()
             }
 
-            // Clean stop at target
+            // Clean stop at target & persist pose for TeleOp
             executor.clear()
             robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+            com.areslib.util.PoseStorage.currentPose = robot.drive.odometryPose
+            com.areslib.util.PoseStorage.hasValidPose = true
             
         } catch (e: Exception) {
             // Top-level failsafe: disable all outputs and log

@@ -113,21 +113,25 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
 
             com.areslib.telemetry.RobotStatusTracker.activeOpMode = "TeleOp"
 
-            // Set initial pose based on active alliance configuration
+            // Set initial pose: restore from Autonomous if valid, otherwise use alliance default
             try {
                 val baseField = robot!!.javaClass.getDeclaredField("base")
                 baseField.isAccessible = true
                 val baseRobot = baseField.get(robot) as? com.areslib.ftc.FtcBaseRobot
                 if (baseRobot != null) {
-                    val alliance = baseRobot.store.state.drive.alliance
-                    val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
-                    baseRobot.resetPose(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(initialHeading)))
+                    if (com.areslib.util.PoseStorage.hasValidPose) {
+                        baseRobot.resetPose(com.areslib.util.PoseStorage.currentPose)
+                    } else {
+                        baseRobot.resetPoseForAlliance()
+                    }
                 }
             } catch (_: Exception) {
                 (robot as? com.areslib.ftc.FtcBaseRobot)?.let { baseRobot ->
-                    val alliance = baseRobot.store.state.drive.alliance
-                    val initialHeading = if (alliance == com.areslib.state.Alliance.RED) Math.PI / 2.0 else -Math.PI / 2.0
-                    baseRobot.resetPose(com.areslib.math.geometry.Pose2d(0.0, 0.0, com.areslib.math.geometry.Rotation2d(initialHeading)))
+                    if (com.areslib.util.PoseStorage.hasValidPose) {
+                        baseRobot.resetPose(com.areslib.util.PoseStorage.currentPose)
+                    } else {
+                        baseRobot.resetPoseForAlliance()
+                    }
                 }
             }
 

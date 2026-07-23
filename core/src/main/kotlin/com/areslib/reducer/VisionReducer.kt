@@ -12,7 +12,7 @@ object VisionReducer {
     private const val MAX_VISION_BUFFER_SIZE = 50
     private const val MAX_AMBIGUITY = 0.2
 
-    private const val POOL_SIZE = 16
+    private const val POOL_SIZE = 128
     private val listPool = Array(POOL_SIZE) { ArrayList<com.areslib.state.VisionMeasurement>(MAX_VISION_BUFFER_SIZE) }
     private var poolIndex = 0
     private val validBuf = ArrayList<com.areslib.state.VisionMeasurement>(MAX_VISION_BUFFER_SIZE)

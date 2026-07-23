@@ -245,14 +245,18 @@ object PoseEstimator {
             Q.m22 = value
         }
 
-    private val scratchQ = Matrix3x3()
-    private val scratchR = Matrix3x3()
-    private val scratchS = Matrix3x3()
-    private val scratchSInv = Matrix3x3()
-    private val scratchK = Matrix3x3()
-    private val scratchCov = Matrix3x3()
-    private val scratchCov2 = Matrix3x3()
-    private val scratchHistory = HistoryBuffer(MAX_HISTORY_SIZE)
+    private class ScratchpadContainer {
+        val scratchQ = Matrix3x3()
+        val scratchR = Matrix3x3()
+        val scratchS = Matrix3x3()
+        val scratchSInv = Matrix3x3()
+        val scratchK = Matrix3x3()
+        val scratchCov = Matrix3x3()
+        val scratchCov2 = Matrix3x3()
+        val scratchHistory = HistoryBuffer(MAX_HISTORY_SIZE)
+    }
+
+    private val threadScratchpad = ThreadLocal.withInitial { ScratchpadContainer() }
 
     // Known AprilTag coordinates for distance calculations (configurable via FieldLayouts)
     @JvmField
@@ -276,10 +280,11 @@ object PoseEstimator {
         gyroRateRadPerSec: Double = 0.0,
         dtSeconds: Double = 0.02
     ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
         return OdometryFusionController.processOdometryDirect(
             state, timestampMs, deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
             pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
-            gyroRateRadPerSec, dtSeconds, Q, scratchQ, scratchCov
+            gyroRateRadPerSec, dtSeconds, Q, scratch.scratchQ, scratch.scratchCov
         )
     }
 
@@ -296,10 +301,11 @@ object PoseEstimator {
         gyroRateRadPerSec: Double = 0.0,
         dtSeconds: Double = 0.02
     ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
         return OdometryFusionController.processOdometryDirect(
             state, timestampMs, deltaX, deltaY, deltaHeadingRad,
             pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
-            gyroRateRadPerSec, dtSeconds, Q, scratchQ, scratchCov
+            gyroRateRadPerSec, dtSeconds, Q, scratch.scratchQ, scratch.scratchCov
         )
     }
 
@@ -318,11 +324,12 @@ object PoseEstimator {
         mahalanobisThreshold: Double = 12.0,
         maxAmbiguity: Double = 0.2
     ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
         return VisionMahalanobisFilter.processVisionMeasurement(
             state, measurement, visionStdDevs, numTags,
             useMahalanobisRejection, mahalanobisThreshold, maxAmbiguity,
-            activeTags, Q, scratchR, scratchS, scratchSInv, scratchK,
-            scratchCov, scratchHistory, scratchCov2
+            activeTags, Q, scratch.scratchR, scratch.scratchS, scratch.scratchSInv, scratch.scratchK,
+            scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2
         )
     }
 }
