@@ -57,6 +57,15 @@ class NT4Server(
         }
     }
 
+    override fun stop() {
+        if (serverInstance == this) {
+            serverInstance = null
+        }
+        try {
+            super.stop()
+        } catch (_: Exception) {}
+    }
+
     override fun onMessage(conn: WebSocket, message: String) {
         try {
             val parsedList = NT4Json.parseMessages(message)
@@ -441,6 +450,11 @@ class NT4Server(
 
         @JvmStatic
         fun createInstance(address: String, port: Int): NT4Server {
+            serverInstance?.let { existing ->
+                try {
+                    existing.stop()
+                } catch (_: Exception) {}
+            }
             val protocols: MutableList<IProtocol> = ArrayList()
             protocols.add(Protocol("v4.1.networktables.first.wpi.edu"))
             protocols.add(Protocol("rtt.networktables.first.wpi.edu"))
@@ -448,6 +462,7 @@ class NT4Server(
             val server = NT4Server(InetSocketAddress(address, port), draftProtocols)
             serverInstance = server
             server.connectionLostTimeout = Int.MAX_VALUE
+            server.isReuseAddr = true
             if (!shutdownHookAdded) {
                 Runtime.getRuntime().addShutdownHook(Thread {
                     try {
@@ -458,8 +473,11 @@ class NT4Server(
                 })
                 shutdownHookAdded = true
             }
-            server.isReuseAddr = true
-            server.start()
+            try {
+                server.start()
+            } catch (e: Exception) {
+                println("[NT4Server] Bind warning: ${e.message}")
+            }
             return server
         }
 
