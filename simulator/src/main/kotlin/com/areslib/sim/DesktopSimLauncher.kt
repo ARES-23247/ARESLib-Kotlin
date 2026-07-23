@@ -233,6 +233,7 @@ object DesktopSimLauncher {
         var lastSelectedOpMode = ""
 
         while (isSimRunning) {
+          try {
             // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
             val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
             val selectedOpMode = NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
@@ -306,7 +307,7 @@ object DesktopSimLauncher {
                 val rawVy = (-flP + frP + rlP - rrP) / 4.0 * 2.6
                 val rawOmega = (-flP + frP - rlP + rrP) / 4.0 * 3.5
 
-                if (sampleCount % 25L == 0L) {
+                if (sampleCount % 250L == 0L) {
                     println("[SimPhysics] flP=%.2f, frP=%.2f, rawVx=%.2f, rawVy=%.2f, physY=%.3f".format(flP, frP, rawVx, rawVy, currentPhysPose.y))
                 }
 
@@ -417,7 +418,11 @@ object DesktopSimLauncher {
             } catch (_: InterruptedException) {
                 break
             }
-
+          } catch (e: Exception) {
+              System.err.println("[Simulator] CRASH in main loop iteration $sampleCount:")
+              e.printStackTrace()
+              // Continue running — one bad frame shouldn't kill the sim
+          }
         }
     }
 }
