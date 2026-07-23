@@ -188,18 +188,21 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
      */
     fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true) {
-        var joystickForward = -driver.leftStickY.value.toDouble()
-        var joystickLeft = -driver.leftStickX.value.toDouble()
+        val joystickForward = -driver.leftStickY.value.toDouble()
+        val joystickRight = driver.leftStickX.value.toDouble()
         val rotate = -driver.rightStickX.value.toDouble()
         
+        var fieldVx = joystickRight
+        var fieldVy = joystickForward
+        
         if (store.state.drive.alliance == com.areslib.state.Alliance.BLUE) {
-            joystickForward = -joystickForward
-            joystickLeft = -joystickLeft
+            fieldVx = -fieldVx
+            fieldVy = -fieldVy
         }
         
         fieldRelativeDrive(
-            vx = joystickForward, 
-            vy = joystickLeft, 
+            vx = fieldVx, 
+            vy = fieldVy, 
             omega = rotate,
             useHeadingLock = useHeadingLock
         )
