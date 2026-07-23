@@ -152,11 +152,12 @@ object SimOpModeRunner {
         if (opModeArg != null) return opModeArg
         if (opModeClassName.isNull_or_blank()) return null
         
+        val name = opModeClassName!!.trim()
         val candidates = listOf(
-            opModeClassName!!,
-            "org.firstinspires.ftc.teamcode.opmodes.$opModeClassName",
-            "org.firstinspires.ftc.teamcode.$opModeClassName",
-            "com.areslib.ftc.hardware.$opModeClassName"
+            name,
+            "org.firstinspires.ftc.teamcode.opmodes.$name",
+            "org.firstinspires.ftc.teamcode.$name",
+            "com.areslib.ftc.hardware.$name"
         )
         
         for (candidate in candidates) {
@@ -168,6 +169,47 @@ object SimOpModeRunner {
                     return instance
                 }
             } catch (_: Exception) {}
+        }
+
+        // Fallback: search discovered OpModes by simple class name or annotation name
+        try {
+            val teleOpClass = Class.forName("com.qualcomm.robotcore.eventloop.opmode.TeleOp") as Class<out Annotation>
+            val autoClass = Class.forName("com.qualcomm.robotcore.eventloop.opmode.Autonomous") as Class<out Annotation>
+            val allOpModes = findAnnotatedClasses(teleOpClass) + findAnnotatedClasses(autoClass)
+            
+            for (clazz in allOpModes) {
+                if (clazz.simpleName.equals(name, ignoreCase = true) || clazz.name.equals(name, ignoreCase = true)) {
+                    val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                    if (instance != null) {
+                        println("[Simulator] Successfully matched and instantiated OpMode class by simple name: ${clazz.name}")
+                        return instance
+                    }
+                }
+                val teleAnno = clazz.getAnnotation(teleOpClass)
+                if (teleAnno != null) {
+                    val annoName = teleOpClass.getMethod("name").invoke(teleAnno) as? String
+                    if (annoName != null && annoName.equals(name, ignoreCase = true)) {
+                        val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                        if (instance != null) {
+                            println("[Simulator] Successfully matched OpMode by TeleOp annotation name '$annoName': ${clazz.name}")
+                            return instance
+                        }
+                    }
+                }
+                val autoAnno = clazz.getAnnotation(autoClass)
+                if (autoAnno != null) {
+                    val annoName = autoClass.getMethod("name").invoke(autoAnno) as? String
+                    if (annoName != null && annoName.equals(name, ignoreCase = true)) {
+                        val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                        if (instance != null) {
+                            println("[Simulator] Successfully matched OpMode by Autonomous annotation name '$annoName': ${clazz.name}")
+                            return instance
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("[Simulator] Error searching OpModes by annotation: ${e.message}")
         }
 
         println("[Simulator] Class $opModeClassName not found. Falling back to AresHardwareTestOpMode.")

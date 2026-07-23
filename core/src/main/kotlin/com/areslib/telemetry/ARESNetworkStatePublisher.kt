@@ -65,7 +65,12 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
         // ── Loop Time & Diagnostics ──
         if (dtSeconds != null) {
-            telemetry.putNumber("Robot/LoopTimeMs", dtSeconds * 1000.0)
+            val loopMs = dtSeconds * 1000.0
+            telemetry.putNumber("Robot/LoopTimeMs", loopMs)
+            telemetry.putNumber("Profiling/LoopTime_ms", loopMs)
+            if (dtSeconds > 0) {
+                telemetry.putNumber("Profiling/Hz", 1.0 / dtSeconds)
+            }
         }
 
         // ── Power / Battery ──

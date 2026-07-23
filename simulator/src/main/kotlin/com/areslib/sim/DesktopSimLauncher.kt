@@ -117,6 +117,11 @@ object DesktopSimLauncher {
             println("[Simulator] Warning starting NT4 Server: ${e.message}")
         }
         TelemetryPublisher.javaClass
+        // Wire up ARESNetworkStatePublisher so telemetry (loop times, odometry,
+        // vision, indicator lights, etc.) is published to connected clients.
+        val nt4Telemetry = com.areslib.telemetry.NT4Telemetry()
+        val networkStatePublisher = com.areslib.telemetry.ARESNetworkStatePublisher(nt4Telemetry)
+        TelemetryPublisher.init(nt4Telemetry, networkStatePublisher)
         com.areslib.logging.LogManagerServer.startServer()
 
         val serverMode = opModeArg == null && cliArgs.opModeClassName == null
@@ -143,32 +148,49 @@ object DesktopSimLauncher {
         }
 
         val syncRobotPoseToPhysics = {
-            val currentPhysPose = Pose2d(
-                physicsWorld.robotBody.transform.translationX,
-                physicsWorld.robotBody.transform.translationY,
-                Rotation2d(physicsWorld.robotBody.transform.rotationAngle)
-            )
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
+                val ekfPose = robotInstance.store.state.drive.poseEstimator.estimatedPose
                 val now = RobotClock.currentTimeMillis()
-                robotInstance.pinpointIO?.initialize(
-                    Pose2d(currentPhysPose.x, currentPhysPose.y, Rotation2d(currentPhysPose.heading.radians)),
-                    resetHardware = true
-                )
-                robotInstance.store.dispatch(
-                    com.areslib.action.RobotAction.PoseUpdate(
-                        xMeters = currentPhysPose.x,
-                        yMeters = currentPhysPose.y,
-                        headingRadians = currentPhysPose.heading.radians,
-                        timestampMs = now,
-                        isReset = true
+                // If the OpMode set a custom non-zero initial pose (e.g. from Auto starting waypoint), update Dyn4j physics body to match!
+                if (kotlin.math.abs(ekfPose.x) > 1e-4 || kotlin.math.abs(ekfPose.y) > 1e-4 || kotlin.math.abs(ekfPose.heading.radians) > 1e-4) {
+                    physicsWorld.robotBody.transform.setTranslation(ekfPose.x, ekfPose.y)
+                    physicsWorld.robotBody.transform.setRotation(ekfPose.heading.radians)
+                    physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(0.0, 0.0)
+                    physicsWorld.robotBody.angularVelocity = 0.0
+                    robotInstance.pinpointIO?.initialize(ekfPose, resetHardware = true)
+                    println("[Simulator] Synced physics body to OpMode starting pose: $ekfPose")
+                } else {
+                    val currentPhysPose = Pose2d(
+                        physicsWorld.robotBody.transform.translationX,
+                        physicsWorld.robotBody.transform.translationY,
+                        Rotation2d(physicsWorld.robotBody.transform.rotationAngle)
                     )
-                )
-                println("[Simulator] Automatically synced robot EKF and Pinpoint to physics starting pose: $currentPhysPose")
+                    robotInstance.pinpointIO?.initialize(
+                        Pose2d(currentPhysPose.x, currentPhysPose.y, Rotation2d(currentPhysPose.heading.radians)),
+                        resetHardware = true
+                    )
+                    robotInstance.store.dispatch(
+                        com.areslib.action.RobotAction.PoseUpdate(
+                            xMeters = currentPhysPose.x,
+                            yMeters = currentPhysPose.y,
+                            headingRadians = currentPhysPose.heading.radians,
+                            timestampMs = now,
+                            isReset = true
+                        )
+                    )
+                    println("[Simulator] Automatically synced robot EKF and Pinpoint to physics starting pose: $currentPhysPose")
+                }
             }
             Unit
         }
 
         var activeOpMode = SimOpModeRunner.createOpModeInstance(opModeArg, cliArgs.opModeClassName)
+        if (activeOpMode == null && serverMode) {
+            val defaultOpModeName = "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp"
+            activeOpMode = SimOpModeRunner.createOpModeInstance(null, defaultOpModeName)
+                ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
+            println("[Simulator] Server mode auto-starting default TeleOp (${activeOpMode.javaClass.simpleName})")
+        }
 
         val startOpMode = { opModeToRun: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode ->
             opModeToRun.hardwareMap = robotDouble.hardwareMap
@@ -190,7 +212,7 @@ object DesktopSimLauncher {
             startOpMode(activeOpMode)
 
             val initStartTime = RobotClock.currentTimeMillis()
-            while (RobotClock.currentTimeMillis() - initStartTime < 1500) {
+            while (RobotClock.currentTimeMillis() - initStartTime < 500) {
                 val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
                 robotDouble.updateSensors(TIMESTEP_SEC, 0.0, 0.0, 0.0, startPose.x, startPose.y, startPose.heading.radians, ccwPos)
                 if (RobotClock.isMocked) {
@@ -215,7 +237,6 @@ object DesktopSimLauncher {
             val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
             val selectedOpMode = NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
 
-
             if (selectedOpMode.isNotEmpty() && selectedOpMode != lastSelectedOpMode) {
                 lastSelectedOpMode = selectedOpMode
                 println("[Simulator] Driver Station selected OpMode: $selectedOpMode")
@@ -228,11 +249,12 @@ object DesktopSimLauncher {
                     "INIT" -> {
                         try {
                             activeOpMode?.isStopRequested = true
-                            val newOpMode = SimOpModeRunner.createOpModeInstance(null, lastSelectedOpMode)
+                            val targetOpMode = if (selectedOpMode.isNotEmpty()) selectedOpMode else lastSelectedOpMode
+                            val newOpMode = SimOpModeRunner.createOpModeInstance(null, targetOpMode)
                                 ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
                             activeOpMode = newOpMode
                             startOpMode(newOpMode)
-                            Thread.sleep(100)
+                            Thread.sleep(150)
                             syncRobotPoseToPhysics()
                             println("[Simulator] Successfully INITED OpMode: ${newOpMode.javaClass.simpleName}")
                         } catch (e: Exception) {
@@ -345,10 +367,11 @@ object DesktopSimLauncher {
             val activeInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
             if (activeInstance != null) {
                 val state = activeInstance.store.state
-                TelemetryPublisher.publish(state)
+                TelemetryPublisher.publish(state, dtSeconds = TIMESTEP_SEC)
+                activeInstance.profiler.publishSensorsProfiling(activeInstance.telemetryManager)
                 
                 val ekfPose = state.drive.poseEstimator.estimatedPose
-                if (sampleCount % 25L == 0L) {
+                if (sampleCount % 250L == 0L) {
                     println("[SimTelemetry] ekfY=%.3f, physY=%.3f".format(ekfPose.y, postStepPose.y))
                 }
                 TelemetryPublisher.publishEstimatedPose(ekfPose)
@@ -357,10 +380,7 @@ object DesktopSimLauncher {
                 NT4Server.publishTopic("Hardware/Motors/fl/Power", robotDouble.fl.power)
                 NT4Server.publishTopic("Hardware/Motors/fr/Power", robotDouble.fr.power)
                 NT4Server.publishTopic("Hardware/Motors/rl/Power", robotDouble.rl.power)
-                NT4Server.publishTopic("Hardware/Motors/rr/Power", robotDouble.rr.power)
                 NT4Server.publishTopic("Hardware/Motors/bl/Power", robotDouble.rl.power)
-                NT4Server.publishTopic("Hardware/Motors/br/Power", robotDouble.rr.power)
-
                 NT4Server.publishTopic("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
                 NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
                 NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)

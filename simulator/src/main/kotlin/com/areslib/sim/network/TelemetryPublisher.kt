@@ -64,23 +64,17 @@ object TelemetryPublisher {
     val obstaclesSub = ntInst.getStringTopic("ARES/Input/obstacles").subscribe("")
 
     fun getWebVx(): Double {
-        val vWpi = webVxSub.get()
-        val vJava = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
-        val v = if (vWpi != 0.0) vWpi else vJava
+        val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
         com.areslib.telemetry.SimInputBridge.rawWebVx = v
         return v
     }
     fun getWebVy(): Double {
-        val vWpi = webVySub.get()
-        val vJava = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
-        val v = if (vWpi != 0.0) vWpi else vJava
+        val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
         com.areslib.telemetry.SimInputBridge.rawWebVy = v
         return v
     }
     fun getWebOmega(): Double {
-        val vWpi = webOmegaSub.get()
-        val vJava = com.areslib.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
-        val v = if (vWpi != 0.0) vWpi else vJava
+        val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
         com.areslib.telemetry.SimInputBridge.rawWebOmega = v
         return v
     }
@@ -113,9 +107,9 @@ object TelemetryPublisher {
      *
      * @param state The current immutable robot state to serialize and publish.
      */
-    fun publish(state: RobotState) {
+    fun publish(state: RobotState, dtSeconds: Double? = null) {
         statePublisher.set(state)
-        networkStatePublisher?.publish(state)
+        networkStatePublisher?.publish(state, dtSeconds = dtSeconds)
         com.areslib.hardware.HardwareRegistry.publishAll(nt4Telemetry ?: return)
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
