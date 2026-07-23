@@ -244,16 +244,45 @@ class MecanumRobotDouble {
         pinpoint.velX = actualVx
         pinpoint.velY = actualVy
 
-        // Feed simulated Limelight vision coordinates
-        val limelight = try {
-            hardwareMap.get(Limelight3A::class.java, "limelight")
-        } catch (_: Exception) {
-            null
-        }
-        limelight?.setSimulatedPose(trueX, trueY, Math.toDegrees(trueHeadingRad), 11)
+        // Feed simulated Limelight vision coordinates only when an AprilTag is inside the camera's FOV and range
+        val simTags = mapOf(
+            1 to Pair(1.8, 1.8),
+            2 to Pair(-1.8, 1.8),
+            3 to Pair(1.8, -1.8),
+            4 to Pair(-1.8, -1.8),
+            11 to Pair(0.0, 1.8)
+        )
 
-        com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_X", trueX)
-        com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Y", trueY)
-        com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Heading", trueHeadingRad)
+        var visibleTagId: Int? = null
+        val hFovRad = Math.toRadians(35.0)
+        val maxRangeMeters = 3.5
+
+        for ((tagId, pos) in simTags) {
+            val dx = pos.first - trueX
+            val dy = pos.second - trueY
+            val dist = kotlin.math.sqrt(dx * dx + dy * dy)
+
+            if (dist in 0.2..maxRangeMeters) {
+                val angleToTag = kotlin.math.atan2(dy, dx)
+                val relAngle = com.areslib.math.wrapAngle(angleToTag - trueHeadingRad)
+
+                if (kotlin.math.abs(relAngle) <= hFovRad) {
+                    visibleTagId = tagId
+                    break
+                }
+            }
+        }
+
+        if (visibleTagId != null) {
+            this.limelight.setSimulatedPose(trueX, trueY, Math.toDegrees(trueHeadingRad), visibleTagId)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_X", trueX)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Y", trueY)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Heading", trueHeadingRad)
+        } else {
+            this.limelight.setLatestResult(null)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_X", 0.0)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Y", 0.0)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Heading", 0.0)
+        }
     }
 }
