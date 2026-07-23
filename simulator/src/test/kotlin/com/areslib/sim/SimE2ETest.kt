@@ -73,5 +73,6 @@ class SimE2ETest {
         assertTrue("Driver station telemetry line 0 should contain formatted text", tele0.isNotEmpty())
 
         println("[E2E Test] SUCCESS! All headless E2E verification assertions passed clean.")
+        DesktopSimLauncher.isSimRunning = false
     }
 }

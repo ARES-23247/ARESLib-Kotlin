@@ -57,11 +57,15 @@ object DesktopSimLauncher {
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
      */
+    @Volatile
+    var isSimRunning = true
+
     fun launch(
         args: Array<String>,
         interactionModel: SimInteractionModel,
         opModeArg: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode? = null
     ) {
+        isSimRunning = true
         println("Starting ARESLib Desktop Simulation...")
         RobotClock.useMockTime(0L)
 
@@ -206,7 +210,7 @@ object DesktopSimLauncher {
         var lastDsCommand = ""
         var lastSelectedOpMode = ""
 
-        while (true) {
+        while (isSimRunning) {
             // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
             val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
             val selectedOpMode = NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
@@ -354,11 +358,32 @@ object DesktopSimLauncher {
                 NT4Server.publishTopic("Hardware/Motors/fr/Power", robotDouble.fr.power)
                 NT4Server.publishTopic("Hardware/Motors/rl/Power", robotDouble.rl.power)
                 NT4Server.publishTopic("Hardware/Motors/rr/Power", robotDouble.rr.power)
+                NT4Server.publishTopic("Hardware/Motors/bl/Power", robotDouble.rl.power)
+                NT4Server.publishTopic("Hardware/Motors/br/Power", robotDouble.rr.power)
 
                 NT4Server.publishTopic("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
                 NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
                 NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
                 NT4Server.publishTopic("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
+                NT4Server.publishTopic("Hardware/Motors/bl/Velocity", robotDouble.rl.velocity)
+                NT4Server.publishTopic("Hardware/Motors/br/Velocity", robotDouble.rr.velocity)
+
+                val flCurrent = kotlin.math.abs(robotDouble.fl.power) * 2.5
+                val frCurrent = kotlin.math.abs(robotDouble.fr.power) * 2.5
+                val rlCurrent = kotlin.math.abs(robotDouble.rl.power) * 2.5
+                val rrCurrent = kotlin.math.abs(robotDouble.rr.power) * 2.5
+                NT4Server.publishTopic("Hardware/Motors/fl/CurrentAmps", flCurrent)
+                NT4Server.publishTopic("Hardware/Motors/fr/CurrentAmps", frCurrent)
+                NT4Server.publishTopic("Hardware/Motors/rl/CurrentAmps", rlCurrent)
+                NT4Server.publishTopic("Hardware/Motors/rr/CurrentAmps", rrCurrent)
+                NT4Server.publishTopic("Hardware/Motors/bl/CurrentAmps", rlCurrent)
+                NT4Server.publishTopic("Hardware/Motors/br/CurrentAmps", rrCurrent)
+
+                if (activeOpMode?.isStarted == true) {
+                    NT4Server.publishTopic("ARES/DriverStation/MatchState", "TELEOP")
+                } else {
+                    NT4Server.publishTopic("ARES/DriverStation/MatchState", "DISABLED")
+                }
             }
 
             // Always flush NT4 updates to clients on every loop frame (50Hz)
