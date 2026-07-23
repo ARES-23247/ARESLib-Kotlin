@@ -65,7 +65,9 @@ dependencies {
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-windows")
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-linux")
     runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos")
-    
+
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:4.13.2")
 }
 
 kotlin {

@@ -63,6 +63,7 @@ object SimOpModeRunner {
             // Publish to pure Java NT4Server for ARES-Analytics dashboard
             com.areslib.networktables.NT4Server.publishTopic("ARES/DriverStation/TeleOpList", teleOpJson)
             com.areslib.networktables.NT4Server.publishTopic("ARES/DriverStation/AutonomousList", autoJson)
+            com.areslib.networktables.NT4Instance.defaultInstance.defaultServer?.flush()
 
             // Publish to WPILib NT4 instance for AdvantageScope compatibility if active
             try {
