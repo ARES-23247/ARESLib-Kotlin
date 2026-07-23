@@ -331,6 +331,13 @@ object DesktopSimLauncher {
             TelemetryPublisher.getWebVy()
             TelemetryPublisher.getWebOmega()
 
+            // Extract OpMode display lines from MockTelemetry and publish to NT4 for ARES-Analytics
+            val mockTelemetry = activeOpMode?.telemetry as? org.firstinspires.ftc.robotcore.external.MockTelemetry
+            val displayLines = mockTelemetry?.displayLines ?: emptyList()
+            for (i in displayLines.indices) {
+                NT4Server.publishTopic("ARES/DriverStation/Telemetry/$i", displayLines[i])
+            }
+
             val activeInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
             if (activeInstance != null) {
                 val state = activeInstance.store.state
@@ -352,8 +359,10 @@ object DesktopSimLauncher {
                 NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
                 NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
                 NT4Server.publishTopic("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
-                ntInst.defaultServer?.flush()
             }
+
+            // Always flush NT4 updates to clients on every loop frame (50Hz)
+            ntInst.defaultServer?.flush()
 
             if (RobotClock.isMocked) {
                 RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20)
