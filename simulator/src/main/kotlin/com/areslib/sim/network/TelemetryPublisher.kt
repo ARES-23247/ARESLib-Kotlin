@@ -237,7 +237,14 @@ object TelemetryPublisher {
         driverStation.isTransferring = webTransferSub.get()
         driverStation.isTeleopMode = webTeleopSub.get()
         driverStation.isFieldCentric = webFieldCentricSub.get()
-        driverStation.isRedAlliance = webRedAllianceSub.get()
+        val newRedAlliance = webRedAllianceSub.get()
+        if (driverStation.isRedAlliance != newRedAlliance) {
+            driverStation.isRedAlliance = newRedAlliance
+            com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
+                val allianceEnum = if (newRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
+                robot.store.dispatch(com.areslib.action.RobotAction.SetAlliance(allianceEnum))
+            }
+        }
         driverStation.isButtonAPressed = webButtonASub.get()
         driverStation.isButtonBPressed = webButtonBSub.get()
         driverStation.isButtonXPressed = webButtonXSub.get()

@@ -149,10 +149,13 @@ object DesktopSimLauncher {
 
         val syncRobotPoseToPhysics = {
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
+                val allianceEnum = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
+                robotInstance.store.dispatch(com.areslib.action.RobotAction.SetAlliance(allianceEnum))
+
                 val ekfPose = robotInstance.store.state.drive.poseEstimator.estimatedPose
                 val now = RobotClock.currentTimeMillis()
-                // If the OpMode set a custom non-zero initial pose (e.g. from Auto starting waypoint), update Dyn4j physics body to match!
-                if (kotlin.math.abs(ekfPose.x) > 1e-4 || kotlin.math.abs(ekfPose.y) > 1e-4 || kotlin.math.abs(ekfPose.heading.radians) > 1e-4) {
+                // Only sync physics body from OpMode if OpMode explicitly set a custom non-zero X/Y position (e.g. from Auto starting waypoint)
+                if (kotlin.math.abs(ekfPose.x) > 0.01 || kotlin.math.abs(ekfPose.y) > 0.01) {
                     physicsWorld.robotBody.transform.setTranslation(ekfPose.x, ekfPose.y)
                     physicsWorld.robotBody.transform.setRotation(ekfPose.heading.radians)
                     physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(0.0, 0.0)
@@ -254,10 +257,11 @@ object DesktopSimLauncher {
                             val newOpMode = SimOpModeRunner.createOpModeInstance(null, targetOpMode)
                                 ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
                             activeOpMode = newOpMode
+                            startPose = physicsWorld.setupSpawnPose(driverStation.isRedAlliance)
                             startOpMode(newOpMode)
                             Thread.sleep(150)
                             syncRobotPoseToPhysics()
-                            println("[Simulator] Successfully INITED OpMode: ${newOpMode.javaClass.simpleName}")
+                            println("[Simulator] Successfully INITED OpMode: ${newOpMode.javaClass.simpleName} (Alliance=${if (driverStation.isRedAlliance) "RED" else "BLUE"})")
                         } catch (e: Exception) {
                             System.err.println("[Simulator] Failed to INIT OpMode: ${e.message}")
                         }
