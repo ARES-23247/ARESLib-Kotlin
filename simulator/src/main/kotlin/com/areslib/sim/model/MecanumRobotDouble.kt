@@ -63,26 +63,9 @@ class SimServo : com.qualcomm.robotcore.hardware.Servo {
  * Robotics framework control component.
  */
 class SimLimelight3A : Limelight3A() {
-    @Volatile
-    private var result: LLResult? = null
-
-    /**
-     * setLatestResult declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun setLatestResult(res: LLResult?) {
-        this.result = res
+        simulatedResult = res
     }
-
-    /**
-     * getLatestResult declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    override fun getLatestResult(): LLResult? = result
 }
 
 /**

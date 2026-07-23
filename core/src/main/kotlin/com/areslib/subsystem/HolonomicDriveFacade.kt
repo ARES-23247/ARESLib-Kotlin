@@ -199,7 +199,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         
         fieldRelativeDrive(
             vx = joystickForward, 
-            vy = -joystickLeft, 
+            vy = joystickLeft, 
             omega = rotate,
             useHeadingLock = useHeadingLock
         )
