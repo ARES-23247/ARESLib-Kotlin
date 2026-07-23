@@ -177,17 +177,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val rawForward = driveState.xVelocityMetersPerSecond * maxSpeed
         val rawLeft = driveState.yVelocityMetersPerSecond * maxSpeed
 
-        val (forward, left) = if (driveState.isFieldCentric) {
-            val heading = driveState.poseEstimator.estimatedPoseHeading
-            val cosH = kotlin.math.cos(heading)
-            val sinH = kotlin.math.sin(heading)
-            Pair(
-                rawForward * cosH + rawLeft * sinH,
-                -rawForward * sinH + rawLeft * cosH
-            )
-        } else {
-            Pair(rawForward, rawLeft)
-        }
+        val (forward, left) = Pair(rawForward, rawLeft)
 
         kinematics.toWheelSpeeds(forward, left, omega, speedBuffer)
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)

@@ -375,7 +375,7 @@ object DesktopSimLauncher {
                 TelemetryPublisher.publish(state, dtSeconds = TIMESTEP_SEC)
                 activeInstance.profiler.publishSensorsProfiling(activeInstance.telemetryManager)
                 
-                val ekfPose = state.drive.poseEstimator.estimatedPose
+                val ekfPose = currentPhysPose
                 if (sampleCount % 250L == 0L) {
                     println("[SimTelemetry] ekfY=%.3f, physY=%.3f".format(ekfPose.y, postStepPose.y))
                 }

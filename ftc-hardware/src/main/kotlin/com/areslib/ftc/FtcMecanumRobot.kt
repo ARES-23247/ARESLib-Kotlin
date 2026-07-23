@@ -248,7 +248,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @return Corresponding output value or Unit.
      */
     fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
-        store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = true))
+        mecanumDrive.fieldRelativeDrive(x, y, rotation)
     }
 
     /**
