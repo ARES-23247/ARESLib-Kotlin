@@ -389,36 +389,37 @@ object DesktopSimLauncher {
                 }
                 TelemetryPublisher.publishEstimatedPose(ekfPose)
                 TelemetryPublisher.publishTargetPose(ekfPose)
+            }
 
-                NT4Server.publishTopic("Hardware/Motors/fl/Power", robotDouble.fl.power)
-                NT4Server.publishTopic("Hardware/Motors/fr/Power", robotDouble.fr.power)
-                NT4Server.publishTopic("Hardware/Motors/rl/Power", robotDouble.rl.power)
-                NT4Server.publishTopic("Hardware/Motors/rr/Power", robotDouble.rr.power)
-                NT4Server.publishTopic("Hardware/Motors/bl/Power", robotDouble.rl.power)
-                NT4Server.publishTopic("Hardware/Motors/br/Power", robotDouble.rr.power)
-                NT4Server.publishTopic("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
-                NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
-                NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
-                NT4Server.publishTopic("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
-                NT4Server.publishTopic("Hardware/Motors/bl/Velocity", robotDouble.rl.velocity)
-                NT4Server.publishTopic("Hardware/Motors/br/Velocity", robotDouble.rr.velocity)
+            // Always publish motor powers, velocities, and current draws on every 50Hz physics tick
+            NT4Server.publishTopic("Hardware/Motors/fl/Power", robotDouble.fl.power)
+            NT4Server.publishTopic("Hardware/Motors/fr/Power", robotDouble.fr.power)
+            NT4Server.publishTopic("Hardware/Motors/rl/Power", robotDouble.rl.power)
+            NT4Server.publishTopic("Hardware/Motors/rr/Power", robotDouble.rr.power)
+            NT4Server.publishTopic("Hardware/Motors/bl/Power", robotDouble.rl.power)
+            NT4Server.publishTopic("Hardware/Motors/br/Power", robotDouble.rr.power)
+            NT4Server.publishTopic("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
+            NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
+            NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
+            NT4Server.publishTopic("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
+            NT4Server.publishTopic("Hardware/Motors/bl/Velocity", robotDouble.rl.velocity)
+            NT4Server.publishTopic("Hardware/Motors/br/Velocity", robotDouble.rr.velocity)
 
-                val flCurrent = robotDouble.fl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
-                val frCurrent = robotDouble.fr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
-                val rlCurrent = robotDouble.rl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
-                val rrCurrent = robotDouble.rr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
-                NT4Server.publishTopic("Hardware/Motors/fl/CurrentAmps", flCurrent)
-                NT4Server.publishTopic("Hardware/Motors/fr/CurrentAmps", frCurrent)
-                NT4Server.publishTopic("Hardware/Motors/rl/CurrentAmps", rlCurrent)
-                NT4Server.publishTopic("Hardware/Motors/rr/CurrentAmps", rrCurrent)
-                NT4Server.publishTopic("Hardware/Motors/bl/CurrentAmps", rlCurrent)
-                NT4Server.publishTopic("Hardware/Motors/br/CurrentAmps", rrCurrent)
+            val flCurrent = robotDouble.fl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            val frCurrent = robotDouble.fr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            val rlCurrent = robotDouble.rl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            val rrCurrent = robotDouble.rr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
+            NT4Server.publishTopic("Hardware/Motors/fl/CurrentAmps", flCurrent)
+            NT4Server.publishTopic("Hardware/Motors/fr/CurrentAmps", frCurrent)
+            NT4Server.publishTopic("Hardware/Motors/rl/CurrentAmps", rlCurrent)
+            NT4Server.publishTopic("Hardware/Motors/rr/CurrentAmps", rrCurrent)
+            NT4Server.publishTopic("Hardware/Motors/bl/CurrentAmps", rlCurrent)
+            NT4Server.publishTopic("Hardware/Motors/br/CurrentAmps", rrCurrent)
 
-                if (activeOpMode?.isStarted == true) {
-                    NT4Server.publishTopic("ARES/DriverStation/MatchState", "TELEOP")
-                } else {
-                    NT4Server.publishTopic("ARES/DriverStation/MatchState", "DISABLED")
-                }
+            if (activeOpMode?.isStarted == true) {
+                NT4Server.publishTopic("ARES/DriverStation/MatchState", "TELEOP")
+            } else {
+                NT4Server.publishTopic("ARES/DriverStation/MatchState", "DISABLED")
             }
 
             sampleCount++

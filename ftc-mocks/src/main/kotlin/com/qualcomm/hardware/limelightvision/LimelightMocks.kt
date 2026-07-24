@@ -60,6 +60,10 @@ open class Limelight3A {
 
     open fun getLatestResult(): LLResult? = simulatedResult
 
+    open fun setLatestResult(result: LLResult?) {
+        simulatedResult = result
+    }
+
     fun setSimulatedPose(xMeters: Double, yMeters: Double, yawDegrees: Double, tagId: Int = 11) {
         simulatedResult = object : LLResult() {
             override fun isValid(): Boolean = true

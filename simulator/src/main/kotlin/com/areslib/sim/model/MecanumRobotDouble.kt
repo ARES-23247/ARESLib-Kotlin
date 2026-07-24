@@ -63,7 +63,7 @@ class SimServo : com.qualcomm.robotcore.hardware.Servo {
  * Robotics framework control component.
  */
 class SimLimelight3A : Limelight3A() {
-    fun setLatestResult(res: LLResult?) {
+    override fun setLatestResult(res: LLResult?) {
         simulatedResult = res
     }
 }
