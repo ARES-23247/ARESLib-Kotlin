@@ -334,10 +334,15 @@ object HardwareRegistry {
      * Publishes the current state of all registered hardware devices to the telemetry provider.
      */
     fun publishAll(telemetry: ITelemetry) {
-        for (i in 0 until devicesList.size) {
-            val device = devicesList[i]
-            val prefix = devicesPrefixList[i]
-            device.logTelemetry(telemetry, prefix)
-        }
+        try {
+            val devSnapshot = devicesList.toArray()
+            val prefSnapshot = devicesPrefixList.toArray()
+            val count = kotlin.math.min(devSnapshot.size, prefSnapshot.size)
+            for (i in 0 until count) {
+                val device = devSnapshot[i] as? LoggableDevice ?: continue
+                val prefix = prefSnapshot[i] as? String ?: ""
+                device.logTelemetry(telemetry, prefix)
+            }
+        } catch (_: Throwable) {}
     }
 }

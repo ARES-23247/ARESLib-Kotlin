@@ -6,6 +6,12 @@ import org.junit.Test
 
 class TelemetryUpdateE2ETest {
 
+    @org.junit.Before
+    fun setup() {
+        com.areslib.sim.DesktopSimLauncher.isSimRunning = false
+        Thread.sleep(300)
+    }
+
     @Test
     fun testAllTelemetryTopicsUpdateProperly() {
         // 1. Launch simulator in headless server mode

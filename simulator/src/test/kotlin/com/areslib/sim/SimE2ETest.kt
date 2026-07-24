@@ -6,6 +6,12 @@ import org.junit.Test
 
 class SimE2ETest {
 
+    @org.junit.Before
+    fun setup() {
+        com.areslib.sim.DesktopSimLauncher.isSimRunning = false
+        Thread.sleep(300)
+    }
+
     @Test
     fun testHeadlessSimulationE2E() {
         println("[E2E Test] Launching DesktopSimLauncher in headless mode...")

@@ -329,15 +329,23 @@ object DesktopSimLauncher {
 
             physicsWorld.world.step(1)
 
-            val vx = physicsWorld.robotBody.linearVelocity.x
-            val vy = physicsWorld.robotBody.linearVelocity.y
+            val fieldVx = physicsWorld.robotBody.linearVelocity.x
+            val fieldVy = physicsWorld.robotBody.linearVelocity.y
             val omega = physicsWorld.robotBody.angularVelocity
             val postStepPose = Pose2d(
                 physicsWorld.robotBody.transform.translationX,
                 physicsWorld.robotBody.transform.translationY,
                 Rotation2d(physicsWorld.robotBody.transform.rotationAngle)
             )
-            robotDouble.updateSensors(TIMESTEP_SEC, vx, vy, omega, postStepPose.x, postStepPose.y, postStepPose.heading.radians, ccwPos)
+
+            // Transform field-frame velocities back to robot-frame velocities for encoder simulation
+            val heading = postStepPose.heading.radians
+            val cosH = kotlin.math.cos(heading)
+            val sinH = kotlin.math.sin(heading)
+            val robotVx = fieldVx * cosH + fieldVy * sinH
+            val robotVy = -fieldVx * sinH + fieldVy * cosH
+
+            robotDouble.updateSensors(TIMESTEP_SEC, robotVx, robotVy, omega, postStepPose.x, postStepPose.y, postStepPose.heading.radians, ccwPos)
 
             // Stream dynamic game piece positions to NT4 for live visual rendering
             val pieces = physicsWorld.gamePieces
@@ -373,7 +381,7 @@ object DesktopSimLauncher {
             if (activeInstance != null) {
                 val state = activeInstance.store.state
                 TelemetryPublisher.publish(state, dtSeconds = TIMESTEP_SEC)
-                activeInstance.profiler.publishSensorsProfiling(activeInstance.telemetryManager)
+                activeInstance.profiler?.publishSensorsProfiling(activeInstance.telemetryManager)
                 
                 val ekfPose = currentPhysPose
                 if (sampleCount % 250L == 0L) {

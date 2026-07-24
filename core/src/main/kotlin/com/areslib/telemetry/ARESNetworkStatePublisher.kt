@@ -91,7 +91,10 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Vision/Target_Y", state.vision.targetY)
         telemetry.putNumber("Vision/MeasurementCount", state.vision.measurements.size.toDouble())
 
-        if (state.vision.measurements.isNotEmpty()) {
+        val hasVisionTarget = state.vision.measurements.isNotEmpty()
+        telemetry.putBoolean("Vision/HasTarget", hasVisionTarget)
+
+        if (hasVisionTarget) {
             val primaryMeasurement = state.vision.measurements[0]
             val pose = primaryMeasurement.targetPose.toPose2d()
             telemetry.logPoseArray2d("Vision/PoseArray", pose)
