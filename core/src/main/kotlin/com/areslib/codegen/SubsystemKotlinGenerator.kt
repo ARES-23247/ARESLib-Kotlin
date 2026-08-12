@@ -1080,6 +1080,10 @@ $telemetry
             currentFields.joinToString(" && ") { "$it.isFinite() && $it >= 0.0" }.ifBlank { "false" }
         } else "true"
         val telemetry = telemetryBody(document)
+        val mockHomeField = document.safety.homingSensorId?.let { sensorId ->
+            document.hardware.firstOrNull { it.hardwareId == sensorId }?.measurements?.firstOrNull()?.fieldId
+        }
+        val mockEstablishHome = mockHomeField?.let { "\n                    if ($it == true) homed = true" }.orEmpty()
         return """
             package $pkg
 
@@ -1117,7 +1121,7 @@ $telemetry
                     }
                     feedbackTimestampMs = RobotClock.currentTimeMillis()
                     feedbackValid = true
-                    currentReadingValid = $currentValidity
+                    currentReadingValid = $currentValidity$mockEstablishHome
                 }
 
             $commands
@@ -1157,7 +1161,11 @@ $telemetry
     private fun testSource(document: SubsystemDocument, pkg: String): String {
         val firstTarget = document.stateFields.firstOrNull { it.role == SubsystemFieldRole.TARGET }
         val assertion = firstTarget?.let {
-            "assertEquals(${it.defaultKotlinLiteral()}, state.${it.fieldId})"
+            if (it.type == SubsystemValueType.DOUBLE) {
+                "assertEquals(${it.defaultKotlinLiteral()}, state.${it.fieldId}, 0.0)"
+            } else {
+                "assertEquals(${it.defaultKotlinLiteral()}, state.${it.fieldId})"
+            }
         } ?: "assertNotNull(state)"
         val imports = when (document.platform) {
             SubsystemPlatform.FTC -> """import org.junit.Assert.assertEquals
