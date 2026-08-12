@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "1.9.23" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
+    id("org.jetbrains.kotlin.android") version "2.4.10" apply false
     id("org.jetbrains.dokka") version "1.9.20"
     id("org.jetbrains.kotlinx.kover") version "0.7.6"
 }
@@ -26,10 +26,10 @@ allprojects {
     }
     configurations.all {
         resolutionStrategy {
-            force("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
-            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23")
-            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23")
-            force("org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23")
+            force("org.jetbrains.kotlin:kotlin-stdlib:2.4.10")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.10")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.4.10")
+            force("org.jetbrains.kotlin:kotlin-stdlib-common:2.4.10")
         }
     }
 }
