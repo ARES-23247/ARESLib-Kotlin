@@ -119,14 +119,31 @@ class TelemetryUpdateE2ETest {
             com.areslib.state.RobotFieldManager.activeConfig.obstacles.any { it.id == "dashboard-wall" }
         )
 
-        // Wait for sim loop to step, publish motor state, and build up velocity
-        Thread.sleep(1500)
+        // Wait for the sim loop to step, publish motor state, and build up velocity. CI runs all
+        // Gradle module tests concurrently, so a fixed sleep cannot guarantee that the simulator
+        // thread has received enough CPU time.
+        Thread.sleep(500)
 
         // 4. Verify canonical FTC Motor Powers (fl, fr, rl, rr)
-        val flPower = NT4Server.getDouble("Hardware/Motors/fl/Power", 0.0)
-        val frPower = NT4Server.getDouble("Hardware/Motors/fr/Power", 0.0)
-        val rlPower = NT4Server.getDouble("Hardware/Motors/rl/Power", 0.0)
-        val rrPower = NT4Server.getDouble("Hardware/Motors/rr/Power", 0.0)
+        var flPower = NT4Server.getDouble("Hardware/Motors/fl/Power", 0.0)
+        var frPower = NT4Server.getDouble("Hardware/Motors/fr/Power", 0.0)
+        var rlPower = NT4Server.getDouble("Hardware/Motors/rl/Power", 0.0)
+        var rrPower = NT4Server.getDouble("Hardware/Motors/rr/Power", 0.0)
+        var motorPollsRemaining = 150
+        while (
+            (kotlin.math.abs(flPower) <= 0.05 ||
+                kotlin.math.abs(frPower) <= 0.05 ||
+                kotlin.math.abs(rlPower) <= 0.05 ||
+                kotlin.math.abs(rrPower) <= 0.05) &&
+            motorPollsRemaining > 0
+        ) {
+            Thread.sleep(20L)
+            flPower = NT4Server.getDouble("Hardware/Motors/fl/Power", 0.0)
+            frPower = NT4Server.getDouble("Hardware/Motors/fr/Power", 0.0)
+            rlPower = NT4Server.getDouble("Hardware/Motors/rl/Power", 0.0)
+            rrPower = NT4Server.getDouble("Hardware/Motors/rr/Power", 0.0)
+            motorPollsRemaining--
+        }
 
         println("[Telemetry E2E Test] Motor Powers -> FL: $flPower, FR: $frPower, RL: $rlPower, RR: $rrPower")
         // This test owns the telemetry transport contract, not the controller's transient wheel
