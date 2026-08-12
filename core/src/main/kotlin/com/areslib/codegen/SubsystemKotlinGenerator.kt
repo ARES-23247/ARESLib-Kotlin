@@ -1222,10 +1222,10 @@ $telemetry
         } ?: "        assertTrue(io.currentReadingValid)"
         val firstTargetOverride = firstTarget?.let { field ->
             when (field.type) {
-                SubsystemValueType.DOUBLE -> ", ${field.fieldId} = ${(field.maximum ?: 1.0).kotlinDouble()}"
-                SubsystemValueType.INT -> ", ${field.fieldId} = ${(field.maximum?.toInt() ?: 1)}"
-                SubsystemValueType.BOOLEAN -> ", ${field.fieldId} = true"
-                SubsystemValueType.STRING -> ", ${field.fieldId} = \"active\""
+                SubsystemValueType.DOUBLE -> "${field.fieldId} = ${(field.maximum ?: 1.0).kotlinDouble()},"
+                SubsystemValueType.INT -> "${field.fieldId} = ${(field.maximum?.toInt() ?: 1)},"
+                SubsystemValueType.BOOLEAN -> "${field.fieldId} = true,"
+                SubsystemValueType.STRING -> "${field.fieldId} = \"active\","
             }
         }.orEmpty()
         val controllerNeutralAssertion = firstActuator?.let { device ->
@@ -1286,7 +1286,8 @@ $telemetry
                         homed = true,
                         calibrated = true,
                         currentReadingValid = true,
-                    $firstTargetOverride), 1.0)
+                        $firstTargetOverride
+                    ), 1.0)
                     $controllerNeutralAssertion
                 }
 
@@ -1304,7 +1305,8 @@ $telemetry
                         homed = true,
                         calibrated = true,
                         currentReadingValid = true,
-                    $firstTargetOverride), 0.0)
+                        $firstTargetOverride
+                    ), 0.0)
                     $controllerNeutralAssertion
                 }
 
