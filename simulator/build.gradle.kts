@@ -26,7 +26,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 
     // WPILib Desktop Simulation native dependencies for NT4 and DataLog
-    val wpiVersion = "2024.3.2"
+    val wpiVersion = "2026.2.2"
     val osName = System.getProperty("os.name").lowercase()
     val platform = when {
         osName.contains("windows") -> "windowsx86-64"
