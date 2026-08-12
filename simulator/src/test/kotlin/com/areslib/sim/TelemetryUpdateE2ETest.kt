@@ -110,7 +110,10 @@ class TelemetryUpdateE2ETest {
             it.start()
         }
 
-        val obstacleJson = """[{"id":"dashboard-wall","name":"Dashboard Wall","type":"Rectangle","centerX":0.5,"centerY":0.25,"width":0.4,"height":0.2,"rotation":0.0}]"""
+        // Keep the field-contract fixture clear of the positive-X drive path. Putting this wall at
+        // x=0.5 made the physics assertion depend on whether the robot moved before the obstacle
+        // update reached the simulator.
+        val obstacleJson = """[{"id":"dashboard-wall","name":"Dashboard Wall","type":"Rectangle","centerX":-1.0,"centerY":1.0,"width":0.4,"height":0.2,"rotation":0.0}]"""
         NT4Server.publishTopic("ARES/Input/obstacles", obstacleJson)
         assertEquals(obstacleJson, com.areslib.sim.network.TelemetryPublisher.getWebObstacles())
         Thread.sleep(100)
