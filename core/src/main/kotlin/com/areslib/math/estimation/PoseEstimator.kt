@@ -354,9 +354,19 @@ data class PoseEstimatorState(
     var lastMeasurementAccepted: Boolean = false,
     var lastRejectionReason: String? = null
 ) {
-    /** Creates an independently owned estimator snapshot suitable for reducer mutation. */
+    /**
+     * Creates an independently owned estimator snapshot suitable for reducer mutation.
+     *
+     * [history] is intentionally observable from Redux state: drive reduction uses its newest
+     * timestamp to reject out-of-order samples, and delayed-vision prefiltering samples the pose at
+     * camera capture time. The estimator mutates that fixed-capacity buffer to keep replay bounded,
+     * so it must cross the reducer boundary as a deep copy just like the mutable primitive arrays.
+     * Removing this copy makes previously published [com.areslib.state.RobotState] snapshots change
+     * when later odometry or vision actions are reduced.
+     */
     fun deepCopy(): PoseEstimatorState = copy(
         covarianceArray = covarianceArray.copyOf(),
+        history = history.deepCopy(),
         lastKalmanGain = lastKalmanGain.copyOf()
     )
 
