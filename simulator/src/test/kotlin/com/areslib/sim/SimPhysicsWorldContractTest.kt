@@ -55,4 +55,18 @@ class SimPhysicsWorldContractTest {
         org.junit.Assert.assertTrue("Linear velocity should damp toward 0", physics.robotBody.linearVelocity.magnitude <= 0.1)
         org.junit.Assert.assertTrue("Angular velocity should damp toward 0", kotlin.math.abs(physics.robotBody.angularVelocity) <= 0.1)
     }
+
+    @Test
+    fun replaceObstaclesFromAnalyticsJsonDynamicallyUpdatesWorldBodies() {
+        val physics = SimPhysicsWorld()
+        val jsonPayload = """[{"id":"obs1","x":0.5,"y":0.5,"width":0.3,"height":0.3,"shape":"RECTANGLE"}]"""
+
+        val updated = physics.replaceObstaclesFromAnalyticsJson(jsonPayload)
+        org.junit.Assert.assertTrue(updated)
+        assertEquals(1, physics.activeObstacles.size)
+
+        val cleared = physics.replaceObstaclesFromAnalyticsJson("[]")
+        org.junit.Assert.assertTrue(cleared)
+        assertEquals(0, physics.activeObstacles.size)
+    }
 }
