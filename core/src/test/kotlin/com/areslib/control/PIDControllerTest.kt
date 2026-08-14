@@ -156,5 +156,58 @@ class PIDControllerTest {
         val outAtSetpointNeg = pid.calculate(measurement = 0.0, setpoint = 0.0, dtSeconds = 1.0)
         assertEquals(0.0, outAtSetpointNeg, 0.001)
     }
+
+    @Test
+    fun testSetpointConfigurationMatchesThreeArgCalculate() {
+        val pid1 = PIDController(2.5, 0.0, 0.0)
+        pid1.setSetpoint(10.0)
+        val out1 = pid1.calculate(4.0, 0.02)
+
+        val pid2 = PIDController(2.5, 0.0, 0.0)
+        val out2 = pid2.calculate(4.0, 10.0, 0.02)
+
+        assertEquals(15.0, out1, 0.001)
+        assertEquals(out2, out1, 1e-12)
+    }
+
+    @Test
+    fun testNonFiniteGainsSafety() {
+        val pidNaNP = PIDController(Double.NaN, 0.0, 0.0)
+        assertDoesNotThrow {
+            val out = pidNaNP.calculate(0.0, 5.0, 0.02)
+            assertEquals(0.0, out, 0.001)
+        }
+
+        val pidInfI = PIDController(1.0, Double.POSITIVE_INFINITY, 0.0)
+        assertDoesNotThrow {
+            val out = pidInfI.calculate(0.0, 5.0, 0.02)
+            assertEquals(0.0, out, 0.001)
+        }
+
+        val pidNaND = PIDController(1.0, 0.0, Double.NaN)
+        assertDoesNotThrow {
+            val out = pidNaND.calculate(0.0, 5.0, 0.02)
+            assertEquals(0.0, out, 0.001)
+        }
+
+        val pidAllNonFinite = PIDController(Double.NaN, Double.POSITIVE_INFINITY, Double.NaN)
+        assertDoesNotThrow {
+            val out = pidAllNonFinite.calculate(0.0, 5.0, 0.02)
+            assertEquals(0.0, out, 0.001)
+        }
+    }
+
+    @Test
+    fun testDegenerateContinuousInputRange() {
+        val pid = PIDController(2.0, 0.0, 0.0)
+        pid.enableContinuousInput(5.0, 5.0)
+
+        assertDoesNotThrow {
+            val out = pid.calculate(measurement = 2.0, setpoint = 5.0, dtSeconds = 0.02)
+            assertEquals(6.0, out, 0.001)
+            assertFalse(out.isNaN())
+            assertFalse(out.isInfinite())
+        }
+    }
 }
 
