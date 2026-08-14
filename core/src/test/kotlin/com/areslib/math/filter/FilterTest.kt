@@ -86,4 +86,33 @@ class FilterTest {
         filter.setTimeConstant(0.0)
         assertEquals(20.0, filter.calculate(20.0, 0.02), 1e-6)
     }
+
+    @Test
+    fun testLowPassFilterNegativeTimeConstantBypassAndDefaultReset() {
+        // 1. Negative time constant acts as passthrough bypass, updating lastEstimate directly
+        val filter = LowPassFilter(-0.5)
+        assertEquals(10.0, filter.calculate(10.0, 0.02), 1e-6)
+        assertEquals(10.0, filter.value, 1e-6)
+
+        assertEquals(25.0, filter.calculate(25.0, 0.02), 1e-6)
+        assertEquals(25.0, filter.value, 1e-6)
+
+        // 2. setTimeConstant(Double.NaN) safely preserves lastEstimate without numerical corruption
+        filter.setTimeConstant(Double.NaN)
+        val preserved = filter.calculate(50.0, 0.02)
+        assertEquals(25.0, preserved, 1e-6)
+        assertEquals(25.0, filter.value, 1e-6)
+
+        // 3. Parameterless reset() seeds lastEstimate to 0.0 and flags hasFirstValue = true
+        filter.reset()
+        assertEquals(0.0, filter.value, 1e-6)
+
+        // Verify hasFirstValue is true: subsequent calculate filters against 0.0 baseline instead of snapping
+        filter.setTimeConstant(0.1)
+        // alpha = 0.02 / (0.1 + 0.02) = 1/6
+        // output = (1/6) * 12.0 + (5/6) * 0.0 = 2.0
+        val filtered = filter.calculate(12.0, 0.02)
+        assertEquals(2.0, filtered, 1e-5)
+        assertEquals(2.0, filter.value, 1e-5)
+    }
 }
