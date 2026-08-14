@@ -274,4 +274,71 @@ class TrapezoidProfileTest {
         assertEquals(goal.position, outState.position, 1e-4)
         assertEquals(goal.velocity, outState.velocity, 1e-4)
     }
+
+    @Test
+    fun `test state setTo copies position and velocity accurately`() {
+        val src = TrapezoidProfile.State(position = 4.25, velocity = -1.75)
+        val dst = TrapezoidProfile.State(position = 0.0, velocity = 0.0)
+        dst.setTo(src)
+
+        assertEquals(4.25, dst.position, 1e-9)
+        assertEquals(-1.75, dst.velocity, 1e-9)
+    }
+
+    @Test
+    fun `test constraints default constructor initializes to zero`() {
+        val constraints = TrapezoidProfile.Constraints()
+
+        assertEquals(0.0, constraints.maxVelocity, 1e-9)
+        assertEquals(0.0, constraints.maxAcceleration, 1e-9)
+    }
+
+    @Test
+    fun `calculate with non-finite current position or velocity resets outState to zero`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 2.0, maxAcceleration = 1.0)
+        val goal = TrapezoidProfile.State(position = 10.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State(position = 5.0, velocity = 2.0)
+
+        // Non-finite position (NaN)
+        val currentNanPos = TrapezoidProfile.State(position = Double.NaN, velocity = 1.0)
+        profile.calculate(0.02, currentNanPos, goal, constraints, outState)
+        assertEquals(0.0, outState.position, 1e-9)
+        assertEquals(0.0, outState.velocity, 1e-9)
+
+        // Non-finite velocity (NaN)
+        outState.position = 5.0
+        outState.velocity = 2.0
+        val currentNanVel = TrapezoidProfile.State(position = 3.0, velocity = Double.NaN)
+        profile.calculate(0.02, currentNanVel, goal, constraints, outState)
+        assertEquals(0.0, outState.position, 1e-9)
+        assertEquals(0.0, outState.velocity, 1e-9)
+
+        // Both position and velocity NaN
+        outState.position = 5.0
+        outState.velocity = 2.0
+        val currentNanBoth = TrapezoidProfile.State(position = Double.NaN, velocity = Double.NaN)
+        profile.calculate(0.02, currentNanBoth, goal, constraints, outState)
+        assertEquals(0.0, outState.position, 1e-9)
+        assertEquals(0.0, outState.velocity, 1e-9)
+    }
+
+    @Test
+    fun `calculate with non-positive or non-finite dtSeconds holds current state in outState`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 2.0, maxAcceleration = 1.0)
+        val current = TrapezoidProfile.State(position = 3.5, velocity = 1.2)
+        val goal = TrapezoidProfile.State(position = 10.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+
+        val invalidDts = listOf(0.0, -0.02, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY)
+        for (dt in invalidDts) {
+            outState.position = 999.0
+            outState.velocity = 999.0
+            profile.calculate(dt, current, goal, constraints, outState)
+            assertEquals(current.position, outState.position, 1e-9, "Failed for dt = $dt")
+            assertEquals(current.velocity, outState.velocity, 1e-9, "Failed for dt = $dt")
+        }
+    }
 }
+
