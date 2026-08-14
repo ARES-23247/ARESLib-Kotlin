@@ -6,6 +6,13 @@ import kotlin.math.hypot
 import kotlin.math.pow
 import kotlin.math.sign
 
+private const val ANALOG_DEFAULT_FIRST_UPDATE_SECONDS = 0.02
+private const val ANALOG_MAX_SLEW_DT_SECONDS = 0.2
+
+internal fun interface GamepadFloatSelector {
+    fun read(state: GamepadState): Float
+}
+
 /**
  * A declarative, command-based wrapper for [GamepadState].
  * 
@@ -23,12 +30,31 @@ import kotlin.math.sign
  * driver.a.onPress("Spin up shooter to 3500 RPM") {
  *     store.dispatch(SuperstructureAction.SpinUpShooter(3500.0))
  * }
+ *
+ * driver.leftStick
+ *     .withDeadband(0.08)
+ *     .withExponentialCurve(2.0)
+ *     .withSlewRateLimit(3.0)
+ *
+ * driver.x.toggle("Toggle intake", currentState = { store.state.superstructure.intakeEnabled }) {
+ *     store.dispatch(SuperstructureAction.SetIntakeEnabled(it))
+ * }
  * 
  * // Inside your high-frequency control loop (50Hz-100Hz):
  * driver.update(latestGamepadState)
  * ```
  */
 class AresGamepad {
+
+    /** Primitive callback used by analog bindings without boxing a [Double] every robot loop. */
+    fun interface AxisConsumer {
+        fun accept(value: Double)
+    }
+
+    /** Primitive two-axis callback used by shaped stick bindings without per-loop tuple allocation. */
+    fun interface StickConsumer {
+        fun accept(x: Double, y: Double)
+    }
     
     private var previousState = GamepadState()
     private var currentState = GamepadState()
@@ -69,14 +95,20 @@ class AresGamepad {
     val f11 = BindableButton { it.f11 }
     val f12 = BindableButton { it.f12 }
 
-    val leftStick = BindableStick({ it.leftStickX }, { it.leftStickY })
-    val rightStick = BindableStick({ it.rightStickX }, { it.rightStickY })
-    val leftStickX = BindableAxis { it.leftStickX }
-    val leftStickY = BindableAxis { it.leftStickY }
-    val rightStickX = BindableAxis { it.rightStickX }
-    val rightStickY = BindableAxis { it.rightStickY }
-    val leftTrigger = BindableAxis { it.leftTrigger }
-    val rightTrigger = BindableAxis { it.rightTrigger }
+    val leftStick = BindableStick(
+        GamepadFloatSelector { it.leftStickX },
+        GamepadFloatSelector { it.leftStickY }
+    )
+    val rightStick = BindableStick(
+        GamepadFloatSelector { it.rightStickX },
+        GamepadFloatSelector { it.rightStickY }
+    )
+    val leftStickX = BindableAxis(GamepadFloatSelector { it.leftStickX })
+    val leftStickY = BindableAxis(GamepadFloatSelector { it.leftStickY })
+    val rightStickX = BindableAxis(GamepadFloatSelector { it.rightStickX })
+    val rightStickY = BindableAxis(GamepadFloatSelector { it.rightStickY })
+    val leftTrigger = BindableAxis(GamepadFloatSelector { it.leftTrigger })
+    val rightTrigger = BindableAxis(GamepadFloatSelector { it.rightTrigger })
 
     private val allButtons = listOf(
         a, b, x, y, 
@@ -99,14 +131,15 @@ class AresGamepad {
         previousState.copyFrom(currentState)
         currentState.copyFrom(newState)
 
-        leftStick.updateValue(newState)
-        rightStick.updateValue(newState)
-        leftStickX.updateValue(newState)
-        leftStickY.updateValue(newState)
-        rightStickX.updateValue(newState)
-        rightStickY.updateValue(newState)
-        leftTrigger.updateValue(newState)
-        rightTrigger.updateValue(newState)
+        val timestampMs = RobotClock.currentTimeMillis()
+        leftStick.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        rightStick.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        leftStickX.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        leftStickY.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        rightStickX.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        rightStickY.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        leftTrigger.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        rightTrigger.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
         
         // Iterate through all bindable buttons and trigger actions if transitions occurred
         // Using a standard loop to avoid allocations (iterator object creation) on the hot path
@@ -143,14 +176,15 @@ class AresGamepad {
     fun prime(newState: GamepadState) {
         previousState.copyFrom(newState)
         currentState.copyFrom(newState)
-        leftStick.updateValue(newState)
-        rightStick.updateValue(newState)
-        leftStickX.updateValue(newState)
-        leftStickY.updateValue(newState)
-        rightStickX.updateValue(newState)
-        rightStickY.updateValue(newState)
-        leftTrigger.updateValue(newState)
-        rightTrigger.updateValue(newState)
+        val timestampMs = RobotClock.currentTimeMillis()
+        leftStick.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        rightStick.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        leftStickX.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        leftStickY.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        rightStickX.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        rightStickY.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        leftTrigger.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        rightTrigger.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
         for (i in allButtons.indices) {
             val button = allButtons[i]
             val isPressed = button.stateSelector(newState)
@@ -178,7 +212,7 @@ class AresGamepad {
          * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
          * @param action The block of code to execute. Must not block the thread.
          */
-        fun onPress(description: String = "", action: () -> Unit) {
+        fun onPress(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
             this.onPressAction = action
         }
 
@@ -213,13 +247,18 @@ class AresGamepad {
         }
 
         /**
-         * Binds an alternating boolean toggle state to execute on each button press.
+         * Requests the inverse of the authoritative Redux-backed [currentState] on each press.
+         *
+         * The binding deliberately owns no hidden toggle latch. If safety rejects a request, the
+         * next press derives from the unchanged store state instead of drifting out of sync.
          */
-        fun toggle(@Suppress("UNUSED_PARAMETER") description: String = "", initial: Boolean = false, action: (Boolean) -> Unit) {
-            var toggleState = initial
+        fun toggle(
+            @Suppress("UNUSED_PARAMETER") description: String = "",
+            currentState: () -> Boolean,
+            action: (Boolean) -> Unit
+        ) {
             onPress(description) {
-                toggleState = !toggleState
-                action(toggleState)
+                action(!currentState())
             }
         }
 
@@ -237,7 +276,14 @@ class AresGamepad {
     }
 
     /** One continuously sampled analog input with deadband, curvature, and slew shaping. */
-    class BindableAxis(private val valueSelector: (GamepadState) -> Float) {
+    class BindableAxis private constructor(
+        private val primitiveSelector: GamepadFloatSelector?,
+        private val legacySelector: ((GamepadState) -> Float)?
+    ) {
+        internal constructor(valueSelector: GamepadFloatSelector) : this(valueSelector, null)
+
+        /** Compatibility constructor for custom axes; built-in ARES axes use the zero-boxing path. */
+        constructor(valueSelector: (GamepadState) -> Float) : this(null, valueSelector)
         var value: Float = 0.0f
             private set
 
@@ -248,8 +294,8 @@ class AresGamepad {
         private var curveExponent: Double = 1.0
         private var slewRateLimit: Double = 0.0 // 0.0 means disabled
         private var lastSlewValue: Double = 0.0
-        private var lastUpdateTimeSec: Double = -1.0
-        private var axisConsumer: ((Double) -> Unit)? = null
+        private var lastUpdateTimeMs: Long = Long.MIN_VALUE
+        private var axisConsumer: AxisConsumer? = null
 
         fun label(@Suppress("UNUSED_PARAMETER") description: String) {
             // No-op at runtime, used statically for ARES-Analytics parsing
@@ -257,30 +303,45 @@ class AresGamepad {
 
         /** Configures a deadband with smooth linear rescaling above threshold. */
         fun withDeadband(threshold: Double): BindableAxis {
-            this.deadbandThreshold = threshold.coerceIn(0.0, 0.9)
+            require(threshold.isFinite() && threshold >= 0.0 && threshold < 1.0) {
+                "Axis deadband must be finite and in [0.0, 1.0)"
+            }
+            this.deadbandThreshold = threshold
             return this
         }
 
         /** Configures an exponential curve for fine precision near origin (1.0 = linear). */
         fun withExponentialCurve(exponent: Double): BindableAxis {
-            this.curveExponent = exponent.coerceIn(1.0, 5.0)
+            require(exponent.isFinite() && exponent in 1.0..5.0) {
+                "Axis exponent must be finite and in [1.0, 5.0]"
+            }
+            this.curveExponent = exponent
             return this
         }
 
         /** Configures a maximum rate of change (units per second) to protect mechanisms. */
         fun withSlewRateLimit(unitsPerSecond: Double): BindableAxis {
-            this.slewRateLimit = unitsPerSecond.coerceAtLeast(0.0)
+            require(unitsPerSecond.isFinite() && unitsPerSecond >= 0.0) {
+                "Axis slew rate must be finite and non-negative"
+            }
+            this.slewRateLimit = unitsPerSecond
             return this
         }
 
-        /** Binds a consumer lambda invoked whenever the axis updates. */
-        fun bindAxis(consumer: (Double) -> Unit): BindableAxis {
+        /** Binds a primitive consumer invoked by [update], never by INIT-safe [prime]. */
+        fun bindAxis(consumer: AxisConsumer): BindableAxis {
             this.axisConsumer = consumer
             return this
         }
 
-        internal fun updateValue(state: GamepadState) {
-            val raw = valueSelector(state).toDouble()
+        internal fun updateValue(
+            state: GamepadState,
+            timestampMs: Long,
+            notifyConsumer: Boolean,
+            resetSlew: Boolean
+        ) {
+            val selected = (primitiveSelector?.read(state) ?: legacySelector!!.invoke(state)).toDouble()
+            val raw = if (selected.isFinite()) selected.coerceIn(-1.0, 1.0) else 0.0
             value = raw.toFloat()
 
             // 1. Deadband with linear rescaling
@@ -300,9 +361,15 @@ class AresGamepad {
             }
 
             // 3. Slew rate limiter
-            val nowSec = RobotClock.currentTimeMillis() / 1000.0
-            val finalVal = if (slewRateLimit > 0.0 && lastUpdateTimeSec >= 0.0) {
-                val dt = (nowSec - lastUpdateTimeSec).coerceIn(0.001, 0.2)
+            val finalVal = if (resetSlew) {
+                afterCurve
+            } else if (slewRateLimit > 0.0) {
+                val dt = if (lastUpdateTimeMs == Long.MIN_VALUE) {
+                    ANALOG_DEFAULT_FIRST_UPDATE_SECONDS
+                } else {
+                    ((timestampMs - lastUpdateTimeMs).coerceAtLeast(0L) / 1_000.0)
+                        .coerceAtMost(ANALOG_MAX_SLEW_DT_SECONDS)
+                }
                 val maxDelta = slewRateLimit * dt
                 val delta = (afterCurve - lastSlewValue).coerceIn(-maxDelta, maxDelta)
                 lastSlewValue + delta
@@ -311,18 +378,31 @@ class AresGamepad {
             }
 
             lastSlewValue = finalVal
-            lastUpdateTimeSec = nowSec
+            lastUpdateTimeMs = timestampMs
             shapedValue = finalVal
 
-            axisConsumer?.invoke(finalVal)
+            if (notifyConsumer) axisConsumer?.accept(finalVal)
         }
+
     }
 
     /** Two continuously sampled analog axes with radial deadband and curve shaping. */
-    class BindableStick(
-        private val xSelector: (GamepadState) -> Float,
-        private val ySelector: (GamepadState) -> Float
+    class BindableStick private constructor(
+        private val primitiveXSelector: GamepadFloatSelector?,
+        private val primitiveYSelector: GamepadFloatSelector?,
+        private val legacyXSelector: ((GamepadState) -> Float)?,
+        private val legacyYSelector: ((GamepadState) -> Float)?
     ) {
+        internal constructor(
+            xSelector: GamepadFloatSelector,
+            ySelector: GamepadFloatSelector
+        ) : this(xSelector, ySelector, null, null)
+
+        /** Compatibility constructor for custom sticks; built-in ARES sticks avoid boxed Floats. */
+        constructor(
+            xSelector: (GamepadState) -> Float,
+            ySelector: (GamepadState) -> Float
+        ) : this(null, null, xSelector, ySelector)
         var x: Float = 0.0f
             private set
         var y: Float = 0.0f
@@ -338,7 +418,8 @@ class AresGamepad {
         private var slewRateLimit: Double = 0.0
         private var lastSlewX: Double = 0.0
         private var lastSlewY: Double = 0.0
-        private var lastUpdateTimeSec: Double = -1.0
+        private var lastUpdateTimeMs: Long = Long.MIN_VALUE
+        private var stickConsumer: StickConsumer? = null
 
         fun label(@Suppress("UNUSED_PARAMETER") description: String) {
             // No-op at runtime, used statically for ARES-Analytics parsing
@@ -346,25 +427,55 @@ class AresGamepad {
 
         /** Configures a radial deadband (preserves vector angle while zeroing near center). */
         fun withDeadband(threshold: Double): BindableStick {
-            this.deadbandThreshold = threshold.coerceIn(0.0, 0.9)
+            require(threshold.isFinite() && threshold >= 0.0 && threshold < 1.0) {
+                "Stick deadband must be finite and in [0.0, 1.0)"
+            }
+            this.deadbandThreshold = threshold
             return this
         }
 
         /** Configures an exponential curve for both axes. */
         fun withExponentialCurve(exponent: Double): BindableStick {
-            this.curveExponent = exponent.coerceIn(1.0, 5.0)
+            require(exponent.isFinite() && exponent in 1.0..5.0) {
+                "Stick exponent must be finite and in [1.0, 5.0]"
+            }
+            this.curveExponent = exponent
             return this
         }
 
-        /** Configures a maximum slew rate limit for stick deflection changes. */
+        /**
+         * Configures a radial maximum rate of change in stick-deflection units per second.
+         * The vector direction is preserved while its change in magnitude is limited.
+         */
         fun withSlewRateLimit(unitsPerSecond: Double): BindableStick {
-            this.slewRateLimit = unitsPerSecond.coerceAtLeast(0.0)
+            require(unitsPerSecond.isFinite() && unitsPerSecond >= 0.0) {
+                "Stick slew rate must be finite and non-negative"
+            }
+            this.slewRateLimit = unitsPerSecond
             return this
         }
 
-        internal fun updateValue(state: GamepadState) {
-            val rawX = xSelector(state).toDouble()
-            val rawY = ySelector(state).toDouble()
+        /** Binds a primitive consumer invoked by [update], never by INIT-safe [prime]. */
+        fun bindStick(consumer: StickConsumer): BindableStick {
+            stickConsumer = consumer
+            return this
+        }
+
+        internal fun updateValue(
+            state: GamepadState,
+            timestampMs: Long,
+            notifyConsumer: Boolean,
+            resetSlew: Boolean
+        ) {
+            val selectedX = (primitiveXSelector?.read(state) ?: legacyXSelector!!.invoke(state)).toDouble()
+            val selectedY = (primitiveYSelector?.read(state) ?: legacyYSelector!!.invoke(state)).toDouble()
+            var rawX = if (selectedX.isFinite()) selectedX.coerceIn(-1.0, 1.0) else 0.0
+            var rawY = if (selectedY.isFinite()) selectedY.coerceIn(-1.0, 1.0) else 0.0
+            val rawMagnitude = hypot(rawX, rawY)
+            if (rawMagnitude > 1.0) {
+                rawX /= rawMagnitude
+                rawY /= rawMagnitude
+            }
             x = rawX.toFloat()
             y = rawY.toFloat()
 
@@ -399,22 +510,32 @@ class AresGamepad {
             }
 
             // 3. Slew rate limiter
-            val nowSec = RobotClock.currentTimeMillis() / 1000.0
-            if (slewRateLimit > 0.0 && lastUpdateTimeSec >= 0.0) {
-                val dt = (nowSec - lastUpdateTimeSec).coerceIn(0.001, 0.2)
+            if (!resetSlew && slewRateLimit > 0.0) {
+                val dt = if (lastUpdateTimeMs == Long.MIN_VALUE) {
+                    ANALOG_DEFAULT_FIRST_UPDATE_SECONDS
+                } else {
+                    ((timestampMs - lastUpdateTimeMs).coerceAtLeast(0L) / 1_000.0)
+                        .coerceAtMost(ANALOG_MAX_SLEW_DT_SECONDS)
+                }
                 val maxDelta = slewRateLimit * dt
-                val dx = (dbX - lastSlewX).coerceIn(-maxDelta, maxDelta)
-                val dy = (dbY - lastSlewY).coerceIn(-maxDelta, maxDelta)
-                dbX = lastSlewX + dx
-                dbY = lastSlewY + dy
+                val dx = dbX - lastSlewX
+                val dy = dbY - lastSlewY
+                val deltaMagnitude = hypot(dx, dy)
+                val scale = if (deltaMagnitude > maxDelta && deltaMagnitude > 0.0) {
+                    maxDelta / deltaMagnitude
+                } else 1.0
+                dbX = lastSlewX + dx * scale
+                dbY = lastSlewY + dy * scale
             }
 
             lastSlewX = dbX
             lastSlewY = dbY
-            lastUpdateTimeSec = nowSec
+            lastUpdateTimeMs = timestampMs
 
             shapedX = dbX
             shapedY = dbY
+            if (notifyConsumer) stickConsumer?.accept(dbX, dbY)
         }
+
     }
 }
