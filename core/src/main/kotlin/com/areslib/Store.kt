@@ -53,7 +53,10 @@ class Store(
             state = reducer(state, action)
             currentState = state
         }
-        listeners.forEach { it(currentState) }
+        val listenerCount = listeners.size
+        for (i in 0 until listenerCount) {
+            listeners[i](currentState)
+        }
     }
 
     /**
@@ -70,7 +73,10 @@ class Store(
             }
             currentState = state
         }
-        listeners.forEach { it(currentState) }
+        val listenerCount = listeners.size
+        for (i in 0 until listenerCount) {
+            listeners[i](currentState)
+        }
     }
 
     /**

@@ -98,14 +98,15 @@ object DriveReducer {
                     val newHistory = HistoryBuffer(150)
                     newHistory.addEntry(action.timestampMs, newPose, Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01), 1.0)
                     
-                    state.poseEstimator.deepCopy().copy(
+                    state.poseEstimator.copy(
                         estimatedPoseX = newPose.x,
                         estimatedPoseY = newPose.y,
                         estimatedPoseHeading = newPose.heading.radians,
                         covarianceArray = doubleArrayOf(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01),
                         history = newHistory,
                         isBeached = false,
-                        lastUnbeachedTimeMs = action.timestampMs
+                        lastUnbeachedTimeMs = action.timestampMs,
+                        lastKalmanGain = DoubleArray(9)
                     )
                 } else if (action.isExternalEstimate) {
                     PoseEstimator.acceptExternalEstimate(

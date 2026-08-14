@@ -357,7 +357,6 @@ data class PoseEstimatorState(
     /** Creates an independently owned estimator snapshot suitable for reducer mutation. */
     fun deepCopy(): PoseEstimatorState = copy(
         covarianceArray = covarianceArray.copyOf(),
-        history = history.deepCopy(),
         lastKalmanGain = lastKalmanGain.copyOf()
     )
 
