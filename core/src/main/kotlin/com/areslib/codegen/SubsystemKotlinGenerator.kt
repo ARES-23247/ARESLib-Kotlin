@@ -2138,7 +2138,9 @@ private fun feedforwardExpression(loop: SubsystemControlLoopDocument): String {
         val gravity = when (ff.kind) {
             SubsystemFeedforwardKind.NONE, SubsystemFeedforwardKind.SIMPLE_MOTOR -> "0.0"
             SubsystemFeedforwardKind.ELEVATOR -> ff.kG.kotlinDouble()
-            SubsystemFeedforwardKind.ARM ->
+            SubsystemFeedforwardKind.ARM,
+            SubsystemFeedforwardKind.FOUR_BAR_LINKAGE,
+            SubsystemFeedforwardKind.TWO_DOF_ARM ->
                 "${ff.kG.kotlinDouble()} * kotlin.math.cos(state.${requireNotNull(ff.gravityAngleFieldId)}.toDouble())"
         }
         return """            val ${loop.loopId}DesiredVelocity = $velocity

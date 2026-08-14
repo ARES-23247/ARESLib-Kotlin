@@ -109,7 +109,23 @@ enum class SubsystemFeedforwardKind {
     SIMPLE_MOTOR,
     ELEVATOR,
     ARM,
+    TWO_DOF_ARM,
+    FOUR_BAR_LINKAGE,
 }
+
+data class SubsystemLinkageDocument(
+    val enabled: Boolean = false,
+    val link1LengthMeters: Double = 0.35,
+    val link2LengthMeters: Double = 0.25,
+    val link1MassKg: Double = 0.5,
+    val link2MassKg: Double = 0.3,
+    val joint1MinRad: Double = -Math.PI,
+    val joint1MaxRad: Double = Math.PI,
+    val joint2MinRad: Double = -Math.PI,
+    val joint2MaxRad: Double = Math.PI,
+    val joint1AngleFieldId: String? = null,
+    val joint2AngleFieldId: String? = null,
+)
 
 data class SubsystemFeedforwardDocument(
     val kind: SubsystemFeedforwardKind = SubsystemFeedforwardKind.NONE,
@@ -366,6 +382,8 @@ data class SubsystemDocument(
     val safety: SubsystemSafetyDocument = SubsystemSafetyDocument(),
     /** Declarative safety interlocks between this subsystem and other mechanisms. */
     val interlocks: List<SubsystemInterlockDocument> = emptyList(),
+    /** Multi-joint linkage geometry and non-linear kinematics. */
+    val linkage: SubsystemLinkageDocument = SubsystemLinkageDocument(),
     /** Stable resource owned while an autonomous action commands this subsystem. */
     val autonomousResourceKey: String? = null,
     /** Required failures abort robot initialization; optional failures are reported and skipped. */
@@ -662,6 +680,7 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     validateHoming(document, hardwareById, fieldsById, ::issue)
     validateFaultRecovery(document, ::issue)
     validateInterlocks(document, ::issue)
+    validateLinkage(document, ::issue)
     if (document.safety.requiresExplicitNeutralRecovery && !document.safety.latchOutputFaults) {
         issue("safety.requiresExplicitNeutralRecovery", "Explicit neutral recovery requires fault latching")
     }
@@ -979,6 +998,21 @@ private fun validateImplementation(
     }
 }
 
+private fun validateLinkage(document: SubsystemDocument, issue: (String, String) -> Unit) {
+    if (!document.linkage.enabled) return
+    val path = "linkage"
+    if (document.linkage.link1LengthMeters <= 0.0) issue("$path.link1LengthMeters", "Link 1 length must be positive")
+    if (document.linkage.link2LengthMeters <= 0.0) issue("$path.link2LengthMeters", "Link 2 length must be positive")
+    if (document.linkage.link1MassKg < 0.0) issue("$path.link1MassKg", "Link 1 mass cannot be negative")
+    if (document.linkage.link2MassKg < 0.0) issue("$path.link2MassKg", "Link 2 mass cannot be negative")
+    if (document.linkage.joint1MinRad >= document.linkage.joint1MaxRad) {
+        issue("$path.joint1MinRad", "Joint 1 minimum angle must be less than maximum angle")
+    }
+    if (document.linkage.joint2MinRad >= document.linkage.joint2MaxRad) {
+        issue("$path.joint2MinRad", "Joint 2 minimum angle must be less than maximum angle")
+    }
+}
+
 object SubsystemDocumentCodec {
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -1020,6 +1054,7 @@ object SubsystemDocumentCodec {
                 tuningParameters = parsed.tuningParameters ?: emptyList(),
                 capabilityActionKeys = parsed.capabilityActionKeys ?: emptyList(),
                 interlocks = parsed.interlocks ?: emptyList(),
+                linkage = parsed.linkage ?: SubsystemLinkageDocument(),
                 safety = (parsed.safety ?: SubsystemSafetyDocument()).let { s ->
                     s.copy(
                         faultRecovery = s.faultRecovery ?: SubsystemFaultRecoveryDocument()
