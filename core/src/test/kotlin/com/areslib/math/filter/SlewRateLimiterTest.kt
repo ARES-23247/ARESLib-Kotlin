@@ -86,4 +86,79 @@ class SlewRateLimiterTest {
         assertEquals(5.0, limiter.calculate(10.0, 0.0), 1e-6)
         assertEquals(5.0, limiter.calculate(10.0, -0.5), 1e-6)
     }
+
+    @Test
+    fun `non-finite initialValue safely defaults to zero`() {
+        val nanLimiter = SlewRateLimiter(2.0, initialValue = Double.NaN)
+        assertEquals(0.0, nanLimiter.value, 1e-9)
+        assertEquals(1.0, nanLimiter.calculate(10.0, 0.5), 1e-9)
+
+        val posInfLimiter = SlewRateLimiter(2.0, initialValue = Double.POSITIVE_INFINITY)
+        assertEquals(0.0, posInfLimiter.value, 1e-9)
+        assertEquals(1.0, posInfLimiter.calculate(10.0, 0.5), 1e-9)
+
+        val negInfLimiter = SlewRateLimiter(2.0, initialValue = Double.NEGATIVE_INFINITY)
+        assertEquals(0.0, negInfLimiter.value, 1e-9)
+        assertEquals(1.0, negInfLimiter.calculate(10.0, 0.5), 1e-9)
+    }
+
+    @Test
+    fun `reset with non-finite value defaults to zero and sets hasBeenCalled true`() {
+        val limiter = SlewRateLimiter(2.0, initialValue = 5.0)
+        limiter.clear() // hasBeenCalled = false
+
+        limiter.reset(Double.NaN)
+        assertEquals(0.0, limiter.value, 1e-9)
+        // Since hasBeenCalled is true after reset, calculate must rate-limit rather than snapping to 10.0
+        assertEquals(1.0, limiter.calculate(10.0, 0.5), 1e-9)
+
+        limiter.clear()
+        limiter.reset(Double.POSITIVE_INFINITY)
+        assertEquals(0.0, limiter.value, 1e-9)
+        assertEquals(1.0, limiter.calculate(10.0, 0.5), 1e-9)
+    }
+
+    @Test
+    fun `setRateLimits dynamically adjusts rate limiting behavior`() {
+        val limiter = SlewRateLimiter(1.0, -1.0, initialValue = 0.0)
+        assertEquals(1.0, limiter.calculate(10.0, 1.0), 1e-9)
+
+        // Dynamically adjust to asymmetric limits (pos = 5.0, neg = -3.0)
+        limiter.setRateLimits(5.0, -3.0)
+        // Positive step: from 1.0 to 10.0 with dt = 1.0 -> change capped at +5.0 -> output = 6.0
+        assertEquals(6.0, limiter.calculate(10.0, 1.0), 1e-9)
+        // Negative step: from 6.0 to 0.0 with dt = 1.0 -> change capped at -3.0 -> output = 3.0
+        assertEquals(3.0, limiter.calculate(0.0, 1.0), 1e-9)
+
+        // Dynamically adjust to symmetric limits (pos = 2.0, neg = -2.0)
+        limiter.setRateLimits(2.0)
+        // Negative step: from 3.0 to 0.0 with dt = 1.0 -> change capped at -2.0 -> output = 1.0
+        assertEquals(1.0, limiter.calculate(0.0, 1.0), 1e-9)
+    }
+
+    @Test
+    fun `non-finite rate limits safely return lastValue without mutating state`() {
+        val limiter = SlewRateLimiter(2.0, initialValue = 5.0)
+
+        limiter.setRateLimits(Double.NaN, 1.0)
+        assertEquals(5.0, limiter.calculate(10.0, 1.0), 1e-9)
+        assertEquals(5.0, limiter.value, 1e-9)
+
+        limiter.setRateLimits(1.0, Double.NaN)
+        assertEquals(5.0, limiter.calculate(10.0, 1.0), 1e-9)
+        assertEquals(5.0, limiter.value, 1e-9)
+
+        limiter.setRateLimits(Double.POSITIVE_INFINITY, 1.0)
+        assertEquals(5.0, limiter.calculate(10.0, 1.0), 1e-9)
+        assertEquals(5.0, limiter.value, 1e-9)
+
+        limiter.setRateLimits(1.0, Double.NEGATIVE_INFINITY)
+        assertEquals(5.0, limiter.calculate(10.0, 1.0), 1e-9)
+        assertEquals(5.0, limiter.value, 1e-9)
+
+        // Limiter constructed with non-finite rate limit
+        val nanConstructed = SlewRateLimiter(Double.NaN, initialValue = 7.0)
+        assertEquals(7.0, nanConstructed.calculate(20.0, 1.0), 1e-9)
+        assertEquals(7.0, nanConstructed.value, 1e-9)
+    }
 }
