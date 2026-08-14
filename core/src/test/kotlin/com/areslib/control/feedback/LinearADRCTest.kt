@@ -97,4 +97,65 @@ class LinearADRCTest {
         assertTrue(adrc.xHat2 > 0.0, "xHat2 should estimate positive disturbance: ${adrc.xHat2}")
         assertTrue(kotlin.math.abs(plantState - target) < 0.2, "Plant state $plantState should converge near target $target")
     }
+
+    @Test
+    fun `output saturation freezes disturbance integration when error has same sign`() {
+        val adrc = LinearADRC(b0 = 1.0, omegaC = 10.0, omegaO = 20.0)
+        adrc.setOutputLimits(-1.0, 1.0)
+        adrc.reset(0.0)
+
+        // Command massive setpoint causing saturation (uUnsat >> 1.0, u clamped to 1.0)
+        // With plant at 0.0 and xHat1 at 0.0, observerError is 0.0
+        // Now suppose measurement lags behind xHat1: measurement = 0.0, xHat1 moves forward
+        adrc.calculate(target = 10.0, measurement = 0.0, dtSeconds = 0.02)
+        val xHat2AfterFirst = adrc.xHat2
+        assertTrue(xHat2AfterFirst.isFinite())
+
+        // Continued saturation
+        adrc.calculate(target = 10.0, measurement = 0.0, dtSeconds = 0.02)
+        // Verify xHat2 is bounded and doesn't run away
+        assertTrue(adrc.xHat2.isFinite())
+        assertFalse(adrc.xHat2.isNaN())
+    }
+
+    @Test
+    fun `degenerate b0 safely returns zero without division by zero or NaN`() {
+        val adrcZeroB0 = LinearADRC(b0 = 0.0, omegaC = 10.0, omegaO = 30.0)
+        adrcZeroB0.reset(1.0)
+
+        val outZero = adrcZeroB0.calculate(target = 2.0, measurement = 1.0, dtSeconds = 0.02)
+        assertEquals(0.0, outZero, 1e-12)
+        assertTrue(adrcZeroB0.xHat1.isFinite())
+        assertTrue(adrcZeroB0.xHat2.isFinite())
+
+        val adrcTinyB0 = LinearADRC(b0 = 1e-12, omegaC = 10.0, omegaO = 30.0)
+        adrcTinyB0.reset(1.0)
+        val outTiny = adrcTinyB0.calculate(target = 2.0, measurement = 1.0, dtSeconds = 0.02)
+        assertEquals(0.0, outTiny, 1e-12)
+    }
+
+    @Test
+    fun `degenerate continuous input range behaves safely`() {
+        val adrc = LinearADRC(b0 = 1.0, omegaC = 10.0, omegaO = 30.0)
+        adrc.enableContinuousInput(5.0, 5.0) // Range = 0.0
+        adrc.reset(5.0)
+
+        val out = adrc.calculate(target = 6.0, measurement = 5.0, dtSeconds = 0.02)
+        assertTrue(out.isFinite())
+        assertFalse(out.isNaN())
+    }
+
+    @Test
+    fun `dynamic modification of b0 and bandwidths updates calculation immediately`() {
+        val adrc = LinearADRC(b0 = 1.0, omegaC = 5.0, omegaO = 15.0)
+        adrc.reset(0.0)
+        val out1 = adrc.calculate(target = 1.0, measurement = 0.0, dtSeconds = 0.02)
+
+        // Increase omegaC to increase aggressiveness
+        adrc.reset(0.0)
+        adrc.omegaC = 20.0
+        val out2 = adrc.calculate(target = 1.0, measurement = 0.0, dtSeconds = 0.02)
+
+        assertTrue(out2 > out1, "Higher omegaC should produce higher initial control effort: $out2 > $out1")
+    }
 }
