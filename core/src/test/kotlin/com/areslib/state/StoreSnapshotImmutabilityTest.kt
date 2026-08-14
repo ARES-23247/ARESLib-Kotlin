@@ -2,14 +2,17 @@ package com.areslib.state
 
 import com.areslib.Store
 import com.areslib.action.RobotAction
-import com.areslib.math.estimation.HistoryBuffer
 import com.areslib.math.estimation.PoseEstimatorState
 import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.geometry.Rotation3d
 import com.areslib.math.geometry.Translation3d
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class StoreSnapshotImmutabilityTest {
@@ -44,7 +47,7 @@ class StoreSnapshotImmutabilityTest {
         val resetEstimatorGain = retainedReset.drive.poseEstimator.lastKalmanGain.copyOf()
         val resetDriveCovariance = retainedReset.drive.covarianceMatrix.copyOf()
         val resetDriveGain = retainedReset.drive.lastKalmanGain.copyOf()
-        val resetHistory = retainedReset.drive.poseEstimator.history.snapshot()
+        assertTrue(retainedReset.drive.poseEstimator.history.isEmpty())
 
         assertNotSame(retainedInitial.drive.poseEstimator.covarianceArray, retainedReset.drive.poseEstimator.covarianceArray)
         assertNotSame(retainedInitial.drive.poseEstimator.lastKalmanGain, retainedReset.drive.poseEstimator.lastKalmanGain)
@@ -65,16 +68,14 @@ class StoreSnapshotImmutabilityTest {
         assertArrayEquals(resetEstimatorGain, retainedReset.drive.poseEstimator.lastKalmanGain)
         assertArrayEquals(resetDriveCovariance, retainedReset.drive.covarianceMatrix)
         assertArrayEquals(resetDriveGain, retainedReset.drive.lastKalmanGain)
-        assertEquals(resetHistory, retainedReset.drive.poseEstimator.history.snapshot())
         assertNotSame(retainedReset.drive.poseEstimator.covarianceArray, latest.drive.poseEstimator.covarianceArray)
-        assertNotSame(retainedReset.drive.poseEstimator.history, latest.drive.poseEstimator.history)
         assertNotSame(retainedReset.drive.poseEstimator.lastKalmanGain, latest.drive.poseEstimator.lastKalmanGain)
         assertNotSame(retainedReset.drive.covarianceMatrix, latest.drive.covarianceMatrix)
         assertNotSame(retainedReset.drive.lastKalmanGain, latest.drive.lastKalmanGain)
     }
 
     @Test
-    fun `odometry and delayed vision preserve every retained estimator history`() {
+    fun `odometry and delayed vision preserve every retained estimator snapshot`() {
         val store = Store()
         store.dispatch(
             RobotAction.DriveHardwareUpdate(
@@ -88,7 +89,9 @@ class StoreSnapshotImmutabilityTest {
             )
         )
         val retainedAfterFirstOdometry = store.state
-        val firstHistory = retainedAfterFirstOdometry.drive.poseEstimator.history.snapshot()
+        val firstPoseX = retainedAfterFirstOdometry.drive.poseEstimator.estimatedPoseX
+        val firstTimestamp = retainedAfterFirstOdometry.drive.poseEstimator.lastObservationTimestampMs
+        val firstCovariance = retainedAfterFirstOdometry.drive.poseEstimator.covarianceArray.copyOf()
 
         store.dispatch(
             RobotAction.DriveHardwareUpdate(
@@ -102,13 +105,12 @@ class StoreSnapshotImmutabilityTest {
             )
         )
         val retainedAfterSecondOdometry = store.state
-        val secondHistory = retainedAfterSecondOdometry.drive.poseEstimator.history.snapshot()
+        val secondPoseX = retainedAfterSecondOdometry.drive.poseEstimator.estimatedPoseX
+        val secondTimestamp = retainedAfterSecondOdometry.drive.poseEstimator.lastObservationTimestampMs
+        val secondCovariance = retainedAfterSecondOdometry.drive.poseEstimator.covarianceArray.copyOf()
 
-        assertEquals(firstHistory, retainedAfterFirstOdometry.drive.poseEstimator.history.snapshot())
-        assertNotSame(
-            retainedAfterFirstOdometry.drive.poseEstimator.history,
-            retainedAfterSecondOdometry.drive.poseEstimator.history
-        )
+        assertTrue(retainedAfterFirstOdometry.drive.poseEstimator.history.isEmpty())
+        assertTrue(retainedAfterSecondOdometry.drive.poseEstimator.history.isEmpty())
 
         store.dispatch(
             RobotAction.VisionMeasurementsReceived(
@@ -128,53 +130,54 @@ class StoreSnapshotImmutabilityTest {
         )
         val latest = store.state
 
-        assertEquals(firstHistory, retainedAfterFirstOdometry.drive.poseEstimator.history.snapshot())
-        assertEquals(secondHistory, retainedAfterSecondOdometry.drive.poseEstimator.history.snapshot())
-        assertNotSame(
-            retainedAfterSecondOdometry.drive.poseEstimator.history,
-            latest.drive.poseEstimator.history
-        )
+        assertEquals(firstPoseX, retainedAfterFirstOdometry.drive.poseEstimator.estimatedPoseX)
+        assertEquals(firstTimestamp, retainedAfterFirstOdometry.drive.poseEstimator.lastObservationTimestampMs)
+        assertArrayEquals(firstCovariance, retainedAfterFirstOdometry.drive.poseEstimator.covarianceArray)
+        assertEquals(secondPoseX, retainedAfterSecondOdometry.drive.poseEstimator.estimatedPoseX)
+        assertEquals(secondTimestamp, retainedAfterSecondOdometry.drive.poseEstimator.lastObservationTimestampMs)
+        assertArrayEquals(secondCovariance, retainedAfterSecondOdometry.drive.poseEstimator.covarianceArray)
+        assertTrue(latest.drive.poseEstimator.history.isEmpty())
     }
 
-    private fun HistoryBuffer.snapshot(): List<HistoryEntrySnapshot> =
-        List(size) { index ->
-            val entry = this[index]
-            HistoryEntrySnapshot(
-                timestampMs = entry.timestampMs,
-                x = entry.x,
-                y = entry.y,
-                headingRadians = entry.headingRad,
-                covariance = doubleArrayOf(
-                    entry.covariance.m00,
-                    entry.covariance.m01,
-                    entry.covariance.m02,
-                    entry.covariance.m10,
-                    entry.covariance.m11,
-                    entry.covariance.m12,
-                    entry.covariance.m20,
-                    entry.covariance.m21,
-                    entry.covariance.m22
-                ).toList(),
-                qScale = entry.qScale,
-                qHeadingScale = entry.qHeadingScale,
-                deltaXRobot = entry.deltaXRobot,
-                deltaYRobot = entry.deltaYRobot,
-                deltaHeadingRadians = entry.deltaHeadingRad,
-                hasMotion = entry.hasMotion
-            )
-        }
+    @Test
+    fun `stores own independent delayed vision histories`() {
+        val firstStore = Store()
+        val secondStore = Store()
+        firstStore.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, 100L, isReset = true))
+        secondStore.dispatch(RobotAction.PoseUpdate(5.0, 0.0, 0.0, 100L, isReset = true))
+        firstStore.dispatch(RobotAction.PoseUpdate(1.0, 0.0, 0.0, 200L))
+        secondStore.dispatch(RobotAction.PoseUpdate(6.0, 0.0, 0.0, 200L))
+        val retainedSecond = secondStore.state
 
-    private data class HistoryEntrySnapshot(
-        val timestampMs: Long,
-        val x: Double,
-        val y: Double,
-        val headingRadians: Double,
-        val covariance: List<Double>,
-        val qScale: Double,
-        val qHeadingScale: Double,
-        val deltaXRobot: Double,
-        val deltaYRobot: Double,
-        val deltaHeadingRadians: Double,
-        val hasMotion: Boolean
-    )
+        firstStore.dispatch(
+            RobotAction.VisionMeasurementsReceived(
+                measurements = listOf(
+                    VisionMeasurement(
+                        timestampMs = 100L,
+                        targetPose = Pose3d(
+                            Translation3d(0.25, 0.0, 0.0),
+                            Rotation3d()
+                        ),
+                        tagId = 2,
+                        ambiguity = 0.01
+                    )
+                ),
+                timestampMs = 220L
+            )
+        )
+
+        assertEquals(retainedSecond, secondStore.state)
+        assertEquals(6.0, secondStore.state.drive.poseEstimator.estimatedPoseX, 1e-9)
+        assertEquals(1, firstStore.state.vision.measurementCount)
+        assertEquals(0, secondStore.state.vision.measurementCount)
+    }
+
+    @Test
+    fun `published estimator history cannot be mutated`() {
+        val history = Store().state.drive.poseEstimator.history
+        assertTrue(history.isEmpty())
+        assertThrows(IllegalStateException::class.java) {
+            history.addEntry(1L, Pose2d(), Matrix3x3(), 1.0)
+        }
+    }
 }
