@@ -1,5 +1,11 @@
 package com.areslib.telemetry
 
+import com.areslib.util.RobotClock
+import kotlin.math.abs
+import kotlin.math.hypot
+import kotlin.math.pow
+import kotlin.math.sign
+
 /**
  * A declarative, command-based wrapper for [GamepadState].
  * 
@@ -172,8 +178,13 @@ class AresGamepad {
          * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
          * @param action The block of code to execute. Must not block the thread.
          */
-        fun onPress(@Suppress("UNUSED_PARAMETER") description: String, action: () -> Unit) {
+        fun onPress(description: String = "", action: () -> Unit) {
             this.onPressAction = action
+        }
+
+        /** Declarative alias for [onPress]. */
+        fun bindTo(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
+            onPress(description, action)
         }
 
         /**
@@ -182,7 +193,7 @@ class AresGamepad {
          * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
          * @param action The block of code to execute. Must not block the thread.
          */
-        fun onRelease(@Suppress("UNUSED_PARAMETER") description: String, action: () -> Unit) {
+        fun onRelease(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
             this.onReleaseAction = action
         }
 
@@ -192,8 +203,24 @@ class AresGamepad {
          * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
          * @param action The block of code to execute. Must not block the thread.
          */
-        fun whilePressed(@Suppress("UNUSED_PARAMETER") description: String, action: () -> Unit) {
+        fun whilePressed(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
             this.whilePressedAction = action
+        }
+
+        /** Declarative alias for [whilePressed]. */
+        fun whileHeld(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
+            whilePressed(description, action)
+        }
+
+        /**
+         * Binds an alternating boolean toggle state to execute on each button press.
+         */
+        fun toggle(@Suppress("UNUSED_PARAMETER") description: String = "", initial: Boolean = false, action: (Boolean) -> Unit) {
+            var toggleState = initial
+            onPress(description) {
+                toggleState = !toggleState
+                action(toggleState)
+            }
         }
 
         internal fun firePress() {
@@ -209,21 +236,89 @@ class AresGamepad {
         }
     }
 
-    /** One continuously sampled analog input. */
+    /** One continuously sampled analog input with deadband, curvature, and slew shaping. */
     class BindableAxis(private val valueSelector: (GamepadState) -> Float) {
         var value: Float = 0.0f
             private set
+
+        var shapedValue: Double = 0.0
+            private set
+
+        private var deadbandThreshold: Double = 0.0
+        private var curveExponent: Double = 1.0
+        private var slewRateLimit: Double = 0.0 // 0.0 means disabled
+        private var lastSlewValue: Double = 0.0
+        private var lastUpdateTimeSec: Double = -1.0
+        private var axisConsumer: ((Double) -> Unit)? = null
 
         fun label(@Suppress("UNUSED_PARAMETER") description: String) {
             // No-op at runtime, used statically for ARES-Analytics parsing
         }
 
+        /** Configures a deadband with smooth linear rescaling above threshold. */
+        fun withDeadband(threshold: Double): BindableAxis {
+            this.deadbandThreshold = threshold.coerceIn(0.0, 0.9)
+            return this
+        }
+
+        /** Configures an exponential curve for fine precision near origin (1.0 = linear). */
+        fun withExponentialCurve(exponent: Double): BindableAxis {
+            this.curveExponent = exponent.coerceIn(1.0, 5.0)
+            return this
+        }
+
+        /** Configures a maximum rate of change (units per second) to protect mechanisms. */
+        fun withSlewRateLimit(unitsPerSecond: Double): BindableAxis {
+            this.slewRateLimit = unitsPerSecond.coerceAtLeast(0.0)
+            return this
+        }
+
+        /** Binds a consumer lambda invoked whenever the axis updates. */
+        fun bindAxis(consumer: (Double) -> Unit): BindableAxis {
+            this.axisConsumer = consumer
+            return this
+        }
+
         internal fun updateValue(state: GamepadState) {
-            value = valueSelector(state)
+            val raw = valueSelector(state).toDouble()
+            value = raw.toFloat()
+
+            // 1. Deadband with linear rescaling
+            val afterDeadband = if (abs(raw) < deadbandThreshold) {
+                0.0
+            } else {
+                val s = sign(raw)
+                s * (abs(raw) - deadbandThreshold) / (1.0 - deadbandThreshold)
+            }
+
+            // 2. Exponential curvature
+            val afterCurve = if (curveExponent == 1.0) {
+                afterDeadband
+            } else {
+                val s = sign(afterDeadband)
+                s * (abs(afterDeadband).pow(curveExponent))
+            }
+
+            // 3. Slew rate limiter
+            val nowSec = RobotClock.currentTimeMillis() / 1000.0
+            val finalVal = if (slewRateLimit > 0.0 && lastUpdateTimeSec >= 0.0) {
+                val dt = (nowSec - lastUpdateTimeSec).coerceIn(0.001, 0.2)
+                val maxDelta = slewRateLimit * dt
+                val delta = (afterCurve - lastSlewValue).coerceIn(-maxDelta, maxDelta)
+                lastSlewValue + delta
+            } else {
+                afterCurve
+            }
+
+            lastSlewValue = finalVal
+            lastUpdateTimeSec = nowSec
+            shapedValue = finalVal
+
+            axisConsumer?.invoke(finalVal)
         }
     }
 
-    /** Two continuously sampled analog axes without allocating a [Pair] each loop. */
+    /** Two continuously sampled analog axes with radial deadband and curve shaping. */
     class BindableStick(
         private val xSelector: (GamepadState) -> Float,
         private val ySelector: (GamepadState) -> Float
@@ -233,13 +328,93 @@ class AresGamepad {
         var y: Float = 0.0f
             private set
 
+        var shapedX: Double = 0.0
+            private set
+        var shapedY: Double = 0.0
+            private set
+
+        private var deadbandThreshold: Double = 0.0
+        private var curveExponent: Double = 1.0
+        private var slewRateLimit: Double = 0.0
+        private var lastSlewX: Double = 0.0
+        private var lastSlewY: Double = 0.0
+        private var lastUpdateTimeSec: Double = -1.0
+
         fun label(@Suppress("UNUSED_PARAMETER") description: String) {
             // No-op at runtime, used statically for ARES-Analytics parsing
         }
 
+        /** Configures a radial deadband (preserves vector angle while zeroing near center). */
+        fun withDeadband(threshold: Double): BindableStick {
+            this.deadbandThreshold = threshold.coerceIn(0.0, 0.9)
+            return this
+        }
+
+        /** Configures an exponential curve for both axes. */
+        fun withExponentialCurve(exponent: Double): BindableStick {
+            this.curveExponent = exponent.coerceIn(1.0, 5.0)
+            return this
+        }
+
+        /** Configures a maximum slew rate limit for stick deflection changes. */
+        fun withSlewRateLimit(unitsPerSecond: Double): BindableStick {
+            this.slewRateLimit = unitsPerSecond.coerceAtLeast(0.0)
+            return this
+        }
+
         internal fun updateValue(state: GamepadState) {
-            x = xSelector(state)
-            y = ySelector(state)
+            val rawX = xSelector(state).toDouble()
+            val rawY = ySelector(state).toDouble()
+            x = rawX.toFloat()
+            y = rawY.toFloat()
+
+            // 1. Radial deadband
+            val magnitude = hypot(rawX, rawY)
+            var dbX = if (magnitude < deadbandThreshold) {
+                0.0
+            } else if (deadbandThreshold > 0.0 && magnitude > 0.0) {
+                val scaledMagnitude = (magnitude - deadbandThreshold) / (1.0 - deadbandThreshold)
+                (rawX / magnitude) * scaledMagnitude
+            } else {
+                rawX
+            }
+
+            var dbY = if (magnitude < deadbandThreshold) {
+                0.0
+            } else if (deadbandThreshold > 0.0 && magnitude > 0.0) {
+                val scaledMagnitude = (magnitude - deadbandThreshold) / (1.0 - deadbandThreshold)
+                (rawY / magnitude) * scaledMagnitude
+            } else {
+                rawY
+            }
+
+            // 2. Exponential curve
+            if (curveExponent != 1.0) {
+                val curMag = hypot(dbX, dbY)
+                if (curMag > 0.0) {
+                    val shapedMag = curMag.pow(curveExponent)
+                    dbX = (dbX / curMag) * shapedMag
+                    dbY = (dbY / curMag) * shapedMag
+                }
+            }
+
+            // 3. Slew rate limiter
+            val nowSec = RobotClock.currentTimeMillis() / 1000.0
+            if (slewRateLimit > 0.0 && lastUpdateTimeSec >= 0.0) {
+                val dt = (nowSec - lastUpdateTimeSec).coerceIn(0.001, 0.2)
+                val maxDelta = slewRateLimit * dt
+                val dx = (dbX - lastSlewX).coerceIn(-maxDelta, maxDelta)
+                val dy = (dbY - lastSlewY).coerceIn(-maxDelta, maxDelta)
+                dbX = lastSlewX + dx
+                dbY = lastSlewY + dy
+            }
+
+            lastSlewX = dbX
+            lastSlewY = dbY
+            lastUpdateTimeSec = nowSec
+
+            shapedX = dbX
+            shapedY = dbY
         }
     }
 }
