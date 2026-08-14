@@ -8218,6 +8218,16 @@ public abstract interface class com/areslib/subsystem/PowerManager {
 	public abstract fun update (DJ)D
 }
 
+public final class com/areslib/subsystem/SimInteractionRole : java/lang/Enum {
+	public static final field CONVEYOR_INDEXER Lcom/areslib/subsystem/SimInteractionRole;
+	public static final field INTAKE_COLLECTOR Lcom/areslib/subsystem/SimInteractionRole;
+	public static final field NONE Lcom/areslib/subsystem/SimInteractionRole;
+	public static final field PROJECTILE_LAUNCHER Lcom/areslib/subsystem/SimInteractionRole;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/subsystem/SimInteractionRole;
+	public static fun values ()[Lcom/areslib/subsystem/SimInteractionRole;
+}
+
 public abstract interface class com/areslib/subsystem/Subsystem : java/lang/AutoCloseable {
 	public abstract fun close ()V
 	public abstract fun readSensors (Lcom/areslib/Store;J)V
@@ -8943,16 +8953,47 @@ public final class com/areslib/subsystem/SubsystemSafetyDocument {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/subsystem/SubsystemSimInteractionDocument {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/subsystem/SimInteractionRole;Ljava/lang/String;DIDDDDLjava/lang/String;)V
+	public synthetic fun <init> (Lcom/areslib/subsystem/SimInteractionRole;Ljava/lang/String;DIDDDDLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/subsystem/SimInteractionRole;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()D
+	public final fun component4 ()I
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun component8 ()D
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (Lcom/areslib/subsystem/SimInteractionRole;Ljava/lang/String;DIDDDDLjava/lang/String;)Lcom/areslib/subsystem/SubsystemSimInteractionDocument;
+	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemSimInteractionDocument;Lcom/areslib/subsystem/SimInteractionRole;Ljava/lang/String;DIDDDDLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemSimInteractionDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBeamBreakFieldId ()Ljava/lang/String;
+	public final fun getCaptureRadiusMeters ()D
+	public final fun getIntakeDistanceMeters ()D
+	public final fun getLaunchElevationDeg ()D
+	public final fun getLaunchSpeedMps ()D
+	public final fun getRole ()Lcom/areslib/subsystem/SimInteractionRole;
+	public final fun getStorageCapacity ()I
+	public final fun getTriggerFieldId ()Ljava/lang/String;
+	public final fun getTriggerThreshold ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/subsystem/SubsystemSimulationDocument {
 	public fun <init> ()V
-	public fun <init> (Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;)V
-	public synthetic fun <init> (Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemSimInteractionDocument;)V
+	public synthetic fun <init> (Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemSimInteractionDocument;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/areslib/subsystem/SubsystemSimulationSupport;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemSimulationDocument;
-	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemSimulationDocument;Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemSimulationDocument;
+	public final fun component3 ()Lcom/areslib/subsystem/SubsystemSimInteractionDocument;
+	public final fun copy (Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemSimInteractionDocument;)Lcom/areslib/subsystem/SubsystemSimulationDocument;
+	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemSimulationDocument;Lcom/areslib/subsystem/SubsystemSimulationSupport;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemSimInteractionDocument;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemSimulationDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAdapterClassName ()Ljava/lang/String;
+	public final fun getInteraction ()Lcom/areslib/subsystem/SubsystemSimInteractionDocument;
 	public final fun getSupport ()Lcom/areslib/subsystem/SubsystemSimulationSupport;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

@@ -71,6 +71,7 @@ public final class com/areslib/sim/cli/SimCliParser {
 }
 
 public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel : com/areslib/sim/SimInteractionModel {
+	public static final field Companion Lcom/areslib/sim/field/ConfigurableGamePieceInteractionModel$Companion;
 	public fun <init> ()V
 	public fun <init> (IDDDDD)V
 	public synthetic fun <init> (IDDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -82,6 +83,10 @@ public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel :
 	public final fun getPieceMassKg ()D
 	public fun reset ()V
 	public fun update (Lorg/dyn4j/world/World;Lorg/dyn4j/dynamics/Body;Ljava/util/List;ZZZIDDD)I
+}
+
+public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel$Companion {
+	public final fun fromSubsystems (Ljava/util/List;)Lcom/areslib/sim/field/ConfigurableGamePieceInteractionModel;
 }
 
 public final class com/areslib/sim/field/FieldElementLoader {

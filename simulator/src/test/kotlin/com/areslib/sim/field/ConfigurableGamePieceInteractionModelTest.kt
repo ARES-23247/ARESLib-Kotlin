@@ -85,4 +85,77 @@ class ConfigurableGamePieceInteractionModelTest {
         assertEquals(0, newCount)
         assertEquals(1, gamePieces.size)
     }
+
+    @Test
+    fun testFromSubsystemsAggregatesIntakeAndShooterParameters() {
+        val intakeDoc = com.areslib.subsystem.SubsystemDocument(
+            documentId = "intake",
+            displayName = "Intake Subsystem",
+            kotlinTypeName = "IntakeSubsystem",
+            platform = com.areslib.subsystem.SubsystemPlatform.FTC,
+            hardware = listOf(
+                com.areslib.subsystem.SubsystemHardwareDocument(
+                    hardwareId = "motor",
+                    displayName = "Intake Motor",
+                    kind = com.areslib.subsystem.SubsystemHardwareKind.MOTOR,
+                    safeOutput = 0.0,
+                ),
+            ),
+            stateFields = listOf(
+                com.areslib.subsystem.SubsystemStateFieldDocument(
+                    fieldId = "power",
+                    displayName = "Intake Power",
+                    type = com.areslib.subsystem.SubsystemValueType.DOUBLE,
+                    role = com.areslib.subsystem.SubsystemFieldRole.TARGET,
+                ),
+            ),
+            implementation = com.areslib.subsystem.SubsystemImplementationDocument(
+                simulation = com.areslib.subsystem.SubsystemSimulationDocument(
+                    interaction = com.areslib.subsystem.SubsystemSimInteractionDocument(
+                        role = com.areslib.subsystem.SimInteractionRole.INTAKE_COLLECTOR,
+                        storageCapacity = 2,
+                        intakeDistanceMeters = 0.40,
+                        captureRadiusMeters = 0.20,
+                    ),
+                ),
+            ),
+        )
+
+        val shooterDoc = com.areslib.subsystem.SubsystemDocument(
+            documentId = "shooter",
+            displayName = "Shooter Subsystem",
+            kotlinTypeName = "ShooterSubsystem",
+            platform = com.areslib.subsystem.SubsystemPlatform.FTC,
+            hardware = listOf(
+                com.areslib.subsystem.SubsystemHardwareDocument(
+                    hardwareId = "motor",
+                    displayName = "Shooter Motor",
+                    kind = com.areslib.subsystem.SubsystemHardwareKind.MOTOR,
+                    safeOutput = 0.0,
+                ),
+            ),
+            stateFields = listOf(
+                com.areslib.subsystem.SubsystemStateFieldDocument(
+                    fieldId = "power",
+                    displayName = "Shooter Power",
+                    type = com.areslib.subsystem.SubsystemValueType.DOUBLE,
+                    role = com.areslib.subsystem.SubsystemFieldRole.TARGET,
+                ),
+            ),
+            implementation = com.areslib.subsystem.SubsystemImplementationDocument(
+                simulation = com.areslib.subsystem.SubsystemSimulationDocument(
+                    interaction = com.areslib.subsystem.SubsystemSimInteractionDocument(
+                        role = com.areslib.subsystem.SimInteractionRole.PROJECTILE_LAUNCHER,
+                        launchSpeedMps = 10.5,
+                    ),
+                ),
+            ),
+        )
+
+        val synthesized = ConfigurableGamePieceInteractionModel.fromSubsystems(listOf(intakeDoc, shooterDoc))
+        assertEquals(2, synthesized.maxCapacity)
+        assertEquals(0.40, synthesized.intakeRangeMeters, 1e-4)
+        assertEquals(0.20, synthesized.intakeRadiusMeters, 1e-4)
+        assertEquals(10.5, synthesized.launchImpulse, 1e-4)
+    }
 }

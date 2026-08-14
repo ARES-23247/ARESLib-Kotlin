@@ -25,10 +25,30 @@ enum class SubsystemSimulationSupport {
 
 enum class SubsystemTeachingLevel { BEGINNER, INTERMEDIATE, ADVANCED }
 
+enum class SimInteractionRole {
+    NONE,
+    INTAKE_COLLECTOR,
+    PROJECTILE_LAUNCHER,
+    CONVEYOR_INDEXER,
+}
+
+data class SubsystemSimInteractionDocument(
+    val role: SimInteractionRole = SimInteractionRole.NONE,
+    val triggerFieldId: String? = null,
+    val triggerThreshold: Double = 1.0,
+    val storageCapacity: Int = 1,
+    val intakeDistanceMeters: Double = 0.35,
+    val captureRadiusMeters: Double = 0.15,
+    val launchSpeedMps: Double = 8.0,
+    val launchElevationDeg: Double = 45.0,
+    val beamBreakFieldId: String? = null,
+)
+
 /** Simulator/mock implementation advertised by a hand-authored or generated subsystem. */
 data class SubsystemSimulationDocument(
     val support: SubsystemSimulationSupport = SubsystemSimulationSupport.GENERATED_MOCK,
     val adapterClassName: String? = null,
+    val interaction: SubsystemSimInteractionDocument = SubsystemSimInteractionDocument(),
 )
 
 /** Optional teaching information surfaced by the builder without inspecting Kotlin source. */
@@ -681,6 +701,7 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     validateFaultRecovery(document, ::issue)
     validateInterlocks(document, ::issue)
     validateLinkage(document, ::issue)
+    validateSimInteraction(document, ::issue)
     if (document.safety.requiresExplicitNeutralRecovery && !document.safety.latchOutputFaults) {
         issue("safety.requiresExplicitNeutralRecovery", "Explicit neutral recovery requires fault latching")
     }
@@ -1013,6 +1034,17 @@ private fun validateLinkage(document: SubsystemDocument, issue: (String, String)
     }
 }
 
+private fun validateSimInteraction(document: SubsystemDocument, issue: (String, String) -> Unit) {
+    val interaction = document.implementation.simulation.interaction
+    if (interaction.role == SimInteractionRole.NONE) return
+    val path = "implementation.simulation.interaction"
+    if (interaction.storageCapacity < 1) issue("$path.storageCapacity", "Storage capacity must be at least 1")
+    if (interaction.intakeDistanceMeters <= 0.0) issue("$path.intakeDistanceMeters", "Intake distance must be positive")
+    if (interaction.captureRadiusMeters <= 0.0) issue("$path.captureRadiusMeters", "Capture radius must be positive")
+    if (interaction.launchSpeedMps <= 0.0) issue("$path.launchSpeedMps", "Launch speed must be positive")
+    if (interaction.launchElevationDeg !in 0.0..90.0) issue("$path.launchElevationDeg", "Launch elevation must be between 0 and 90 degrees")
+}
+
 object SubsystemDocumentCodec {
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -1055,6 +1087,14 @@ object SubsystemDocumentCodec {
                 capabilityActionKeys = parsed.capabilityActionKeys ?: emptyList(),
                 interlocks = parsed.interlocks ?: emptyList(),
                 linkage = parsed.linkage ?: SubsystemLinkageDocument(),
+                implementation = (parsed.implementation ?: SubsystemImplementationDocument()).let { impl ->
+                    val sim = impl.simulation ?: SubsystemSimulationDocument()
+                    impl.copy(
+                        simulation = sim.copy(
+                            interaction = sim.interaction ?: SubsystemSimInteractionDocument(),
+                        ),
+                    )
+                },
                 safety = (parsed.safety ?: SubsystemSafetyDocument()).let { s ->
                     s.copy(
                         faultRecovery = s.faultRecovery ?: SubsystemFaultRecoveryDocument()

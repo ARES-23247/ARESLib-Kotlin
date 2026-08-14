@@ -99,4 +99,41 @@ class ConfigurableGamePieceInteractionModel(
     override fun reset() {
         transferWasApplied = false
     }
+
+    companion object {
+        /**
+         * Synthesizes an aggregate [ConfigurableGamePieceInteractionModel] from a collection of subsystem descriptors.
+         */
+        fun fromSubsystems(subsystems: List<com.areslib.subsystem.SubsystemDocument>): ConfigurableGamePieceInteractionModel {
+            var maxCapacity = 1
+            var intakeRange = 0.35
+            var intakeRadius = 0.15
+            var launchImpulse = 8.0
+
+            for (subsystem in subsystems) {
+                val interaction = subsystem.implementation.simulation.interaction
+                when (interaction.role) {
+                    com.areslib.subsystem.SimInteractionRole.INTAKE_COLLECTOR -> {
+                        maxCapacity = maxCapacity.coerceAtLeast(interaction.storageCapacity)
+                        intakeRange = interaction.intakeDistanceMeters
+                        intakeRadius = interaction.captureRadiusMeters
+                    }
+                    com.areslib.subsystem.SimInteractionRole.PROJECTILE_LAUNCHER -> {
+                        launchImpulse = interaction.launchSpeedMps
+                    }
+                    com.areslib.subsystem.SimInteractionRole.CONVEYOR_INDEXER -> {
+                        maxCapacity = maxCapacity.coerceAtLeast(interaction.storageCapacity)
+                    }
+                    com.areslib.subsystem.SimInteractionRole.NONE -> Unit
+                }
+            }
+
+            return ConfigurableGamePieceInteractionModel(
+                maxCapacity = maxCapacity,
+                intakeRangeMeters = intakeRange,
+                intakeRadiusMeters = intakeRadius,
+                launchImpulse = launchImpulse,
+            )
+        }
+    }
 }
