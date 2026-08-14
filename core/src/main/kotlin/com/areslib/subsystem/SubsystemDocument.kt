@@ -177,6 +177,41 @@ data class SubsystemHomingDocument(
     val zeroPosition: Double = 0.0,
 )
 
+enum class FaultRecoveryActionKind {
+    NONE,
+    REVERSE_BRIEFLY,
+    HOLD_POSITION,
+    NEUTRAL_STOP,
+}
+
+data class SubsystemFaultRecoveryDocument(
+    val enabled: Boolean = false,
+    val currentThresholdAmps: Double = 18.0,
+    val currentDurationMs: Long = 250L,
+    val recoveryAction: FaultRecoveryActionKind = FaultRecoveryActionKind.REVERSE_BRIEFLY,
+    val reverseDurationMs: Long = 400L,
+    val reverseDutyCycle: Double = -0.40,
+    val maxRetries: Int = 3,
+)
+
+enum class InterlockComparison {
+    LESS_THAN,
+    GREATER_THAN,
+    EQUALS_STATE,
+    NOT_EQUALS_STATE,
+}
+
+data class SubsystemInterlockDocument(
+    val interlockId: String,
+    val targetSubsystemUid: String,
+    val targetFieldId: String,
+    val comparison: InterlockComparison = InterlockComparison.LESS_THAN,
+    val thresholdValue: Double = 0.0,
+    val targetStateName: String? = null,
+    val forbiddenZoneDescription: String = "",
+    val safeFallbackValue: Double? = null,
+)
+
 /**
  * Cross-platform safety requirements consumed by generated starters and verification.
  *
@@ -188,6 +223,8 @@ data class SubsystemSafetyDocument(
     val feedbackTimeoutMs: Long? = 250L,
     /** Physical-reference strategy. NONE means the mechanism does not require homing. */
     val homing: SubsystemHomingDocument = SubsystemHomingDocument(),
+    /** Automatic fault recovery and anti-jam policies. */
+    val faultRecovery: SubsystemFaultRecoveryDocument = SubsystemFaultRecoveryDocument(),
     /** Calibration must be explicitly established before non-neutral output is accepted. */
     val requiresCalibration: Boolean = false,
     /** Device configuration health participates in the output permit. */
@@ -327,6 +364,8 @@ data class SubsystemDocument(
     /** Existing catalog actions exposed by a hand-authored implementation. */
     val capabilityActionKeys: List<String> = emptyList(),
     val safety: SubsystemSafetyDocument = SubsystemSafetyDocument(),
+    /** Declarative safety interlocks between this subsystem and other mechanisms. */
+    val interlocks: List<SubsystemInterlockDocument> = emptyList(),
     /** Stable resource owned while an autonomous action commands this subsystem. */
     val autonomousResourceKey: String? = null,
     /** Required failures abort robot initialization; optional failures are reported and skipped. */
@@ -621,6 +660,8 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         issue("safety.feedbackTimeoutMs", "Closed-loop mechanisms require a feedback timeout")
     }
     validateHoming(document, hardwareById, fieldsById, ::issue)
+    validateFaultRecovery(document, ::issue)
+    validateInterlocks(document, ::issue)
     if (document.safety.requiresExplicitNeutralRecovery && !document.safety.latchOutputFaults) {
         issue("safety.requiresExplicitNeutralRecovery", "Explicit neutral recovery requires fault latching")
     }
@@ -771,6 +812,49 @@ private fun validateHoming(
     }
     if (document.safety.feedbackTimeoutMs == null) {
         issue("safety.feedbackTimeoutMs", "Homing requires a feedback timeout")
+    }
+}
+
+private fun validateFaultRecovery(
+    document: SubsystemDocument,
+    issue: (path: String, message: String) -> Unit,
+) {
+    val recovery = document.safety.faultRecovery
+    if (!recovery.enabled) return
+    if (!recovery.currentThresholdAmps.isFinite() || recovery.currentThresholdAmps <= 0.0) {
+        issue("safety.faultRecovery.currentThresholdAmps", "Current threshold must be finite and positive")
+    }
+    if (recovery.currentDurationMs !in 50L..5_000L) {
+        issue("safety.faultRecovery.currentDurationMs", "Current stall duration must be from 50 to 5000 ms")
+    }
+    if (recovery.reverseDurationMs !in 50L..5_000L) {
+        issue("safety.faultRecovery.reverseDurationMs", "Reverse duration must be from 50 to 5000 ms")
+    }
+    if (!recovery.reverseDutyCycle.isFinite() || recovery.reverseDutyCycle !in -1.0..1.0) {
+        issue("safety.faultRecovery.reverseDutyCycle", "Reverse duty cycle must be between -1.0 and 1.0")
+    }
+    if (recovery.maxRetries !in 1..10) {
+        issue("safety.faultRecovery.maxRetries", "Max retries must be between 1 and 10")
+    }
+}
+
+private fun validateInterlocks(
+    document: SubsystemDocument,
+    issue: (path: String, message: String) -> Unit,
+) {
+    val duplicateInterlocks = duplicateIds(document.interlocks.map { it.interlockId })
+    duplicateInterlocks.forEach { issue("interlocks", "Interlock ID '$it' is duplicated") }
+    document.interlocks.forEachIndexed { index, interlock ->
+        val path = "interlocks[$index]"
+        if (interlock.targetSubsystemUid.isBlank()) {
+            issue("$path.targetSubsystemUid", "Target subsystem UID is required")
+        }
+        if (interlock.targetFieldId.isBlank()) {
+            issue("$path.targetFieldId", "Target field ID is required")
+        }
+        if (!interlock.thresholdValue.isFinite()) {
+            issue("$path.thresholdValue", "Threshold value must be finite")
+        }
     }
 }
 
