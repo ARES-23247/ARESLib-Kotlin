@@ -106,4 +106,31 @@ class ZeroGcRegressionTest {
             "Store drive reduction must not clone EKF history (allocated $allocatedBytes bytes)"
         )
     }
+
+    @Test
+    fun testMatrix3x3InPlaceZeroGcExecution() {
+        val target = com.areslib.math.geometry.Matrix3x3()
+        val source = com.areslib.math.geometry.Matrix3x3(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0)
+
+        // Warmup JIT
+        for (i in 0 until 10_000) {
+            target.setTo(source)
+            target.addInPlace(source)
+            target.multiplyInPlace(0.5)
+        }
+
+        val startBytes = getAllocatedBytes()
+        for (i in 0 until 10_000) {
+            target.setTo(source)
+            target.addInPlace(source)
+            target.multiplyInPlace(0.5)
+        }
+        val allocatedBytes = getAllocatedBytes() - startBytes
+        println("[Matrix3x3 ZeroGC Test] Allocated bytes over 10,000 in-place matrix ops: $allocatedBytes bytes")
+
+        assertTrue(
+            allocatedBytes <= 4096L,
+            "In-place matrix scratchpad operations must produce minimal heap allocations (was $allocatedBytes bytes)"
+        )
+    }
 }
