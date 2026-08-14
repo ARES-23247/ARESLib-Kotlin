@@ -174,4 +174,25 @@ class TrapezoidProfileTest {
         assertEquals(5.0, controller.pidController.i)
         assertEquals(6.0, controller.pidController.d)
     }
+
+    @Test
+    fun `test reverse motion trapezoid profile converges exactly to negative goal`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 1.0, maxAcceleration = 2.0)
+        val start = TrapezoidProfile.State(position = 0.0, velocity = 0.0)
+        val goal = TrapezoidProfile.State(position = -2.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+
+        val dt = 0.02
+        var current = start
+
+        for (i in 0..150) {
+            profile.calculate(dt, current, goal, constraints, outState)
+            assertTrue(kotlin.math.abs(outState.velocity) <= constraints.maxVelocity + 1e-9, "Velocity exceeded max constraint: ${outState.velocity}")
+            current = TrapezoidProfile.State(outState.position, outState.velocity)
+        }
+
+        assertEquals(goal.position, outState.position, 1e-4)
+        assertEquals(goal.velocity, outState.velocity, 1e-4)
+    }
 }
