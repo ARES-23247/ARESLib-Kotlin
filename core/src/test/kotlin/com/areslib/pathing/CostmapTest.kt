@@ -80,4 +80,54 @@ class CostmapTest {
         assertTrue(costmap.isOccupied(-100.0, -100.0))
         assertFalse(costmap.isTraversable(-100.0, -100.0))
     }
+
+    @Test
+    fun testObstacleWorldCoordinateSettingAndClearing() {
+        val costmap = Costmap(10.0, 10.0, 0.1, Translation2d(0.0, 0.0))
+        val worldX = 2.5
+        val worldY = 3.5
+        val cellX = 25
+        val cellY = 35
+
+        // Initially cell is unoccupied and traversable
+        assertFalse(costmap.isOccupied(worldX, worldY))
+        assertFalse(costmap.isCellOccupied(cellX, cellY))
+        costmap.inflate(0.1)
+        assertTrue(costmap.isTraversable(worldX, worldY))
+        assertTrue(costmap.isCellTraversable(cellX, cellY))
+
+        // Set obstacle at world coordinates
+        costmap.setObstacle(worldX, worldY, true)
+        assertTrue(costmap.isOccupied(worldX, worldY))
+        assertTrue(costmap.isCellOccupied(cellX, cellY))
+        costmap.inflate(0.1)
+        assertFalse(costmap.isTraversable(worldX, worldY))
+        assertFalse(costmap.isCellTraversable(cellX, cellY))
+
+        // Clear obstacle by setting isOccupied = false
+        costmap.setObstacle(worldX, worldY, false)
+        assertFalse(costmap.isOccupied(worldX, worldY))
+        assertFalse(costmap.isCellOccupied(cellX, cellY))
+        costmap.inflate(0.1)
+        assertTrue(costmap.isTraversable(worldX, worldY))
+        assertTrue(costmap.isCellTraversable(cellX, cellY))
+
+        // Test with offset / centered origin
+        val centeredCostmap = Costmap(10.0, 10.0, 0.1, Translation2d(-5.0, -5.0))
+        val worldCenterX = -1.2
+        val worldCenterY = 2.3
+        val expectedCellX = 38 // (-1.2 - (-5.0)) / 0.1 = 38
+        val expectedCellY = 73 // (2.3 - (-5.0)) / 0.1 = 73
+
+        centeredCostmap.setObstacle(worldCenterX, worldCenterY, true)
+        assertTrue(centeredCostmap.isOccupied(worldCenterX, worldCenterY))
+        assertTrue(centeredCostmap.isCellOccupied(expectedCellX, expectedCellY))
+        centeredCostmap.inflate(0.1)
+        assertFalse(centeredCostmap.isTraversable(worldCenterX, worldCenterY))
+
+        // Clear obstacle via costmap.clear()
+        centeredCostmap.clear()
+        assertFalse(centeredCostmap.isOccupied(worldCenterX, worldCenterY))
+        assertTrue(centeredCostmap.isTraversable(worldCenterX, worldCenterY))
+    }
 }
