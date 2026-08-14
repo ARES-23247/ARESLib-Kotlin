@@ -186,4 +186,37 @@ class BrownoutGuardTest {
                 "Scale at ${voltages[i]}V (${scales[i]}) should be > scale at ${voltages[i-1]}V (${scales[i-1]})")
         }
     }
+
+    @Test
+    fun testDegenerateThresholdsAndOverVoltageBatteryPercent() {
+        // Over-voltage readings (> nominalVoltage, e.g. 14.5V) clamp batteryPercent to 100.0%
+        guard.update(14.5)
+        assertEquals(100.0, guard.batteryPercent, 0.001)
+
+        // Non-positive or near-zero nominalVoltage (e.g. 0.0V) defaults divisor to 13.0V without NaN or zero division
+        val zeroNominalGuard = BrownoutGuard(nominalVoltage = 0.0)
+        zeroNominalGuard.update(6.5)
+        assertFalse(zeroNominalGuard.batteryPercent.isNaN())
+        assertFalse(zeroNominalGuard.batteryPercent.isInfinite())
+        assertEquals(50.0, zeroNominalGuard.batteryPercent, 0.001)
+
+        val negativeNominalGuard = BrownoutGuard(nominalVoltage = -5.0)
+        negativeNominalGuard.update(13.0)
+        assertEquals(100.0, negativeNominalGuard.batteryPercent, 0.001)
+
+        // Degenerate configuration with warningVoltage == criticalVoltage safely evaluates powerScale to minPowerScale
+        val degenerateGuard = BrownoutGuard(
+            warningVoltage = 8.0,
+            criticalVoltage = 8.0,
+            minPowerScale = 0.35,
+            hysteresisVoltage = 0.4
+        )
+        degenerateGuard.update(7.0) // Transition to CRITICAL
+        assertEquals(BrownoutState.CRITICAL, degenerateGuard.state)
+        assertEquals(0.0, degenerateGuard.powerScale, 0.001)
+
+        degenerateGuard.update(8.5) // Recovers above critical + hysteresis (8.0 + 0.4 = 8.4) into WARNING
+        assertEquals(BrownoutState.WARNING, degenerateGuard.state)
+        assertEquals(0.35, degenerateGuard.powerScale, 0.001)
+    }
 }
