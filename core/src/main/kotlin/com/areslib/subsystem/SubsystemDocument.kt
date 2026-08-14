@@ -1012,10 +1012,23 @@ object SubsystemDocumentCodec {
             require(implementation.has("kind") && implementation.has("ownership")) {
                 "Subsystem implementation kind and ownership are required"
             }
-            gson.fromJson(json, SubsystemDocument::class.java)
+            val parsed = gson.fromJson(json, SubsystemDocument::class.java)
+                ?: throw IllegalArgumentException("Subsystem document is empty")
+            parsed.copy(
+                hardware = parsed.hardware ?: emptyList(),
+                stateFields = parsed.stateFields ?: emptyList(),
+                tuningParameters = parsed.tuningParameters ?: emptyList(),
+                capabilityActionKeys = parsed.capabilityActionKeys ?: emptyList(),
+                interlocks = parsed.interlocks ?: emptyList(),
+                safety = (parsed.safety ?: SubsystemSafetyDocument()).let { s ->
+                    s.copy(
+                        faultRecovery = s.faultRecovery ?: SubsystemFaultRecoveryDocument()
+                    )
+                }
+            )
         } catch (error: Exception) {
             throw IllegalArgumentException("Subsystem document is not valid JSON: ${error.message}", error)
-        } ?: throw IllegalArgumentException("Subsystem document is empty")
+        }
         requireValid(document)
         return document
     }
