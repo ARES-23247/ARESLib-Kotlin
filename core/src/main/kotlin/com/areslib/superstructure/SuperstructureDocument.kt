@@ -267,8 +267,14 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
         }
     }
 
-    val reachable = linkedSetOf(document.initialStateId)
-    val queue = ArrayDeque<String>().apply { add(document.initialStateId) }
+    // The runtime can enter the fault preset from any state when target preflight/application
+    // fails. It therefore has an implicit safety edge and must not require a fabricated student
+    // transition merely to satisfy graph reachability.
+    val reachable = linkedSetOf(document.initialStateId, document.faultStateId)
+    val queue = ArrayDeque<String>().apply {
+        add(document.initialStateId)
+        if (document.faultStateId != document.initialStateId) add(document.faultStateId)
+    }
     while (queue.isNotEmpty()) {
         val source = queue.removeFirst()
         document.transitions.filter { it.sourceStateId == source }.forEach { edge ->
@@ -337,6 +343,9 @@ fun validateSuperstructureProject(
             }
             if (target.targetMode == SuperstructureTargetMode.CONSTANT && !constantTypeMatches) {
                 error(path, "Constant value must match ${field.type}")
+            }
+            if (target.targetMode == SuperstructureTargetMode.DYNAMIC_LUT && field.type !in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)) {
+                error(path, "Dynamic LUT outputs may command only numeric TARGET fields")
             }
             target.source?.let { source ->
                 val sourceField = resolve(source, "$path.source")?.second ?: return@let

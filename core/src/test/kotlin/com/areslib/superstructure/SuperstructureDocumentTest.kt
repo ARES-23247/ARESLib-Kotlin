@@ -12,6 +12,74 @@ import org.junit.jupiter.api.assertThrows
 
 class SuperstructureDocumentTest {
     @Test
+    fun `fault preset has an implicit runtime failure edge`() {
+        val document = SuperstructureDocument(
+            superstructureId = "simple-coordinator",
+            initialStateId = "idle",
+            states = listOf(
+                SuperstructureStatePreset("idle"),
+                SuperstructureStatePreset("fault"),
+            ),
+            faultStateId = "fault",
+        )
+
+        assertTrue(validateSuperstructureDocument(document).none { it.path == "states" && "fault" in it.message })
+    }
+
+    @Test
+    fun `dynamic lookup cannot command a boolean target`() {
+        val subsystem = SubsystemTemplates.create(
+            template = SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "arm",
+            kotlinTypeName = "Arm",
+            platform = SubsystemPlatform.FTC,
+        ).copy(
+            stateFields = listOf(
+                com.areslib.subsystem.SubsystemStateFieldDocument(
+                    "enabled",
+                    "Enabled",
+                    com.areslib.subsystem.SubsystemValueType.BOOLEAN,
+                    SubsystemFieldRole.TARGET,
+                    defaultBoolean = false,
+                ),
+                com.areslib.subsystem.SubsystemStateFieldDocument(
+                    "position",
+                    "Position",
+                    com.areslib.subsystem.SubsystemValueType.DOUBLE,
+                    SubsystemFieldRole.MEASUREMENT,
+                    defaultNumber = 0.0,
+                ),
+            ),
+        )
+        val target = SuperstructureSubsystemTarget(
+            subsystemId = "arm",
+            fieldId = "enabled",
+            targetMode = SuperstructureTargetMode.DYNAMIC_LUT,
+            lutId = "position-map",
+            source = SuperstructureFieldReference("arm", "position"),
+        )
+        val document = SuperstructureDocument(
+            superstructureId = "invalid-output",
+            initialStateId = "idle",
+            states = listOf(
+                SuperstructureStatePreset("idle", subsystemTargets = listOf(target)),
+                SuperstructureStatePreset("fault", subsystemTargets = listOf(target.copy(
+                    targetMode = SuperstructureTargetMode.CONSTANT,
+                    constantBooleanValue = false,
+                    lutId = null,
+                    source = null,
+                ))),
+            ),
+            luts = listOf(SuperstructureDynamicLut("position-map", controlPoints = listOf(LutControlPoint(0.0, 0.0), LutControlPoint(1.0, 1.0)))),
+            faultStateId = "fault",
+        )
+
+        assertTrue(validateSuperstructureProject(document, listOf(subsystem), emptySet()).any {
+            it.message.contains("only numeric TARGET")
+        })
+    }
+
+    @Test
     fun `LUT sampling clamps and interpolates without accepting invalid input`() {
         val lut = SuperstructureDynamicLut(
             lutId = "distance-to-output",
@@ -96,7 +164,7 @@ class SuperstructureDocumentTest {
 
         val unreachable = fixture.document.copy(
             transitions = fixture.document.transitions
-                .filterNot { it.sourceStateId == "FAULT" }
+                .filterNot { it.targetStateId == "ACTIVE" }
                 .map { it.copy(timeoutSeconds = null, timeoutTargetStateId = null) },
         )
         assertTrue(validateSuperstructureDocument(unreachable).any {
