@@ -8,6 +8,7 @@ import com.areslib.kinematics.MecanumWheelSpeeds
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MockDcMotorEx : DcMotorEx {
@@ -17,10 +18,16 @@ class MockDcMotorEx : DcMotorEx {
     override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
     override var zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
     var currentPower: Double = 0.0
+    var rejectPowerWrites: Boolean = false
+    var rejectNextPowerWrite: Boolean = false
     
     override var power: Double
         get() = currentPower
         set(value) {
+            if (rejectPowerWrites || rejectNextPowerWrite) {
+                rejectNextPowerWrite = false
+                throw IllegalStateException("simulated motor write failure")
+            }
             currentPower = value
         }
 
@@ -178,6 +185,66 @@ class MecanumHardwareIOTest {
             assertEquals(0.0, motor.currentPower, 1e-9)
         }
         assertEquals(0.0, io.flIO.powerScale, 1e-9)
+        assertTrue(io.outputFaultLatched)
+    }
+
+    @Test
+    fun `failed output latches neutral until explicit successful recovery`() {
+        val motors = Array(4) { MockDcMotorEx() }
+        val io = MecanumHardwareIO(motorHardwareMap(motors), maxWheelSpeedMetersPerSecond = 1.0)
+
+        motors[1].rejectNextPowerWrite = true
+        io.setMotorPowers(0.6, 0.6, 0.6, 0.6)
+
+        assertTrue(io.outputFaultLatched)
+        motors.forEach { assertEquals(0.0, it.currentPower, 1e-9) }
+
+        io.setMotorPowers(0.4, 0.4, 0.4, 0.4)
+        motors.forEach { assertEquals(0.0, it.currentPower, 1e-9) }
+        io.safe()
+        assertTrue(io.outputFaultLatched, "ordinary safe calls must not silently clear a fault")
+
+        assertTrue(io.recoverWithNeutral())
+        assertFalse(io.outputFaultLatched)
+        io.setMotorPowers(0.4, 0.4, 0.4, 0.4)
+        motors.forEach { assertEquals(0.4, it.currentPower, 1e-9) }
+    }
+
+    @Test
+    fun `failed neutral recovery remains latched`() {
+        val motors = Array(4) { MockDcMotorEx() }
+        val io = MecanumHardwareIO(motorHardwareMap(motors), maxWheelSpeedMetersPerSecond = 1.0)
+
+        motors[2].rejectPowerWrites = true
+        io.setMotorPowers(0.5, 0.5, 0.5, 0.5)
+        assertTrue(io.outputFaultLatched)
+        assertFalse(io.recoverWithNeutral())
+        assertTrue(io.outputFaultLatched)
+
+        motors[2].rejectPowerWrites = false
+        assertTrue(io.recoverWithNeutral())
+        assertFalse(io.outputFaultLatched)
+    }
+
+    @Test
+    fun `robot recovery requires a neutral Redux drive command`() {
+        val motors = Array(4) { MockDcMotorEx() }
+        val robot = FtcMecanumRobot(motorHardwareMap(motors))
+        try {
+            motors[0].rejectNextPowerWrite = true
+            robot.mecanumIO.setMotorPowers(0.5, 0.5, 0.5, 0.5)
+            assertTrue(robot.isDriveOutputFaultLatched)
+
+            robot.store.dispatch(com.areslib.action.RobotAction.JoystickDriveIntent(1.0, 0.0, 0.0))
+            assertFalse(robot.recoverDriveOutputWithNeutral())
+            assertTrue(robot.isDriveOutputFaultLatched)
+
+            robot.store.dispatch(com.areslib.action.RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0))
+            assertTrue(robot.recoverDriveOutputWithNeutral())
+            assertFalse(robot.isDriveOutputFaultLatched)
+        } finally {
+            robot.close()
+        }
     }
 
     private fun motorHardwareMap(motors: Array<MockDcMotorEx>): HardwareMap = object : HardwareMap() {

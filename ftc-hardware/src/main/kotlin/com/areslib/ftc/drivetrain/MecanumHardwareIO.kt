@@ -113,6 +113,9 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     /** Rear-right non-blocking IO cache. */
     val rrIO: EstimateMotorIO get() = motorCluster.rrIO
 
+    /** True after an invalid output or failed motor write until explicit neutral recovery. */
+    val outputFaultLatched: Boolean get() = motorCluster.outputFaultLatched
+
     /** Static friction feedforward coefficient $k_S$. */
     var kS: Double
         get() = feedforward.kS
@@ -178,6 +181,9 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         motorCluster.safe()
     }
 
+    /** Attempts neutral on every drive motor and clears the output fault only after full success. */
+    fun recoverWithNeutral(): Boolean = motorCluster.recoverWithNeutral()
+
     /**
      * Solves inverse kinematics for chassis speeds and updates physical motor outputs.
      * Zero-GC execution loop.
@@ -219,6 +225,15 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      */
     @kotlin.jvm.JvmOverloads
     fun apply(speeds: DoubleArray, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
+        val inputsValid = speeds.size >= 4 &&
+            speeds[0].isFinite() && speeds[1].isFinite() && speeds[2].isFinite() && speeds[3].isFinite() &&
+            batteryVolts.isFinite() && batteryVolts > 0.0 && dtSeconds.isFinite() && dtSeconds > 0.0 &&
+            powerScale.isFinite()
+        if (!inputsValid) {
+            motorCluster.applyPowerScale(0.0)
+            motorCluster.latchOutputFault()
+            return
+        }
         motorCluster.applyPowerScale(powerScale)
         feedforward.calculateMotorPowers(
             speeds = speeds,

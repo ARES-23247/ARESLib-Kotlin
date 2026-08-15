@@ -83,6 +83,7 @@ public final class com/areslib/ftc/FtcKeyboardListener {
 }
 
 public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
+	public static final field DRIVE_RECOVERY_EPSILON D
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;)V
@@ -162,8 +163,10 @@ public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
 	public final fun getWheelBaseMeters ()D
 	public final fun isCalibrationModeArmed ()Z
 	public final fun isCalibrationModeEnabled ()Z
+	public final fun isDriveOutputFaultLatched ()Z
 	protected fun prepareFallbackOdometry (Lcom/areslib/math/geometry/Pose2d;D)V
 	protected fun publishRobotTelemetry (J)V
+	public final fun recoverDriveOutputWithNeutral ()Z
 	public fun safeHardware ()V
 	public final fun setCustomSysIdVelocityProvider (Lkotlin/jvm/functions/Function0;)V
 	public final fun setSysIdFlywheelIO (Lcom/areslib/hardware/actuator/FlywheelIO;)V
@@ -440,6 +443,7 @@ public final class com/areslib/ftc/drivetrain/MecanumHardwareIO : com/areslib/ha
 	public final fun getMotorKf ()Ljava/lang/Double;
 	public final fun getMotorKi ()Ljava/lang/Double;
 	public final fun getMotorKp ()Ljava/lang/Double;
+	public final fun getOutputFaultLatched ()Z
 	public final fun getRearLeft ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRearRight ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRlDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
@@ -453,6 +457,7 @@ public final class com/areslib/ftc/drivetrain/MecanumHardwareIO : com/areslib/ha
 	public final fun getUseClosedLoopVelocity ()Z
 	public final fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public final fun recoverWithNeutral ()Z
 	public fun refresh ()V
 	public fun safe ()V
 	public final fun setEnableVoltageCompensatedSlew (Z)V
@@ -493,6 +498,7 @@ public final class com/areslib/ftc/drivetrain/MecanumMotorCluster : java/lang/Au
 	public final fun getMotorKf ()Ljava/lang/Double;
 	public final fun getMotorKi ()Ljava/lang/Double;
 	public final fun getMotorKp ()Ljava/lang/Double;
+	public final fun getOutputFaultLatched ()Z
 	public final fun getRearLeft ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRearRight ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRlDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
@@ -503,6 +509,8 @@ public final class com/areslib/ftc/drivetrain/MecanumMotorCluster : java/lang/Au
 	public final fun getRrName ()Ljava/lang/String;
 	public final fun getUseClosedLoopVelocity ()Z
 	public final fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public final fun latchOutputFault ()V
+	public final fun recoverWithNeutral ()Z
 	public final fun safe ()V
 	public final fun setMotorPowers (DDDD)V
 	public final fun updateInputs ()V

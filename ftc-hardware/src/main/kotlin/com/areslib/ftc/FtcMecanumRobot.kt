@@ -234,6 +234,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** True after the enabled OpMode receives a fresh neutral dashboard handshake. */
     val isCalibrationModeArmed: Boolean get() = calibrationController.networkArmed
 
+    /** True when drivetrain writes are blocked pending explicit neutral recovery. */
+    val isDriveOutputFaultLatched: Boolean get() = mecanumIO.outputFaultLatched
+
     /**
      * Enables calibration control for this OpMode. A fresh `SysId/EnableToken` with a `STOP`
      * command is still required before any calibration command can own hardware outputs.
@@ -245,6 +248,22 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** Immediately disarms calibration and neutrals drivetrain/flywheel characterization output. */
     fun disableCalibrationMode() {
         calibrationController.disableMode(telemetryManager, mecanumIO)
+    }
+
+    /**
+     * Clears a drivetrain output fault only while normal Redux drive intent is neutral and calibration
+     * does not own the motors. All four physical motors must accept neutral in the same attempt.
+     */
+    fun recoverDriveOutputWithNeutral(): Boolean {
+        val driveState = store.state.drive
+        val commandIsNeutral = kotlin.math.abs(driveState.xVelocityMetersPerSecond) <= DRIVE_RECOVERY_EPSILON &&
+            kotlin.math.abs(driveState.yVelocityMetersPerSecond) <= DRIVE_RECOVERY_EPSILON &&
+            kotlin.math.abs(driveState.angularVelocityRadiansPerSecond) <= DRIVE_RECOVERY_EPSILON
+        if (!commandIsNeutral || isCalibrationModeEnabled) {
+            mecanumIO.safe()
+            return false
+        }
+        return mecanumIO.recoverWithNeutral()
     }
 
     /** Autonomous trajectory builder providing high-level motion path generation. */
@@ -333,8 +352,15 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             } else {
                 String.format("%.1f A (Estimated)", powerManager.currentAmps)
             }
+            telemetryManager.customDriverStationText["Drive Output Safety"] = if (isDriveOutputFaultLatched) {
+                "FAULT LATCHED — release controls and run Recover drive after a fault"
+            } else {
+                "Ready — motor outputs permitted"
+            }
             lastLocalTelemetryUpdateMs = timestamp
         }
+
+        telemetryManager.dataLoggingTelemetry.putBoolean("Drive/OutputFaultLatched", isDriveOutputFaultLatched)
 
         telemetryManager.dataLoggingTelemetry.logDriveMotor("fl", mecanumIO.flIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("fr", mecanumIO.frIO)
@@ -461,5 +487,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun close() {
         super.close()
         if (isAndroid) LimelightProxyAutoStart.start()
+    }
+
+    private companion object {
+        const val DRIVE_RECOVERY_EPSILON: Double = 1e-6
     }
 }
