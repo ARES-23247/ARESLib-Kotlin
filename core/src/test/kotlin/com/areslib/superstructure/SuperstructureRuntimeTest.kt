@@ -163,8 +163,18 @@ class SuperstructureRuntimeTest {
             return bean.getThreadAllocatedBytes(threadId) - before
         }
 
-        allocationWindow(10_000L)
-        assertEquals(0L, allocationWindow(30_000L))
+        // HotSpot may perform a fixed amount of tiered-compilation or allocation-probe
+        // bookkeeping after the initial warmup, especially on fresh Linux CI workers. Require two
+        // consecutive zero-allocation windows: a per-loop allocation can never satisfy this, while
+        // one-time VM bookkeeping does not make an allocation-free periodic path look broken.
+        var consecutiveZeroWindows = 0
+        var window = 0
+        while (window < 10 && consecutiveZeroWindows < 2) {
+            val allocatedBytes = allocationWindow(10_000L + window * 20_000L)
+            consecutiveZeroWindows = if (allocatedBytes == 0L) consecutiveZeroWindows + 1 else 0
+            window++
+        }
+        assertEquals(2, consecutiveZeroWindows, "steady state never reached two zero-allocation windows")
     }
 
     private fun document() = SuperstructureDocument(
