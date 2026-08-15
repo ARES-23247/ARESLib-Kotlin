@@ -11,6 +11,9 @@ import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.superstructure.SuperstructureDocumentCodec
+import com.areslib.superstructure.SuperstructureIssueSeverity
+import com.areslib.superstructure.TransitionTriggerKind
+import com.areslib.superstructure.validateSuperstructureProject
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystemTargetCapabilities
@@ -80,6 +83,28 @@ object AresProjectCodegenCli {
         } else emptyList()
         val subsystemActions = subsystemTargetCapabilities(subsystems)
         val catalog = mergeSubsystemCapabilities(baseCatalog, subsystems)
+        val catalogActionKeys = catalog.actions.mapTo(linkedSetOf()) { it.key }
+        superstructures.forEach { document ->
+            val errors = validateSuperstructureProject(document, subsystems, catalogActionKeys)
+                .filter { it.severity == SuperstructureIssueSeverity.ERROR }
+            require(errors.isEmpty()) {
+                "Superstructure '${document.superstructureId}' is invalid: " +
+                    errors.joinToString("; ") { "${it.path}: ${it.message}" }
+            }
+        }
+        val superstructureActionKeys = superstructures.flatMap { document ->
+            document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
+                .mapNotNull { it.actionKey }
+        }
+        require(superstructureActionKeys.distinct().size == superstructureActionKeys.size) {
+            "A superstructure action key may be owned by only one state machine"
+        }
+        val superstructurePackage = options.superstructurePackage
+            ?: options.subsystemsPackage?.let { "$it.superstructure" }
+            ?: options.packageName
+        val superstructureActionBindings = superstructureActionKeys.associateWith {
+            "$superstructurePackage.GeneratedSuperstructureRegistry"
+        }
 
         val generated = AresKotlinProjectGenerator.generate(
             KotlinProjectCodegenRequest(
@@ -95,6 +120,7 @@ object AresProjectCodegenCli {
                 projectMetadata = metadata,
                 subsystemActions = subsystemActions,
                 subsystemRegistryFqn = options.subsystemsPackage?.let { "$it.GeneratedSubsystemRegistry" },
+                generatedActionRegistryBindings = superstructureActionBindings,
             )
         )
 
@@ -114,7 +140,7 @@ object AresProjectCodegenCli {
         }
         syncSubsystemSources(projectRoot, subsystems, options)
         syncDrivebaseSources(projectRoot, drivetrains, tuningProfiles, declarations, options)
-        syncSuperstructureSources(projectRoot, superstructures, options)
+        syncSuperstructureSources(projectRoot, superstructures, subsystems, catalogActionKeys, options)
         return generated
     }
 
@@ -214,16 +240,31 @@ object AresProjectCodegenCli {
     private fun syncSuperstructureSources(
         projectRoot: Path,
         superstructures: List<com.areslib.superstructure.SuperstructureDocument>,
+        subsystems: List<com.areslib.subsystem.SubsystemDocument>,
+        actionKeys: Set<String>,
         options: CliOptions,
     ) {
-        if (superstructures.isEmpty() && options.superstructureOutput == null) return
+        if (superstructures.isEmpty() && options.superstructureOutput == null &&
+            options.subsystemsGeneratedOutput == null
+        ) return
         val root = (options.superstructureOutput ?: options.subsystemsGeneratedOutput?.resolve("superstructure"))
             ?.toAbsolutePath()?.normalize() ?: return
         require(root.startsWith(projectRoot)) { "Generated superstructure output must stay inside the selected project" }
-        val packageName = options.superstructurePackage ?: options.subsystemsPackage?.let { "$it.superstructure" } ?: options.packageName
-        val files = superstructures.flatMap { superstructure ->
-            SuperstructureKotlinGenerator.generate(superstructure, packageName)
-        }
+        val packageName = options.superstructurePackage
+            ?: options.subsystemsPackage?.let { "$it.superstructure" }
+            ?: options.packageName
+        val subsystemRegistryFqn = requireNotNull(options.subsystemsPackage) {
+            "--subsystems-package is required when superstructure documents exist"
+        } + ".GeneratedSubsystemRegistry"
+        val files = superstructures.map { superstructure ->
+            SuperstructureKotlinGenerator.generate(
+                document = superstructure,
+                packageName = packageName,
+                subsystemRegistryFqn = subsystemRegistryFqn,
+                subsystems = subsystems,
+                actionKeys = actionKeys,
+            )
+        } + SuperstructureKotlinGenerator.generateRegistry(superstructures, packageName)
         val manifest = root.resolve(".ares-superstructure-manifest")
         val expected = files.associate { it.relativePath to it.content }
         val expectedManifest = expected.keys.sorted().joinToString("\n", postfix = if (expected.isEmpty()) "" else "\n")
