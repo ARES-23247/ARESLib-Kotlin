@@ -1886,13 +1886,14 @@ $evidenceAssignments
         val currentField = document.hardware.flatMap { it.measurements }
             .firstOrNull { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
             ?.fieldId
-        val currentAssertions = currentField?.let { fieldId ->
+        val currentAssertions = if (document.safety.requiresCurrentMonitoring) currentField?.let { fieldId ->
             """
                     io.$fieldId = -1.0
                     io.refresh()
                     assertFalse(io.currentReadingValid)
             """.trimIndent()
-        } ?: "        assertTrue(io.currentReadingValid)"
+        } ?: error("Validated current monitoring requires a current measurement")
+        else "        assertTrue(io.currentReadingValid)"
         val homingControllerTest = if (document.requiresHoming()) {
             val evidenceAssignments = document.safety.homing.evidence.joinToString("\n") { evidence ->
                 when (evidence.comparison) {
