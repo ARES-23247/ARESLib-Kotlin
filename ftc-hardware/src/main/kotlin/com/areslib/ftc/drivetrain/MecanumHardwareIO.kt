@@ -29,6 +29,7 @@ import com.areslib.hardware.HardwareRegistry
  * @param rlName Rear-left motor hardware map name. Defaults to `"rl"`.
  * @param rrName Rear-right motor hardware map name. Defaults to `"rr"`.
  * @param maxWheelSpeedMetersPerSecond Maximum expected wheel surface speed ($m/s$).
+ * @param zeroPowerBehavior FTC neutral behavior applied to every drive motor before periodic output begins.
  * @param flDirection Front-left motor direction polarity.
  * @param frDirection Front-right motor direction polarity.
  * @param rlDirection Rear-left motor direction polarity.
@@ -63,7 +64,9 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val motorKp: Double? = null,
     val motorKi: Double? = null,
     val motorKd: Double? = null,
-    val motorKf: Double? = null
+    val motorKf: Double? = null,
+    val zeroPowerBehavior: com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior =
+        com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE,
 ) : SubsystemIO, AutoCloseable {
 
     private val motorCluster = MecanumMotorCluster(
@@ -76,6 +79,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         frDirection = frDirection,
         rlDirection = rlDirection,
         rrDirection = rrDirection,
+        zeroPowerBehavior = zeroPowerBehavior,
         useClosedLoopVelocity = useClosedLoopVelocity,
         motorKp = motorKp,
         motorKi = motorKi,

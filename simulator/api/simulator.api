@@ -287,6 +287,7 @@ public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/h
 	public fun getPower ()D
 	public fun getVelocity ()D
 	public fun getVersion ()I
+	public fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public fun resetDeviceConfigurationForOpMode ()V
 	public fun setCurrentPosition (I)V
 	public fun setDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
@@ -294,6 +295,7 @@ public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/h
 	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
 	public fun setPower (D)V
 	public fun setVelocity (D)V
+	public fun setZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
 }
 
 public final class com/areslib/sim/model/SimLLResult : com/qualcomm/hardware/limelightvision/LLResult {

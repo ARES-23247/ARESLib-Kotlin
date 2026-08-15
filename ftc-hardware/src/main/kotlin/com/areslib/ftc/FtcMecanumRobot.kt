@@ -73,6 +73,8 @@ enum class FtcTeleopDriveFrame {
  * @param localTelemetry FTC telemetry channel for Driver Station / Dashboard logging.
  * @param trackWidthMeters Lateral distance between left and right wheel centers ($m$).
  * @param wheelBaseMeters Longitudinal distance between front and rear wheel centers ($m$).
+ * @param maxWheelSpeedMetersPerSecond Canonical maximum wheel surface speed used for command normalization ($m/s$).
+ * @param driveZeroPowerBehavior FTC motor neutral behavior applied to all four drive motors during construction.
  * @param headingGains PIDF gain coefficients for heading stabilization controller.
  * @param headingDeadzoneDeg Angular deadzone for heading targeting ($deg$).
  * @param driveFeedforward Feedforward coefficients $(kS, kV, kA)$ for motor voltage feedforward calculations.
@@ -142,7 +144,10 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     visionStdDevs: Vector3 = Vector3(0.35, 0.35, 0.80),
     visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
     initialTuningState: com.areslib.state.TuningState = com.areslib.state.TuningState(),
-    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
+    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
+    val maxWheelSpeedMetersPerSecond: Double = 3.5,
+    val driveZeroPowerBehavior: com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior =
+        com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE,
 ) : FtcBaseRobot(
     hardwareMap = hardwareMap,
     pinpointName = pinpointName,
@@ -192,7 +197,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val mecanumIO = MecanumHardwareIO(
         hardwareMap = hardwareMap,
         flName = flName, frName = frName, rlName = rlName, rrName = rrName,
+        maxWheelSpeedMetersPerSecond = maxWheelSpeedMetersPerSecond,
         flDirection = flDirection, frDirection = frDirection, rlDirection = rlDirection, rrDirection = rrDirection,
+        zeroPowerBehavior = driveZeroPowerBehavior,
         initialKs = driveFeedforward.kS,
         useClosedLoopVelocity = useClosedLoopVelocity,
         ticksPerMeter = ticksPerMeter,

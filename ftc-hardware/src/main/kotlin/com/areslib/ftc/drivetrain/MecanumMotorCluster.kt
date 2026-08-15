@@ -31,6 +31,7 @@ import com.areslib.util.RobotClock
  * @param frDirection Front-right motor direction polarity.
  * @param rlDirection Rear-left motor direction polarity.
  * @param rrDirection Rear-right motor direction polarity.
+ * @param zeroPowerBehavior FTC neutral behavior applied to all four motors during initialization.
  * @param useClosedLoopVelocity Configures motors in `RUN_USING_ENCODER` mode when `true`.
  * @param motorKp Optional PIDF proportional gain $K_p$.
  * @param motorKi Optional PIDF integral gain $K_i$.
@@ -54,7 +55,8 @@ class MecanumMotorCluster(
     val motorKp: Double? = null,
     val motorKi: Double? = null,
     val motorKd: Double? = null,
-    val motorKf: Double? = null
+    val motorKf: Double? = null,
+    val zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE,
 ) : AutoCloseable {
 
 
@@ -83,6 +85,11 @@ class MecanumMotorCluster(
         frontRight.direction = frDirection
         rearLeft.direction = rlDirection
         rearRight.direction = rrDirection
+
+        frontLeft.zeroPowerBehavior = zeroPowerBehavior
+        frontRight.zeroPowerBehavior = zeroPowerBehavior
+        rearLeft.zeroPowerBehavior = zeroPowerBehavior
+        rearRight.zeroPowerBehavior = zeroPowerBehavior
 
         HardwareRegistry.registerMotor(flName, flIO)
         HardwareRegistry.registerMotor(frName, frIO)

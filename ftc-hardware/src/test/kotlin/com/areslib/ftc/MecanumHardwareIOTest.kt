@@ -15,6 +15,7 @@ class MockDcMotorEx : DcMotorEx {
     override var velocity: Double = 0.0
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
     override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+    override var zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
     var currentPower: Double = 0.0
     
     override var power: Double
@@ -29,6 +30,20 @@ class MockDcMotorEx : DcMotorEx {
 }
 
 class MecanumHardwareIOTest {
+    @Test
+    fun `constructor applies one declared neutral mode to every motor`() {
+        val motors = Array(4) { MockDcMotorEx() }
+
+        MecanumHardwareIO(
+            motorHardwareMap(motors),
+            zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE,
+        )
+
+        motors.forEach { motor ->
+            assertEquals(DcMotor.ZeroPowerBehavior.BRAKE, motor.zeroPowerBehavior)
+        }
+    }
+
     @Test
     fun `apply sets power correctly on all four motors`() {
         val fl = MockDcMotorEx()

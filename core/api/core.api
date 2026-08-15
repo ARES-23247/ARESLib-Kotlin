@@ -866,6 +866,8 @@ public final class com/areslib/codegen/DrivetrainKotlinGenerator {
 	public static final field INSTANCE Lcom/areslib/codegen/DrivetrainKotlinGenerator;
 	public final fun generate (Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
 	public static synthetic fun generate$default (Lcom/areslib/codegen/DrivetrainKotlinGenerator;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public final fun generateFtcMecanumRuntime (Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public static synthetic fun generateFtcMecanumRuntime$default (Lcom/areslib/codegen/DrivetrainKotlinGenerator;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
 	public final fun generateProjectTuning (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
 }
 
