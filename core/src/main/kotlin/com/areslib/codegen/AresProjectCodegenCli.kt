@@ -10,6 +10,7 @@ import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.subsystem.SubsystemDocumentCodec
+import com.areslib.superstructure.SuperstructureDocumentCodec
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystemTargetCapabilities
@@ -48,6 +49,9 @@ object AresProjectCodegenCli {
             ?.let { AutonomousCatalogCodec.decode(Files.readString(it)) }
         val subsystems = readDocuments(aresRoot.resolve("subsystems"), "aressubsystem") {
             SubsystemDocumentCodec.decode(it)
+        }
+        val superstructures = readDocuments(aresRoot.resolve("superstructures"), "aressuperstructure") {
+            SuperstructureDocumentCodec.decode(it)
         }
         val drivetrains = readDocuments(aresRoot.resolve("drivetrains"), "aresdrivetrain") {
             DrivetrainDocumentCodec.decode(it)
@@ -110,6 +114,7 @@ object AresProjectCodegenCli {
         }
         syncSubsystemSources(projectRoot, subsystems, options)
         syncDrivebaseSources(projectRoot, drivetrains, tuningProfiles, declarations, options)
+        syncSuperstructureSources(projectRoot, superstructures, options)
         return generated
     }
 
@@ -200,6 +205,47 @@ object AresProjectCodegenCli {
             require(!exists || Files.isRegularFile(path)) { "Generated drivebase output collides with a non-file at $path" }
             require(!exists || relative in previous || Files.readString(path) == content) {
                 "Refusing to overwrite unowned drivebase output at $path; remove or relocate it explicitly"
+            }
+            if (!exists || Files.readString(path) != content) writeAtomically(path, content)
+        }
+        if (expected.isEmpty()) Files.deleteIfExists(manifest) else writeAtomically(manifest, expectedManifest)
+    }
+
+    private fun syncSuperstructureSources(
+        projectRoot: Path,
+        superstructures: List<com.areslib.superstructure.SuperstructureDocument>,
+        options: CliOptions,
+    ) {
+        if (superstructures.isEmpty() && options.superstructureOutput == null) return
+        val root = (options.superstructureOutput ?: options.subsystemsGeneratedOutput?.resolve("superstructure"))
+            ?.toAbsolutePath()?.normalize() ?: return
+        require(root.startsWith(projectRoot)) { "Generated superstructure output must stay inside the selected project" }
+        val packageName = options.superstructurePackage ?: options.subsystemsPackage?.let { "$it.superstructure" } ?: options.packageName
+        val files = superstructures.flatMap { superstructure ->
+            SuperstructureKotlinGenerator.generate(superstructure, packageName)
+        }
+        val manifest = root.resolve(".ares-superstructure-manifest")
+        val expected = files.associate { it.relativePath to it.content }
+        val expectedManifest = expected.keys.sorted().joinToString("\n", postfix = if (expected.isEmpty()) "" else "\n")
+        if (options.checkOnly) {
+            val actual = if (Files.isRegularFile(manifest)) Files.readString(manifest) else ""
+            require(actual == expectedManifest) { "Generated superstructure file list is stale at $root" }
+            expected.forEach { (relative, content) ->
+                val path = safeGeneratedPath(root, relative)
+                require(Files.isRegularFile(path) && Files.readString(path) == content) {
+                    "Generated superstructure source is stale at $path"
+                }
+            }
+            return
+        }
+        val previous = if (Files.isRegularFile(manifest)) Files.readAllLines(manifest).filter(String::isNotBlank) else emptyList()
+        previous.filterNot(expected::containsKey).forEach { Files.deleteIfExists(safeGeneratedPath(root, it)) }
+        expected.forEach { (relative, content) ->
+            val path = safeGeneratedPath(root, relative)
+            val exists = Files.exists(path)
+            require(!exists || Files.isRegularFile(path)) { "Generated superstructure output collides with a non-file at $path" }
+            require(!exists || relative in previous || Files.readString(path) == content) {
+                "Refusing to overwrite unowned superstructure output at $path; remove or relocate it explicitly"
             }
             if (!exists || Files.readString(path) != content) writeAtomically(path, content)
         }
@@ -375,6 +421,8 @@ object AresProjectCodegenCli {
         val drivebaseOutput: Path?,
         val drivebasePackage: String?,
         val ftcZeroCodeRuntime: Boolean,
+        val superstructureOutput: Path?,
+        val superstructurePackage: String?,
     ) {
         companion object {
             fun parse(args: Array<String>): CliOptions {
@@ -431,6 +479,8 @@ object AresProjectCodegenCli {
                     values["--drivebase-output"]?.let(Path::of),
                     values["--drivebase-package"],
                     ftcZeroCodeRuntime,
+                    values["--superstructure-output"]?.let(Path::of),
+                    values["--superstructure-package"],
                 )
             }
 
@@ -439,6 +489,7 @@ object AresProjectCodegenCli {
                 "--subsystems-package", "--subsystems-starter-output", "--subsystems-generated-output",
                 "--subsystems-generated-test-output", "--subsystems-confirmation-token",
                 "--drivebase-output", "--drivebase-package",
+                "--superstructure-output", "--superstructure-package",
             )
             private val FLAG_OPTIONS = setOf(
                 "--check", "--subsystems-only", "--preview-subsystem-starters", "--apply-subsystem-starters",
