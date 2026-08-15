@@ -84,6 +84,8 @@ class ConfigurableGamePieceInteractionModelTest {
         )
         assertEquals(0, newCount)
         assertEquals(1, gamePieces.size)
+        assertEquals(8.0, gamePieces.single().linearVelocity.x, 1e-6)
+        assertEquals(0.0, gamePieces.single().linearVelocity.y, 1e-6)
     }
 
     @Test
@@ -113,6 +115,7 @@ class ConfigurableGamePieceInteractionModelTest {
                 simulation = com.areslib.subsystem.SubsystemSimulationDocument(
                     interaction = com.areslib.subsystem.SubsystemSimInteractionDocument(
                         role = com.areslib.subsystem.SimInteractionRole.INTAKE_COLLECTOR,
+                        triggerActuatorId = "motor",
                         storageCapacity = 2,
                         intakeDistanceMeters = 0.40,
                         captureRadiusMeters = 0.20,
@@ -146,6 +149,7 @@ class ConfigurableGamePieceInteractionModelTest {
                 simulation = com.areslib.subsystem.SubsystemSimulationDocument(
                     interaction = com.areslib.subsystem.SubsystemSimInteractionDocument(
                         role = com.areslib.subsystem.SimInteractionRole.PROJECTILE_LAUNCHER,
+                        triggerActuatorId = "motor",
                         launchSpeedMps = 10.5,
                     ),
                 ),
@@ -156,6 +160,6 @@ class ConfigurableGamePieceInteractionModelTest {
         assertEquals(2, synthesized.maxCapacity)
         assertEquals(0.40, synthesized.intakeRangeMeters, 1e-4)
         assertEquals(0.20, synthesized.intakeRadiusMeters, 1e-4)
-        assertEquals(10.5, synthesized.launchImpulse, 1e-4)
+        assertEquals(10.5, synthesized.launchSpeedMps, 1e-4)
     }
 }

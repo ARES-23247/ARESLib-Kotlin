@@ -6,7 +6,7 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.validateTuningParameterDeclarations
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 7
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 8
 
 enum class SubsystemPlatform { FTC, FRC }
 
@@ -34,7 +34,8 @@ enum class SimInteractionRole {
 
 data class SubsystemSimInteractionDocument(
     val role: SimInteractionRole = SimInteractionRole.NONE,
-    val triggerFieldId: String? = null,
+    /** Actuator whose accepted simulated output activates this interaction. */
+    val triggerActuatorId: String? = null,
     val triggerThreshold: Double = 1.0,
     val storageCapacity: Int = 1,
     val intakeDistanceMeters: Double = 0.35,
@@ -139,12 +140,22 @@ data class SubsystemLinkageDocument(
     val link2LengthMeters: Double = 0.25,
     val link1MassKg: Double = 0.5,
     val link2MassKg: Double = 0.3,
+    val link1CenterOfMassMeters: Double = link1LengthMeters / 2.0,
+    val link2CenterOfMassMeters: Double = link2LengthMeters / 2.0,
     val joint1MinRad: Double = -Math.PI,
     val joint1MaxRad: Double = Math.PI,
     val joint2MinRad: Double = -Math.PI,
     val joint2MaxRad: Double = Math.PI,
+    val joint1ActuatorId: String? = null,
+    val joint2ActuatorId: String? = null,
     val joint1AngleFieldId: String? = null,
     val joint2AngleFieldId: String? = null,
+    /** Output torque at joint 1 per accepted motor volt, including gearing and efficiency. */
+    val joint1TorquePerVoltNm: Double = 0.5,
+    /** Output torque at joint 2 per accepted motor volt, including gearing and efficiency. */
+    val joint2TorquePerVoltNm: Double = 0.35,
+    val joint1DampingNmPerRadPerSec: Double = 0.08,
+    val joint2DampingNmPerRadPerSec: Double = 0.05,
 )
 
 data class SubsystemFeedforwardDocument(
@@ -163,6 +174,8 @@ data class SubsystemFeedforwardDocument(
     val accelerationFieldId: String? = null,
     /** Arm angle measurement in radians; required for ARM gravity compensation. */
     val gravityAngleFieldId: String? = null,
+    /** Controlled serial-linkage joint (1 or 2); required only for TWO_DOF_ARM. */
+    val linkageJoint: Int? = null,
 )
 
 /**
@@ -222,6 +235,10 @@ enum class FaultRecoveryActionKind {
 
 data class SubsystemFaultRecoveryDocument(
     val enabled: Boolean = false,
+    /** Independently controlled actuator used for the bounded recovery command. */
+    val actuatorId: String? = null,
+    /** Cached motor-current measurement used as jam evidence. */
+    val currentFieldId: String? = null,
     val currentThresholdAmps: Double = 18.0,
     val currentDurationMs: Long = 250L,
     val recoveryAction: FaultRecoveryActionKind = FaultRecoveryActionKind.REVERSE_BRIEFLY,
@@ -680,7 +697,7 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         }
         if (loop.tolerance < 0.0) issue("$path.tolerance", "Tolerance cannot be negative")
         if (loop.minimumOutput >= loop.maximumOutput) issue(path, "Minimum output must be below maximum output")
-        validateFeedforward(loop, fieldsById, path, ::issue)
+        validateFeedforward(document, loop, fieldsById, path, ::issue)
     }
 
     document.hardware.filter { it.kind in ACTUATOR_KINDS && it.following == null }.forEach { actuator ->
@@ -719,7 +736,71 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     }
 }
 
+/**
+ * Validates relationships that cannot be proven from one subsystem document in isolation.
+ * Missing or ambiguous interlock targets are build errors, never runtime permits.
+ */
+fun validateSubsystemDocuments(documents: List<SubsystemDocument>): List<SubsystemValidationIssue> = buildList {
+    val byUid = documents.groupBy { it.uid }
+    byUid.filterValues { it.size > 1 }.keys.sorted().forEach { uid ->
+        add(SubsystemValidationIssue("subsystems", "Subsystem UID '$uid' is duplicated"))
+    }
+
+    documents.forEach { owner ->
+        owner.interlocks.forEachIndexed { index, interlock ->
+            val path = "subsystems[${owner.documentId}].interlocks[$index]"
+            val target = byUid[interlock.targetSubsystemUid]?.singleOrNull()
+            if (target == null) {
+                add(
+                    SubsystemValidationIssue(
+                        "$path.targetSubsystemUid",
+                        "Interlock target '${interlock.targetSubsystemUid}' does not resolve to exactly one subsystem",
+                    ),
+                )
+                return@forEachIndexed
+            }
+            if (target.implementation.kind != SubsystemImplementationKind.GENERATED_STARTER) {
+                add(
+                    SubsystemValidationIssue(
+                        "$path.targetSubsystemUid",
+                        "Generated interlocks require a generated target state; '${target.uid}' is hand-authored",
+                    ),
+                )
+                return@forEachIndexed
+            }
+            val field = target.stateFields.singleOrNull { it.fieldId == interlock.targetFieldId }
+            if (field == null) {
+                add(
+                    SubsystemValidationIssue(
+                        "$path.targetFieldId",
+                        "Target subsystem '${target.uid}' has no state field '${interlock.targetFieldId}'",
+                    ),
+                )
+                return@forEachIndexed
+            }
+            when (interlock.comparison) {
+                InterlockComparison.LESS_THAN,
+                InterlockComparison.GREATER_THAN -> if (field.type !in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)) {
+                    add(SubsystemValidationIssue("$path.comparison", "Ordered interlocks require a numeric target field"))
+                }
+                InterlockComparison.EQUALS_STATE,
+                InterlockComparison.NOT_EQUALS_STATE -> when (field.type) {
+                    SubsystemValueType.BOOLEAN -> if (interlock.targetStateName?.lowercase() !in setOf("true", "false")) {
+                        add(SubsystemValidationIssue("$path.targetStateName", "Boolean equality requires true or false"))
+                    }
+                    SubsystemValueType.STRING -> if (interlock.targetStateName.isNullOrBlank()) {
+                        add(SubsystemValidationIssue("$path.targetStateName", "String equality requires an expected state value"))
+                    }
+                    SubsystemValueType.DOUBLE,
+                    SubsystemValueType.INT -> Unit
+                }
+            }
+        }
+    }
+}
+
 private fun validateFeedforward(
+    document: SubsystemDocument,
     loop: SubsystemControlLoopDocument,
     fieldsById: Map<String, SubsystemStateFieldDocument>,
     path: String,
@@ -729,7 +810,7 @@ private fun validateFeedforward(
     if (feedforward.kind == SubsystemFeedforwardKind.NONE) {
         if (feedforward.kS != 0.0 || feedforward.kV != 0.0 || feedforward.kA != 0.0 || feedforward.kG != 0.0 ||
             feedforward.velocityFieldId != null || feedforward.accelerationFieldId != null ||
-            feedforward.gravityAngleFieldId != null
+            feedforward.gravityAngleFieldId != null || feedforward.linkageJoint != null
         ) {
             issue("$path.feedforward", "Select a feedforward model before configuring its gains or fields")
         }
@@ -752,6 +833,34 @@ private fun validateFeedforward(
     }
     if (feedforward.kind != SubsystemFeedforwardKind.ARM && feedforward.gravityAngleFieldId != null) {
         issue("$path.feedforward.gravityAngleFieldId", "Only arm feedforward uses a gravity angle field")
+    }
+    if (feedforward.kind == SubsystemFeedforwardKind.FOUR_BAR_LINKAGE) {
+        issue(
+            "$path.feedforward.kind",
+            "Generated four-bar feedforward is not available yet; use a hand-authored closed-chain controller",
+        )
+    }
+    if (feedforward.kind == SubsystemFeedforwardKind.TWO_DOF_ARM) {
+        if (!document.linkage.enabled) {
+            issue("$path.feedforward.kind", "2-DOF feedforward requires an enabled linkage model")
+        }
+        if (feedforward.linkageJoint == null || feedforward.linkageJoint !in 1..2) {
+            issue("$path.feedforward.linkageJoint", "2-DOF feedforward must select linkage joint 1 or 2")
+        } else {
+            val expectedActuator = if (feedforward.linkageJoint == 1) {
+                document.linkage.joint1ActuatorId
+            } else {
+                document.linkage.joint2ActuatorId
+            }
+            if (expectedActuator != null && loop.actuatorId != expectedActuator) {
+                issue(
+                    "$path.actuatorId",
+                    "The selected 2-DOF joint is mapped to actuator '$expectedActuator', not '${loop.actuatorId}'",
+                )
+            }
+        }
+    } else if (feedforward.linkageJoint != null) {
+        issue("$path.feedforward.linkageJoint", "Only 2-DOF feedforward selects a linkage joint")
     }
 }
 
@@ -861,6 +970,19 @@ private fun validateFaultRecovery(
 ) {
     val recovery = document.safety.faultRecovery
     if (!recovery.enabled) return
+    if (!document.safety.requiresCurrentMonitoring) {
+        issue("safety.requiresCurrentMonitoring", "Automatic fault recovery requires cached current monitoring")
+    }
+    val actuator = recovery.actuatorId?.let { id -> document.hardware.singleOrNull { it.hardwareId == id } }
+    if (actuator == null || actuator.following != null ||
+        actuator.kind !in setOf(SubsystemHardwareKind.MOTOR, SubsystemHardwareKind.CONTINUOUS_SERVO)
+    ) {
+        issue("safety.faultRecovery.actuatorId", "Automatic recovery requires an independently controlled motor or continuous servo")
+    }
+    val currentSource = actuator?.measurements?.singleOrNull { it.fieldId == recovery.currentFieldId }
+    if (currentSource?.source != SubsystemMeasurementSource.MOTOR_CURRENT_AMPS) {
+        issue("safety.faultRecovery.currentFieldId", "Automatic recovery requires a cached motor-current field")
+    }
     if (!recovery.currentThresholdAmps.isFinite() || recovery.currentThresholdAmps <= 0.0) {
         issue("safety.faultRecovery.currentThresholdAmps", "Current threshold must be finite and positive")
     }
@@ -875,6 +997,12 @@ private fun validateFaultRecovery(
     }
     if (recovery.maxRetries !in 1..10) {
         issue("safety.faultRecovery.maxRetries", "Max retries must be between 1 and 10")
+    }
+    if (recovery.recoveryAction in setOf(FaultRecoveryActionKind.NONE, FaultRecoveryActionKind.HOLD_POSITION)) {
+        issue(
+            "safety.faultRecovery.recoveryAction",
+            "Generated recovery supports bounded reverse or latched neutral stop; hold-position requires a hand-authored controller",
+        )
     }
 }
 
@@ -1022,15 +1150,68 @@ private fun validateImplementation(
 private fun validateLinkage(document: SubsystemDocument, issue: (String, String) -> Unit) {
     if (!document.linkage.enabled) return
     val path = "linkage"
-    if (document.linkage.link1LengthMeters <= 0.0) issue("$path.link1LengthMeters", "Link 1 length must be positive")
-    if (document.linkage.link2LengthMeters <= 0.0) issue("$path.link2LengthMeters", "Link 2 length must be positive")
-    if (document.linkage.link1MassKg < 0.0) issue("$path.link1MassKg", "Link 1 mass cannot be negative")
-    if (document.linkage.link2MassKg < 0.0) issue("$path.link2MassKg", "Link 2 mass cannot be negative")
+    val linkage = document.linkage
+    val finiteValues = listOf(
+        linkage.link1LengthMeters,
+        linkage.link2LengthMeters,
+        linkage.link1MassKg,
+        linkage.link2MassKg,
+        linkage.link1CenterOfMassMeters,
+        linkage.link2CenterOfMassMeters,
+        linkage.joint1MinRad,
+        linkage.joint1MaxRad,
+        linkage.joint2MinRad,
+        linkage.joint2MaxRad,
+        linkage.joint1TorquePerVoltNm,
+        linkage.joint2TorquePerVoltNm,
+        linkage.joint1DampingNmPerRadPerSec,
+        linkage.joint2DampingNmPerRadPerSec,
+    )
+    if (finiteValues.any { !it.isFinite() }) issue(path, "Every linkage geometry, mass, and limit value must be finite")
+    if (linkage.link1LengthMeters <= 0.0) issue("$path.link1LengthMeters", "Link 1 length must be positive")
+    if (linkage.link2LengthMeters <= 0.0) issue("$path.link2LengthMeters", "Link 2 length must be positive")
+    if (linkage.link1MassKg <= 0.0) issue("$path.link1MassKg", "Link 1 mass must be positive for dynamics simulation")
+    if (linkage.link2MassKg <= 0.0) issue("$path.link2MassKg", "Link 2 mass must be positive for dynamics simulation")
+    if (linkage.link1CenterOfMassMeters !in 0.0..linkage.link1LengthMeters) {
+        issue("$path.link1CenterOfMassMeters", "Link 1 center of mass must lie on link 1")
+    }
+    if (linkage.link2CenterOfMassMeters !in 0.0..linkage.link2LengthMeters) {
+        issue("$path.link2CenterOfMassMeters", "Link 2 center of mass must lie on link 2")
+    }
     if (document.linkage.joint1MinRad >= document.linkage.joint1MaxRad) {
         issue("$path.joint1MinRad", "Joint 1 minimum angle must be less than maximum angle")
     }
     if (document.linkage.joint2MinRad >= document.linkage.joint2MaxRad) {
         issue("$path.joint2MinRad", "Joint 2 minimum angle must be less than maximum angle")
+    }
+    val fieldsById = document.stateFields.associateBy { it.fieldId }
+    listOf(
+        "joint1AngleFieldId" to linkage.joint1AngleFieldId,
+        "joint2AngleFieldId" to linkage.joint2AngleFieldId,
+    ).forEach { (name, id) ->
+        val field = id?.let(fieldsById::get)
+        if (field == null || field.type != SubsystemValueType.DOUBLE || field.role != SubsystemFieldRole.MEASUREMENT) {
+            issue("$path.$name", "Each linkage joint requires a double measurement state field in radians")
+        }
+    }
+    val hardwareById = document.hardware.associateBy { it.hardwareId }
+    listOf(
+        "joint1ActuatorId" to linkage.joint1ActuatorId,
+        "joint2ActuatorId" to linkage.joint2ActuatorId,
+    ).forEach { (name, id) ->
+        val actuator = id?.let(hardwareById::get)
+        if (actuator == null || actuator.kind != SubsystemHardwareKind.MOTOR || actuator.following != null) {
+            issue("$path.$name", "Each linkage joint requires an independently controlled motor actuator")
+        }
+    }
+    if (linkage.joint1ActuatorId != null && linkage.joint1ActuatorId == linkage.joint2ActuatorId) {
+        issue(path, "Linkage joints must use distinct actuators")
+    }
+    if (linkage.joint1TorquePerVoltNm <= 0.0 || linkage.joint2TorquePerVoltNm <= 0.0) {
+        issue(path, "Each linkage joint requires a positive torque-per-volt simulation constant")
+    }
+    if (linkage.joint1DampingNmPerRadPerSec < 0.0 || linkage.joint2DampingNmPerRadPerSec < 0.0) {
+        issue(path, "Linkage damping values cannot be negative")
     }
 }
 
@@ -1038,6 +1219,10 @@ private fun validateSimInteraction(document: SubsystemDocument, issue: (String, 
     val interaction = document.implementation.simulation.interaction
     if (interaction.role == SimInteractionRole.NONE) return
     val path = "implementation.simulation.interaction"
+    val trigger = interaction.triggerActuatorId?.let { id -> document.hardware.singleOrNull { it.hardwareId == id } }
+    if (trigger == null || trigger.kind !in ACTUATOR_KINDS || trigger.following != null) {
+        issue("$path.triggerActuatorId", "Field interaction requires an independently controlled actuator output")
+    }
     if (interaction.storageCapacity < 1) issue("$path.storageCapacity", "Storage capacity must be at least 1")
     if (interaction.intakeDistanceMeters <= 0.0) issue("$path.intakeDistanceMeters", "Intake distance must be positive")
     if (interaction.captureRadiusMeters <= 0.0) issue("$path.captureRadiusMeters", "Capture radius must be positive")

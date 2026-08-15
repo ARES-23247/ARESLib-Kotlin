@@ -72,12 +72,13 @@ public final class com/areslib/sim/cli/SimCliParser {
 
 public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel : com/areslib/sim/SimInteractionModel {
 	public static final field Companion Lcom/areslib/sim/field/ConfigurableGamePieceInteractionModel$Companion;
-	public fun <init> ()V
 	public fun <init> (IDDDDD)V
+	public synthetic fun <init> (IDDDDDD[Lcom/areslib/sim/field/DescriptorInteractionBinding;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (IDDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getIntakeRadiusMeters ()D
 	public final fun getIntakeRangeMeters ()D
-	public final fun getLaunchImpulse ()D
+	public final fun getLaunchElevationDeg ()D
+	public final fun getLaunchSpeedMps ()D
 	public final fun getMaxCapacity ()I
 	public final fun getPieceDiameterMeters ()D
 	public final fun getPieceMassKg ()D
@@ -87,6 +88,11 @@ public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel :
 
 public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel$Companion {
 	public final fun fromSubsystems (Ljava/util/List;)Lcom/areslib/sim/field/ConfigurableGamePieceInteractionModel;
+}
+
+public final class com/areslib/sim/field/DescriptorSimInteractionLoader {
+	public static final field INSTANCE Lcom/areslib/sim/field/DescriptorSimInteractionLoader;
+	public final fun loadFrom (Ljava/nio/file/Path;)Lcom/areslib/sim/SimInteractionModel;
 }
 
 public final class com/areslib/sim/field/FieldElementLoader {
