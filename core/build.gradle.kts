@@ -25,7 +25,7 @@ dependencies {
     implementation("org.msgpack:msgpack-core:0.9.3")
     // Held at 1.8.x: coroutines >=1.10 emits Kotlin 2.2 metadata that the 1.9
     // toolchain cannot read. Revisit with the workspace-wide Kotlin 2.2 migration.
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     api("org.nanohttpd:nanohttpd:2.3.1")
     testImplementation(kotlin("test"))
 }
