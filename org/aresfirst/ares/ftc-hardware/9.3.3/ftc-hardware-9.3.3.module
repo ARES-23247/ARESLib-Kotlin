@@ -1,0 +1,122 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "ftc-hardware",
+    "version": "9.3.3",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "9.3.3"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "ftc-hardware-9.3.3.jar",
+          "url": "ftc-hardware-9.3.3.jar",
+          "size": 365382,
+          "sha512": "e1c61219d3a155029dcaad88db77f80e94d5a22eef6782bb3af8cc385e7541beff4258ece63019e329cf891f5f5648584694ce0390db31f5aa270692c393e879",
+          "sha256": "270539b4643ab35f32323324050b8549f94155f046b0e1888f198abe17c39d7b",
+          "sha1": "f6b30abe597ef228e1c1fe75c9efeee13f4feb8a",
+          "md5": "3e785c41824d45c2c7b14c5606e83df5"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.11.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "9.3.3"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "ftc-hardware-9.3.3.jar",
+          "url": "ftc-hardware-9.3.3.jar",
+          "size": 365382,
+          "sha512": "e1c61219d3a155029dcaad88db77f80e94d5a22eef6782bb3af8cc385e7541beff4258ece63019e329cf891f5f5648584694ce0390db31f5aa270692c393e879",
+          "sha256": "270539b4643ab35f32323324050b8549f94155f046b0e1888f198abe17c39d7b",
+          "sha1": "f6b30abe597ef228e1c1fe75c9efeee13f4feb8a",
+          "md5": "3e785c41824d45c2c7b14c5606e83df5"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "ftc-hardware-9.3.3-sources.jar",
+          "url": "ftc-hardware-9.3.3-sources.jar",
+          "size": 146580,
+          "sha512": "654354049aa67f0bc22357c808956811c2de5755163209798b618ebec95b58c546297f5fb9a6e694ccb37ccb49a8b3ec8005c2b5aca0c90cfe991eb4fde9531b",
+          "sha256": "8be045975297797bd4b9df06b805ac210aeb9a5c4f2753d86db7e713886d619b",
+          "sha1": "d3747e50d5294ed3e52dbc3f9864f2998b48c23d",
+          "md5": "bf50adbe5c90f537efd42f56850845c7"
+        }
+      ]
+    }
+  ]
+}
