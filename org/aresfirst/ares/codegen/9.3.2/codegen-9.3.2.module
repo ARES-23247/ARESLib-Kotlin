@@ -1,0 +1,116 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "codegen",
+    "version": "9.3.2",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "9.3.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "codegen-9.3.2.jar",
+          "url": "codegen-9.3.2.jar",
+          "size": 277470,
+          "sha512": "6b8686491ed23aa75ff7cdba8a737c2b9e687e56d5afbe8191aa16de769ad0e3c41268fe9395ef3db408958f38d8263a1555be4f6787a738e47b380907cb39ad",
+          "sha256": "d67f5ae9ef3a0a1e3a8eabeedc60b013c63a407a3080c44e91cf2f0b07d66d42",
+          "sha1": "bad624b797cbb23828fd5d91e448b1eb856356e0",
+          "md5": "b9ca53ba406d7f242bf2a0910de6474c"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "9.3.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "codegen-9.3.2.jar",
+          "url": "codegen-9.3.2.jar",
+          "size": 277470,
+          "sha512": "6b8686491ed23aa75ff7cdba8a737c2b9e687e56d5afbe8191aa16de769ad0e3c41268fe9395ef3db408958f38d8263a1555be4f6787a738e47b380907cb39ad",
+          "sha256": "d67f5ae9ef3a0a1e3a8eabeedc60b013c63a407a3080c44e91cf2f0b07d66d42",
+          "sha1": "bad624b797cbb23828fd5d91e448b1eb856356e0",
+          "md5": "b9ca53ba406d7f242bf2a0910de6474c"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "codegen-9.3.2-sources.jar",
+          "url": "codegen-9.3.2-sources.jar",
+          "size": 546490,
+          "sha512": "75325a83457f77c79aace54764331e954f7cedc3e3f6fd468a0d7eaed4d4b6179360bd7ec3e11421258cdf852c98289837e7237739e738aff7f35992c79c0d08",
+          "sha256": "cc6d485e5dfa470a44276259872810208098b654359973fe735cc8a6d1cbe7aa",
+          "sha1": "f0debcf23ca9ca0602f15a38ac632d4150e1ccf8",
+          "md5": "0148a5749da9a86324cb5f0cc234c799"
+        }
+      ]
+    }
+  ]
+}
