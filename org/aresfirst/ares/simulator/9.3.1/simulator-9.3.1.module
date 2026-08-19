@@ -1,0 +1,228 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "simulator",
+    "version": "9.3.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "9.3.1"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-hardware",
+          "version": {
+            "requires": "9.3.1"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-mocks",
+          "version": {
+            "requires": "9.3.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-9.3.1.jar",
+          "url": "simulator-9.3.1.jar",
+          "size": 181248,
+          "sha512": "e6721b20be1c1afd42202bec5b1bd347512a1ad48ab8072d6ed7bfaffc4b95dcf038684926dc937981a399a2ae85e21f2eaae066a98c8d1f037667828ea3a309",
+          "sha256": "9b61aecc27096d36c040ce6ad02aa62813ab0577021099eaafb3a29ff8fa5533",
+          "sha1": "76bda8165252afa9cc5c07542a910c1ac737baaf",
+          "md5": "a6725854b008993ae85d8d8e803c3ccf"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.dyn4j",
+          "module": "dyn4j",
+          "version": {
+            "requires": "4.2.2"
+          }
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.14.0"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpilibj",
+          "module": "wpilibj-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.cameraserver",
+          "module": "cameraserver-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpinet",
+          "module": "wpinet-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.ntcore",
+          "module": "ntcore-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiutil",
+          "module": "wpiutil-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpimath",
+          "module": "wpimath-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.hal",
+          "module": "hal-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "org.slf4j",
+          "module": "slf4j-simple",
+          "version": {
+            "requires": "2.0.18"
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl",
+          "version": {
+            "requires": "3.4.2"
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl-glfw",
+          "version": {
+            "requires": "3.4.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "9.3.1"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-hardware",
+          "version": {
+            "requires": "9.3.1"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-mocks",
+          "version": {
+            "requires": "9.3.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-9.3.1.jar",
+          "url": "simulator-9.3.1.jar",
+          "size": 181248,
+          "sha512": "e6721b20be1c1afd42202bec5b1bd347512a1ad48ab8072d6ed7bfaffc4b95dcf038684926dc937981a399a2ae85e21f2eaae066a98c8d1f037667828ea3a309",
+          "sha256": "9b61aecc27096d36c040ce6ad02aa62813ab0577021099eaafb3a29ff8fa5533",
+          "sha1": "76bda8165252afa9cc5c07542a910c1ac737baaf",
+          "md5": "a6725854b008993ae85d8d8e803c3ccf"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "simulator-9.3.1-sources.jar",
+          "url": "simulator-9.3.1-sources.jar",
+          "size": 63745,
+          "sha512": "f2546ba8508eaa75278a4cd8c13f080584a7558abdcb2d6fc5fb2ae793f9a1f7ee952fd1f89e6c1e3b4d1b48c63db91dd66503412eecd38143c337f9102079d8",
+          "sha256": "420d9a9a4b4afa0189e370a1c80fbb21c6b93349e36e3d3886e498a14e7efbda",
+          "sha1": "44ad048a75bddbe2b30e7f0596d0ffdbf2584d6d",
+          "md5": "0b6588b4d74bb77b9dd8b686be846d00"
+        }
+      ]
+    }
+  ]
+}
