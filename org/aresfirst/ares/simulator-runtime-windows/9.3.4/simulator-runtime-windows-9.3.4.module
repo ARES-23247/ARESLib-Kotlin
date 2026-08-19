@@ -1,0 +1,203 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "simulator-runtime-windows",
+    "version": "9.3.4",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "9.3.4"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-runtime-windows-9.3.4.jar",
+          "url": "simulator-runtime-windows-9.3.4.jar",
+          "size": 4326,
+          "sha512": "a1483afbd045bdb9dbbfdd8a353b6510d7cea5f9122f13e5080f878446273d47fef4e7899103385cfcef030ff3fd18381c9024bbcc627d7eec732dc08c09f7d4",
+          "sha256": "984b7b623a001898461555b356251e3ead523f8cebdf875f2558c0355e8b05b8",
+          "sha1": "a2e690b5528eaa3ac5673bd6f6c0d49b3cac2ad8",
+          "md5": "aea97c2ce54f2e1b13b383852eea513d"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "9.3.4"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpinet",
+          "module": "wpinet-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpinet-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "windowsx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.ntcore",
+          "module": "ntcore-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "ntcore-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "windowsx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiutil",
+          "module": "wpiutil-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpiutil-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "windowsx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpimath",
+          "module": "wpimath-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpimath-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "windowsx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.hal",
+          "module": "hal-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "hal-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "windowsx86-64"
+            }
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl",
+          "version": {
+            "requires": "3.3.3"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "lwjgl",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "natives-windows"
+            }
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl-glfw",
+          "version": {
+            "requires": "3.3.3"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "lwjgl-glfw",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "natives-windows"
+            }
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-runtime-windows-9.3.4.jar",
+          "url": "simulator-runtime-windows-9.3.4.jar",
+          "size": 4326,
+          "sha512": "a1483afbd045bdb9dbbfdd8a353b6510d7cea5f9122f13e5080f878446273d47fef4e7899103385cfcef030ff3fd18381c9024bbcc627d7eec732dc08c09f7d4",
+          "sha256": "984b7b623a001898461555b356251e3ead523f8cebdf875f2558c0355e8b05b8",
+          "sha1": "a2e690b5528eaa3ac5673bd6f6c0d49b3cac2ad8",
+          "md5": "aea97c2ce54f2e1b13b383852eea513d"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "simulator-runtime-windows-9.3.4-sources.jar",
+          "url": "simulator-runtime-windows-9.3.4-sources.jar",
+          "size": 4326,
+          "sha512": "a1483afbd045bdb9dbbfdd8a353b6510d7cea5f9122f13e5080f878446273d47fef4e7899103385cfcef030ff3fd18381c9024bbcc627d7eec732dc08c09f7d4",
+          "sha256": "984b7b623a001898461555b356251e3ead523f8cebdf875f2558c0355e8b05b8",
+          "sha1": "a2e690b5528eaa3ac5673bd6f6c0d49b3cac2ad8",
+          "md5": "aea97c2ce54f2e1b13b383852eea513d"
+        }
+      ]
+    }
+  ]
+}

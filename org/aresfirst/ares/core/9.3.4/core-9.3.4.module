@@ -1,0 +1,150 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "core",
+    "version": "9.3.4",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.java-websocket",
+          "module": "Java-WebSocket",
+          "version": {
+            "requires": "1.6.0"
+          }
+        },
+        {
+          "group": "org.nanohttpd",
+          "module": "nanohttpd",
+          "version": {
+            "requires": "2.3.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-9.3.4.jar",
+          "url": "core-9.3.4.jar",
+          "size": 2099687,
+          "sha512": "9541263d7a18d9faa51088a58440ca628ee33fb602c0dd150a9116c6e759c48090c19f326548e1f28666359f7af2585fe5339141a6154360d7858a949f05dba5",
+          "sha256": "3cb341cb100982aa49be7fad3d47db33354cb5aa12525fe3b791196ae5915dc5",
+          "sha1": "dede7d6977f54dfaad4f943150840b88f50aa2ea",
+          "md5": "e316ef01c4b70b0e091d7c5202b1b52e"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.14.0"
+          }
+        },
+        {
+          "group": "org.msgpack",
+          "module": "msgpack-core",
+          "version": {
+            "requires": "0.9.12"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.11.0"
+          }
+        },
+        {
+          "group": "org.java-websocket",
+          "module": "Java-WebSocket",
+          "version": {
+            "requires": "1.6.0"
+          }
+        },
+        {
+          "group": "org.nanohttpd",
+          "module": "nanohttpd",
+          "version": {
+            "requires": "2.3.1"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-9.3.4.jar",
+          "url": "core-9.3.4.jar",
+          "size": 2099687,
+          "sha512": "9541263d7a18d9faa51088a58440ca628ee33fb602c0dd150a9116c6e759c48090c19f326548e1f28666359f7af2585fe5339141a6154360d7858a949f05dba5",
+          "sha256": "3cb341cb100982aa49be7fad3d47db33354cb5aa12525fe3b791196ae5915dc5",
+          "sha1": "dede7d6977f54dfaad4f943150840b88f50aa2ea",
+          "md5": "e316ef01c4b70b0e091d7c5202b1b52e"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "core-9.3.4-sources.jar",
+          "url": "core-9.3.4-sources.jar",
+          "size": 547262,
+          "sha512": "62c99f788ee61d8811a1935467baf7f352241a08700955feb775d7f43e9b8f98ee5a8030690a8bec7320698aa5ebed517a7afb52150c8ee3330649ed39709c1c",
+          "sha256": "64af118bb6476a8596105c2926fd38ad9f07326f4039fa80bb059d37ebb38120",
+          "sha1": "d366cb2072ba80706ee7e616717e70c3683c2180",
+          "md5": "147797e85b1794b7240a5abbb17bf6ee"
+        }
+      ]
+    }
+  ]
+}
