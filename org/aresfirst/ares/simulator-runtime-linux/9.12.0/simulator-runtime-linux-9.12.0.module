@@ -1,0 +1,203 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "simulator-runtime-linux",
+    "version": "9.12.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "9.12.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-runtime-linux-9.12.0.jar",
+          "url": "simulator-runtime-linux-9.12.0.jar",
+          "size": 5085,
+          "sha512": "6ccf2d608d86d6c218f8b413fe1b19e2a39060feff6f2728b152050bff93fe3dc557e73f8aeb02fb3507da3d617fb476c66c11892bc83e93803a118ce652e09b",
+          "sha256": "ecf7216a16e88b75ff0322d75c6559fedab79500ee368615e3628ca1369290b6",
+          "sha1": "a439906d002568a4769e0021657715868c23d18d",
+          "md5": "893b7e3c8d5a6bf6c11c80c3066c408e"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "9.12.0"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpinet",
+          "module": "wpinet-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpinet-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "linuxx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.ntcore",
+          "module": "ntcore-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "ntcore-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "linuxx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiutil",
+          "module": "wpiutil-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpiutil-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "linuxx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpimath",
+          "module": "wpimath-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpimath-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "linuxx86-64"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.hal",
+          "module": "hal-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "hal-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "linuxx86-64"
+            }
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl",
+          "version": {
+            "requires": "3.3.3"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "lwjgl",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "natives-linux"
+            }
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl-glfw",
+          "version": {
+            "requires": "3.3.3"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "lwjgl-glfw",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "natives-linux"
+            }
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-runtime-linux-9.12.0.jar",
+          "url": "simulator-runtime-linux-9.12.0.jar",
+          "size": 5085,
+          "sha512": "6ccf2d608d86d6c218f8b413fe1b19e2a39060feff6f2728b152050bff93fe3dc557e73f8aeb02fb3507da3d617fb476c66c11892bc83e93803a118ce652e09b",
+          "sha256": "ecf7216a16e88b75ff0322d75c6559fedab79500ee368615e3628ca1369290b6",
+          "sha1": "a439906d002568a4769e0021657715868c23d18d",
+          "md5": "893b7e3c8d5a6bf6c11c80c3066c408e"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "simulator-runtime-linux-9.12.0-sources.jar",
+          "url": "simulator-runtime-linux-9.12.0-sources.jar",
+          "size": 5085,
+          "sha512": "6ccf2d608d86d6c218f8b413fe1b19e2a39060feff6f2728b152050bff93fe3dc557e73f8aeb02fb3507da3d617fb476c66c11892bc83e93803a118ce652e09b",
+          "sha256": "ecf7216a16e88b75ff0322d75c6559fedab79500ee368615e3628ca1369290b6",
+          "sha1": "a439906d002568a4769e0021657715868c23d18d",
+          "md5": "893b7e3c8d5a6bf6c11c80c3066c408e"
+        }
+      ]
+    }
+  ]
+}
