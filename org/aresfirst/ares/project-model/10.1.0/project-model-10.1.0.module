@@ -1,0 +1,143 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "project-model",
+    "version": "10.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "10.1.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "10.1.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "10.1.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-model-10.1.0.jar",
+          "url": "project-model-10.1.0.jar",
+          "size": 67474,
+          "sha512": "df0ac9f7efd67bcf4b1aa511ce71a21b463d593565c305b3cee07f7fe72fc7e6e60810a7c76cbae09c88322b263d8d2de230ebcf4c062edfd66e1f7fbe72854a",
+          "sha256": "9f3b31944200ec185ee2f2da8bd58ea4360788d5e7267a91c42da5c5554ed5de",
+          "sha1": "a08d55cdbc30d52276e0f3072a25f0ba75eadd4b",
+          "md5": "4332c898d6028e86f9b556d11c28cb18"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "10.1.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "10.1.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "10.1.0"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-model-10.1.0.jar",
+          "url": "project-model-10.1.0.jar",
+          "size": 67474,
+          "sha512": "df0ac9f7efd67bcf4b1aa511ce71a21b463d593565c305b3cee07f7fe72fc7e6e60810a7c76cbae09c88322b263d8d2de230ebcf4c062edfd66e1f7fbe72854a",
+          "sha256": "9f3b31944200ec185ee2f2da8bd58ea4360788d5e7267a91c42da5c5554ed5de",
+          "sha1": "a08d55cdbc30d52276e0f3072a25f0ba75eadd4b",
+          "md5": "4332c898d6028e86f9b556d11c28cb18"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "project-model-10.1.0-sources.jar",
+          "url": "project-model-10.1.0-sources.jar",
+          "size": 11808,
+          "sha512": "f4110d9f0b916f5bb476865a028d35beef769b81bbfe7e13cc74a9d78a58b631d623b007539a661a7a789f0f7fa28270dc1592eec6ce33a1af240d8fab19bb7d",
+          "sha256": "f988f16ff315fa936d7a904344a0f3232c521130ee602f56d481645a73a97c0a",
+          "sha1": "fc9ff2b3c3ec2c5b0c693c6d16b6fe4972a9fcd9",
+          "md5": "0c42f5a888e88511e3045d227aa53c31"
+        }
+      ]
+    }
+  ]
+}

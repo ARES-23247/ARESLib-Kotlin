@@ -1,0 +1,115 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "project-compiler",
+    "version": "10.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "10.1.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-compiler-10.1.0.jar",
+          "url": "project-compiler-10.1.0.jar",
+          "size": 72132,
+          "sha512": "d722f9d5cad92d73ac10c9a0583fe073d31e199f2271caea2448d59b15d8498b9bf92915afe0919d9e6365fd691b5aaf900012d567e0d1d73e55b5446810ccc1",
+          "sha256": "2cc4b4d4c2b19e97fb20be70f14167d24ff424bf79b162df23d1266946a759a0",
+          "sha1": "49b6e14f7da23ad45a393959c55632d8ef95d17b",
+          "md5": "52321a717f1b40206a9e940a4a4d3deb"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "10.1.0"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-compiler-10.1.0.jar",
+          "url": "project-compiler-10.1.0.jar",
+          "size": 72132,
+          "sha512": "d722f9d5cad92d73ac10c9a0583fe073d31e199f2271caea2448d59b15d8498b9bf92915afe0919d9e6365fd691b5aaf900012d567e0d1d73e55b5446810ccc1",
+          "sha256": "2cc4b4d4c2b19e97fb20be70f14167d24ff424bf79b162df23d1266946a759a0",
+          "sha1": "49b6e14f7da23ad45a393959c55632d8ef95d17b",
+          "md5": "52321a717f1b40206a9e940a4a4d3deb"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "project-compiler-10.1.0-sources.jar",
+          "url": "project-compiler-10.1.0-sources.jar",
+          "size": 10350,
+          "sha512": "2b8dacd022cccf2502c1d919588abb0cfc32b1f6c436942c9cf97f8ba23a6156d17854debbc4851936e7b1fab961ae749923f5d3a38a4377f304c66a6912df11",
+          "sha256": "b73475ca5c7f73e322e4924936f7bb00530313b87a60cda1b58a4152d54e9bbb",
+          "sha1": "119f00b37821038dbd2685b217d58a1e0b9fc03d",
+          "md5": "4d64ad25963846be07bb55dfbbf0a8f2"
+        }
+      ]
+    }
+  ]
+}
