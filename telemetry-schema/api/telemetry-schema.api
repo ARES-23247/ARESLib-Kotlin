@@ -115,3 +115,4 @@ public final class com/areslib/telemetry/schema/TopologyNodeType : java/lang/Enu
 public final class com/areslib/telemetry/schema/TopologyNodeType$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
+
