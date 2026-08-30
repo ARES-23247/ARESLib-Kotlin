@@ -10,6 +10,7 @@ ARESLib-Kotlin is the shared Kotlin foundation for the ARES FTC, FRC, simulator,
 | `simulation-foundation` | Simulator product selection, capability validation, and deterministic fault timelines | `project-schema`, `core` |
 | `project-model` | Whole-project assembly, validation, effective indexes, and simulator plan derivation | `project-schema`, `simulation-foundation`, `core` |
 | `project-compiler` | Deterministic typed compiler IR and generated-artifact manifest | `project-model` |
+| `telemetry-schema` | Canonical, versioned wire DTOs and codecs shared by robot publishers and Studio consumers | Kotlin serialization only |
 | `core` | State, reducers, geometry, EKF localization, controllers, safety, pathing, sequencer, NT4, telemetry, and logging | Kotlin/JVM libraries only |
 | `codegen` | Project, controls, autonomous, and subsystem Kotlin generation CLI | `core` |
 | `ftc-mocks` | Desktop implementations of the FTC and Android APIs used by library code | `core` |
@@ -60,23 +61,24 @@ Run commands from this repository root:
 .\gradlew.bat :simulator:test
 
 # Build the complete Maven bundle under a unique, unpublished coordinate
-.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
+.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=11.0.0-rc.<commit>"
 ```
 
 Normal FTC, FRC, and Analytics builds consume immutable releases from the ARES GitHub Maven repository, with Maven Central retained as an optional secondary distribution channel. To test an unpublished library change against a sibling consumer without composite substitution, publish the isolated bundle and pass its repository explicitly:
 
 ```powershell
-.\gradlew.bat publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
+.\gradlew.bat publishReleaseValidation "-ParesVersion=11.0.0-rc.<commit>"
 cd ..\ARES-FTC
-.\gradlew.bat test "-ParesVersion=8.0.0-rc.<commit>" "-ParesRepository=file:///C:/absolute/path/ARESLib-Kotlin/build/release-repository"
+.\gradlew.bat test "-ParesVersion=11.0.0-rc.<commit>" "-ParesRepository=file:///C:/absolute/path/ARESLib-Kotlin/build/release-repository"
 ```
 
 All artifacts use the verified `org.aresfirst.ares` Maven namespace and one version:
 
 | Module | Coordinates |
 |---|---|
-| BOM | `org.aresfirst.ares:ares-bom:8.0.0` |
+| BOM | `org.aresfirst.ares:ares-bom:11.0.0` |
 | Project model | `org.aresfirst.ares:project-schema`, `simulation-foundation`, `project-model`, `project-compiler` |
+| Telemetry schema | `org.aresfirst.ares:telemetry-schema` |
 | Core | `org.aresfirst.ares:core` |
 | Code generation | `org.aresfirst.ares:codegen` |
 | FTC | `org.aresfirst.ares:ftc-hardware`, `org.aresfirst.ares:ftc-mocks` |

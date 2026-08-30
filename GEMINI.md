@@ -9,6 +9,7 @@ ARESLib-Kotlin is the shared foundation for ARES-FTC, ARES-FRC, ARES-Analytics, 
 - `core`: SDK-independent state, math, estimation, control, safety, pathing, sequencing, IO contracts, NT4, telemetry, and logging.
 - `project-schema`, `project-model`, `project-compiler`: canonical documents, the validated effective project, and deterministic compiler IR.
 - `simulation-foundation`: simulator product/capability selection and deterministic fault-timeline contracts; it contains no FTC/FRC physics engine.
+- `telemetry-schema`: canonical, versioned serializable wire DTOs and codecs shared across robot publishers and Studio consumers; it has no platform dependencies.
 - `codegen`: generated API/source support published alongside the runtime modules.
 - `ftc-hardware`: FTC hardware adapters and base robot/facade classes.
 - `frc-hardware`: WPILib/vendor adapters and base robot/facade classes.

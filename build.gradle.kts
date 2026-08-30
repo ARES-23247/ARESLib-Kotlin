@@ -11,7 +11,7 @@ plugins {
 }
 
 val aresGroup = "org.aresfirst.ares"
-val aresVersion = providers.gradleProperty("aresVersion").orElse("8.0.0").get()
+val aresVersion = providers.gradleProperty("aresVersion").orElse("11.0.0").get()
 val allowFinalReleaseValidation = providers.gradleProperty("allowFinalReleaseValidation")
     .map(String::toBoolean)
     .orElse(false)

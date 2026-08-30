@@ -1,6 +1,6 @@
 # Publishing ARESLib
 
-ARESLib publishes ten coordinated artifacts under the verified `org.aresfirst.ares` namespace. `aresVersion` in `gradle.properties` is the source of truth. Kotlin package names remain `com.areslib.*` for source and binary compatibility.
+ARESLib publishes sixteen coordinated artifacts under the verified `org.aresfirst.ares` namespace. `aresVersion` in `gradle.properties` is the source of truth. Kotlin package names remain `com.areslib.*` for source and binary compatibility.
 
 The primary release channel is the immutable ARES GitHub Maven repository at `https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven`. Maven Central is an optional secondary channel and must never block local development or the primary GitHub release.
 
@@ -9,7 +9,7 @@ The primary release channel is the immutable ARES GitHub Maven repository at `ht
 Before assigning final coordinates:
 
 1. Update and review the public `.api` baselines with `./gradlew apiDump` when an intentional public API change was made.
-2. Choose one unique candidate such as `10.1.0-rc.<commit>` and run `./gradlew clean test apiCheck publishReleaseValidation -ParesVersion=<candidate> --no-parallel`.
+2. Choose one unique candidate such as `11.0.0-rc.<commit>` and run `./gradlew clean test apiCheck publishReleaseValidation -ParesVersion=<candidate> --no-parallel`.
 3. Build FTC, FRC, Analytics, and the starter repositories with composite substitution disabled and both `-ParesVersion=<candidate>` and `-ParesRepository=<absolute build/release-repository URI>`.
 4. Merge the implementation through a protected pull request only after its build and CodeQL checks pass.
 
@@ -44,8 +44,9 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("org.aresfirst.ares:ares-bom:10.1.0"))
+    implementation(platform("org.aresfirst.ares:ares-bom:11.0.0"))
     implementation("org.aresfirst.ares:core")
+    implementation("org.aresfirst.ares:telemetry-schema")
     implementation("org.aresfirst.ares:ftc-hardware")
 }
 ```
